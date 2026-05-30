@@ -1,0 +1,27 @@
+<nav [class]="classes()" [attr.aria-label]="ariaLabel()">
+  <ol class="breadcrumb__list">
+    @for (item of items(); track item.label; let index = $index; let last = $last) {
+      <li class="breadcrumb__item">
+        @if (item.href && !item.disabled && !isCurrent(item, index)) {
+          <a class="breadcrumb__link" [href]="item.href" (click)="selectItem(item, index, $event)">
+            {{ item.label }}
+          </a>
+        } @else {
+          <button
+            class="breadcrumb__link breadcrumb__button"
+            type="button"
+            [disabled]="item.disabled || isCurrent(item, index)"
+            [attr.aria-current]="isCurrent(item, index) ? 'page' : null"
+            (click)="selectItem(item, index, $event)"
+          >
+            {{ item.label }}
+          </button>
+        }
+
+        @if (!last) {
+          <app-icon class="breadcrumb__separator" name="chevron_right" size="sm" />
+        }
+      </li>
+    }
+  </ol>
+</nav>

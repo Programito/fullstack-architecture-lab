@@ -1,0 +1,73 @@
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: min(18rem, calc(100vw - 1rem));
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
+  background: var(--ui-fg);
+  color: var(--ui-bg);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.18);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.125rem;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.tooltip::after {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: inherit;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.tooltip--top::after,
+.tooltip--bottom::after {
+  left: 50%;
+  margin-left: -0.25rem;
+}
+
+.tooltip--left::after,
+.tooltip--right::after {
+  top: 50%;
+  margin-top: -0.25rem;
+}
+
+.tooltip--top::after {
+  bottom: -0.25rem;
+}
+
+.tooltip--bottom::after {
+  top: -0.25rem;
+}
+
+.tooltip--left::after {
+  right: -0.25rem;
+}
+
+.tooltip--right::after {
+  left: -0.25rem;
+}
+
+.tooltip--minimal {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 78%, transparent);
+  background: color-mix(in srgb, var(--ui-bg) 98%, var(--ui-fg));
+  color: var(--ui-fg);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+}
+
+.tooltip strong {
+  color: inherit;
+  font-weight: 800;
+}
+
+.tooltip p,
+.tooltip ul {
+  margin: 0;
+}
+
+.tooltip ul {
+  padding-left: 1rem;
+}

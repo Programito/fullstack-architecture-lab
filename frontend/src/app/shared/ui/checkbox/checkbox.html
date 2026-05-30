@@ -1,0 +1,36 @@
+<div class="checkbox-field">
+  <input
+    [class]="inputClasses()"
+    type="checkbox"
+    [id]="checkboxId"
+    [name]="name()"
+    [value]="value()"
+    [checked]="checked()"
+    [indeterminate]="indeterminate()"
+    [disabled]="disabled()"
+    [required]="required()"
+    [attr.aria-checked]="ariaChecked()"
+    [attr.aria-describedby]="describedBy()"
+    (change)="handleChange($event)"
+  />
+
+  <div class="checkbox-field__body">
+    <label class="checkbox-field__label" [for]="checkboxId">
+      <span [class]="boxClasses()" aria-hidden="true">
+        <span class="checkbox-field__icon"></span>
+      </span>
+      @if (label()) {
+        <span class="checkbox-field__title">
+          {{ label() }}
+          @if (required()) {
+            <span aria-hidden="true">*</span>
+          }
+        </span>
+      }
+    </label>
+
+    @if (description()) {
+      <p class="checkbox-field__description" [id]="checkboxId + '-description'">{{ description() }}</p>
+    }
+  </div>
+</div>

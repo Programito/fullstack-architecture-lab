@@ -1,0 +1,222 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Shared UI/Docs/Foundations" />
+
+# Foundations
+
+Estas son las reglas visuales compartidas para la librería UI.
+
+## Variants
+
+Usamos variantes semánticas consistentes entre componentes:
+
+- `primary`: acción principal, actualmente con cyan.
+- `secondary`: acción o estado secundario con zinc oscuro.
+- `neutral`: UI general sin intención fuerte.
+- `danger`: acciones destructivas o estados de error.
+- `success`: confirmaciones y estados completados.
+- `warning`: avisos que requieren revisión.
+- `violet`: acento morado moderno para casos destacados.
+
+## Theme
+
+Los componentes usan tokens CSS semánticos para soportar light y dark mode sin cambiar su API pública.
+
+- `--ui-bg`: fondo base de la interfaz.
+- `--ui-fg`: texto principal.
+- `--ui-muted-fg`: texto secundario y ayudas.
+- `--ui-border`: bordes base.
+- `--ui-surface`: superficies rellenas.
+- `--ui-danger`: errores y estados destructivos.
+
+Storybook expone el selector `Theme` en la toolbar para revisar los componentes en `system`, `light` y `dark`.
+
+Storybook también expone el selector `Locale` en la toolbar para revisar los componentes en `es`, `en` y `ca`.
+
+## Sizes
+
+Los tamaños base son:
+
+- `sm`: controles compactos.
+- `md`: tamaño por defecto.
+- `lg`: controles de más presencia.
+
+## Fill
+
+En inputs y botones usamos fills para expresar jerarquía:
+
+- `solid`: superficie rellena.
+- `outline`: borde visible.
+- `clear`: sin borde ni fondo, usado en botones.
+- `gradient`: acento de alta presencia para llamadas principales puntuales en botones y badges destacados.
+- `default`: el estilo recomendado por defecto de cada componente.
+
+## Estados
+
+Cada componente debería cubrir:
+
+- Default
+- Hover/focus cuando aplique
+- Disabled
+- Error en campos de formulario
+- Loading en acciones
+- Checked/selected en controles interactivos
+
+## Appearance
+
+Todos los componentes compartidos actuales exponen `appearance="default | minimal"`. Usa `minimal` para una presencia visual más baja en UI densa, acciones secundarias o superficies donde el contorno/fondo estándar pese demasiado. `minimal` no debe eliminar foco visible, nombres accesibles ni estados interactivos.
+
+## Storybook Conventions
+
+Los controls de Storybook deben facilitar revisar estados sin editar código:
+
+- `variant` y `appearance` usan control `select`.
+- Las stories mínimas esperadas son `Default`, `Disabled`, `Error`, `Sizes`, `Variants` y los estados especiales relevantes.
+- Los iconos funcionales deben renderizarse con `app-icon`, no con caracteres sueltos.
+- Las stories deben enseñar el componente real, no una landing ni una explicación larga dentro del canvas.
+
+| Grupo | Componentes |
+| --- | --- |
+| Visuales | `Alert`, `Avatar`, `Badge`, `Banner`, `Card`, `Chip`, `EmptyState`, `Icon`, `Progress`, `Skeleton`, `Spinner` |
+| Controles | `Button`, `Checkbox`, `RadioGroup`, `ReorderList`, `SegmentedControl`, `Switch` |
+| Formularios | `Combobox`, `DatePicker`, `FileUpload`, `FormField`, `Input`, `LanguageSelect`, `MultiSelect`, `OtpInput`, `PhoneInput`, `SearchInput`, `Select`, `Slider`, `Textarea`, `TimePicker` |
+| Datos | `Table` |
+| Overlays y navegación | `AppShell`, `Breadcrumb`, `Dialog`, `DropdownMenu`, `Navbar`, `Paginator`, `Popover`, `SideMenu`, `Tabs`, `Toast`, `Tooltip` |
+
+## Segmented Controls
+
+`SegmentedControl` es para alternar vistas o filtros mutuamente exclusivos. Usa `variant="pill"` cuando quieras una selección contenida con indicador móvil y `variant="underline"` cuando forme parte de una cabecera o navegación secundaria.
+
+## Tabs
+
+`Tabs` es para cambiar entre secciones de contenido relacionadas dentro de una misma pantalla. Usa `variant="underline"` en cabeceras y `variant="pill"` cuando las pestañas vivan dentro de una zona compacta. Si la elección representa un valor persistente de formulario, usa `RadioGroup` o `SegmentedControl`.
+
+## Radio Group
+
+`RadioGroup` es para elecciones excluyentes dentro de formularios o ajustes. Usa radios nativos agrupados con `fieldset`, admite opciones con descripción y funciona mejor que `SegmentedControl` cuando la selección representa un valor de formulario persistente.
+
+## Reorder List
+
+`ReorderList` ordena colecciones pequeñas o medianas. Usa drag and drop con Angular CDK cuando `dragEnabled` está activo, pero mantiene botones de subir/bajar como mecanismo accesible y estable para teclado. Usa `readonly` cuando el orden solo deba consultarse.
+
+## Slider
+
+`Slider` es para escalas discretas por posiciones, como `Bajo / Medio / Alto` o `1 / 2 / 3 / 4 / 5`. Cada posición muestra un `label`, pero emite el `value` estable de la opción, que puede ser `string` o `number`. Usa otro control si necesitas rango continuo libre con `min`, `max` y `step`.
+
+## Banner
+
+`Banner` es para anuncios o mensajes de página con CTA. Usa `Alert` para feedback contextual compacto, validaciones o estados de sistema cerca de la acción que los provoca.
+
+## Toast
+
+`Toast` es para feedback global temporal después de una acción, como guardados, errores o sincronizaciones. Usa `Alert` cuando el mensaje deba vivir junto al contenido que lo provoca, y `Banner` cuando sea un mensaje amplio de página con CTA.
+
+## Tooltip
+
+`Tooltip` se usa como directiva descriptiva sobre botones, iconos o controles. Acepta texto simple o `ng-template` para formato no interactivo, usa `auto` como posición recomendada y mantiene `aria-describedby` solo mientras está visible.
+
+## Popover
+
+`Popover` es para contenido flotante interactivo y breve, como filtros rápidos, acciones relacionadas o ayuda con controles. Usa `Tooltip` para texto descriptivo no interactivo y `Dialog` cuando el contenido necesite bloqueo modal, formularios largos o una decisión principal.
+
+## Avatar
+
+`Avatar` representa una persona o entidad con imagen, iniciales o fallback visual. Usa `name` para generar iniciales y `alt` cuando la imagen necesite un texto alternativo diferente del nombre visible.
+
+## Icon
+
+`Icon` usa Material Symbols Rounded como sistema base para iconos pequeños de interfaz. Usa `decorative` para iconos que solo acompañen texto visible, y `decorative="false"` con `ariaLabel` cuando el icono sea el único contenido con significado. Evita caracteres sueltos como flechas, cruces o checks en controles funcionales.
+
+## Empty State
+
+`EmptyState` representa ausencia de datos, búsquedas sin resultados o estados recuperables. El componente no decide mensajes de dominio; recibe título, descripción y acciones opcionales del consumidor.
+
+## Progress
+
+`Progress` muestra progreso lineal determinado o indeterminado. Usa `showValue` cuando el porcentaje ayude a tomar decisiones y `indeterminate` cuando no exista una medida fiable.
+
+## Breadcrumb
+
+`Breadcrumb` muestra jerarquía de navegación con `nav` y `aria-current="page"` en el elemento actual. Los elementos con `href` navegan como enlaces y los elementos sin `href` emiten `itemSelected`.
+
+## Navbar, Side Menu y App Shell
+
+`Navbar` define la barra superior de una aplicación y expone slots para búsqueda, acciones y usuario. `SideMenu` cubre navegación lateral con grupos, iconos, badges y modo colapsado. `AppShell` compone ambas piezas para revisar layouts reales en Storybook sin acoplarse todavía al router.
+
+## Dropdown Menu
+
+`DropdownMenu` concentra acciones secundarias o contextuales. Usa elementos nativos `button`, soporta teclado y cierra con selección, Escape o click exterior. Para acciones destructivas marca el item con `danger`.
+
+## Table
+
+`Table` es un componente controlado para datos tabulares. Recibe columnas y filas, puede emitir sorting con `[(sort)]`, selección con `[(selected)]`, eventos de fila y paginación opcional con `Paginator`. La carga de datos, filtros remotos y mensajes de dominio viven en el padre.
+
+## Search
+
+`SearchInput` es el patrón recomendado para búsquedas en listados: usa `role="search"`, entrada nativa `type="search"`, botón opcional de limpiar y emite `searched` al enviar.
+
+## Input Constraints
+
+`Input` expone restricciones nativas opcionales. Usa `minLength` y `maxLength` para texto, y `min`, `max` y `step` para números. Usa `autocomplete` cuando el campo represente datos que el navegador pueda sugerir, como `email`, `name`, `username` o `current-password`. Puede recibir `id` cuando el consumidor necesite un identificador estable; si no se indica, el componente genera uno para conectar label, hint y error. La validación debe seguir viviendo en el formulario o en la lógica de dominio.
+
+## Form Field
+
+`FormField` centraliza label, requerido, hint y error para componentes nuevos. El control proyectado debe aplicar `aria-describedby` y `aria-invalid`; `FormField` solo renderiza los textos con ids predecibles basados en `controlId`.
+
+## Combobox y Multi Select
+
+`Combobox` es para elegir una opción desde una lista filtrable. `MultiSelect` cubre selección múltiple con chips. Ambos son signal-first con `model()`, usan `[(value)]` para el valor persistente y `[(query)]` para el texto de búsqueda. Usa `Select` cuando una lista simple nativa sea suficiente.
+
+## File Upload
+
+`FileUpload` usa un `input type="file"` nativo conectado al label y una zona visual de selección/drop. `[(files)]` contiene los archivos aceptados; `rejected` comunica rechazos locales por `accept`, `maxFiles` o `maxSize`. Los mensajes visibles de error siguen viniendo del formulario.
+
+## OTP Input
+
+`OtpInput` representa códigos de verificación. Mantiene `[(value)]` como string único, soporta pegar un código completo y emite `completed` cuando alcanza `length`. Usa `autocomplete="one-time-code"` por defecto para favorecer autocompletado móvil.
+
+## Phone Input
+
+`PhoneInput` es el patrón recomendado para teléfonos móviles internacionales. Usa `[(value)]` para guardar el número en formato E.164, `[(country)]` para el país seleccionado y `countries` para limitar la lista visible. El componente es signal-first con `model()`, por lo que puede enlazarse directamente a señales. La validación y el formato se apoyan en `libphonenumber-js`, pero los mensajes de error siguen viniendo del formulario o de la lógica de dominio.
+
+## Loading
+
+Usa `Skeleton` para cargas que puedan tardar lo suficiente como para dejar espacios vacíos o cambios bruscos de layout.
+
+Cuando el skeleton solo represente decoración visual repetida, usa `decorative` para ocultarlo de tecnologías asistivas. Si es el único indicador de carga de una zona, mantén `role="status"` con un `ariaLabel` claro.
+
+Usa `Spinner` para esperas cortas o acciones en curso donde no haya una estructura de contenido que reservar. Puede mostrar texto visible con `text`, colocarlo con `textPosition`, cambiar su patrón visual con `type` y bajar presencia con `appearance="minimal"`. Si el spinner acompaña a otro texto visible fuera del componente, marcarlo como `decorative` evita anuncios duplicados.
+
+## Select Modes
+
+`Select` usa `mode="native"` por defecto. Es la opción recomendada para listas simples porque conserva el comportamiento nativo del navegador.
+
+Usa `mode="dialog"` cuando la lista tenga textos largos, necesite una experiencia más clara en mobile o se beneficie de un título contextual con `dialogTitle`.
+
+## Date Picker
+
+`DatePicker` usa strings ISO `YYYY-MM-DD` como valor público. Usa `mode="single"` para una fecha y `mode="range"` para periodos con inicio y fin.
+
+El texto visible puede ajustarse con `dateFormat`, por ejemplo `dateFormat="dd/MM/yyyy"`. Esto no cambia el valor emitido, que sigue siendo ISO.
+
+El primer día de la semana puede ajustarse con `weekStartsOn`: usa `1` para lunes, el valor por defecto, o `0` para domingo.
+
+El título del mes abre una vista compacta para saltar rápido entre meses y escribir el año directamente sin navegar mes a mes.
+
+En rangos, los extremos se muestran como selección principal y los días intermedios como recorrido suave. La selección usa las variantes compartidas `primary`, `secondary`, `neutral`, `danger` y `violet`.
+
+Toma el idioma activo de la toolbar `Locale` de Storybook para nombres de mes, días y formato visible.
+
+## Time Picker
+
+`TimePicker` usa strings `HH:mm` como valor público. El campo permite escribir una hora directamente y el panel ofrece selección por columnas de hora y minuto. Ajusta `minuteStep` para controlar las opciones rápidas de minutos; el usuario puede escribir cualquier minuto válido. Usa `min` y `max` para limitar el rango horario disponible.
+
+## Paginator
+
+`Paginator` es un componente controlado para listados y tablas. Usa `page`, `totalItems` y `pageSize` para calcular el total de páginas, emite `pageChange` al navegar y puede emitir `pageSizeChange` cuando recibe `pageSizeOptions`. Los puntos suspensivos abren un salto directo a página para listados largos.
+
+## Dialogs
+
+`Dialog` se usa para confirmaciones, edición breve y contenido que necesita atención modal. Debe tener título visible siempre que sea posible y cierre accesible.
+
+Activa `showActions` para usar el footer estándar con `cancel` y `confirm`. El botón principal acepta `confirmVariant` y `confirmFill`; el botón secundario puede ocultarse con `showCancel` o usar `cancelFill="clear"` para una acción discreta.

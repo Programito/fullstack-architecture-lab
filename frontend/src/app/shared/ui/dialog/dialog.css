@@ -1,0 +1,121 @@
+:host {
+  display: contents;
+}
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 0.55);
+  cursor: default;
+}
+
+.dialog__panel {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-height: min(42rem, calc(100vh - 2rem));
+  overflow: auto;
+  gap: 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.28);
+}
+
+.dialog__panel--sm {
+  max-width: 24rem;
+}
+
+.dialog__panel--md {
+  max-width: 32rem;
+}
+
+.dialog__panel--lg {
+  max-width: 42rem;
+}
+
+.dialog__panel--minimal {
+  border-color: color-mix(in srgb, var(--ui-border) 74%, transparent);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.14);
+}
+
+.dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1rem 0;
+}
+
+.dialog__heading {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.dialog__title,
+.dialog__description {
+  margin: 0;
+}
+
+.dialog__title {
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5rem;
+}
+
+.dialog__description {
+  color: var(--ui-muted-fg);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.dialog__close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ui-muted-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.dialog__close:hover {
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.dialog__close:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.dialog__body {
+  padding: 0 1rem 1rem;
+}
+
+.dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}

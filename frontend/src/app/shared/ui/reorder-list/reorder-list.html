@@ -1,0 +1,85 @@
+<div [class]="classes()">
+  @if (label()) {
+    <label class="reorder-list__label" [for]="listId">
+      <span>{{ label() }}</span>
+      @if (required()) {
+        <span class="reorder-list__required" aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  @if (isEmpty()) {
+    <p class="reorder-list__empty" [id]="listId">{{ emptyText() }}</p>
+  } @else {
+    <div
+      class="reorder-list__items"
+      [id]="listId"
+      role="list"
+      cdkDropList
+      cdkDropListOrientation="vertical"
+      [cdkDropListData]="value()"
+      [cdkDropListDisabled]="isDragDisabled()"
+      [attr.aria-describedby]="describedBy()"
+      (cdkDropListDropped)="handleDrop($event)"
+    >
+      @for (item of value(); track item.id; let index = $index) {
+        <div
+          [class]="itemClasses(item)"
+          role="listitem"
+          cdkDrag
+          [cdkDragData]="item"
+          [cdkDragDisabled]="isDragDisabled() || item.disabled"
+          [attr.aria-disabled]="item.disabled || isLocked() ? true : null"
+        >
+          <button
+            class="reorder-list__handle"
+            type="button"
+            cdkDragHandle
+            [disabled]="isDragDisabled() || item.disabled"
+            [attr.aria-label]="'Arrastrar ' + item.label"
+          >
+            <app-icon name="drag_indicator" size="md" />
+          </button>
+
+          @if (item.icon) {
+            <app-icon class="reorder-list__item-icon" [name]="item.icon" size="md" />
+          }
+
+          <span class="reorder-list__content">
+            <span class="reorder-list__item-label">{{ item.label }}</span>
+            @if (item.description) {
+              <span class="reorder-list__item-description">{{ item.description }}</span>
+            }
+          </span>
+
+          @if (showControls()) {
+            <span class="reorder-list__controls">
+              <button
+                class="reorder-list__control"
+                type="button"
+                [disabled]="!canMoveUp(index)"
+                [attr.aria-label]="'Subir ' + item.label"
+                (click)="moveUp(index)"
+              >
+                <app-icon name="keyboard_arrow_up" size="sm" />
+              </button>
+              <button
+                class="reorder-list__control"
+                type="button"
+                [disabled]="!canMoveDown(index)"
+                [attr.aria-label]="'Bajar ' + item.label"
+                (click)="moveDown(index)"
+              >
+                <app-icon name="keyboard_arrow_down" size="sm" />
+              </button>
+            </span>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (hint()) {
+    <p class="reorder-list__hint" [id]="hintId">{{ hint() }}</p>
+  }
+</div>

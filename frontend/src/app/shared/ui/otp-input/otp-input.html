@@ -1,0 +1,32 @@
+<app-form-field
+  [controlId]="inputId + '-0'"
+  [label]="label()"
+  [hint]="hint()"
+  [error]="error()"
+  [required]="required()"
+  [disabled]="disabled()"
+  [size]="size()"
+>
+  <div [class]="classes()" role="group" [attr.aria-label]="label()" [attr.aria-describedby]="describedBy()">
+    @for (index of indexes(); track index) {
+      <input
+        class="otp-input__cell"
+        maxlength="1"
+        [id]="cellId(index)"
+        [type]="inputType()"
+        [inputMode]="inputMode()"
+        [attr.pattern]="pattern()"
+        [attr.autocomplete]="index === 0 ? autocomplete() : null"
+        [value]="charAt(index)"
+        [disabled]="disabled()"
+        [readOnly]="readonly()"
+        [required]="required()"
+        [attr.aria-label]="label() + ' ' + (index + 1)"
+        [attr.aria-invalid]="error() ? true : null"
+        (input)="handleInput($event, index)"
+        (keydown)="handleKeydown($event, index)"
+        (paste)="handlePaste($event, index)"
+      />
+    }
+  </div>
+</app-form-field>

@@ -1,0 +1,33 @@
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --ui-bg: rgb(255 255 255);
+  --ui-fg: rgb(24 24 27);
+  --ui-muted-fg: rgb(82 82 91);
+  --ui-subtle-fg: rgb(113 113 122);
+  --ui-placeholder: rgb(161 161 170);
+  --ui-surface: rgb(244 244 245);
+  --ui-surface-strong: rgb(228 228 231);
+  --ui-border: rgb(212 212 216);
+  --ui-border-strong: rgb(113 113 122);
+  --ui-disabled-bg: rgb(244 244 245);
+  --ui-disabled-fg: rgb(113 113 122);
+  --ui-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --ui-accent-fg: rgb(255 255 255);
+
+  --ui-primary: rgb(8 145 178);
+  --ui-primary-ring: rgb(207 250 254);
+  --ui-secondary: rgb(63 63 70);
+  --ui-secondary-ring: rgb(228 228 231);
+  --ui-neutral: rgb(82 82 91);
+  --ui-neutral-ring: rgb(228 228 231);
+  --ui-danger: rgb(185 28 28);
+  --ui-danger-ring: rgb(254 226 226);
+  --ui-success: rgb(4 120 87);
+  --ui-success-ring: rgb(209 250 229);
+  --ui-warning: rgb(180 83 9);
+  --ui-warning-ring: rgb(254 243 199);
+  --ui-violet: rgb(109 40 217);
+  --ui-violet-ring: rgb(237 233 254);
+}

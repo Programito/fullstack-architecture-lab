@@ -1,0 +1,17 @@
+<section [class]="classes()" [attr.role]="resolvedRole()">
+  <div class="alert__content">
+    @if (title()) {
+      <h3 class="alert__title">{{ title() }}</h3>
+    }
+
+    @if (description()) {
+      <p class="alert__description">{{ description() }}</p>
+    }
+
+    <ng-content></ng-content>
+  </div>
+
+  @if (dismissible()) {
+    <button class="alert__dismiss" type="button" [attr.aria-label]="dismissAriaLabel()" (click)="dismiss()">×</button>
+  }
+</section>

@@ -1,0 +1,294 @@
+.paginator {
+  --paginator-accent: var(--ui-primary);
+  --paginator-ring: var(--ui-primary-ring);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  color: var(--ui-fg);
+}
+
+.paginator__summary {
+  margin: 0;
+  color: var(--ui-muted-fg);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.paginator__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.paginator__pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.paginator__mobile-status {
+  display: none;
+  color: var(--ui-muted-fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.paginator__button {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--paginator-control-size);
+  height: var(--paginator-control-size);
+  padding: 0 0.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.375rem;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  box-shadow: var(--ui-shadow);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--paginator-font-size);
+  font-weight: 600;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.paginator__button:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+}
+
+.paginator__button:focus-visible {
+  outline: 0;
+  border-color: var(--paginator-accent);
+  box-shadow: 0 0 0 2px var(--paginator-ring);
+}
+
+.paginator__button:disabled {
+  border-color: var(--ui-surface-strong);
+  background: var(--ui-disabled-bg);
+  color: var(--ui-disabled-fg);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.paginator__button--active,
+.paginator__button--active:hover,
+.paginator__button--active:focus-visible {
+  border-color: var(--paginator-accent);
+  background: var(--paginator-accent);
+  color: var(--ui-accent-fg);
+}
+
+.paginator__ellipsis-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.paginator__ellipsis {
+  color: var(--ui-muted-fg);
+}
+
+.paginator__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  background: transparent;
+}
+
+.paginator__jump {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 41;
+  display: grid;
+  gap: 0.5rem;
+  width: 12rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.18);
+  transform: translateX(-50%);
+}
+
+.paginator__jump-label {
+  color: var(--ui-muted-fg);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.paginator__jump-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.paginator__jump-input,
+.paginator__page-size select {
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.375rem;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font: inherit;
+}
+
+.paginator__jump-input {
+  height: 2rem;
+  padding: 0 0.5rem;
+}
+
+.paginator__jump-input:focus,
+.paginator__page-size select:focus {
+  outline: 0;
+  border-color: var(--paginator-accent);
+  box-shadow: 0 0 0 2px var(--paginator-ring);
+}
+
+.paginator__jump-input[aria-invalid='true'] {
+  border-color: var(--ui-danger);
+}
+
+.paginator__jump-submit {
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--paginator-accent);
+  border-radius: 0.375rem;
+  background: var(--paginator-accent);
+  color: var(--ui-accent-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.paginator__jump-submit:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px var(--paginator-ring);
+}
+
+.paginator__jump-error {
+  margin: 0;
+  color: var(--ui-danger);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.paginator__page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ui-muted-fg);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.paginator__page-size select {
+  height: var(--paginator-control-size);
+  min-width: 4.5rem;
+  padding: 0 1.75rem 0 0.625rem;
+}
+
+.paginator--sm {
+  --paginator-control-size: 2rem;
+  --paginator-font-size: 0.8125rem;
+}
+
+.paginator--md {
+  --paginator-control-size: 2.5rem;
+  --paginator-font-size: 0.875rem;
+}
+
+.paginator--lg {
+  --paginator-control-size: 3rem;
+  --paginator-font-size: 1rem;
+}
+
+.paginator--secondary {
+  --paginator-accent: var(--ui-secondary);
+  --paginator-ring: var(--ui-secondary-ring);
+}
+
+.paginator--neutral {
+  --paginator-accent: var(--ui-neutral);
+  --paginator-ring: var(--ui-neutral-ring);
+}
+
+.paginator--danger {
+  --paginator-accent: var(--ui-danger);
+  --paginator-ring: var(--ui-danger-ring);
+}
+
+.paginator--violet {
+  --paginator-accent: var(--ui-violet);
+  --paginator-ring: var(--ui-violet-ring);
+}
+
+.paginator--minimal .paginator__button {
+  border-color: color-mix(in srgb, var(--ui-border) 72%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+
+.paginator--minimal .paginator__button:hover {
+  background: color-mix(in srgb, var(--ui-surface) 54%, transparent);
+}
+
+.paginator--minimal .paginator__button--active,
+.paginator--minimal .paginator__button--active:hover,
+.paginator--minimal .paginator__button--active:focus-visible {
+  border-color: color-mix(in srgb, var(--paginator-accent) 42%, var(--ui-border));
+  background: color-mix(in srgb, var(--paginator-accent) 12%, transparent);
+  color: var(--paginator-accent);
+}
+
+.paginator--minimal .paginator__jump {
+  border-color: color-mix(in srgb, var(--ui-border) 74%, transparent);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+}
+
+.paginator--disabled {
+  color: var(--ui-disabled-fg);
+}
+
+@media (max-width: 639px) {
+  .paginator {
+    flex-wrap: wrap;
+  }
+
+  .paginator__summary {
+    order: 2;
+    width: 100%;
+    text-align: center;
+  }
+
+  .paginator__controls {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .paginator__pages,
+  .paginator__edge {
+    display: none;
+  }
+
+  .paginator__mobile-status {
+    display: inline-flex;
+    min-width: 7.5rem;
+    justify-content: center;
+  }
+
+  .paginator__page-size {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}

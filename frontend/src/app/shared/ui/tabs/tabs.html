@@ -1,0 +1,37 @@
+<div class="tabs">
+  <div
+    [class]="tablistClasses()"
+    [style]="indicatorStyle()"
+    role="tablist"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-disabled]="disabled()"
+  >
+    <span class="tabs__indicator" aria-hidden="true"></span>
+
+    @for (option of options(); track option.value) {
+      <button
+        [id]="tabId(option.value)"
+        [class]="tabClasses(option)"
+        type="button"
+        role="tab"
+        [disabled]="disabled() || option.disabled"
+        [attr.aria-selected]="option.value === selectedValue()"
+        [attr.aria-controls]="panelId()"
+        [attr.tabindex]="option.value === selectedValue() ? 0 : -1"
+        (click)="select(option)"
+        (keydown)="handleKeydown($event, option)"
+      >
+        {{ option.label }}
+      </button>
+    }
+  </div>
+
+  <div
+    class="tabs__panel"
+    role="tabpanel"
+    [id]="panelId()"
+    [attr.aria-labelledby]="selectedValue() ? tabId(selectedValue()) : null"
+  >
+    <ng-content />
+  </div>
+</div>

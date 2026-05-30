@@ -1,0 +1,13 @@
+{
+  "app": {
+    "eyebrow": "Frontend Angular",
+    "title": "Proyecto Full Stack",
+    "description": "Base moderna con Angular, Tailwind, Vitest, Testing Library, Playwright y Storybook.",
+    "tools": {
+      "tailwind": "Tailwind CSS",
+      "vitest": "Vitest",
+      "testingLibrary": "Testing Library",
+      "playwright": "Playwright"
+    }
+  }
+}

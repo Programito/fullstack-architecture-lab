@@ -1,0 +1,48 @@
+<fieldset [class]="classes()" [attr.aria-describedby]="describedBy()" [attr.aria-invalid]="error() ? true : null">
+  @if (label()) {
+    <legend class="radio-group__legend">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </legend>
+  }
+
+  <div class="radio-group__options">
+    @for (option of options(); track option.value; let index = $index) {
+      <div [class]="optionClasses(option)">
+        <input
+          class="radio-group__input"
+          type="radio"
+          [id]="optionId(index)"
+          [name]="controlName()"
+          [value]="option.value"
+          [checked]="option.value === value()"
+          [disabled]="disabled() || option.disabled"
+          [required]="required()"
+          [attr.aria-describedby]="optionDescriptionId(option, index)"
+          [attr.aria-invalid]="error() ? true : null"
+          (change)="selectOption(option)"
+        />
+
+        <label class="radio-group__card" [for]="optionId(index)">
+          <span class="radio-group__indicator" aria-hidden="true">
+            <span class="radio-group__dot"></span>
+          </span>
+          <span class="radio-group__content">
+            <span class="radio-group__title">{{ option.label }}</span>
+            @if (option.description) {
+              <span class="radio-group__description" [id]="optionId(index) + '-description'">{{ option.description }}</span>
+            }
+          </span>
+        </label>
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="radio-group__error" [id]="radioGroupId + '-error'">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="radio-group__hint" [id]="radioGroupId + '-hint'">{{ hint() }}</p>
+  }
+</fieldset>

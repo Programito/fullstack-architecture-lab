@@ -1,0 +1,100 @@
+<div [class]="classes()">
+  <div class="table__scroller">
+    <table class="table__element">
+      <thead>
+        <tr>
+          @if (selectable()) {
+            <th class="table__select-cell" scope="col">
+              <input
+                class="table__checkbox"
+                type="checkbox"
+                aria-label="Seleccionar filas visibles"
+                [checked]="allVisibleSelected()"
+                [indeterminate]="someVisibleSelected()"
+                [disabled]="!hasRows() || loading()"
+                (change)="toggleAllVisible()"
+              />
+            </th>
+          }
+
+          @for (column of columns(); track column.key) {
+            <th [class]="headerCellClass(column)" scope="col" [attr.style]="columnStyle(column)" [attr.aria-sort]="ariaSort(column)">
+              @if (column.sortable) {
+                <button
+                  class="table__sort"
+                  type="button"
+                  [attr.aria-label]="sortLabel(column)"
+                  (click)="toggleSort(column)"
+                >
+                  <span>{{ column.header }}</span>
+                  <app-icon [name]="sortIcon(column)" size="sm" />
+                </button>
+              } @else {
+                {{ column.header }}
+              }
+            </th>
+          }
+        </tr>
+      </thead>
+
+      <tbody>
+        @if (loading()) {
+          <tr>
+            <td class="table__state-cell" [attr.colspan]="columnCount()">
+              <span class="table__loading" role="status">Cargando datos...</span>
+            </td>
+          </tr>
+        } @else if (!hasRows()) {
+          <tr>
+            <td class="table__state-cell" [attr.colspan]="columnCount()">
+              <app-empty-state icon="table_rows" [title]="emptyTitle()" [description]="emptyDescription()" appearance="minimal" size="sm" />
+            </td>
+          </tr>
+        } @else {
+          @for (row of rows(); track rowKey(row, $index); let rowIndex = $index) {
+            <tr
+              class="table__row"
+              [class.table__row--selected]="isSelected(row, rowIndex)"
+              tabindex="0"
+              (click)="selectRow(row)"
+              (keydown.enter)="selectRow(row)"
+            >
+              @if (selectable()) {
+                <td class="table__select-cell">
+                  <input
+                    class="table__checkbox"
+                    type="checkbox"
+                    [attr.aria-label]="'Seleccionar fila ' + (rowIndex + 1)"
+                    [checked]="isSelected(row, rowIndex)"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleRow(row, rowIndex, $event)"
+                  />
+                </td>
+              }
+
+              @for (column of columns(); track column.key) {
+                <td [class]="bodyCellClass(column)">
+                  {{ cellValue(row, column) }}
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (showPaginator()) {
+    <app-paginator
+      [page]="page()"
+      [totalItems]="totalItems()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [size]="size()"
+      [variant]="variant()"
+      [appearance]="appearance()"
+      (pageChange)="handlePageChange($event)"
+      (pageSizeChange)="handlePageSizeChange($event)"
+    />
+  }
+</div>

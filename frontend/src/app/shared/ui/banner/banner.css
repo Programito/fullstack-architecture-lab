@@ -1,0 +1,291 @@
+:host {
+  display: block;
+}
+
+.banner {
+  --banner-accent: var(--ui-primary);
+  --banner-ring: var(--ui-primary-ring);
+  --banner-bg: color-mix(in srgb, var(--banner-accent) 12%, var(--ui-bg));
+  --banner-border: color-mix(in srgb, var(--banner-accent) 34%, var(--ui-border));
+  --banner-fg: var(--ui-fg);
+  --banner-muted: var(--ui-muted-fg);
+  --banner-button-bg: var(--banner-accent);
+  --banner-button-fg: var(--ui-accent-fg);
+  --banner-secondary-bg: transparent;
+  --banner-secondary-fg: var(--banner-accent);
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  border: 1px solid var(--banner-border);
+  border-radius: 0.75rem;
+  background: var(--banner-bg);
+  color: var(--banner-fg);
+  box-shadow: var(--ui-shadow);
+}
+
+.banner__body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.banner__content {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.banner__eyebrow,
+.banner__title,
+.banner__description,
+.banner__content p {
+  margin: 0;
+}
+
+.banner__eyebrow {
+  color: var(--banner-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+.banner__title {
+  color: var(--banner-fg);
+  font-weight: 700;
+}
+
+.banner__description,
+.banner__content {
+  color: var(--banner-muted);
+}
+
+.banner__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner__button,
+.banner__dismiss {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.banner__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: max-content;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  font-weight: 700;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.banner__button--primary {
+  border-color: var(--banner-button-bg);
+  background: var(--banner-button-bg);
+  color: var(--banner-button-fg);
+}
+
+.banner__button--primary:hover {
+  opacity: 0.88;
+}
+
+.banner__button--secondary {
+  border-color: color-mix(in srgb, var(--banner-secondary-fg) 42%, transparent);
+  background: var(--banner-secondary-bg);
+  color: var(--banner-secondary-fg);
+}
+
+.banner__button--secondary:hover {
+  background: color-mix(in srgb, var(--banner-secondary-fg) 10%, transparent);
+}
+
+.banner__button:focus-visible,
+.banner__dismiss:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px var(--banner-ring);
+}
+
+.banner__dismiss {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 999px;
+  background: transparent;
+  color: currentColor;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.banner__dismiss:hover {
+  background: rgb(0 0 0 / 0.08);
+}
+
+.banner--md {
+  padding: 1rem;
+}
+
+.banner--md .banner__title {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.banner--md .banner__description,
+.banner--md .banner__content {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.banner--md .banner__button {
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  font-size: 0.875rem;
+}
+
+.banner--lg {
+  padding: 1.25rem;
+}
+
+.banner--lg .banner__title {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.banner--lg .banner__description,
+.banner--lg .banner__content {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.banner--lg .banner__button {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+}
+
+.banner--primary {
+  --banner-accent: var(--ui-primary);
+  --banner-ring: var(--ui-primary-ring);
+}
+
+.banner--neutral {
+  --banner-accent: var(--ui-neutral);
+  --banner-ring: var(--ui-neutral-ring);
+}
+
+.banner--success {
+  --banner-accent: var(--ui-success);
+  --banner-ring: var(--ui-success-ring);
+}
+
+.banner--warning {
+  --banner-accent: var(--ui-warning);
+  --banner-ring: var(--ui-warning-ring);
+}
+
+.banner--danger {
+  --banner-accent: var(--ui-danger);
+  --banner-ring: var(--ui-danger-ring);
+}
+
+.banner--violet {
+  --banner-accent: var(--ui-violet);
+  --banner-ring: var(--ui-violet-ring);
+}
+
+.banner--outline {
+  --banner-bg: var(--ui-bg);
+  --banner-border: var(--banner-accent);
+}
+
+.banner--solid {
+  --banner-bg: var(--banner-accent);
+  --banner-border: var(--banner-accent);
+  --banner-fg: var(--ui-accent-fg);
+  --banner-muted: var(--ui-accent-fg);
+  --banner-button-bg: var(--ui-bg);
+  --banner-button-fg: var(--ui-fg);
+  --banner-secondary-fg: var(--ui-accent-fg);
+}
+
+.banner--solid .banner__eyebrow {
+  color: var(--ui-accent-fg);
+}
+
+.banner--gradient {
+  --banner-bg: linear-gradient(135deg, rgb(8 145 178), rgb(79 70 229) 52%, rgb(124 58 237));
+  --banner-border: transparent;
+  --banner-fg: white;
+  --banner-muted: rgb(255 255 255 / 0.86);
+  --banner-button-bg: white;
+  --banner-button-fg: rgb(67 56 202);
+  --banner-secondary-fg: white;
+  --banner-ring: color-mix(in srgb, var(--ui-violet) 65%, var(--ui-bg));
+  box-shadow: 0 18px 44px rgb(79 70 229 / 0.24);
+}
+
+.banner--gradient .banner__eyebrow {
+  color: rgb(255 255 255 / 0.82);
+}
+
+.banner--minimal {
+  --banner-bg: transparent;
+  --banner-border: color-mix(in srgb, var(--banner-accent) 24%, transparent);
+  --banner-muted: var(--ui-muted-fg);
+  --banner-secondary-fg: color-mix(in srgb, var(--banner-accent) 78%, var(--ui-muted-fg));
+  box-shadow: none;
+}
+
+.banner--minimal .banner__button--primary {
+  background: color-mix(in srgb, var(--banner-accent) 10%, transparent);
+  color: var(--banner-accent);
+}
+
+@media (max-width: 639px) {
+  .banner,
+  .banner__body,
+  .banner__actions {
+    align-items: stretch;
+  }
+
+  .banner__body,
+  .banner__actions {
+    flex-direction: column;
+  }
+
+  .banner__actions {
+    width: 100%;
+  }
+
+  .banner__button {
+    width: 100%;
+  }
+
+  .banner__dismiss {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .banner:has(.banner__dismiss) .banner__content {
+    padding-right: 2.25rem;
+  }
+}

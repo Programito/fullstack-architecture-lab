@@ -1,0 +1,142 @@
+:host {
+  display: block;
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 1px solid var(--alert-border);
+  border-radius: 0.5rem;
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+}
+
+.alert__content {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.alert__title,
+.alert__description {
+  margin: 0;
+}
+
+.alert__title {
+  color: var(--alert-title);
+  font-weight: 600;
+}
+
+.alert__description {
+  color: var(--alert-description);
+}
+
+.alert__dismiss {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.alert__dismiss:hover {
+  background: rgb(0 0 0 / 0.08);
+}
+
+.alert__dismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.alert--sm {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.alert--md {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.alert--lg {
+  padding: 1rem 1.125rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.alert--primary {
+  --alert-accent: var(--ui-primary);
+  --alert-ring: var(--ui-primary-ring);
+}
+
+.alert--neutral {
+  --alert-accent: var(--ui-neutral);
+  --alert-ring: var(--ui-neutral-ring);
+}
+
+.alert--success {
+  --alert-accent: var(--ui-success);
+  --alert-soft-bg: color-mix(in srgb, var(--ui-success) 12%, var(--ui-bg));
+  --alert-soft-border: color-mix(in srgb, var(--ui-success) 38%, var(--ui-border));
+}
+
+.alert--warning {
+  --alert-accent: var(--ui-warning);
+  --alert-soft-bg: color-mix(in srgb, var(--ui-warning) 14%, var(--ui-bg));
+  --alert-soft-border: color-mix(in srgb, var(--ui-warning) 42%, var(--ui-border));
+}
+
+.alert--danger {
+  --alert-accent: var(--ui-danger);
+  --alert-ring: var(--ui-danger-ring);
+}
+
+.alert--violet {
+  --alert-accent: var(--ui-violet);
+  --alert-ring: var(--ui-violet-ring);
+}
+
+.alert--soft {
+  --alert-bg: var(--alert-soft-bg, color-mix(in srgb, var(--alert-accent) 12%, var(--ui-bg)));
+  --alert-border: var(--alert-soft-border, color-mix(in srgb, var(--alert-accent) 35%, var(--ui-border)));
+  --alert-fg: var(--alert-accent);
+  --alert-title: var(--alert-accent);
+  --alert-description: var(--ui-fg);
+}
+
+.alert--outline {
+  --alert-bg: var(--ui-bg);
+  --alert-border: var(--alert-accent);
+  --alert-fg: var(--alert-accent);
+  --alert-title: var(--alert-accent);
+  --alert-description: var(--ui-muted-fg);
+}
+
+.alert--solid {
+  --alert-bg: var(--alert-accent);
+  --alert-border: var(--alert-accent);
+  --alert-fg: var(--ui-accent-fg);
+  --alert-title: var(--ui-accent-fg);
+  --alert-description: var(--ui-accent-fg);
+}
+
+.alert--minimal {
+  --alert-bg: transparent;
+  --alert-border: color-mix(in srgb, var(--alert-accent) 24%, transparent);
+  --alert-fg: color-mix(in srgb, var(--alert-accent) 84%, var(--ui-muted-fg));
+  --alert-title: color-mix(in srgb, var(--alert-accent) 84%, var(--ui-fg));
+  --alert-description: var(--ui-muted-fg);
+}

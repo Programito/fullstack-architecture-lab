@@ -1,0 +1,122 @@
+<nav [class]="classes()" [attr.aria-label]="ariaLabel()">
+  <p class="paginator__summary">{{ summary() }}</p>
+
+  <div class="paginator__controls">
+    @if (showEdges()) {
+      <button
+        class="paginator__button paginator__edge"
+        type="button"
+        [disabled]="isDisabled() || isFirstPage()"
+        aria-label="Primera pagina"
+        (click)="goToPage(1)"
+      >
+        <span aria-hidden="true">&laquo;</span>
+      </button>
+    }
+
+    <button
+      class="paginator__button"
+      type="button"
+      [disabled]="isDisabled() || isFirstPage()"
+      aria-label="Pagina anterior"
+      (click)="previousPage()"
+    >
+      <span aria-hidden="true">&lsaquo;</span>
+    </button>
+
+    <span class="paginator__mobile-status">{{ mobileStatus() }}</span>
+
+    <div class="paginator__pages">
+      @for (item of pageItems(); track item.key) {
+        @if (item.type === 'page') {
+          <button
+            [class]="item.page === currentPage() ? 'paginator__button paginator__button--active' : 'paginator__button'"
+            type="button"
+            [disabled]="isDisabled()"
+            [attr.aria-label]="'Ir a pagina ' + item.page"
+            [attr.aria-current]="item.page === currentPage() ? 'page' : null"
+            (click)="goToPage(item.page)"
+          >
+            {{ item.label }}
+          </button>
+        } @else {
+          <span class="paginator__ellipsis-wrap">
+            <button
+              class="paginator__button paginator__ellipsis"
+              type="button"
+              [disabled]="isDisabled()"
+              [attr.aria-label]="item.label"
+              [attr.aria-expanded]="jumpTarget() === item.key"
+              aria-haspopup="dialog"
+              (click)="openJump(item.key)"
+            >
+              &hellip;
+            </button>
+
+            @if (jumpTarget() === item.key) {
+              <button class="paginator__backdrop" type="button" tabindex="-1" aria-label="Cerrar salto de pagina" (click)="closeJump()"></button>
+
+              <section class="paginator__jump" role="dialog" aria-label="Ir a pagina">
+                <label class="paginator__jump-label" [for]="item.key + '-input'">Pagina</label>
+                <div class="paginator__jump-row">
+                  <input
+                    class="paginator__jump-input"
+                    [id]="item.key + '-input'"
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    [max]="totalPages()"
+                    [value]="jumpValue()"
+                    [attr.aria-invalid]="isJumpInvalid() ? true : null"
+                    (input)="updateJumpValue($event)"
+                    (keydown.enter)="submitJump()"
+                    (keydown.escape)="closeJump()"
+                  />
+                  <button class="paginator__jump-submit" type="button" aria-label="Confirmar pagina" (click)="submitJump()">
+                    Ir
+                  </button>
+                </div>
+                @if (isJumpInvalid()) {
+                  <p class="paginator__jump-error">Introduce una pagina entre 1 y {{ totalPages() }}.</p>
+                }
+              </section>
+            }
+          </span>
+        }
+      }
+    </div>
+
+    <button
+      class="paginator__button"
+      type="button"
+      [disabled]="isDisabled() || isLastPage()"
+      aria-label="Pagina siguiente"
+      (click)="nextPage()"
+    >
+      <span aria-hidden="true">&rsaquo;</span>
+    </button>
+
+    @if (showEdges()) {
+      <button
+        class="paginator__button paginator__edge"
+        type="button"
+        [disabled]="isDisabled() || isLastPage()"
+        aria-label="Ultima pagina"
+        (click)="goToPage(totalPages())"
+      >
+        <span aria-hidden="true">&raquo;</span>
+      </button>
+    }
+  </div>
+
+  @if (hasPageSizeOptions()) {
+    <label class="paginator__page-size">
+      <span>Por pagina</span>
+      <select [value]="pageSize()" [disabled]="disabled()" (change)="handlePageSizeChange($event)">
+        @for (option of normalizedPageSizeOptions(); track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+    </label>
+  }
+</nav>

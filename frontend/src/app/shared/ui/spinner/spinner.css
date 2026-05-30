@@ -1,0 +1,246 @@
+:host {
+  display: inline-flex;
+}
+
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  --spinner-visible-accent: var(--spinner-accent);
+  color: var(--spinner-accent);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.spinner--minimal {
+  --spinner-visible-accent: color-mix(in srgb, var(--spinner-accent) 62%, var(--ui-muted-fg));
+  color: var(--spinner-visible-accent);
+  font-weight: 500;
+}
+
+.spinner--sm {
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.spinner--md {
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.spinner--lg {
+  gap: 0.625rem;
+  font-size: 1rem;
+}
+
+.spinner--text-left {
+  flex-direction: row;
+}
+
+.spinner--text-right {
+  flex-direction: row;
+}
+
+.spinner__indicator,
+.spinner__pulse {
+  display: inline-block;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.spinner__indicator {
+  border: 2px solid color-mix(in srgb, var(--spinner-visible-accent) 24%, transparent);
+  border-right-color: var(--spinner-visible-accent);
+  animation: spinner-spin 720ms linear infinite;
+}
+
+.spinner--dual-ring .spinner__indicator {
+  position: relative;
+  border-color: var(--spinner-visible-accent);
+  border-left-color: transparent;
+}
+
+.spinner--dual-ring .spinner__indicator::after {
+  position: absolute;
+  inset: 0.1875rem;
+  border: 2px solid color-mix(in srgb, var(--spinner-visible-accent) 34%, transparent);
+  border-right-color: var(--spinner-visible-accent);
+  border-radius: inherit;
+  content: '';
+  animation: spinner-spin 520ms linear infinite reverse;
+}
+
+.spinner--ring .spinner__indicator,
+.spinner--dual-ring .spinner__indicator,
+.spinner--pulse .spinner__pulse,
+.spinner--sm .spinner__dots,
+.spinner--sm .spinner__bars {
+  width: 1rem;
+  height: 1rem;
+}
+
+.spinner--ring.spinner--md .spinner__indicator,
+.spinner--dual-ring.spinner--md .spinner__indicator,
+.spinner--pulse.spinner--md .spinner__pulse,
+.spinner--md .spinner__dots,
+.spinner--md .spinner__bars {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.spinner--ring.spinner--lg .spinner__indicator,
+.spinner--dual-ring.spinner--lg .spinner__indicator,
+.spinner--pulse.spinner--lg .spinner__pulse,
+.spinner--lg .spinner__dots,
+.spinner--lg .spinner__bars {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.spinner--ring.spinner--lg .spinner__indicator,
+.spinner--dual-ring.spinner--lg .spinner__indicator {
+  border-width: 3px;
+}
+
+.spinner__pulse {
+  background: var(--spinner-visible-accent);
+  animation: spinner-pulse 1s ease-in-out infinite;
+}
+
+.spinner__dots,
+.spinner__bars {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner__dots {
+  gap: 0.1875rem;
+}
+
+.spinner__dots span {
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: currentColor;
+  animation: spinner-bounce 720ms ease-in-out infinite;
+}
+
+.spinner--lg .spinner__dots span {
+  width: 0.4375rem;
+  height: 0.4375rem;
+}
+
+.spinner__dots span:nth-child(2),
+.spinner__bars span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.spinner__dots span:nth-child(3),
+.spinner__bars span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.spinner__bars {
+  gap: 0.15625rem;
+}
+
+.spinner__bars span {
+  width: 0.1875rem;
+  height: 70%;
+  border-radius: 999px;
+  background: currentColor;
+  animation: spinner-bar 780ms ease-in-out infinite;
+}
+
+.spinner--lg .spinner__bars span {
+  width: 0.25rem;
+}
+
+.spinner__text {
+  min-width: 0;
+  color: var(--ui-fg);
+  line-height: 1.25;
+}
+
+.spinner--minimal .spinner__text {
+  color: var(--ui-muted-fg);
+  font-weight: 500;
+}
+
+.spinner--primary {
+  --spinner-accent: var(--ui-primary);
+}
+
+.spinner--secondary {
+  --spinner-accent: var(--ui-secondary);
+}
+
+.spinner--neutral {
+  --spinner-accent: var(--ui-neutral);
+}
+
+.spinner--danger {
+  --spinner-accent: var(--ui-danger);
+}
+
+.spinner--violet {
+  --spinner-accent: var(--ui-violet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner__indicator,
+  .spinner--dual-ring .spinner__indicator::after,
+  .spinner__pulse,
+  .spinner__dots span,
+  .spinner__bars span {
+    animation-duration: 1.6s;
+  }
+}
+
+@keyframes spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinner-pulse {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: scale(0.72);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spinner-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.42;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-0.25rem);
+  }
+}
+
+@keyframes spinner-bar {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: scaleY(0.45);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}

@@ -1,0 +1,56 @@
+<div [class]="classes()">
+  <button
+    class="dropdown-menu__trigger"
+    type="button"
+    [disabled]="disabled()"
+    [attr.aria-label]="triggerLabel()"
+    [attr.aria-haspopup]="'menu'"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="open() ? menuId : null"
+    (click)="toggle()"
+    (keydown)="handleTriggerKeydown($event)"
+  >
+    <span>{{ label() }}</span>
+    <app-icon name="expand_more" size="sm" />
+  </button>
+
+  @if (open()) {
+    <div
+      class="dropdown-menu__panel"
+      [id]="menuId"
+      role="menu"
+      tabindex="-1"
+      [attr.aria-label]="triggerLabel()"
+      [attr.aria-activedescendant]="activeDescendant()"
+      (keydown)="handleMenuKeydown($event)"
+    >
+      @if (hasItems()) {
+        @for (item of items(); track item.value; let index = $index) {
+          <button
+            [id]="itemId(index)"
+            [class]="itemClasses(item)"
+            type="button"
+            role="menuitem"
+            [disabled]="item.disabled"
+            [attr.aria-disabled]="item.disabled ? true : null"
+            (click)="selectItem(item)"
+            (mouseenter)="setActive(index)"
+            (focus)="setActive(index)"
+          >
+            @if (item.icon) {
+              <app-icon [name]="item.icon" size="sm" />
+            }
+            <span class="dropdown-menu__item-body">
+              <span class="dropdown-menu__item-label">{{ item.label }}</span>
+              @if (item.description) {
+                <span class="dropdown-menu__item-description">{{ item.description }}</span>
+              }
+            </span>
+          </button>
+        }
+      } @else {
+        <p class="dropdown-menu__empty">Sin opciones</p>
+      }
+    </div>
+  }
+</div>

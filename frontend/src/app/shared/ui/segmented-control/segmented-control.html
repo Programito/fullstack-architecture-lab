@@ -1,0 +1,22 @@
+<div
+  [class]="classes()"
+  [style]="indicatorStyle()"
+  role="radiogroup"
+  [attr.aria-label]="ariaLabel()"
+  [attr.aria-disabled]="disabled()"
+>
+  <span class="segmented-control__indicator" aria-hidden="true"></span>
+
+  @for (option of options(); track option.value) {
+    <button
+      [class]="optionClasses(option)"
+      type="button"
+      role="radio"
+      [attr.aria-checked]="option.value === selectedValue()"
+      [disabled]="disabled() || option.disabled"
+      (click)="select(option)"
+    >
+      {{ option.label }}
+    </button>
+  }
+</div>

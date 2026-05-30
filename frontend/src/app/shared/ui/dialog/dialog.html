@@ -1,0 +1,57 @@
+@if (open()) {
+  <div class="dialog">
+    <button
+      class="dialog__backdrop"
+      type="button"
+      aria-hidden="true"
+      tabindex="-1"
+      (click)="handleBackdropClick()"
+    ></button>
+
+    <section
+      [class]="classes()"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="labelledBy()"
+      [attr.aria-describedby]="describedBy()"
+    >
+      <header class="dialog__header">
+        <div class="dialog__heading">
+          @if (title()) {
+            <h2 class="dialog__title" [id]="titleId">{{ title() }}</h2>
+          }
+
+          @if (description()) {
+            <p class="dialog__description" [id]="descriptionId">{{ description() }}</p>
+          }
+        </div>
+
+        <button class="dialog__close" type="button" [attr.aria-label]="closeAriaLabel()" (click)="close()">&times;</button>
+      </header>
+
+      <div class="dialog__body">
+        <ng-content />
+      </div>
+
+      @if (showActions()) {
+        <footer class="dialog__footer">
+          @if (showCancel()) {
+            <app-button [variant]="cancelVariant()" [fill]="cancelFill()" (pressed)="cancel()">
+              {{ cancelLabel() }}
+            </app-button>
+          }
+
+          <app-button
+            [variant]="confirmVariant()"
+            [fill]="confirmFill()"
+            [disabled]="confirmDisabled()"
+            [loading]="confirmLoading()"
+            (pressed)="confirm()"
+          >
+            {{ confirmLabel() }}
+          </app-button>
+        </footer>
+      }
+    </section>
+  </div>
+}

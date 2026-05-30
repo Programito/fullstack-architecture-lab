@@ -1,0 +1,141 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Shared UI/Docs/Accessibility" />
+
+# Accessibility
+
+La UI debe ser usable con teclado, lector de pantalla y estados visuales claros.
+
+## Labels
+
+Los campos de formulario deben usar labels reales conectados con `for` e `id`.
+
+```html
+<label for="email">Email</label>
+<input id="email" />
+```
+
+## Ayuda y error
+
+Los textos de ayuda y error deben conectarse al control con `aria-describedby`.
+
+Los errores deben marcar el campo con `aria-invalid="true"`.
+
+## Controles nativos
+
+Siempre que sea posible usamos elementos nativos:
+
+- `button` para acciones.
+- `input` para campos.
+- `select` para listas simples.
+- `input type="checkbox"` para checkbox.
+- `input type="radio"` agrupados con `fieldset` y `legend` para elecciones excluyentes en formularios.
+- `input type="checkbox" role="switch"` para switch.
+
+Para selectores con `mode="dialog"`, el trigger debe declarar `aria-haspopup="dialog"` y el panel debe usar `role="dialog"` con `aria-modal="true"` y un título conectado con `aria-labelledby`.
+
+## Foco visible
+
+Todo control interactivo debe tener foco visible. El foco puede ser un ring, outline o sombra, pero debe verse claramente sin depender solo del color de texto.
+
+Las opciones visuales minimalistas no deben eliminar el foco visible, el nombre accesible ni los estados deshabilitados o seleccionados.
+
+## Combobox y listbox
+
+Los combobox deben exponer `role="combobox"`, `aria-expanded`, `aria-controls` y `aria-activedescendant` cuando haya una opción activa. El panel debe usar `role="listbox"` y las opciones `role="option"`.
+
+La navegación mínima esperada es abrir con foco o teclado, moverse con flechas, seleccionar con `Enter` y cerrar con `Escape`.
+
+## Multi Select
+
+`MultiSelect` combina entrada de búsqueda, listbox y chips removibles. Cada chip removible debe usar un `button` con nombre accesible claro, por ejemplo `Quitar Angular`.
+
+Las opciones seleccionadas deben exponerse con `aria-selected="true"` y las opciones bloqueadas con `disabled` o `aria-disabled`, según el elemento usado.
+
+## Reorder List
+
+Las listas reordenables no deben depender solo de drag and drop. Deben ofrecer botones de subir y bajar con nombres accesibles como `Subir Métricas` y `Bajar Métricas`.
+
+Si se usa Angular CDK para arrastrar, el handle debe ser reconocible visualmente y tener foco visible. Los elementos deshabilitados no deben poder arrastrarse ni moverse con controles.
+
+## Dropdown Menu
+
+Los menús de acciones deben usar un trigger `button` con `aria-haspopup="menu"`, `aria-expanded` y `aria-controls` cuando el panel esté abierto.
+
+El panel debe usar `role="menu"` y cada acción `role="menuitem"`. Debe cerrar con `Escape`, click exterior y después de seleccionar una acción.
+
+## Breadcrumb
+
+`Breadcrumb` debe renderizarse dentro de un `nav` con nombre accesible. El elemento actual debe declarar `aria-current="page"`.
+
+Si un elemento navega, usa enlace real. Si solo comunica una selección interna, usa botón y emite un evento.
+
+## Navbar, Side Menu y App Shell
+
+`Navbar` debe usar `header` y un `nav` con nombre accesible. La marca puede ser enlace real si navega o botón si solo emite una acción.
+
+`SideMenu` debe usar `nav`, listas semánticas y `aria-current="page"` en el item activo. En modo colapsado, los items con solo icono deben conservar nombre accesible con `aria-label`.
+
+`AppShell` no debe hacer del menú lateral el único mecanismo de navegación en mobile: el botón de apertura debe exponer `aria-expanded` y el overlay debe poder cerrarse con un control accesible.
+
+## Table
+
+Las tablas deben usar estructura nativa `table`, `thead`, `tbody`, `th` y `td`. Las columnas ordenables deben indicar el estado con `aria-sort` en el encabezado correspondiente.
+
+La selección de filas debe exponer checkboxes con nombres accesibles y no debe depender únicamente del color de fondo.
+
+## File Upload
+
+La subida de archivos debe conservar un `input type="file"` nativo conectado al label. La zona visual puede mejorar la interacción, pero no debe sustituir al input accesible.
+
+Los rechazos locales pueden emitirse al padre; los mensajes visibles de error deben seguir conectados con `aria-describedby` y `aria-invalid`.
+
+## OTP Input
+
+`OtpInput` debe mantener cada celda como un input nativo y permitir navegación con teclado. Debe soportar pegar un código completo sin romper el orden de lectura.
+
+Usa `autocomplete="one-time-code"` por defecto para favorecer autocompletado móvil.
+
+## Phone Input
+
+`PhoneInput` debe usar `type="tel"` y `autocomplete="tel"`. El selector de país debe tener nombre accesible y la bandera debe ser decorativa si el ISO o prefijo ya aportan la información.
+
+El valor persistente debería ser estable para formularios, por ejemplo E.164 cuando el número sea parseable.
+
+## Tooltips
+
+Los tooltips deben describir el control que los activa y conectarse con `aria-describedby` mientras están visibles. El contenido debe ser no interactivo; si necesitas botones o enlaces dentro, usa un patrón tipo popover o dialog.
+
+## Tabs
+
+Las pestañas usan `role="tablist"`, botones con `role="tab"` y un panel conectado con `aria-controls`/`aria-labelledby`. Deben permitir navegación con flechas izquierda/derecha, `Home` y `End`, saltando opciones deshabilitadas.
+
+## Sliders
+
+Los sliders discretos usan `input type="range"` para conservar teclado nativo. Cuando las posiciones tienen texto, el control debe exponer `aria-valuetext` con el label visible seleccionado, por ejemplo `Bajo`, `Medio` o `Alto`.
+
+## Popovers
+
+Los popovers pueden contener controles interactivos. El trigger debe declarar `aria-haspopup="dialog"` y `aria-expanded`; el panel usa `role="dialog"` con nombre accesible. Deben cerrar con `Escape` y, salvo casos concretos, con click fuera.
+
+## Toasts
+
+Los toasts usan regiones vivas para anunciar feedback global temporal. Los mensajes normales usan `role="status"` con `aria-live="polite"`; los errores destructivos usan `role="alert"` con `aria-live="assertive"`. Mantén cierre manual cuando el mensaje pueda desaparecer automáticamente.
+
+## Loading
+
+Los skeletons decorativos deben usar `aria-hidden="true"`. Si un skeleton comunica una espera real, debe exponer un `role="status"` y un nombre accesible como `Cargando contenido`.
+
+Los spinners independientes deben usar `role="status"` con un `aria-label` claro. Si aparecen junto a texto visible que ya comunica la carga, deben ser decorativos con `aria-hidden="true"`.
+
+## Evitar controles anidados
+
+No se deben poner botones dentro de botones ni controles interactivos dentro de otros controles interactivos.
+
+```html
+<!-- Evitar -->
+<button>
+  Guardar
+  <button>Eliminar</button>
+</button>
+```

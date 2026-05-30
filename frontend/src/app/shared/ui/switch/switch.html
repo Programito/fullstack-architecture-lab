@@ -1,0 +1,33 @@
+<div class="switch-field">
+  <input
+    class="switch-field__input"
+    type="checkbox"
+    role="switch"
+    [id]="switchId"
+    [name]="name()"
+    [value]="value()"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    [required]="required()"
+    [attr.aria-describedby]="describedBy()"
+    (change)="handleChange($event)"
+  />
+
+  <label class="switch-field__label" [for]="switchId">
+    @if (label()) {
+      <span class="switch-field__title">
+        {{ label() }}
+        @if (required()) {
+          <span aria-hidden="true">*</span>
+        }
+      </span>
+    }
+    <span [class]="trackClasses()" aria-hidden="true">
+      <span class="switch-field__thumb"></span>
+    </span>
+  </label>
+
+  @if (description()) {
+    <p class="switch-field__description" [id]="switchId + '-description'">{{ description() }}</p>
+  }
+</div>

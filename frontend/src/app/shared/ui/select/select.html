@@ -1,0 +1,95 @@
+<div [class]="fieldClasses()">
+  @if (label()) {
+    <label class="select-field__label" [for]="selectId">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  @if (mode() === 'dialog') {
+    <button
+      [id]="selectId"
+      type="button"
+      [class]="classes() + ' select-field__dialog-trigger'"
+      [disabled]="disabled()"
+      [attr.aria-haspopup]="'dialog'"
+      [attr.aria-expanded]="isDialogOpen()"
+      [attr.aria-invalid]="error() ? true : null"
+      [attr.aria-describedby]="describedBy()"
+      (click)="openDialog()"
+    >
+      <span [class]="hasSelection() ? 'select-field__value' : 'select-field__placeholder'">{{ displayValue() }}</span>
+      <span class="select-field__chevron" aria-hidden="true"></span>
+    </button>
+
+    @if (isDialogOpen()) {
+      <div class="select-field__backdrop" (click)="closeDialog()">
+        <section
+          class="select-field__dialog"
+          role="dialog"
+          aria-modal="true"
+          [attr.aria-labelledby]="dialogTitleId"
+          tabindex="-1"
+          (click)="$event.stopPropagation()"
+          (keydown.escape)="closeDialog()"
+        >
+          <div class="select-field__dialog-header">
+            <h2 class="select-field__dialog-title" [id]="dialogTitleId">{{ dialogTitle() || label() || 'Selecciona una opcion' }}</h2>
+            <button class="select-field__dialog-close" type="button" aria-label="Cerrar" (click)="closeDialog()">×</button>
+          </div>
+
+          <div class="select-field__dialog-options" role="listbox" [attr.aria-labelledby]="dialogTitleId">
+            @for (option of options(); track option.value) {
+              <button
+                class="select-field__dialog-option"
+                type="button"
+                role="option"
+                [disabled]="option.disabled"
+                [attr.aria-selected]="option.value === selectedValue()"
+                (click)="selectOption(option)"
+              >
+                <span>{{ option.label }}</span>
+                @if (option.value === selectedValue()) {
+                  <span class="select-field__dialog-check" aria-hidden="true"></span>
+                }
+              </button>
+            }
+          </div>
+        </section>
+      </div>
+    }
+  } @else {
+    <div class="select-field__control">
+      <select
+        [id]="selectId"
+        [class]="classes()"
+        [name]="name()"
+        [value]="selectedValue()"
+        [disabled]="disabled()"
+        [required]="required()"
+        [attr.aria-invalid]="error() ? true : null"
+        [attr.aria-describedby]="describedBy()"
+        (change)="handleChange($event)"
+      >
+        @if (placeholder()) {
+          <option value="" disabled [selected]="!selectedValue()">{{ placeholder() }}</option>
+        }
+
+        @for (option of options(); track option.value) {
+          <option [value]="option.value" [disabled]="option.disabled" [selected]="option.value === selectedValue()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+      <span class="select-field__chevron" aria-hidden="true"></span>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="select-field__error" [id]="selectId + '-error'">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="select-field__hint" [id]="selectId + '-hint'">{{ hint() }}</p>
+  }
+</div>

@@ -1,0 +1,35 @@
+<span [class]="classes()" [attr.role]="role()" [attr.aria-label]="ariaLabel()" [attr.aria-hidden]="ariaHidden()">
+  @if (text() && textPosition() === 'left') {
+    <span class="spinner__text">{{ text() }}</span>
+  }
+
+  @switch (type()) {
+    @case ('dots') {
+      <span class="spinner__dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
+    }
+
+    @case ('bars') {
+      <span class="spinner__bars" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
+    }
+
+    @case ('pulse') {
+      <span class="spinner__pulse" aria-hidden="true"></span>
+    }
+
+    @default {
+      <span class="spinner__indicator" aria-hidden="true"></span>
+    }
+  }
+
+  @if (text() && textPosition() === 'right') {
+    <span class="spinner__text">{{ text() }}</span>
+  }
+</span>

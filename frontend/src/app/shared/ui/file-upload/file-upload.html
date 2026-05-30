@@ -1,0 +1,50 @@
+<app-form-field
+  [controlId]="inputId"
+  [label]="label()"
+  [hint]="hint()"
+  [error]="error()"
+  [required]="required()"
+  [disabled]="disabled()"
+  [size]="size()"
+>
+  <div [class]="classes()">
+    <input
+      [id]="inputId"
+      class="file-upload__input"
+      type="file"
+      [attr.accept]="accept()"
+      [multiple]="multiple()"
+      [disabled]="disabled()"
+      [required]="required()"
+      [attr.aria-describedby]="describedBy()"
+      [attr.aria-invalid]="error() ? true : null"
+      (change)="handleChange($event)"
+    />
+
+    <label class="file-upload__dropzone" [for]="inputId" (dragover)="$event.preventDefault()" (drop)="handleDrop($event)">
+      <span class="file-upload__icon" aria-hidden="true">
+        <app-icon name="upload_file" />
+      </span>
+      <span class="file-upload__title">Seleccionar archivos</span>
+      <span class="file-upload__meta">Arrastra aqui o abre el selector</span>
+    </label>
+
+    @if (files().length) {
+      <div class="file-upload__list" role="list">
+        @for (file of files(); track file.name + file.size + file.lastModified) {
+          <div class="file-upload__file" role="listitem">
+            <span class="file-upload__file-name">{{ file.name }}</span>
+            <span class="file-upload__file-size">{{ formatSize(file) }}</span>
+            <button type="button" [attr.aria-label]="'Eliminar ' + file.name" [disabled]="disabled()" (click)="removeFile(file)">
+              <app-icon name="close" size="sm" />
+            </button>
+          </div>
+        }
+
+        @if (files().length > 1) {
+          <button class="file-upload__clear" type="button" [disabled]="disabled()" (click)="clearFiles()">Limpiar todo</button>
+        }
+      </div>
+    }
+  </div>
+</app-form-field>

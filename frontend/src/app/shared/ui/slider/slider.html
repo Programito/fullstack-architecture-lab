@@ -1,0 +1,57 @@
+<div [class]="fieldClasses()">
+  @if (label() || showValue()) {
+    <div class="slider-field__header">
+      @if (label()) {
+        <label class="slider-field__label" [for]="sliderId()">
+          {{ label() }}
+          @if (required()) {
+            <span aria-hidden="true">*</span>
+          }
+        </label>
+      }
+
+      @if (showValue() && selectedLabel()) {
+        <span class="slider-field__value">{{ selectedLabel() }}</span>
+      }
+    </div>
+  }
+
+  <input
+    class="slider-field__control"
+    type="range"
+    [id]="sliderId()"
+    min="0"
+    [max]="maxIndex()"
+    step="1"
+    [value]="selectedIndex()"
+    [disabled]="disabled() || !hasOptions()"
+    [required]="required()"
+    [attr.aria-label]="label() ? null : selectedLabel() || 'Slider'"
+    [attr.aria-valuetext]="selectedLabel()"
+    [attr.aria-invalid]="error() ? true : null"
+    [attr.aria-describedby]="describedBy()"
+    [style]="sliderStyle()"
+    (input)="handleInput($event)"
+  />
+
+  @if (name()) {
+    <input type="hidden" [name]="name()" [value]="selectedValue()" />
+  }
+
+  @if (showMarks() && options().length > 0) {
+    <div class="slider-field__marks" [style]="sliderStyle()" aria-hidden="true">
+      @for (option of options(); track option.value; let index = $index) {
+        <span [class]="markClasses(index)" [style]="markStyle(index)">
+          <span class="slider-field__tick"></span>
+          <span class="slider-field__mark-label">{{ option.label }}</span>
+        </span>
+      }
+    </div>
+  }
+
+  @if (error()) {
+    <p class="slider-field__error" [id]="errorId()">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="slider-field__hint" [id]="hintId()">{{ hint() }}</p>
+  }
+</div>

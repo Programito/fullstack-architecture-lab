@@ -1,0 +1,100 @@
+.app-shell {
+  --app-shell-bg: var(--ui-surface);
+  min-height: 100vh;
+  background: var(--app-shell-bg);
+  color: var(--ui-fg);
+}
+
+.app-shell__navbar {
+  display: block;
+}
+
+.app-shell__body {
+  display: flex;
+  align-items: stretch;
+  min-height: calc(100vh - 4rem);
+}
+
+.app-shell--sm .app-shell__body {
+  min-height: calc(100vh - 3.25rem);
+}
+
+.app-shell--lg .app-shell__body {
+  min-height: calc(100vh - 4.75rem);
+}
+
+.app-shell__sidebar {
+  flex: 0 0 auto;
+}
+
+.app-shell__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 1.25rem;
+}
+
+.app-shell--sm .app-shell__main {
+  padding: 1rem;
+}
+
+.app-shell--lg .app-shell__main {
+  padding: 1.5rem;
+}
+
+.app-shell__menu-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  cursor: pointer;
+}
+
+.app-shell__menu-button:focus-visible {
+  outline: 2px solid var(--ui-primary-ring);
+  outline-offset: 2px;
+}
+
+.app-shell__scrim {
+  display: none;
+}
+
+@media (max-width: 840px) {
+  .app-shell__body {
+    display: block;
+  }
+
+  .app-shell__menu-button {
+    display: inline-flex;
+  }
+
+  .app-shell__sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+
+  .app-shell--menu-open .app-shell__sidebar {
+    transform: translateX(0);
+  }
+
+  .app-shell__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: block;
+    border: 0;
+    background: rgb(15 23 42 / 0.42);
+    cursor: pointer;
+  }
+
+  .app-shell__main {
+    padding: 1rem;
+  }
+}

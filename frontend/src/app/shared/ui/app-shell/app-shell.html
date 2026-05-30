@@ -1,0 +1,56 @@
+<div [class]="classes()">
+  <app-navbar
+    class="app-shell__navbar"
+    [brand]="brand()"
+    [brandHref]="brandHref()"
+    [size]="size()"
+    [variant]="variant()"
+    [appearance]="appearance()"
+    sticky
+    (brandSelected)="handleBrandSelected()"
+  >
+    <button
+      navbar-start
+      class="app-shell__menu-button"
+      type="button"
+      aria-label="Abrir menu"
+      [attr.aria-expanded]="mobileMenuOpen()"
+      (click)="openMobileMenu()"
+    >
+      <app-icon name="menu" />
+    </button>
+
+    <div navbar-center class="app-shell__navbar-slot">
+      <ng-content select="[app-shell-navbar-center]" />
+    </div>
+    <div navbar-actions class="app-shell__navbar-slot">
+      <ng-content select="[app-shell-navbar-actions]" />
+    </div>
+    <div navbar-user class="app-shell__navbar-slot">
+      <ng-content select="[app-shell-navbar-user]" />
+    </div>
+  </app-navbar>
+
+  @if (mobileMenuOpen()) {
+    <button class="app-shell__scrim" type="button" aria-label="Cerrar menu" (click)="closeMobileMenu()"></button>
+  }
+
+  <div class="app-shell__body">
+    <aside class="app-shell__sidebar">
+      <app-side-menu
+        [groups]="menuGroups()"
+        [sticky]="menuSticky()"
+        [size]="size()"
+        [variant]="variant()"
+        [appearance]="appearance()"
+        [(collapsed)]="menuCollapsed"
+        [activeId]="activeId()"
+        (itemSelected)="handleMenuItemSelected($event)"
+      />
+    </aside>
+
+    <main class="app-shell__main">
+      <ng-content />
+    </main>
+  </div>
+</div>

@@ -1,0 +1,67 @@
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ui-bg: rgb(9 9 11);
+  --ui-fg: rgb(244 244 245);
+  --ui-muted-fg: rgb(161 161 170);
+  --ui-subtle-fg: rgb(113 113 122);
+  --ui-placeholder: rgb(113 113 122);
+  --ui-surface: rgb(39 39 42);
+  --ui-surface-strong: rgb(63 63 70);
+  --ui-border: rgb(82 82 91);
+  --ui-border-strong: rgb(161 161 170);
+  --ui-disabled-bg: rgb(39 39 42);
+  --ui-disabled-fg: rgb(113 113 122);
+  --ui-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --ui-accent-fg: rgb(9 9 11);
+
+  --ui-primary: rgb(34 211 238);
+  --ui-primary-ring: rgb(22 78 99);
+  --ui-secondary: rgb(212 212 216);
+  --ui-secondary-ring: rgb(63 63 70);
+  --ui-neutral: rgb(161 161 170);
+  --ui-neutral-ring: rgb(63 63 70);
+  --ui-danger: rgb(252 165 165);
+  --ui-danger-ring: rgb(127 29 29);
+  --ui-success: rgb(110 231 183);
+  --ui-success-ring: rgb(6 78 59);
+  --ui-warning: rgb(252 211 77);
+  --ui-warning-ring: rgb(120 53 15);
+  --ui-violet: rgb(167 139 250);
+  --ui-violet-ring: rgb(76 29 149);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --ui-bg: rgb(9 9 11);
+    --ui-fg: rgb(244 244 245);
+    --ui-muted-fg: rgb(161 161 170);
+    --ui-subtle-fg: rgb(113 113 122);
+    --ui-placeholder: rgb(113 113 122);
+    --ui-surface: rgb(39 39 42);
+    --ui-surface-strong: rgb(63 63 70);
+    --ui-border: rgb(82 82 91);
+    --ui-border-strong: rgb(161 161 170);
+    --ui-disabled-bg: rgb(39 39 42);
+    --ui-disabled-fg: rgb(113 113 122);
+    --ui-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --ui-accent-fg: rgb(9 9 11);
+
+    --ui-primary: rgb(34 211 238);
+    --ui-primary-ring: rgb(22 78 99);
+    --ui-secondary: rgb(212 212 216);
+    --ui-secondary-ring: rgb(63 63 70);
+    --ui-neutral: rgb(161 161 170);
+    --ui-neutral-ring: rgb(63 63 70);
+    --ui-danger: rgb(252 165 165);
+    --ui-danger-ring: rgb(127 29 29);
+    --ui-success: rgb(110 231 183);
+    --ui-success-ring: rgb(6 78 59);
+    --ui-warning: rgb(252 211 77);
+    --ui-warning-ring: rgb(120 53 15);
+    --ui-violet: rgb(167 139 250);
+    --ui-violet-ring: rgb(76 29 149);
+  }
+}

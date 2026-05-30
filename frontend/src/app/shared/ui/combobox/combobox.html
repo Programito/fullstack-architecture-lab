@@ -1,0 +1,65 @@
+<app-form-field
+  [controlId]="inputId"
+  [label]="label()"
+  [hint]="hint()"
+  [error]="error()"
+  [required]="required()"
+  [disabled]="disabled()"
+  [size]="size()"
+>
+  <div [class]="classes()">
+    <input
+      [id]="inputId"
+      class="combobox__input"
+      role="combobox"
+      type="text"
+      autocomplete="off"
+      [value]="query()"
+      [placeholder]="placeholder()"
+      [disabled]="disabled()"
+      [required]="required()"
+      [attr.aria-expanded]="isOpen()"
+      [attr.aria-controls]="listboxId"
+      [attr.aria-activedescendant]="activeDescendant()"
+      [attr.aria-describedby]="describedBy()"
+      [attr.aria-invalid]="error() ? true : null"
+      (focus)="open()"
+      (input)="handleInput($event)"
+      (keydown)="handleKeydown($event)"
+    />
+
+    @if (canClear()) {
+      <button class="combobox__clear" type="button" aria-label="Limpiar seleccion" (click)="clear($event)">
+        <app-icon name="close" size="sm" />
+      </button>
+    }
+
+    <app-icon class="combobox__chevron" name="expand_more" size="sm" />
+
+    @if (isOpen()) {
+      <button class="combobox__backdrop" type="button" tabindex="-1" aria-label="Cerrar opciones" (click)="close()"></button>
+
+      <div class="combobox__menu" role="listbox" [id]="listboxId">
+        @for (option of filteredOptions(); track option.value; let index = $index) {
+          <button
+            class="combobox__option"
+            type="button"
+            role="option"
+            [id]="inputId + '-option-' + index"
+            [disabled]="option.disabled"
+            [attr.aria-selected]="option.value === value()"
+            [class.combobox__option--active]="index === activeIndex()"
+            (click)="selectOption(option)"
+          >
+            <span class="combobox__option-label">{{ option.label }}</span>
+            @if (option.description) {
+              <span class="combobox__option-description">{{ option.description }}</span>
+            }
+          </button>
+        } @empty {
+          <p class="combobox__empty">{{ emptyText() }}</p>
+        }
+      </div>
+    }
+  </div>
+</app-form-field>

@@ -1,0 +1,187 @@
+.reorder-list {
+  --reorder-accent: var(--ui-primary);
+  --reorder-ring: var(--ui-primary-ring);
+  --reorder-item-min-height: 3rem;
+  display: grid;
+  gap: 0.375rem;
+  width: 100%;
+}
+
+.reorder-list--sm { --reorder-item-min-height: 2.5rem; }
+.reorder-list--lg { --reorder-item-min-height: 3.5rem; }
+.reorder-list--primary { --reorder-accent: var(--ui-primary); --reorder-ring: var(--ui-primary-ring); }
+.reorder-list--secondary { --reorder-accent: var(--ui-secondary); --reorder-ring: var(--ui-secondary-ring); }
+.reorder-list--neutral { --reorder-accent: var(--ui-neutral); --reorder-ring: var(--ui-neutral-ring); }
+.reorder-list--danger { --reorder-accent: var(--ui-danger); --reorder-ring: var(--ui-danger-ring); }
+.reorder-list--violet { --reorder-accent: var(--ui-violet); --reorder-ring: var(--ui-violet-ring); }
+
+.reorder-list__label {
+  display: inline-flex;
+  gap: 0.25rem;
+  color: var(--ui-fg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.reorder-list__required {
+  color: var(--ui-danger);
+}
+
+.reorder-list__items,
+.reorder-list__empty {
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  box-shadow: var(--ui-shadow);
+}
+
+.reorder-list--minimal .reorder-list__items,
+.reorder-list--minimal .reorder-list__empty {
+  background: transparent;
+  box-shadow: none;
+}
+
+.reorder-list__items {
+  display: grid;
+  overflow: hidden;
+}
+
+.reorder-list__item {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: var(--reorder-item-min-height);
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.reorder-list__item:last-child {
+  border-bottom: 0;
+}
+
+.reorder-list--minimal .reorder-list__item {
+  background: transparent;
+}
+
+.reorder-list__item--disabled,
+.reorder-list--disabled .reorder-list__item,
+.reorder-list--readonly .reorder-list__item {
+  color: var(--ui-disabled-fg);
+}
+
+.reorder-list__handle,
+.reorder-list__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--ui-muted-fg);
+  cursor: pointer;
+}
+
+.reorder-list__handle {
+  width: 2rem;
+  height: 2rem;
+  cursor: grab;
+}
+
+.reorder-list__handle:active {
+  cursor: grabbing;
+}
+
+.reorder-list__control {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.reorder-list__handle:hover:not(:disabled),
+.reorder-list__control:hover:not(:disabled) {
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.reorder-list__handle:focus-visible,
+.reorder-list__control:focus-visible {
+  outline: 2px solid var(--reorder-ring);
+  outline-offset: 2px;
+}
+
+.reorder-list__handle:disabled,
+.reorder-list__control:disabled {
+  color: var(--ui-disabled-fg);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.reorder-list__item-icon {
+  color: var(--reorder-accent);
+}
+
+.reorder-list__content {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.reorder-list__item-label,
+.reorder-list__item-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reorder-list__item-label {
+  font-size: 0.875rem;
+  font-weight: 550;
+  line-height: 1.25rem;
+}
+
+.reorder-list--lg .reorder-list__item-label {
+  font-size: 1rem;
+}
+
+.reorder-list__item-description,
+.reorder-list__hint,
+.reorder-list__empty {
+  color: var(--ui-muted-fg);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.reorder-list__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.reorder-list__empty {
+  margin: 0;
+  padding: 0.875rem;
+}
+
+.reorder-list__hint {
+  margin: 0;
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.18);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+.cdk-drag-animating,
+.reorder-list__items.cdk-drop-list-dragging .reorder-list__item:not(.cdk-drag-placeholder) {
+  transition: transform 160ms ease;
+}

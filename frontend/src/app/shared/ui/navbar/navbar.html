@@ -1,0 +1,28 @@
+<header [class]="classes()">
+  <nav class="navbar__inner" [attr.aria-label]="ariaLabel()">
+    <div class="navbar__start">
+      <ng-content select="[navbar-start]" />
+
+      @if (brand()) {
+        @if (brandHref()) {
+          <a class="navbar__brand" [href]="brandHref()" (click)="selectBrand()">
+            {{ brand() }}
+          </a>
+        } @else {
+          <button class="navbar__brand navbar__brand-button" type="button" (click)="selectBrand()">
+            {{ brand() }}
+          </button>
+        }
+      }
+    </div>
+
+    <div class="navbar__center">
+      <ng-content select="[navbar-center]" />
+    </div>
+
+    <div class="navbar__end">
+      <ng-content select="[navbar-actions]" />
+      <ng-content select="[navbar-user]" />
+    </div>
+  </nav>
+</header>

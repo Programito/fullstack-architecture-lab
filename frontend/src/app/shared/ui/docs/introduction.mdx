@@ -1,0 +1,36 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Shared UI/Docs/Introduction" />
+
+# Shared UI
+
+Esta carpeta contiene la base de componentes reutilizables del frontend.
+
+La idea es que cada componente viva cerca de todo lo que necesita:
+
+```txt
+src/app/shared/ui/button/
+  button.ts
+  button.html
+  button.css
+  button.stories.ts
+  button.spec.ts
+```
+
+## Componentes actuales
+
+| Grupo | Componentes |
+| --- | --- |
+| Visuales | `Alert`, `Avatar`, `Badge`, `Banner`, `Card`, `Chip`, `EmptyState`, `Icon`, `Progress`, `Skeleton`, `Spinner` |
+| Controles | `Button`, `Checkbox`, `RadioGroup`, `ReorderList`, `SegmentedControl`, `Switch` |
+| Formularios | `Combobox`, `DatePicker`, `FileUpload`, `FormField`, `Input`, `LanguageSelect`, `MultiSelect`, `OtpInput`, `PhoneInput`, `SearchInput`, `Select`, `Slider`, `Textarea`, `TimePicker` |
+| Datos | `Table` |
+| Overlays y navegación | `AppShell`, `Breadcrumb`, `Dialog`, `DropdownMenu`, `Navbar`, `Paginator`, `Popover`, `SideMenu`, `Tabs`, `Toast`, `Tooltip` |
+
+## Criterio
+
+Los componentes deben ser pequeños, accesibles, testeables y fáciles de revisar en Storybook. Cada componente nuevo debería incluir stories, pruebas básicas y estados comunes como disabled, error, size y variantes cuando aplique.
+
+## Señales
+
+Los componentes nuevos con valor editable deberían preferir `model()` para integrarse bien con señales Angular y soportar patrones como `[(value)]`, `[(selected)]`, `[(query)]` o equivalentes controlados.

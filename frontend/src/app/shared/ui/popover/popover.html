@@ -1,0 +1,26 @@
+<button
+  #trigger
+  [class]="triggerClasses()"
+  type="button"
+  [disabled]="disabled()"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="isOpen()"
+  [attr.aria-controls]="isOpen() ? panelId : null"
+  (click)="toggle()"
+>
+  <ng-content select="[popoverTrigger]" />
+</button>
+
+@if (isOpen()) {
+  <section
+    #panel
+    [id]="panelId"
+    [class]="panelClasses()"
+    role="dialog"
+    [attr.aria-label]="ariaLabel()"
+    [style.left.px]="panelLeft()"
+    [style.top.px]="panelTop()"
+  >
+    <ng-content select="[popoverPanel]" />
+  </section>
+}

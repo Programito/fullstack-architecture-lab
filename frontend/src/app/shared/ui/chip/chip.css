@@ -1,0 +1,23 @@
+:host {
+  display: inline-flex;
+}
+
+.chip__action {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0;
+}
+
+.chip__content {
+  min-width: 0;
+}
+
+.chip__remove {
+  line-height: 1;
+}
+
+.chip--minimal:not([aria-pressed='true']) {
+  border-color: color-mix(in srgb, currentColor 20%, transparent);
+  background: transparent;
+}

@@ -1,0 +1,31 @@
+<form class="search-input" role="search" (submit)="handleSearch($event)">
+  @if (label()) {
+    <label class="search-input__label" [for]="inputId">{{ label() }}</label>
+  }
+
+  <div class="search-input__field">
+    <span class="search-input__icon" aria-hidden="true"></span>
+
+    <input
+      [id]="inputId"
+      [class]="classes()"
+      type="search"
+      [name]="name()"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      [disabled]="disabled()"
+      [attr.aria-describedby]="describedBy()"
+      (input)="handleInput($event)"
+    />
+
+    @if (showClear()) {
+      <button class="search-input__clear" type="button" [attr.aria-label]="clearAriaLabel()" (click)="clear()">
+        &times;
+      </button>
+    }
+  </div>
+
+  @if (hint()) {
+    <p class="search-input__hint" [id]="hintId">{{ hint() }}</p>
+  }
+</form>

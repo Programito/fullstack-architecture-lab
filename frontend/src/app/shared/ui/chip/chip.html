@@ -1,0 +1,25 @@
+<span [class]="classes()">
+  <button
+    type="button"
+    [class]="actionClasses()"
+    [disabled]="disabled()"
+    [attr.aria-pressed]="selected()"
+    (click)="handlePress()"
+  >
+    <span class="chip__content">
+      <ng-content />
+    </span>
+  </button>
+
+  @if (removable()) {
+    <button
+      type="button"
+      aria-label="Quitar"
+      [class]="removeClasses()"
+      [disabled]="disabled()"
+      (click)="handleRemove($event)"
+    >
+      x
+    </button>
+  }
+</span>

@@ -1,0 +1,121 @@
+.navbar {
+  --navbar-accent: var(--ui-primary);
+  --navbar-ring: var(--ui-primary-ring);
+  width: 100%;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-bg) 94%, transparent);
+  color: var(--ui-fg);
+  backdrop-filter: blur(12px);
+}
+
+.navbar--primary { --navbar-accent: var(--ui-primary); --navbar-ring: var(--ui-primary-ring); }
+.navbar--secondary { --navbar-accent: var(--ui-secondary); --navbar-ring: var(--ui-secondary-ring); }
+.navbar--neutral { --navbar-accent: var(--ui-neutral); --navbar-ring: var(--ui-neutral-ring); }
+.navbar--danger { --navbar-accent: var(--ui-danger); --navbar-ring: var(--ui-danger-ring); }
+.navbar--violet { --navbar-accent: var(--ui-violet); --navbar-ring: var(--ui-violet-ring); }
+
+.navbar--minimal {
+  border-bottom-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.navbar--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.navbar__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 4rem;
+  padding: 0 1rem;
+}
+
+.navbar--sm .navbar__inner {
+  min-height: 3.25rem;
+  gap: 0.75rem;
+}
+
+.navbar--lg .navbar__inner {
+  min-height: 4.75rem;
+  gap: 1.25rem;
+  padding-inline: 1.25rem;
+}
+
+.navbar__start,
+.navbar__center,
+.navbar__end {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.navbar__start {
+  justify-content: flex-start;
+  gap: 0.625rem;
+}
+
+.navbar__center {
+  justify-content: center;
+}
+
+.navbar__end {
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.navbar__brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--ui-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 0 0.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar--sm .navbar__brand {
+  min-height: 2rem;
+  font-size: 0.9375rem;
+}
+
+.navbar--lg .navbar__brand {
+  min-height: 2.5rem;
+  font-size: 1.125rem;
+}
+
+.navbar__brand:hover {
+  background: color-mix(in srgb, var(--navbar-accent) 9%, transparent);
+}
+
+.navbar__brand:focus-visible {
+  outline: 2px solid var(--navbar-ring);
+  outline-offset: 2px;
+}
+
+.navbar__brand-button {
+  appearance: none;
+}
+
+@media (max-width: 720px) {
+  .navbar__inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .navbar__center {
+    display: none;
+  }
+}

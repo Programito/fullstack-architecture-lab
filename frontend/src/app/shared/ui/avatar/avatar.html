@@ -1,0 +1,9 @@
+<span [class]="classes()" [attr.role]="hasImage() ? null : 'img'" [attr.aria-label]="hasImage() ? null : accessibleLabel()">
+  @if (hasImage()) {
+    <img class="avatar__image" [src]="src()" [alt]="alt() || name()" (error)="handleImageError()" />
+  } @else if (displayInitials()) {
+    <span class="avatar__initials" aria-hidden="true">{{ displayInitials() }}</span>
+  } @else {
+    <span class="avatar__fallback" aria-hidden="true"></span>
+  }
+</span>

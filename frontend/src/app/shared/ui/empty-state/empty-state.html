@@ -1,0 +1,29 @@
+<section [class]="classes()" aria-live="polite">
+  @if (icon()) {
+    <span class="empty-state__icon" aria-hidden="true">
+      <app-icon [name]="icon()" size="lg" />
+    </span>
+  }
+
+  <div class="empty-state__body">
+    <h3 class="empty-state__title">{{ title() }}</h3>
+    @if (description()) {
+      <p class="empty-state__description">{{ description() }}</p>
+    }
+  </div>
+
+  @if (actionLabel() || secondaryActionLabel()) {
+    <div class="empty-state__actions">
+      @if (secondaryActionLabel()) {
+        <button class="empty-state__button empty-state__button--secondary" type="button" (click)="emitSecondaryAction()">
+          {{ secondaryActionLabel() }}
+        </button>
+      }
+      @if (actionLabel()) {
+        <button class="empty-state__button empty-state__button--primary" type="button" (click)="emitAction()">
+          {{ actionLabel() }}
+        </button>
+      }
+    </div>
+  }
+</section>

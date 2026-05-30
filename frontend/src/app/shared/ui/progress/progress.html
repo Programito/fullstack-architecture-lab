@@ -1,0 +1,24 @@
+<div [class]="classes()">
+  @if (label() || showValue()) {
+    <div class="progress__header">
+      @if (label()) {
+        <span class="progress__label">{{ label() }}</span>
+      }
+      @if (showValue() && !indeterminate()) {
+        <span class="progress__value">{{ valueText() }}</span>
+      }
+    </div>
+  }
+
+  <div
+    class="progress__track"
+    role="progressbar"
+    [attr.aria-label]="label() || 'Progreso'"
+    [attr.aria-valuemin]="indeterminate() ? null : 0"
+    [attr.aria-valuemax]="indeterminate() ? null : max()"
+    [attr.aria-valuenow]="indeterminate() ? null : normalizedValue()"
+    [attr.aria-valuetext]="indeterminate() ? 'En progreso' : valueText()"
+  >
+    <span class="progress__bar" [attr.style]="barStyle()"></span>
+  </div>
+</div>

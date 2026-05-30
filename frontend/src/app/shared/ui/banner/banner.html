@@ -1,0 +1,39 @@
+<section [class]="classes()">
+  <div class="banner__body">
+    <div class="banner__content">
+      @if (eyebrow()) {
+        <p class="banner__eyebrow">{{ eyebrow() }}</p>
+      }
+
+      @if (title()) {
+        <h3 class="banner__title">{{ title() }}</h3>
+      }
+
+      @if (description()) {
+        <p class="banner__description">{{ description() }}</p>
+      }
+
+      <ng-content></ng-content>
+    </div>
+
+    @if (hasActions()) {
+      <div class="banner__actions">
+        @if (secondaryActionLabel()) {
+          <button class="banner__button banner__button--secondary" type="button" (click)="emitSecondaryAction()">
+            {{ secondaryActionLabel() }}
+          </button>
+        }
+
+        @if (actionLabel()) {
+          <button class="banner__button banner__button--primary" type="button" (click)="emitAction()">
+            {{ actionLabel() }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (dismissible()) {
+    <button class="banner__dismiss" type="button" [attr.aria-label]="dismissAriaLabel()" (click)="dismiss()">&times;</button>
+  }
+</section>

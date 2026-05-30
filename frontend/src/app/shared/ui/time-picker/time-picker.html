@@ -1,0 +1,98 @@
+<div [class]="fieldClasses()">
+  @if (label()) {
+    <label class="time-picker__label" [for]="pickerId()">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="time-picker__anchor">
+    <div class="time-picker__control">
+      <span class="time-picker__clock-icon" aria-hidden="true"></span>
+      <input
+        [id]="pickerId()"
+        class="time-picker__input"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        [name]="name()"
+        [value]="inputValue()"
+        [placeholder]="effectivePlaceholder()"
+        [disabled]="disabled()"
+        [required]="required()"
+        [attr.aria-haspopup]="'dialog'"
+        [attr.aria-expanded]="isOpen()"
+        [attr.aria-invalid]="error() ? true : null"
+        [attr.aria-describedby]="describedBy()"
+        (focus)="open()"
+        (click)="open()"
+        (input)="handleInput($event)"
+        (blur)="handleBlur()"
+        (keydown.enter)="handleEnter()"
+      />
+      <button
+        class="time-picker__toggle"
+        type="button"
+        [disabled]="disabled()"
+        [attr.aria-label]="isOpen() ? 'Cerrar selector de hora' : 'Abrir selector de hora'"
+        [attr.aria-controls]="isOpen() ? pickerId() + '-popover' : null"
+        (mousedown)="$event.preventDefault()"
+        (click)="toggle()"
+      >
+        <span class="time-picker__chevron" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    @if (isOpen()) {
+      <button class="time-picker__backdrop" type="button" tabindex="-1" aria-label="Cerrar selector de hora" (click)="close()"></button>
+
+      <section class="time-picker__popover" role="dialog" [id]="pickerId() + '-popover'" [attr.aria-label]="label() || effectivePlaceholder()">
+        <div class="time-picker__columns">
+          <div class="time-picker__column">
+            <span class="time-picker__column-label">Hora</span>
+            <div class="time-picker__options" role="group" aria-label="Horas disponibles">
+              @for (option of hourOptions(); track option.value) {
+                <button
+                  [class]="option.classes"
+                  type="button"
+                  [disabled]="option.disabled"
+                  [attr.aria-pressed]="draftHour() === option.value"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="selectHour(option)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="time-picker__column">
+            <span class="time-picker__column-label">Minuto</span>
+            <div class="time-picker__options" role="group" aria-label="Minutos disponibles">
+              @for (option of minuteOptions(); track option.value) {
+                <button
+                  [class]="option.classes"
+                  type="button"
+                  [disabled]="option.disabled"
+                  [attr.aria-pressed]="draftMinute() === option.value"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="selectMinute(option)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="time-picker__error" [id]="errorId()">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="time-picker__hint" [id]="hintId()">{{ hint() }}</p>
+  }
+</div>

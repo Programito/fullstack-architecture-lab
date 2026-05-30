@@ -1,0 +1,82 @@
+<div [class]="fieldClasses()">
+  @if (label()) {
+    <label class="phone-input__label" [for]="inputId()">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="phone-input__control">
+    <button
+      class="phone-input__country-trigger"
+      type="button"
+      [disabled]="disabled() || readonly()"
+      aria-haspopup="listbox"
+      [attr.aria-expanded]="isCountryMenuOpen()"
+      [attr.aria-controls]="isCountryMenuOpen() ? listboxId() : null"
+      [attr.aria-label]="'Pais del telefono: ' + selectedCountry().ariaLabel"
+      (click)="toggleCountryMenu()"
+    >
+      <span class="phone-input__flag" aria-hidden="true">{{ selectedCountry().flag }}</span>
+      <span class="phone-input__country-code">{{ selectedCountry().code }}</span>
+      <span class="phone-input__calling-code">+{{ selectedCountry().callingCode }}</span>
+      <app-icon class="phone-input__chevron" name="expand_more" size="sm" />
+    </button>
+
+    <input
+      [id]="inputId()"
+      class="phone-input__native"
+      type="tel"
+      autocomplete="tel"
+      inputmode="tel"
+      [value]="inputValue()"
+      [placeholder]="effectivePlaceholder()"
+      [disabled]="disabled()"
+      [readOnly]="readonly()"
+      [required]="required()"
+      [attr.aria-invalid]="error() ? true : null"
+      [attr.aria-describedby]="describedBy()"
+      (input)="handleInput($event)"
+      (blur)="handleBlur()"
+    />
+
+    @if (name()) {
+      <input type="hidden" [name]="name()" [value]="value()" />
+    }
+
+    @if (isCountryMenuOpen()) {
+      <button
+        class="phone-input__backdrop"
+        type="button"
+        tabindex="-1"
+        aria-label="Cerrar selector de pais"
+        (click)="closeCountryMenu()"
+      ></button>
+
+      <div class="phone-input__menu" role="listbox" [id]="listboxId()" [attr.aria-label]="'Seleccionar pais del telefono'">
+        @for (option of countryOptions(); track option.code) {
+          <button
+            class="phone-input__option"
+            type="button"
+            role="option"
+            [attr.aria-selected]="option.code === selectedCountry().code"
+            [attr.aria-label]="option.ariaLabel"
+            (click)="selectCountry(option)"
+          >
+            <span class="phone-input__option-flag" aria-hidden="true">{{ option.flag }}</span>
+            <span class="phone-input__option-label">{{ option.label }}</span>
+            <span class="phone-input__option-code">+{{ option.callingCode }}</span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="phone-input__error" [id]="errorId()">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="phone-input__hint" [id]="hintId()">{{ hint() }}</p>
+  }
+</div>

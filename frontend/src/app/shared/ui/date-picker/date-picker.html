@@ -1,0 +1,125 @@
+<div [class]="fieldClasses()" (mouseleave)="clearHover()">
+  @if (label()) {
+    <label class="date-picker__label" [id]="labelId" [for]="pickerId">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="date-picker__anchor">
+    <button
+      [id]="pickerId"
+      class="date-picker__trigger"
+      type="button"
+      [disabled]="disabled()"
+      [attr.aria-haspopup]="'dialog'"
+      [attr.aria-expanded]="isOpen()"
+      [attr.aria-labelledby]="label() ? labelId : null"
+      [attr.aria-label]="label() ? null : effectivePlaceholder()"
+      [attr.aria-invalid]="error() ? true : null"
+      [attr.aria-describedby]="describedBy()"
+      (click)="toggle()"
+    >
+      <span class="date-picker__calendar-icon" aria-hidden="true"></span>
+      <span [class]="displayValue() ? 'date-picker__value' : 'date-picker__placeholder'">
+        {{ displayValue() || effectivePlaceholder() }}
+      </span>
+      <span class="date-picker__chevron" aria-hidden="true"></span>
+    </button>
+
+    @if (name() && mode() === 'single') {
+      <input type="hidden" [name]="name()" [value]="selectedValue()" />
+    }
+
+    @if (name() && mode() === 'range') {
+      <input type="hidden" [name]="startName()" [value]="selectedStart()" />
+      <input type="hidden" [name]="endName()" [value]="selectedEnd()" />
+    }
+
+    @if (isOpen()) {
+      <button class="date-picker__backdrop" type="button" tabindex="-1" aria-label="Cerrar calendario" (click)="close()"></button>
+
+      <section class="date-picker__popover" role="dialog" [attr.aria-label]="label() || effectivePlaceholder()">
+        <header class="date-picker__header">
+          <button class="date-picker__nav" type="button" [attr.aria-label]="pickerView() === 'months' ? 'Año anterior' : 'Mes anterior'" (click)="previousMonth()">
+            <span class="date-picker__nav-icon date-picker__nav-icon--prev" aria-hidden="true"></span>
+          </button>
+          <h2 class="date-picker__month">
+            @if (pickerView() === 'days') {
+              <button class="date-picker__month-button" type="button" aria-label="Cambiar mes y año" (click)="showMonthPicker()">
+                {{ monthLabel() }}
+              </button>
+            } @else {
+              <span>{{ monthPickerLabel() }}</span>
+            }
+          </h2>
+          <button class="date-picker__nav" type="button" [attr.aria-label]="pickerView() === 'months' ? 'Año siguiente' : 'Mes siguiente'" (click)="nextMonth()">
+            <span class="date-picker__nav-icon date-picker__nav-icon--next" aria-hidden="true"></span>
+          </button>
+        </header>
+
+        @if (pickerView() === 'months') {
+          <div class="date-picker__year-control">
+            <label class="date-picker__year-label" [for]="pickerId + '-year'">Año</label>
+            <input
+              class="date-picker__year-input"
+              [id]="pickerId + '-year'"
+              inputmode="numeric"
+              maxlength="4"
+              [value]="yearInputValue()"
+              (input)="updateYearInput($event)"
+              (blur)="commitYear()"
+              (keydown.enter)="commitYear()"
+            />
+          </div>
+
+          <div class="date-picker__months" role="grid" aria-label="Seleccionar mes">
+            @for (month of calendarMonths(); track month.index) {
+              <button
+                [class]="month.classes"
+                type="button"
+                role="gridcell"
+                [disabled]="month.disabled"
+                [attr.aria-label]="month.ariaLabel"
+                (click)="selectMonth(month)"
+              >
+                {{ month.label }}
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="date-picker__weekdays" aria-hidden="true">
+            @for (day of weekDays(); track day) {
+              <span>{{ day }}</span>
+            }
+          </div>
+
+          <div class="date-picker__grid" role="grid" [id]="gridId">
+            @for (day of calendarDays(); track day.iso) {
+              <button
+                [class]="day.classes"
+                type="button"
+                role="gridcell"
+                [disabled]="day.disabled"
+                [attr.aria-label]="day.ariaLabel"
+                (click)="selectDay(day)"
+                (mouseenter)="setHover(day)"
+                (focus)="setHover(day)"
+              >
+                <span>{{ day.label }}</span>
+              </button>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="date-picker__error" [id]="errorId">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="date-picker__hint" [id]="hintId">{{ hint() }}</p>
+  }
+</div>

@@ -1,0 +1,31 @@
+<section [class]="classes()" role="region" [attr.aria-label]="ariaLabel()">
+  @for (toast of visibleToasts(); track toast.id) {
+    <article
+      [class]="toastClasses(toast)"
+      [attr.role]="toastRole(toast)"
+      [attr.aria-live]="toastLive(toast)"
+      aria-atomic="true"
+    >
+      <div class="toast__mark" aria-hidden="true"></div>
+
+      <div class="toast__content">
+        <h3 class="toast__title">{{ toast.title }}</h3>
+
+        @if (toast.description) {
+          <p class="toast__description">{{ toast.description }}</p>
+        }
+      </div>
+
+      @if (toast.dismissible) {
+        <button
+          class="toast__dismiss"
+          type="button"
+          aria-label="Cerrar notificacion"
+          (click)="toastService.dismiss(toast.id)"
+        >
+          ×
+        </button>
+      }
+    </article>
+  }
+</section>

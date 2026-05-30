@@ -1,0 +1,135 @@
+.table {
+  --table-accent: var(--ui-primary);
+  --table-ring: var(--ui-primary-ring);
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  color: var(--ui-fg);
+}
+
+.table--primary { --table-accent: var(--ui-primary); --table-ring: var(--ui-primary-ring); }
+.table--secondary { --table-accent: var(--ui-secondary); --table-ring: var(--ui-secondary-ring); }
+.table--neutral { --table-accent: var(--ui-neutral); --table-ring: var(--ui-neutral-ring); }
+.table--danger { --table-accent: var(--ui-danger); --table-ring: var(--ui-danger-ring); }
+.table--violet { --table-accent: var(--ui-violet); --table-ring: var(--ui-violet-ring); }
+
+.table__scroller {
+  overflow: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  box-shadow: var(--ui-shadow);
+}
+
+.table--minimal .table__scroller {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.table__element {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.table--sm .table__element { font-size: 0.8125rem; }
+.table--lg .table__element { font-size: 1rem; }
+
+.table__header-cell,
+.table__cell,
+.table__select-cell {
+  border-bottom: 1px solid var(--ui-border);
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.table--sm .table__header-cell,
+.table--sm .table__cell,
+.table--sm .table__select-cell { padding: 0.5rem 0.625rem; }
+
+.table--lg .table__header-cell,
+.table--lg .table__cell,
+.table--lg .table__select-cell { padding: 1rem; }
+
+.table__header-cell {
+  background: var(--ui-surface);
+  color: var(--ui-muted-fg);
+  font-weight: 650;
+  text-align: left;
+}
+
+.table__row:last-child .table__cell,
+.table__row:last-child .table__select-cell,
+tbody tr:last-child .table__state-cell {
+  border-bottom: 0;
+}
+
+.table__row {
+  cursor: pointer;
+}
+
+.table__row:hover {
+  background: var(--ui-surface);
+}
+
+.table__row:focus-visible {
+  outline: 2px solid var(--table-ring);
+  outline-offset: -2px;
+}
+
+.table__row--selected {
+  background: color-mix(in srgb, var(--table-accent) 10%, transparent);
+}
+
+.table__select-cell {
+  width: 2.75rem;
+  text-align: center;
+}
+
+.table__checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--table-accent);
+}
+
+.table__cell--left { text-align: left; }
+.table__cell--center { text-align: center; }
+.table__cell--right { text-align: right; }
+
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: inherit;
+  gap: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+}
+
+.table__sort:hover {
+  color: var(--ui-fg);
+}
+
+.table__sort:focus-visible {
+  outline: 2px solid var(--table-ring);
+  outline-offset: 2px;
+}
+
+.table__state-cell {
+  border-bottom: 0;
+  padding: 1rem;
+}
+
+.table__loading {
+  display: flex;
+  min-height: 6rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-muted-fg);
+}

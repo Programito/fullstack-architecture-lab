@@ -1,0 +1,109 @@
+<nav [class]="classes()" [attr.aria-label]="ariaLabel()">
+  @if (collapsible()) {
+    <button
+      class="side-menu__collapse"
+      type="button"
+      [disabled]="disabled()"
+      [attr.aria-expanded]="!collapsed()"
+      [attr.aria-label]="collapseLabel()"
+      (click)="toggleCollapsed()"
+    >
+      <app-icon [name]="collapseIcon()" size="sm" />
+      <span class="side-menu__collapse-text">{{ collapseLabel() }}</span>
+    </button>
+  }
+
+  <div class="side-menu__groups">
+    @for (group of groups(); track group.label ?? $index) {
+      <section class="side-menu__group">
+        @if (group.label) {
+          <h2 class="side-menu__group-label">{{ group.label }}</h2>
+        }
+
+        <ul class="side-menu__list">
+          @for (item of group.items; track item.id) {
+            <li class="side-menu__item">
+              @if (item.href && !item.disabled && !disabled()) {
+                <a
+                  [class]="itemClasses(item)"
+                  [href]="item.href"
+                  [attr.aria-current]="isActive(item) ? 'page' : null"
+                  [attr.aria-label]="collapsed() ? item.label : null"
+                  (click)="selectItem(item, $event)"
+                >
+                  @if (item.icon) {
+                    <app-icon class="side-menu__icon" [name]="item.icon" />
+                  }
+                  <span class="side-menu__label">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="side-menu__badge">{{ item.badge }}</span>
+                  }
+                </a>
+              } @else {
+                <button
+                  [class]="itemClasses(item)"
+                  type="button"
+                  [disabled]="disabled() || item.disabled"
+                  [attr.aria-current]="isActive(item) ? 'page' : null"
+                  [attr.aria-label]="collapsed() ? item.label : null"
+                  (click)="selectItem(item, $event)"
+                >
+                  @if (item.icon) {
+                    <app-icon class="side-menu__icon" [name]="item.icon" />
+                  }
+                  <span class="side-menu__label">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="side-menu__badge">{{ item.badge }}</span>
+                  }
+                </button>
+              }
+
+              @if (item.children?.length && !collapsed()) {
+                <ul class="side-menu__children">
+                  @for (child of item.children; track child.id) {
+                    <li class="side-menu__child">
+                      @if (child.href && !child.disabled && !disabled()) {
+                        <a
+                          [class]="itemClasses(child)"
+                          [href]="child.href"
+                          [attr.aria-current]="isActive(child) ? 'page' : null"
+                          [attr.aria-label]="collapsed() ? child.label : null"
+                          (click)="selectItem(child, $event)"
+                        >
+                          @if (child.icon) {
+                            <app-icon class="side-menu__icon" [name]="child.icon" />
+                          }
+                          <span class="side-menu__label">{{ child.label }}</span>
+                          @if (child.badge) {
+                            <span class="side-menu__badge">{{ child.badge }}</span>
+                          }
+                        </a>
+                      } @else {
+                        <button
+                          [class]="itemClasses(child)"
+                          type="button"
+                          [disabled]="disabled() || child.disabled"
+                          [attr.aria-current]="isActive(child) ? 'page' : null"
+                          [attr.aria-label]="collapsed() ? child.label : null"
+                          (click)="selectItem(child, $event)"
+                        >
+                          @if (child.icon) {
+                            <app-icon class="side-menu__icon" [name]="child.icon" />
+                          }
+                          <span class="side-menu__label">{{ child.label }}</span>
+                          @if (child.badge) {
+                            <span class="side-menu__badge">{{ child.badge }}</span>
+                          }
+                        </button>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</nav>

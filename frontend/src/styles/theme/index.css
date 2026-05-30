@@ -1,0 +1,23 @@
+@import "./light.css";
+@import "./dark.css";
+
+body {
+  background-color: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.sb-show-main,
+.sb-main-padded,
+#storybook-root {
+  background: var(--ui-bg) !important;
+  color: var(--ui-fg);
+}
+
+#storybook-root {
+  min-height: 100vh;
+}
+
+.docs-story {
+  background: var(--ui-bg) !important;
+  color: var(--ui-fg);
+}

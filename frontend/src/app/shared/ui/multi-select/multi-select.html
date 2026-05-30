@@ -1,0 +1,75 @@
+<app-form-field
+  [controlId]="inputId"
+  [label]="label()"
+  [hint]="hint()"
+  [error]="error()"
+  [required]="required()"
+  [disabled]="disabled()"
+  [size]="size()"
+>
+  <div [class]="classes()">
+    <div class="multi-select__control" (click)="open()">
+      @for (option of selectedOptions(); track option.value) {
+        <span class="multi-select__chip">
+          {{ option.label }}
+          <button type="button" [attr.aria-label]="'Quitar ' + option.label" [disabled]="disabled()" (click)="removeOption(option, $event)">
+            <app-icon name="close" size="sm" />
+          </button>
+        </span>
+      }
+
+      <input
+        [id]="inputId"
+        class="multi-select__input"
+        role="combobox"
+        type="text"
+        autocomplete="off"
+        [value]="query()"
+        [placeholder]="selectedOptions().length ? '' : placeholder()"
+        [disabled]="disabled()"
+        [required]="required()"
+        [attr.aria-expanded]="isOpen()"
+        [attr.aria-controls]="listboxId"
+        [attr.aria-describedby]="describedBy()"
+        [attr.aria-invalid]="error() ? true : null"
+        (focus)="open()"
+        (input)="handleInput($event)"
+      />
+
+      @if (canClear()) {
+        <button class="multi-select__clear" type="button" aria-label="Limpiar seleccion" (click)="clear($event)">
+          <app-icon name="close" size="sm" />
+        </button>
+      }
+    </div>
+
+    @if (isOpen()) {
+      <button class="multi-select__backdrop" type="button" tabindex="-1" aria-label="Cerrar opciones" (click)="close()"></button>
+
+      <div class="multi-select__menu" role="listbox" [id]="listboxId" aria-multiselectable="true">
+        @for (option of filteredOptions(); track option.value) {
+          <button
+            class="multi-select__option"
+            type="button"
+            role="option"
+            [disabled]="isOptionDisabled(option)"
+            [attr.aria-selected]="isSelected(option.value)"
+            (click)="toggleOption(option)"
+          >
+            <span>
+              <span class="multi-select__option-label">{{ option.label }}</span>
+              @if (option.description) {
+                <span class="multi-select__option-description">{{ option.description }}</span>
+              }
+            </span>
+            @if (isSelected(option.value)) {
+              <app-icon name="check" size="sm" />
+            }
+          </button>
+        } @empty {
+          <p class="multi-select__empty">{{ emptyText() }}</p>
+        }
+      </div>
+    }
+  </div>
+</app-form-field>
