@@ -33,6 +33,22 @@ Storybook expone el selector `Theme` en la toolbar para revisar los componentes 
 
 Storybook también expone el selector `Locale` en la toolbar para revisar los componentes en `es`, `en` y `ca`.
 
+## Typography
+
+La app usa `Inter` como fuente base. Las fuentes se cargan localmente con Fontsource para evitar dependencias de CDN y mantener builds reproducibles.
+
+Storybook expone el selector global `Font` en la toolbar para comparar todos los componentes con `Inter`, `Geist Sans`, `Plus Jakarta Sans`, `Roboto` y `System`. `Roboto` está disponible como preset de comparación visual, no como default de producto.
+
+Cada story también expone el control `Font override`. Usa `inherit`, el valor recomendado, para respetar el selector global superior. Cambia este control a una fuente concreta cuando quieras revisar solo una story sin afectar al resto del canvas.
+
+Tokens tipográficos globales:
+
+- `--ui-font-sans`: familia principal de UI.
+- `--ui-font-display`: familia para títulos o zonas de mayor presencia.
+- `--ui-font-mono`: familia monoespaciada para código o datos técnicos.
+- `--ui-text-xs`, `--ui-text-sm`, `--ui-text-md`, `--ui-text-lg`, `--ui-text-xl`: escala base para componentes nuevos.
+- `--ui-leading-tight`, `--ui-leading-normal`, `--ui-leading-relaxed`: alturas de línea compartidas.
+
 ## Sizes
 
 Los tamaños base son:
@@ -220,3 +236,7 @@ Toma el idioma activo de la toolbar `Locale` de Storybook para nombres de mes, d
 `Dialog` se usa para confirmaciones, edición breve y contenido que necesita atención modal. Debe tener título visible siempre que sea posible y cierre accesible.
 
 Activa `showActions` para usar el footer estándar con `cancel` y `confirm`. El botón principal acepta `confirmVariant` y `confirmFill`; el botón secundario puede ocultarse con `showCancel` o usar `cancelFill="clear"` para una acción discreta.
+
+Usa `Dialog` cuando el modal viva de forma declarativa en el template con `[open]`. Usa `ModalController` cuando necesites abrir un componente dinámico de forma imperativa desde TypeScript, inyectarle `MODAL_DATA` y recibir un resultado con `ModalRef.closed`.
+
+En `ModalController`, `closeOnBackdrop` y `closeOnEscape` son `true` por defecto. Desactívalos en formularios con cambios sin guardar, pasos destructivos o flujos donde cerrar por accidente sea problemático.

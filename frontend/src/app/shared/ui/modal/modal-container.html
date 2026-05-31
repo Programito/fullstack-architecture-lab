@@ -1,0 +1,29 @@
+<section
+  [class]="classes()"
+  role="dialog"
+  aria-modal="true"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+  [attr.aria-labelledby]="labelledBy()"
+  [attr.aria-describedby]="describedBy()"
+>
+  <header class="modal__header">
+    <div class="modal__heading">
+      @if (title()) {
+        <h2 class="modal__title" [id]="titleId">{{ title() }}</h2>
+      }
+
+      @if (description()) {
+        <p class="modal__description" [id]="descriptionId">{{ description() }}</p>
+      }
+    </div>
+
+    <button class="modal__close" type="button" [attr.aria-label]="closeAriaLabel()" (click)="close()">×</button>
+  </header>
+
+  <div class="modal__body">
+    @if (contentPortal()) {
+      <ng-template [cdkPortalOutlet]="contentPortal()"></ng-template>
+    }
+  </div>
+</section>

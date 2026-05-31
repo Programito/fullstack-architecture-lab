@@ -1,0 +1,133 @@
+.floating-action-button {
+  --fab-bg: var(--ui-primary);
+  --fab-ring: var(--ui-primary-ring);
+  --fab-size: 3.5rem;
+  --fab-offset: clamp(1rem, 3vw, 1.5rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  min-width: var(--fab-size);
+  border: 0;
+  border-radius: 999px;
+  background: var(--fab-bg);
+  box-shadow:
+    0 14px 30px rgb(24 24 27 / 0.18),
+    0 4px 10px rgb(24 24 27 / 0.12);
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.floating-action-button--primary { --fab-bg: var(--ui-primary); --fab-ring: var(--ui-primary-ring); }
+.floating-action-button--secondary { --fab-bg: var(--ui-secondary); --fab-ring: var(--ui-secondary-ring); }
+.floating-action-button--neutral { --fab-bg: var(--ui-neutral); --fab-ring: var(--ui-neutral-ring); }
+.floating-action-button--danger { --fab-bg: var(--ui-danger); --fab-ring: var(--ui-danger-ring); }
+.floating-action-button--violet { --fab-bg: var(--ui-violet); --fab-ring: var(--ui-violet-ring); }
+
+.floating-action-button--sm {
+  --fab-size: 3rem;
+}
+
+.floating-action-button--lg {
+  --fab-size: 4rem;
+}
+
+.floating-action-button--extended {
+  width: auto;
+  min-width: var(--fab-size);
+  gap: 0.625rem;
+  padding-inline: 1.25rem;
+}
+
+.floating-action-button--sm.floating-action-button--extended {
+  padding-inline: 1rem;
+}
+
+.floating-action-button--lg.floating-action-button--extended {
+  padding-inline: 1.5rem;
+}
+
+.floating-action-button--bottom-right,
+.floating-action-button--bottom-left,
+.floating-action-button--top-right,
+.floating-action-button--top-left {
+  position: fixed;
+  z-index: 30;
+}
+
+.floating-action-button--bottom-right {
+  right: var(--fab-offset);
+  bottom: var(--fab-offset);
+}
+
+.floating-action-button--bottom-left {
+  bottom: var(--fab-offset);
+  left: var(--fab-offset);
+}
+
+.floating-action-button--top-right {
+  top: var(--fab-offset);
+  right: var(--fab-offset);
+}
+
+.floating-action-button--top-left {
+  top: var(--fab-offset);
+  left: var(--fab-offset);
+}
+
+.floating-action-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fab-bg) 88%, white);
+  box-shadow:
+    0 18px 36px rgb(24 24 27 / 0.22),
+    0 6px 14px rgb(24 24 27 / 0.16);
+  transform: translateY(-1px);
+}
+
+.floating-action-button:active:not(:disabled) {
+  box-shadow:
+    0 10px 24px rgb(24 24 27 / 0.18),
+    0 3px 8px rgb(24 24 27 / 0.12);
+  transform: translateY(0) scale(0.98);
+}
+
+.floating-action-button:focus-visible {
+  outline: 3px solid var(--fab-ring);
+  outline-offset: 3px;
+}
+
+.floating-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.floating-action-button__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-action-button__spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: floating-action-button-spin 650ms linear infinite;
+}
+
+@keyframes floating-action-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

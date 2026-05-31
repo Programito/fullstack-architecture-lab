@@ -7,6 +7,8 @@ import { DEFAULT_LOCALE, normalizeLocale, type AppLocale } from '../src/app/shar
 
 type StorybookColorMode = 'light' | 'dark' | 'system';
 type ResolvedColorMode = Exclude<StorybookColorMode, 'system'>;
+type StorybookFontFamily = 'inter' | 'geist' | 'jakarta' | 'roboto' | 'system';
+type StorybookFontFamilyOverride = StorybookFontFamily | 'inherit';
 
 @Component({
   selector: 'storybook-locale-sync',
@@ -21,6 +23,22 @@ class StorybookLocaleSync implements OnChanges {
   ngOnChanges(): void {
     this.localeService.setLocale(this.storybookLocale);
   }
+}
+
+@Component({
+  selector: 'storybook-font-override',
+  standalone: true,
+  template: `
+    <div
+      [attr.data-font]="storybookFontFamilyOverride === 'inherit' ? null : storybookFontFamilyOverride"
+      [style.font-family]="storybookFontFamilyOverride === 'inherit' ? null : 'var(--ui-font-sans)'"
+    >
+      <ng-content />
+    </div>
+  `,
+})
+class StorybookFontOverride {
+  @Input() storybookFontFamilyOverride: StorybookFontFamilyOverride = 'inherit';
 }
 
 const resolveColorMode = (preference: StorybookColorMode, backgrounds: unknown): ResolvedColorMode => {
@@ -112,9 +130,37 @@ const applyCanvasLocale = (locale: AppLocale): void => {
   }
 };
 
+const resolveStorybookFontFamily = (fontFamily: unknown): StorybookFontFamily => {
+  if (
+    fontFamily === 'inter' ||
+    fontFamily === 'geist' ||
+    fontFamily === 'jakarta' ||
+    fontFamily === 'roboto' ||
+    fontFamily === 'system'
+  ) {
+    return fontFamily;
+  }
+
+  return 'inter';
+};
+
+const resolveStorybookFontFamilyOverride = (fontFamily: unknown): StorybookFontFamilyOverride => {
+  if (fontFamily === 'inherit') {
+    return 'inherit';
+  }
+
+  return resolveStorybookFontFamily(fontFamily);
+};
+
+const applyCanvasFontFamily = (fontFamily: StorybookFontFamily): void => {
+  document.documentElement.dataset['font'] = fontFamily;
+  document.body.dataset['font'] = fontFamily;
+};
+
 const preview: Preview = {
   initialGlobals: {
     colorMode: 'system',
+    fontFamily: 'inter',
     locale: DEFAULT_LOCALE,
   },
   globalTypes: {
@@ -128,6 +174,22 @@ const preview: Preview = {
           { value: 'system', title: 'System' },
           { value: 'light', title: 'Light' },
           { value: 'dark', title: 'Dark' },
+        ],
+        dynamicTitle: true,
+      },
+    },
+    fontFamily: {
+      description: 'Font family',
+      defaultValue: 'inter',
+      toolbar: {
+        title: 'Font',
+        icon: 'type',
+        items: [
+          { value: 'inter', title: 'Inter' },
+          { value: 'geist', title: 'Geist Sans' },
+          { value: 'jakarta', title: 'Plus Jakarta Sans' },
+          { value: 'roboto', title: 'Roboto' },
+          { value: 'system', title: 'System' },
         ],
         dynamicTitle: true,
       },
@@ -147,6 +209,19 @@ const preview: Preview = {
       },
     },
   },
+  args: {
+    fontFamilyOverride: 'inherit',
+  },
+  argTypes: {
+    fontFamilyOverride: {
+      name: 'Font override',
+      control: 'select',
+      options: ['inherit', 'inter', 'geist', 'jakarta', 'roboto', 'system'],
+      table: {
+        category: 'Storybook',
+      },
+    },
+  },
   decorators: [
     applicationConfig({
       providers: [...provideAppI18n()],
@@ -154,14 +229,19 @@ const preview: Preview = {
     componentWrapperDecorator(StorybookLocaleSync, (context) => ({
       storybookLocale: resolveStorybookLocale(context.globals['locale']),
     })),
+    componentWrapperDecorator(StorybookFontOverride, (context) => ({
+      storybookFontFamilyOverride: resolveStorybookFontFamilyOverride(context.args['fontFamilyOverride']),
+    })),
     (story, context) => {
       const preference = (context.globals['colorMode'] ?? 'system') as StorybookColorMode;
       const mode = resolveColorMode(preference, context.globals['backgrounds']);
+      const fontFamily = resolveStorybookFontFamily(context.globals['fontFamily']);
       const locale = resolveStorybookLocale(context.globals['locale']);
 
       document.documentElement.dataset['themePreference'] = preference;
       document.body.dataset['themePreference'] = preference;
       applyCanvasTheme(mode);
+      applyCanvasFontFamily(fontFamily);
       applyCanvasLocale(locale);
 
       return story();

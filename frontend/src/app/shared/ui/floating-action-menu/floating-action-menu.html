@@ -1,0 +1,38 @@
+<div [class]="classes()">
+  @if (isOpen() && actions().length > 0) {
+    <div
+      [id]="menuId"
+      class="floating-action-menu__actions"
+      role="menu"
+      [attr.aria-label]="label()"
+    >
+      @for (action of actions(); track action.id; let index = $index) {
+        <button
+          type="button"
+          role="menuitem"
+          [class]="actionClasses(action, index)"
+          [disabled]="disabled() || action.disabled"
+          [attr.aria-label]="action.label"
+          [appTooltip]="action.label"
+          tooltipPosition="auto"
+          (click)="pressAction(action)"
+        >
+          <app-icon [name]="action.icon" [size]="iconSize()" />
+        </button>
+      }
+    </div>
+  }
+
+  <app-floating-action-button
+    [icon]="isOpen() ? 'close' : icon()"
+    [label]="label()"
+    [ariaLabel]="accessibleName()"
+    [ariaControls]="menuId"
+    [ariaExpanded]="isOpen()"
+    ariaHaspopup="menu"
+    [variant]="variant()"
+    [size]="size()"
+    [disabled]="disabled()"
+    (pressed)="toggle()"
+  />
+</div>

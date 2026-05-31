@@ -1,5 +1,6 @@
 import { booleanAttribute, Component, computed, input, model, output } from '@angular/core';
 import { Icon } from '../icon/icon';
+import { Tooltip } from '../tooltip/tooltip';
 
 export type SideMenuSize = 'sm' | 'md' | 'lg';
 export type SideMenuVariant = 'primary' | 'secondary' | 'neutral' | 'danger' | 'violet';
@@ -22,7 +23,7 @@ export type SideMenuGroup = {
 
 @Component({
   selector: 'app-side-menu',
-  imports: [Icon],
+  imports: [Icon, Tooltip],
   templateUrl: './side-menu.html',
   styleUrl: './side-menu.css',
 })
@@ -54,7 +55,7 @@ export class SideMenu {
   );
 
   protected readonly collapseLabel = computed(() => (this.collapsed() ? 'Expandir menu' : 'Contraer menu'));
-  protected readonly collapseIcon = computed(() => (this.collapsed() ? 'keyboard_double_arrow_right' : 'keyboard_double_arrow_left'));
+  protected readonly collapseIcon = computed(() => (this.collapsed() ? 'left_panel_open' : 'left_panel_close'));
 
   protected toggleCollapsed(): void {
     if (!this.disabled() && this.collapsible()) {

@@ -6,10 +6,11 @@
       [disabled]="disabled()"
       [attr.aria-expanded]="!collapsed()"
       [attr.aria-label]="collapseLabel()"
+      [appTooltip]="collapseLabel()"
+      tooltipPosition="right"
       (click)="toggleCollapsed()"
     >
       <app-icon [name]="collapseIcon()" size="sm" />
-      <span class="side-menu__collapse-text">{{ collapseLabel() }}</span>
     </button>
   }
 

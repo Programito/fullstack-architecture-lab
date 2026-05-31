@@ -62,6 +62,18 @@ describe('SideMenu', () => {
     expect(container.querySelector('.side-menu--collapsed')).toBeTruthy();
   });
 
+  it('keeps collapse action icon-only while preserving accessible name', async () => {
+    const { container } = await render('<app-side-menu [groups]="groups" />', {
+      imports: [SideMenu],
+      componentProperties: { groups },
+    });
+
+    const collapseButton = screen.getByRole('button', { name: 'Contraer menu' });
+
+    expect(collapseButton.textContent?.trim()).toBe('left_panel_close');
+    expect(container.querySelector('.side-menu__collapse-text')).toBeNull();
+  });
+
   it('does not interact with disabled items', async () => {
     const itemSelected = vi.fn();
 

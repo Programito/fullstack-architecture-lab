@@ -1,0 +1,29 @@
+<section [class]="classes()" [attr.aria-label]="ariaLabel()">
+  @if (title() || description()) {
+    <header class="chart__header">
+      @if (title()) {
+        <h3 class="chart__title">{{ title() }}</h3>
+      }
+      @if (description()) {
+        <p class="chart__description">{{ description() }}</p>
+      }
+    </header>
+  }
+
+  <div class="chart__body">
+    @if (loading()) {
+      <app-skeleton class="chart__skeleton" shape="rounded" height="100%" ariaLabel="Cargando grafica" />
+    } @else if (!hasData()) {
+      <app-empty-state icon="bar_chart" [title]="emptyTitle()" [description]="emptyDescription()" size="sm" appearance="minimal" />
+    } @else {
+      <div
+        class="chart__canvas"
+        echarts
+        [options]="options()"
+        [autoResize]="true"
+        role="img"
+        [attr.aria-label]="ariaLabel()"
+      ></div>
+    }
+  </div>
+</section>
