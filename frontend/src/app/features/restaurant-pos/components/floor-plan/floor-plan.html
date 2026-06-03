@@ -1,0 +1,117 @@
+<div class="space-y-4">
+  <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-600" aria-label="Floor plan legend">
+    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full border border-stone-300 bg-amber-100"></span>Table</span>
+    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm border border-stone-400 bg-stone-200"></span>Bar</span>
+    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-slate-100"></span>Kitchen</span>
+    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white"></span>Entrance</span>
+  </div>
+
+  <div class="overflow-x-auto rounded-lg border border-stone-200 bg-stone-100 px-4 pb-4 pt-20 shadow-inner">
+    <div class="floor-plan-drag-boundary grid min-w-[38rem] gap-2 rounded-md bg-[linear-gradient(90deg,rgba(120,113,108,0.12)_1px,transparent_1px),linear-gradient(rgba(120,113,108,0.12)_1px,transparent_1px)] bg-[length:5.9rem_5.9rem] p-2" [ngStyle]="gridStyle()">
+      @for (cell of cells(); track cell.x + '-' + cell.y) {
+        <div
+          class="rounded-sm border border-transparent bg-white/15 transition hover:bg-white/30"
+          [style.grid-column]="cell.x + 1"
+          [style.grid-row]="cell.y + 1"
+          [attr.aria-label]="'Cell ' + cell.x + ', ' + cell.y"
+        ></div>
+      }
+
+      @for (element of store.floorElements(); track element.id) {
+        <div
+          cdkDrag
+          cdkDragBoundary=".floor-plan-drag-boundary"
+          [cdkDragDisabled]="!layoutMode() || !isSelected(element)"
+          [class]="elementClass(element)"
+          [ngStyle]="elementStyle(element)"
+          [attr.data-table-shape]="element.type === 'table' ? tableShape(element) : null"
+          [attr.aria-pressed]="isSelected(element)"
+          [attr.aria-label]="elementAriaLabel(element)"
+          [attr.aria-disabled]="!layoutMode()"
+          tabindex="0"
+          (click)="handleElementClick(element)"
+          (keydown.enter)="handleElementClick(element)"
+          (cdkDragEnded)="handleDragEnded($event, element)"
+        >
+          @if (layoutMode() && isSelected(element)) {
+            <div
+              class="absolute -top-11 left-1/2 z-30 inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white p-1 text-slate-700 shadow-lg"
+              role="toolbar"
+              aria-label="Layout element actions"
+            >
+              <span
+                role="button"
+                tabindex="0"
+                cdkDragHandle
+                class="inline-flex h-8 w-8 cursor-grab items-center justify-center rounded text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500 active:cursor-grabbing"
+                [attr.aria-label]="'Move ' + displayLabel(element)"
+                (click)="$event.stopPropagation()"
+              >
+                <app-icon name="open_with" size="sm" />
+              </span>
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                [attr.aria-label]="'Resize ' + displayLabel(element)"
+                (click)="requestResize(element, $event)"
+              >
+                <app-icon name="open_in_full" size="sm" />
+              </button>
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                [attr.aria-label]="'Edit ' + displayLabel(element)"
+                (click)="requestEdit(element, $event)"
+              >
+                <app-icon name="edit" size="sm" />
+              </button>
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                [attr.aria-label]="'Delete ' + displayLabel(element)"
+                (click)="deleteElement(element, $event)"
+              >
+                <app-icon name="delete" size="sm" />
+              </button>
+            </div>
+          }
+
+          @if (element.type === 'table') {
+            <div cdkDragHandle class="relative flex h-full min-h-20 w-full cursor-grab items-center justify-center active:cursor-grabbing">
+              <div class="pointer-events-none absolute" [ngClass]="tableVisualInsetClass(element)" [attr.aria-label]="'Table shape ' + tableShape(element)">
+                <app-table-visual [shape]="tableShape(element)" [selected]="isSelected(element)" />
+              </div>
+
+              <div class="relative z-10 grid min-w-14 place-items-center rounded-md bg-white/80 px-2 py-1 text-center shadow-sm">
+                <span class="max-w-full truncate text-sm font-semibold text-stone-950">{{ displayLabel(element) }}</span>
+                <span class="text-[0.68rem] font-medium text-stone-600">{{ tableCapacity(element) }}</span>
+              </div>
+            </div>
+          } @else if (element.type === 'bar') {
+            <div cdkDragHandle class="grid w-full cursor-grab gap-1 active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
+              <div class="relative mx-auto h-11 w-full max-w-64 rounded-full border shadow-sm" [ngClass]="zoneClass(element)">
+                <span class="absolute inset-x-4 top-1/2 -translate-y-1/2 truncate text-sm font-semibold">{{ displayLabel(element) }}</span>
+              </div>
+            </div>
+          } @else if (element.type === 'stool') {
+            <div cdkDragHandle class="grid h-full min-h-16 w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
+              <div class="grid h-12 w-12 place-items-center rounded-full border shadow-sm" [ngClass]="zoneClass(element)">
+                <span class="text-[0.62rem] font-semibold">{{ displayLabel(element) }}</span>
+              </div>
+            </div>
+          } @else {
+            <div
+              cdkDragHandle
+              class="grid h-full min-h-16 w-full place-items-center gap-1 rounded-md border px-3 py-2 shadow-sm"
+              [ngClass]="zoneClass(element)"
+              [attr.aria-label]="zoneObjectLabel(element)"
+            >
+              <app-icon [name]="zoneIcon(element)" size="sm" />
+              <span class="max-w-full truncate text-sm font-semibold">{{ displayLabel(element) }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

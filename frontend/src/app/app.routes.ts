@@ -1,3 +1,33 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+  {
+    path: 'restaurant-pos',
+    children: [
+      {
+        path: 'layout',
+        loadComponent: () =>
+          import('./features/restaurant-pos/pages/restaurant-pos-layout-page/restaurant-pos-layout-page').then(
+            (module) => module.RestaurantPosLayoutPage,
+          ),
+      },
+      {
+        path: 'service',
+        loadComponent: () =>
+          import('./features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page').then(
+            (module) => module.RestaurantPosServicePage,
+          ),
+      },
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'layout',
+      },
+    ],
+  },
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'restaurant-pos/layout',
+  },
+];
