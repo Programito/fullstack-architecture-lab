@@ -2,7 +2,9 @@ import { NgClass, NgStyle } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from '../../../../shared/ui/button/button';
+import { Icon } from '../../../../shared/ui/icon/icon';
 import { FloorPlan } from '../../components/floor-plan/floor-plan';
+import { TableVisual } from '../../components/table-visual/table-visual';
 import type { AddFloorElementInput, FloorElement, FloorElementType, TableShape } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
@@ -25,12 +27,13 @@ const RESIZE_MATRIX_ROWS = 12;
 const RESIZE_MATRIX_COLUMNS = 12;
 
 const ELEMENT_PRESETS: ElementPreset[] = [
-  { id: 'small-table', label: 'Small table 2 pax', type: 'table', width: 1, height: 1, capacity: 2, shape: 'round' },
+  { id: 'small-table', label: 'Small table 2 pax', type: 'table', width: 2, height: 2, capacity: 2, shape: 'round' },
   { id: 'square-table', label: 'Square table 4 pax', type: 'table', width: 2, height: 2, capacity: 4, shape: 'square' },
   { id: 'rectangular-table', label: 'Rectangular table 6 pax', type: 'table', width: 2, height: 1, capacity: 6, shape: 'rectangle' },
   { id: 'large-table', label: 'Large table 8 pax', type: 'table', width: 2, height: 2, capacity: 8, shape: 'rectangle' },
   { id: 'long-table', label: 'Long table', type: 'table', width: 3, height: 1, capacity: 10, shape: 'long' },
-  { id: 'bar', label: 'Bar', type: 'bar', width: 3, height: 1 },
+  { id: 'bar-horizontal', label: 'Bar horizontal', type: 'bar', width: 3, height: 1 },
+  { id: 'bar-vertical', label: 'Bar vertical', type: 'bar', width: 1, height: 3 },
   { id: 'kitchen', label: 'Kitchen', type: 'kitchen', width: 2, height: 1 },
   { id: 'bathroom', label: 'Bathroom', type: 'bathroom', width: 1, height: 1 },
   { id: 'entrance', label: 'Entrance', type: 'entrance', width: 1, height: 1 },
@@ -40,7 +43,7 @@ const ELEMENT_PRESETS: ElementPreset[] = [
 
 @Component({
   selector: 'app-restaurant-pos-layout-page',
-  imports: [Button, FloorPlan, NgClass, NgStyle, RouterLink],
+  imports: [Button, FloorPlan, Icon, NgClass, NgStyle, RouterLink, TableVisual],
   templateUrl: './restaurant-pos-layout-page.html',
 })
 export class RestaurantPosLayoutPage {
@@ -79,7 +82,13 @@ export class RestaurantPosLayoutPage {
   );
   protected readonly previewPosition = computed(() => this.hoveredPosition() ?? this.selectedPosition());
   protected readonly selectedPlacement = computed(() => this.buildElementInput(this.selectedPosition()));
-  protected readonly elementModalTitle = computed(() => (this.editingElementId() ? 'Edit element' : 'Add element'));
+  protected readonly selectedPositionLabel = computed(() => {
+    const position = this.selectedPosition();
+    return position ? `Posición: columna ${position.column}, fila ${position.row}` : 'Posición: sin seleccionar';
+  });
+  protected readonly elementSizeLabel = computed(() => `Tamaño: ${this.elementWidthInput()} x ${this.elementHeightInput()}`);
+  protected readonly previewCapacityLabel = computed(() => (this.selectedPreset().type === 'table' ? `${this.tableCapacityInput()} pax` : null));
+  protected readonly localizedElementModalTitle = computed(() => (this.editingElementId() ? 'Editar elemento' : 'Añadir elemento'));
   protected readonly canAddSelectedElement = computed(() => {
     const placement = this.selectedPlacement();
     return (
@@ -264,10 +273,14 @@ export class RestaurantPosLayoutPage {
 
   protected positionCellClass(cell: MatrixCell): string {
     if (!this.isPositionPreviewCell(cell)) {
-      return 'border-slate-200 bg-white hover:border-cyan-300 hover:bg-cyan-50';
+      return this.isPositionUnavailable(cell)
+        ? 'cursor-not-allowed border-slate-300 bg-slate-50 text-slate-400 hover:border-red-300 hover:bg-red-50'
+        : 'border-slate-300 bg-white hover:border-cyan-400 hover:bg-cyan-50';
     }
 
-    return this.isPreviewPlacementValid() ? 'border-cyan-500 bg-cyan-100 text-cyan-950' : 'border-red-500 bg-red-100 text-red-950';
+    return this.isPreviewPlacementValid()
+      ? 'border-cyan-500 bg-cyan-100 text-cyan-950 ring-1 ring-cyan-500'
+      : 'border-red-500 bg-red-100 text-red-950 ring-1 ring-red-500';
   }
 
   protected isResizeCellSelected(cell: MatrixCell): boolean {
@@ -278,6 +291,39 @@ export class RestaurantPosLayoutPage {
     return {
       'grid-template-columns': `repeat(${this.store.gridColumns()}, minmax(2.25rem, 1fr))`,
     };
+  }
+
+  protected previewZoneClass(): string {
+    return this.zoneClass(this.selectedPreset().type);
+  }
+
+  protected previewZoneIcon(): string {
+    return this.zoneIcon(this.selectedPreset().type);
+  }
+
+  protected previewObjectClass(): string {
+    const preset = this.selectedPreset();
+
+    if (preset.type === 'bar') {
+      return preset.id === 'bar-vertical'
+        ? 'h-28 w-12 rounded-full border shadow-sm'
+        : 'h-12 w-full max-w-56 rounded-full border shadow-sm';
+    }
+
+    if (preset.type === 'stool') {
+      return 'h-16 w-16 rounded-full border shadow-sm';
+    }
+
+    return 'min-h-20 w-full rounded-md border px-3 py-2 shadow-sm';
+  }
+
+  protected isPositionUnavailable(cell: MatrixCell): boolean {
+    const placement = this.buildElementInput(cell);
+    return !placement || !this.store.canPlaceElement(placement, this.editingElementId() ?? undefined);
+  }
+
+  protected positionCellAriaDisabled(cell: MatrixCell): 'true' | null {
+    return this.isPositionUnavailable(cell) ? 'true' : null;
   }
 
   protected isSelectedPositionInvalid(): boolean {
@@ -320,6 +366,42 @@ export class RestaurantPosLayoutPage {
   private isPreviewPlacementValid(): boolean {
     const placement = this.buildElementInput(this.previewPosition());
     return !!placement && this.store.canPlaceElement(placement, this.editingElementId() ?? undefined);
+  }
+
+  private zoneClass(type: FloorElementType): string {
+    switch (type) {
+      case 'bar':
+        return 'border-stone-400 bg-gradient-to-b from-amber-100 to-stone-200 text-stone-900';
+      case 'kitchen':
+        return 'border-stone-300 bg-[repeating-linear-gradient(135deg,#f8fafc_0,#f8fafc_8px,#e7e5e4_8px,#e7e5e4_16px)] text-slate-800';
+      case 'entrance':
+        return 'border-stone-300 bg-white/80 text-stone-700';
+      case 'bathroom':
+        return 'border-slate-300 bg-slate-50 text-slate-700';
+      case 'blocked':
+        return 'border-slate-300 bg-[repeating-linear-gradient(135deg,#f1f5f9_0,#f1f5f9_7px,#e2e8f0_7px,#e2e8f0_14px)] text-slate-500';
+      case 'stool':
+        return 'border-stone-400 bg-amber-50 text-stone-800';
+      default:
+        return 'border-stone-300 bg-white text-stone-700';
+    }
+  }
+
+  private zoneIcon(type: FloorElementType): string {
+    switch (type) {
+      case 'kitchen':
+        return 'restaurant';
+      case 'entrance':
+        return 'door_open';
+      case 'bathroom':
+        return 'wc';
+      case 'blocked':
+        return 'block';
+      case 'stool':
+        return 'radio_button_unchecked';
+      default:
+        return 'countertops';
+    }
   }
 
   private normalizePositiveInteger(value: string): number {

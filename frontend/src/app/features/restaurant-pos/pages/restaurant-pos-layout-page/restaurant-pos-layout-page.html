@@ -184,116 +184,159 @@
   @if (addElementModalOpen()) {
     <div class="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="presentation">
       <section
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
+        class="max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-element-title"
       >
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 id="add-element-title" class="text-xl font-semibold text-slate-950">{{ elementModalTitle() }}</h2>
-            <p class="mt-1 text-sm text-slate-500">Choose a preset and place it inside the current floor grid.</p>
+            <h2 id="add-element-title" class="text-xl font-semibold text-slate-950">{{ localizedElementModalTitle() }}</h2>
+            <p class="mt-1 text-sm text-slate-500">Elige un preset y colócalo dentro de la matriz actual.</p>
           </div>
-          <app-button variant="neutral" fill="clear" size="sm" ariaLabel="Cancel" (pressed)="closeAddElementModal()">
-            Cancel
+          <app-button variant="neutral" fill="clear" size="sm" ariaLabel="Cancelar" (pressed)="closeAddElementModal()">
+            Cancelar
           </app-button>
         </div>
 
-        <div class="mt-5 grid gap-4 md:grid-cols-2">
-          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-label">
-            Element label
-            <input
-              id="element-label"
-              class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              type="text"
-              [value]="elementLabelInput()"
-              (input)="updateElementLabel($event)"
-            />
-          </label>
-
-          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-type">
-            Element type
-            <select
-              id="element-type"
-              class="w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              [value]="selectedPresetId()"
-              (change)="updateElementPreset($event)"
-            >
-              @for (preset of elementPresets; track preset.id) {
-                <option [value]="preset.id">{{ preset.label }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="preset-size">
-            Preset size
-            <select
-              id="preset-size"
-              class="w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              [value]="selectedPresetId()"
-              (change)="updateElementPreset($event)"
-            >
-              @for (preset of elementPresets; track preset.id) {
-                <option [value]="preset.id">{{ preset.width }} x {{ preset.height }} - {{ preset.label }}</option>
-              }
-            </select>
-          </label>
-
-          <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]">
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-width">
-              Width
+        <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-label">
+              Etiqueta del elemento
               <input
-                id="element-width"
+                id="element-label"
                 class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                type="number"
-                min="1"
-                [value]="elementWidthInput()"
-                (input)="updateElementWidth($event)"
+                type="text"
+                [value]="elementLabelInput()"
+                (input)="updateElementLabel($event)"
               />
             </label>
 
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-height">
-              Height
-              <input
-                id="element-height"
-                class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                type="number"
-                min="1"
-                [value]="elementHeightInput()"
-                (input)="updateElementHeight($event)"
-              />
+            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-type">
+              Tipo de elemento
+              <select
+                id="element-type"
+                class="w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                [value]="selectedPresetId()"
+                (change)="updateElementPreset($event)"
+              >
+                @for (preset of elementPresets; track preset.id) {
+                  <option [value]="preset.id">{{ preset.label }}</option>
+                }
+              </select>
             </label>
+
+            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="preset-size">
+              Tamaño predefinido
+              <select
+                id="preset-size"
+                class="w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                [value]="selectedPresetId()"
+                (change)="updateElementPreset($event)"
+              >
+                @for (preset of elementPresets; track preset.id) {
+                  <option [value]="preset.id">{{ preset.width }} x {{ preset.height }} - {{ preset.label }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]">
+              <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-width">
+                Ancho
+                <input
+                  id="element-width"
+                  class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  type="number"
+                  min="1"
+                  [value]="elementWidthInput()"
+                  (input)="updateElementWidth($event)"
+                />
+              </label>
+
+              <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-height">
+                Alto
+                <input
+                  id="element-height"
+                  class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  type="number"
+                  min="1"
+                  [value]="elementHeightInput()"
+                  (input)="updateElementHeight($event)"
+                />
+              </label>
+            </div>
+
+            @if (selectedPreset().type === 'table') {
+              <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="table-capacity">
+                Capacidad de mesa
+                <input
+                  id="table-capacity"
+                  class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  type="number"
+                  min="1"
+                  [value]="tableCapacityInput()"
+                  (input)="updateTableCapacity($event)"
+                />
+              </label>
+            }
           </div>
 
-          @if (selectedPreset().type === 'table') {
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="table-capacity">
-              Table capacity
-              <input
-                id="table-capacity"
-                class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                type="number"
-                min="1"
-                [value]="tableCapacityInput()"
-                (input)="updateTableCapacity($event)"
-              />
-            </label>
-          }
+          <aside
+            class="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
+            aria-label="Vista previa del elemento seleccionado"
+          >
+            <p class="text-sm font-semibold text-slate-700">Vista previa</p>
+            <div class="grid min-h-36 place-items-center rounded-md border border-stone-300 bg-white p-4 shadow-inner">
+              @if (selectedPreset().type === 'table') {
+                <div class="relative h-28 w-full max-w-44">
+                  <app-table-visual [shape]="selectedPreset().shape ?? 'rectangle'" [selected]="true" />
+                  <div class="absolute inset-0 grid place-items-center">
+                    <span class="grid min-w-14 place-items-center rounded-md bg-white/85 px-2 py-1 text-center shadow-sm">
+                      <span class="max-w-full truncate text-sm font-semibold text-stone-950">{{ elementLabelInput() }}</span>
+                      <span class="text-[0.68rem] font-medium text-stone-600">{{ previewCapacityLabel() }}</span>
+                    </span>
+                  </div>
+                </div>
+              } @else {
+                <div class="grid w-full place-items-center gap-2">
+                  <div class="grid place-items-center" [class]="previewObjectClass()" [ngClass]="previewZoneClass()">
+                    @if (selectedPreset().type !== 'bar' && selectedPreset().type !== 'stool') {
+                      <app-icon [name]="previewZoneIcon()" size="sm" />
+                    }
+                    <span class="max-w-full truncate text-sm font-semibold">{{ elementLabelInput() }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="grid gap-1 text-sm text-slate-600">
+              <p class="font-semibold text-slate-800">{{ selectedPreset().label }}</p>
+              <p>{{ elementSizeLabel() }}</p>
+              @if (previewCapacityLabel()) {
+                <p>Capacidad: {{ previewCapacityLabel() }}</p>
+              }
+              <p>{{ selectedPositionLabel() }}</p>
+            </div>
+          </aside>
         </div>
 
         <div class="mt-5">
           <div class="mb-3 flex items-center justify-between gap-3">
-            <p class="text-sm font-semibold text-slate-700">Position selector</p>
+            <div>
+              <p class="text-sm font-semibold text-slate-700">Selecciona una posición</p>
+              <p class="text-xs text-slate-500">Selecciona la esquina superior izquierda del elemento.</p>
+            </div>
             <p class="text-sm text-slate-500">{{ addElementGridLabel() }}</p>
           </div>
 
-          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-3">
-            <div class="grid min-w-[28rem] gap-1" aria-label="Position selector" [ngStyle]="addElementGridStyle()">
+          <div class="overflow-x-auto rounded-lg border border-stone-300 bg-slate-100 p-3 shadow-inner">
+            <div class="grid min-w-[28rem] gap-1 rounded-md border border-stone-300 bg-white/35 p-1" aria-label="Position selector" [ngStyle]="addElementGridStyle()">
               @for (cell of floorCells(); track cell.column + '-' + cell.row) {
                 <button
                   type="button"
                   class="h-9 rounded-md border text-[0.65rem] font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   [ngClass]="positionCellClass(cell)"
-                  [attr.aria-label]="'Place at column ' + cell.column + ' row ' + cell.row"
+                  [attr.aria-disabled]="positionCellAriaDisabled(cell)"
+                  [attr.aria-label]="'Colocar en columna ' + cell.column + ' fila ' + cell.row"
                   (mouseenter)="previewPositionAt(cell)"
                   (mouseleave)="clearPreviewPosition()"
                   (click)="selectPosition(cell)"
@@ -305,16 +348,18 @@
           </div>
 
           @if (isSelectedPositionInvalid()) {
-            <p class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">This position is not available.</p>
+            <p class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+              La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.
+            </p>
           }
         </div>
 
         <div class="mt-6 flex justify-end gap-2">
           <app-button variant="neutral" fill="outline" (pressed)="closeAddElementModal()">
-            Cancel
+            Cancelar
           </app-button>
           <app-button variant="neutral" [disabled]="!canAddSelectedElement()" (pressed)="addSelectedElement()">
-            {{ editingElementId() ? 'Save element' : 'Add selected element' }}
+            {{ editingElementId() ? 'Guardar elemento' : 'Añadir elemento seleccionado' }}
           </app-button>
         </div>
       </section>

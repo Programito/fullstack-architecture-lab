@@ -10,9 +10,15 @@ describe('RestaurantPosStore', () => {
   });
 
   it('creates the initial state correctly', () => {
-    expect(store.gridRows()).toBe(6);
-    expect(store.gridColumns()).toBe(6);
+    expect(store.gridRows()).toBe(10);
+    expect(store.gridColumns()).toBe(10);
     expect(store.floorElements().length).toBeGreaterThan(0);
+    expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
+      expect.objectContaining({ x: 1, y: 1, width: 2, height: 2 }),
+    );
+    expect(store.floorElements().find((element) => element.id === 'floor-element-2')).toEqual(
+      expect.objectContaining({ x: 5, y: 1, width: 2, height: 2 }),
+    );
     expect(store.restaurantTables().length).toBeGreaterThan(0);
     expect(store.products().length).toBeGreaterThan(0);
     expect(store.selectedTableId()).toBeNull();
@@ -28,26 +34,26 @@ describe('RestaurantPosStore', () => {
   });
 
   it('sets the full grid size when the value is valid', () => {
-    store.setGridSize(7, 8);
+    store.setGridSize(9, 10);
 
-    expect(store.gridRows()).toBe(7);
-    expect(store.gridColumns()).toBe(8);
+    expect(store.gridRows()).toBe(9);
+    expect(store.gridColumns()).toBe(10);
     expect(store.errorMessage()).toBeNull();
   });
 
   it('prevents setting a grid size smaller than one', () => {
     store.setGridSize(0, 6);
 
-    expect(store.gridRows()).toBe(6);
-    expect(store.gridColumns()).toBe(6);
+    expect(store.gridRows()).toBe(10);
+    expect(store.gridColumns()).toBe(10);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 
   it('prevents setting a grid size that would leave elements outside bounds', () => {
     store.setGridSize(4, 4);
 
-    expect(store.gridRows()).toBe(6);
-    expect(store.gridColumns()).toBe(6);
+    expect(store.gridRows()).toBe(10);
+    expect(store.gridColumns()).toBe(10);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 
@@ -178,8 +184,8 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Overlap',
-      x: 0,
-      y: 0,
+      x: 1,
+      y: 1,
       width: 1,
       height: 1,
     });
@@ -194,7 +200,7 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Outside',
-      x: 6,
+      x: 10,
       y: 0,
       width: 1,
       height: 1,
@@ -247,7 +253,7 @@ describe('RestaurantPosStore', () => {
       expect.objectContaining({
         type: 'table',
         label: 'M5',
-        x: 1,
+        x: 0,
         y: 0,
         width: 1,
         height: 1,
@@ -323,7 +329,7 @@ describe('RestaurantPosStore', () => {
     const initialElementCount = store.floorElements().length;
     const initialTableCount = store.restaurantTables().length;
 
-    store.addTable(7, 1);
+    store.addTable(11, 1);
 
     expect(store.floorElements().length).toBe(initialElementCount);
     expect(store.restaurantTables().length).toBe(initialTableCount);
@@ -353,11 +359,11 @@ describe('RestaurantPosStore', () => {
   });
 
   it('resizes a floor element to a valid size', () => {
-    store.resizeFloorElement('floor-element-1', 2, 1);
+    store.resizeFloorElement('floor-element-1', 3, 1);
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
-        width: 2,
+        width: 3,
         height: 1,
       }),
     );
@@ -365,12 +371,12 @@ describe('RestaurantPosStore', () => {
   });
 
   it('prevents resizing a floor element over another element', () => {
-    store.resizeFloorElement('floor-element-1', 3, 1);
+    store.resizeFloorElement('floor-element-1', 6, 2);
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
-        width: 1,
-        height: 1,
+        width: 2,
+        height: 2,
       }),
     );
     expect(store.errorMessage()).toBe('Cannot place element here');
@@ -387,24 +393,24 @@ describe('RestaurantPosStore', () => {
   });
 
   it('moves a floor element to a valid empty grid position', () => {
-    store.moveFloorElement('floor-element-1', 1, 0);
+    store.moveFloorElement('floor-element-1', 3, 1);
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
-        x: 1,
-        y: 0,
+        x: 3,
+        y: 1,
       }),
     );
     expect(store.errorMessage()).toBeNull();
   });
 
   it('prevents moving a floor element outside the grid', () => {
-    store.moveFloorElement('floor-element-1', 6, 0);
+    store.moveFloorElement('floor-element-1', 9, 0);
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
-        x: 0,
-        y: 0,
+        x: 1,
+        y: 1,
       }),
     );
     expect(store.errorMessage()).toBe('Cannot place element here');
@@ -415,20 +421,20 @@ describe('RestaurantPosStore', () => {
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
-        x: 0,
-        y: 0,
+        x: 1,
+        y: 1,
       }),
     );
     expect(store.errorMessage()).toBe('Cannot place element here');
   });
 
   it('prevents moving a floor element over another element', () => {
-    store.moveFloorElement('floor-element-1', 2, 0);
+    store.moveFloorElement('floor-element-1', 5, 1);
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
-        x: 0,
-        y: 0,
+        x: 1,
+        y: 1,
       }),
     );
     expect(store.errorMessage()).toBe('Cannot place element here');
@@ -438,15 +444,15 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Last row',
-      x: 5,
-      y: 5,
+      x: 9,
+      y: 9,
       width: 1,
       height: 1,
     });
 
     store.removeRow();
 
-    expect(store.gridRows()).toBe(6);
+    expect(store.gridRows()).toBe(10);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 
@@ -454,15 +460,15 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Last column',
-      x: 5,
-      y: 5,
+      x: 9,
+      y: 9,
       width: 1,
       height: 1,
     });
 
     store.removeColumn();
 
-    expect(store.gridColumns()).toBe(6);
+    expect(store.gridColumns()).toBe(10);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 });

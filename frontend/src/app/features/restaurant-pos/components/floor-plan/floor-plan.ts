@@ -6,6 +6,8 @@ import type { FloorElement, TableShape } from '../../models/restaurant-pos.model
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { TableVisual } from '../table-visual/table-visual';
 
+const GRID_CELL_SIZE = '5.5rem';
+
 @Component({
   selector: 'app-floor-plan',
   imports: [CdkDrag, CdkDragHandle, Icon, NgClass, NgStyle, TableVisual],
@@ -27,8 +29,8 @@ export class FloorPlan {
 
   protected gridStyle(): Record<string, string> {
     return {
-      'grid-template-columns': `repeat(${this.store.gridColumns()}, minmax(5.5rem, 1fr))`,
-      'grid-template-rows': `repeat(${this.store.gridRows()}, minmax(5.5rem, 1fr))`,
+      'grid-template-columns': `repeat(${this.store.gridColumns()}, ${GRID_CELL_SIZE})`,
+      'grid-template-rows': `repeat(${this.store.gridRows()}, ${GRID_CELL_SIZE})`,
     };
   }
 
@@ -79,8 +81,10 @@ export class FloorPlan {
     const movement = gridElement ? this.getGridMovement(event.distance, gridElement) : { x: 0, y: 0 };
     event.source.reset();
 
-    if (movement.x !== 0 || movement.y !== 0) {
-      this.store.moveFloorElement(element.id, element.x + movement.x, element.y + movement.y);
+    const nextPosition = this.clampElementPosition(element, element.x + movement.x, element.y + movement.y);
+
+    if (nextPosition.x !== element.x || nextPosition.y !== element.y) {
+      this.store.moveFloorElement(element.id, nextPosition.x, nextPosition.y);
     }
   }
 
@@ -104,9 +108,9 @@ export class FloorPlan {
 
   protected elementClass(element: FloorElement): string {
     return [
-      'group relative z-10 grid min-h-20 place-items-center rounded-md border border-transparent p-2 text-center transition focus:outline-none',
-      this.layoutMode() ? 'cursor-pointer hover:border-stone-300 hover:bg-white/35' : '',
-      this.isSelected(element) ? 'ring-2 ring-cyan-500 ring-offset-2 ring-offset-stone-100' : '',
+      'group relative z-10 grid min-h-20 place-items-center rounded-md border border-stone-300 bg-white/20 p-1 text-center transition focus:outline-none',
+      this.layoutMode() ? 'cursor-pointer hover:border-cyan-300 hover:bg-white/35' : '',
+      this.isSelected(element) ? 'z-40 border-cyan-400 ring-2 ring-cyan-500 ring-offset-2 ring-offset-stone-100' : '',
     ].join(' ');
   }
 
@@ -120,6 +124,17 @@ export class FloorPlan {
 
   protected zoneObjectLabel(element: FloorElement): string {
     return `${this.displayLabel(element)} object`;
+  }
+
+  protected isVerticalBar(element: FloorElement): boolean {
+    return element.type === 'bar' && element.height > element.width;
+  }
+
+  protected barObjectClass(element: FloorElement): string {
+    return [
+      'grid h-full w-full place-items-center rounded-full border shadow-sm',
+      this.isVerticalBar(element) ? 'px-2 py-4' : 'px-4 py-2',
+    ].join(' ');
   }
 
   protected zoneClass(element: FloorElement): string {
@@ -163,7 +178,7 @@ export class FloorPlan {
       return 'inset-0';
     }
 
-    return 'inset-1';
+    return 'inset-0.5';
   }
 
   private getGridMovement(distance: { x: number; y: number }, gridElement: HTMLElement): { x: number; y: number } {
@@ -177,6 +192,16 @@ export class FloorPlan {
     return {
       x: columnStep > 0 ? Math.round(distance.x / columnStep) : 0,
       y: rowStep > 0 ? Math.round(distance.y / rowStep) : 0,
+    };
+  }
+
+  private clampElementPosition(element: FloorElement, x: number, y: number): { x: number; y: number } {
+    const maxX = Math.max(0, this.store.gridColumns() - element.width);
+    const maxY = Math.max(0, this.store.gridRows() - element.height);
+
+    return {
+      x: Math.min(Math.max(0, x), maxX),
+      y: Math.min(Math.max(0, y), maxY),
     };
   }
 }

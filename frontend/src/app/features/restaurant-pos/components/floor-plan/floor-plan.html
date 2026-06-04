@@ -6,11 +6,18 @@
     <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white"></span>Entrance</span>
   </div>
 
-  <div class="overflow-x-auto rounded-lg border border-stone-200 bg-stone-100 px-4 pb-4 pt-20 shadow-inner">
-    <div class="floor-plan-drag-boundary grid min-w-[38rem] gap-2 rounded-md bg-[linear-gradient(90deg,rgba(120,113,108,0.12)_1px,transparent_1px),linear-gradient(rgba(120,113,108,0.12)_1px,transparent_1px)] bg-[length:5.9rem_5.9rem] p-2" [ngStyle]="gridStyle()">
+  <div
+    class="grid max-h-[calc(100dvh-14rem)] place-items-center overflow-auto rounded-lg border border-stone-300 bg-stone-100 px-4 pb-4 pt-10 shadow-inner"
+    aria-label="Floor plan canvas"
+  >
+    <div
+      class="floor-plan-drag-boundary grid gap-2 overflow-visible rounded-md border border-stone-300 bg-stone-50 shadow-sm"
+      aria-label="Floor plan matrix"
+      [ngStyle]="gridStyle()"
+    >
       @for (cell of cells(); track cell.x + '-' + cell.y) {
         <div
-          class="rounded-sm border border-transparent bg-white/15 transition hover:bg-white/30"
+          class="rounded-sm border border-stone-200/35 bg-white/5 transition hover:border-cyan-200 hover:bg-white/25"
           [style.grid-column]="cell.x + 1"
           [style.grid-row]="cell.y + 1"
           [attr.aria-label]="'Cell ' + cell.x + ', ' + cell.y"
@@ -35,7 +42,7 @@
         >
           @if (layoutMode() && isSelected(element)) {
             <div
-              class="absolute -top-11 left-1/2 z-30 inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white p-1 text-slate-700 shadow-lg"
+              class="absolute -top-11 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white p-1 text-slate-700 shadow-lg"
               role="toolbar"
               aria-label="Layout element actions"
             >
@@ -88,9 +95,9 @@
               </div>
             </div>
           } @else if (element.type === 'bar') {
-            <div cdkDragHandle class="grid w-full cursor-grab gap-1 active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
-              <div class="relative mx-auto h-11 w-full max-w-64 rounded-full border shadow-sm" [ngClass]="zoneClass(element)">
-                <span class="absolute inset-x-4 top-1/2 -translate-y-1/2 truncate text-sm font-semibold">{{ displayLabel(element) }}</span>
+            <div cdkDragHandle class="grid h-full w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
+              <div [class]="barObjectClass(element)" [ngClass]="zoneClass(element)">
+                <span class="max-w-full truncate text-center text-sm font-semibold">{{ displayLabel(element) }}</span>
               </div>
             </div>
           } @else if (element.type === 'stool') {
