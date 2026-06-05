@@ -7,9 +7,26 @@
   </div>
 
   <div
-    class="grid max-h-[calc(100dvh-14rem)] place-items-center overflow-auto rounded-lg border border-stone-300 bg-stone-100 px-4 pb-4 pt-10 shadow-inner"
+    #floorCanvas
+    cdkScrollable
+    class="relative grid max-h-[calc(100dvh-14rem)] place-items-center overflow-auto rounded-lg border border-stone-300 bg-stone-100 px-4 pb-4 pt-10 shadow-inner"
+    [class.cursor-grab]="hasCanvasOverflow() && !isPanningCanvas()"
+    [class.cursor-grabbing]="isPanningCanvas()"
     aria-label="Floor plan canvas"
+    (pointerdown)="handleCanvasPointerDown($event)"
+    (pointermove)="handleCanvasPointerMove($event)"
+    (pointerup)="handleCanvasPointerUp($event)"
+    (pointercancel)="handleCanvasPointerUp($event)"
   >
+    @if (showScrollHint()) {
+      <div
+        class="floor-plan-scroll-hint pointer-events-none absolute bottom-4 right-4 z-50 grid h-12 w-12 place-items-center rounded-full border border-cyan-200 bg-white/90 text-cyan-700 shadow-lg"
+        aria-label="Scrollable floor plan hint"
+      >
+        <app-icon name="pan_tool_alt" size="md" />
+      </div>
+    }
+
     <div
       class="floor-plan-drag-boundary grid gap-2 overflow-visible rounded-md border border-stone-300 bg-stone-50 shadow-sm"
       aria-label="Floor plan matrix"
@@ -28,9 +45,11 @@
         <div
           cdkDrag
           cdkDragBoundary=".floor-plan-drag-boundary"
+          cdkDragPreviewClass="floor-plan-drag-preview"
           [cdkDragDisabled]="!layoutMode() || !isSelected(element)"
           [class]="elementClass(element)"
           [ngStyle]="elementStyle(element)"
+          data-floor-element="true"
           [attr.data-table-shape]="element.type === 'table' ? tableShape(element) : null"
           [attr.aria-pressed]="isSelected(element)"
           [attr.aria-label]="elementAriaLabel(element)"
@@ -38,8 +57,19 @@
           tabindex="0"
           (click)="handleElementClick(element)"
           (keydown.enter)="handleElementClick(element)"
+          (cdkDragMoved)="handleDragMoved($event)"
           (cdkDragEnded)="handleDragEnded($event, element)"
         >
+          <ng-template cdkDragPlaceholder>
+            <div class="floor-plan-drag-placeholder"></div>
+          </ng-template>
+
+          <ng-template cdkDragPreview matchSize>
+            <div class="floor-plan-drag-preview-shell">
+              <ng-container [ngTemplateOutlet]="floorElementVisual" [ngTemplateOutletContext]="{ $implicit: element }" />
+            </div>
+          </ng-template>
+
           @if (layoutMode() && isSelected(element)) {
             <div
               class="absolute -top-11 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white p-1 text-slate-700 shadow-lg"
@@ -83,42 +113,46 @@
             </div>
           }
 
-          @if (element.type === 'table') {
-            <div cdkDragHandle class="relative flex h-full min-h-20 w-full cursor-grab items-center justify-center active:cursor-grabbing">
-              <div class="pointer-events-none absolute" [ngClass]="tableVisualInsetClass(element)" [attr.aria-label]="'Table shape ' + tableShape(element)">
-                <app-table-visual [shape]="tableShape(element)" [selected]="isSelected(element)" />
-              </div>
-
-              <div class="relative z-10 grid min-w-14 place-items-center rounded-md bg-white/80 px-2 py-1 text-center shadow-sm">
-                <span class="max-w-full truncate text-sm font-semibold text-stone-950">{{ displayLabel(element) }}</span>
-                <span class="text-[0.68rem] font-medium text-stone-600">{{ tableCapacity(element) }}</span>
-              </div>
-            </div>
-          } @else if (element.type === 'bar') {
-            <div cdkDragHandle class="grid h-full w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
-              <div [class]="barObjectClass(element)" [ngClass]="zoneClass(element)">
-                <span class="max-w-full truncate text-center text-sm font-semibold">{{ displayLabel(element) }}</span>
-              </div>
-            </div>
-          } @else if (element.type === 'stool') {
-            <div cdkDragHandle class="grid h-full min-h-16 w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
-              <div class="grid h-12 w-12 place-items-center rounded-full border shadow-sm" [ngClass]="zoneClass(element)">
-                <span class="text-[0.62rem] font-semibold">{{ displayLabel(element) }}</span>
-              </div>
-            </div>
-          } @else {
-            <div
-              cdkDragHandle
-              class="grid h-full min-h-16 w-full place-items-center gap-1 rounded-md border px-3 py-2 shadow-sm"
-              [ngClass]="zoneClass(element)"
-              [attr.aria-label]="zoneObjectLabel(element)"
-            >
-              <app-icon [name]="zoneIcon(element)" size="sm" />
-              <span class="max-w-full truncate text-sm font-semibold">{{ displayLabel(element) }}</span>
-            </div>
-          }
+          <ng-container [ngTemplateOutlet]="floorElementVisual" [ngTemplateOutletContext]="{ $implicit: element }" />
         </div>
       }
     </div>
   </div>
 </div>
+
+<ng-template #floorElementVisual let-element>
+  @if (element.type === 'table') {
+    <div cdkDragHandle class="relative flex h-full min-h-10 w-full cursor-grab items-center justify-center active:cursor-grabbing">
+      <div class="pointer-events-none absolute" [ngClass]="tableVisualInsetClass(element)" [attr.aria-label]="'Table shape ' + tableShape(element)">
+        <app-table-visual [shape]="tableShape(element)" [selected]="isSelected(element)" />
+      </div>
+
+      <div class="relative z-10 grid min-w-10 place-items-center rounded-md bg-white/80 px-1 py-0.5 text-center shadow-sm">
+        <span class="max-w-full truncate text-xs font-semibold text-stone-950">{{ displayLabel(element) }}</span>
+        <span class="text-[0.55rem] font-medium text-stone-600">{{ tableCapacity(element) }}</span>
+      </div>
+    </div>
+  } @else if (element.type === 'bar') {
+    <div cdkDragHandle class="grid h-full w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
+      <div [class]="barObjectClass(element)" [ngClass]="zoneClass(element)">
+        <span class="max-w-full truncate text-center text-xs font-semibold">{{ displayLabel(element) }}</span>
+      </div>
+    </div>
+  } @else if (element.type === 'stool') {
+    <div cdkDragHandle class="grid h-full min-h-8 w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
+      <div class="grid h-6 w-6 place-items-center rounded-full border shadow-sm" [ngClass]="zoneClass(element)">
+        <span class="text-[0.5rem] font-semibold">{{ displayLabel(element) }}</span>
+      </div>
+    </div>
+  } @else {
+    <div
+      cdkDragHandle
+      class="grid h-full min-h-8 w-full place-items-center gap-0.5 rounded-md border px-1 py-1 shadow-sm"
+      [ngClass]="zoneClass(element)"
+      [attr.aria-label]="zoneObjectLabel(element)"
+    >
+      <app-icon [name]="zoneIcon(element)" size="sm" />
+      <span class="max-w-full truncate text-xs font-semibold">{{ displayLabel(element) }}</span>
+    </div>
+  }
+</ng-template>

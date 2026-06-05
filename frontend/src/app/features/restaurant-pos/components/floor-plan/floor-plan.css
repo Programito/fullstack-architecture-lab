@@ -1,0 +1,41 @@
+.floor-plan-scroll-hint {
+  animation: floor-plan-scroll-hint 1.25s ease-in-out infinite;
+}
+
+.floor-plan-drag-preview {
+  pointer-events: none;
+  z-index: 60;
+}
+
+.floor-plan-drag-preview-shell {
+  display: grid;
+  height: 100%;
+  min-height: 100%;
+  width: 100%;
+  place-items: stretch;
+}
+
+.floor-plan-drag-placeholder {
+  height: 100%;
+  min-height: 100%;
+  width: 100%;
+  border: 2px solid rgb(34 211 238);
+  border-radius: 0.375rem;
+  background: rgb(236 254 255 / 0.28);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.65);
+}
+
+@keyframes floor-plan-scroll-hint {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  35% {
+    transform: translate3d(-0.35rem, -0.25rem, 0);
+  }
+
+  70% {
+    transform: translate3d(0.25rem, 0.2rem, 0);
+  }
+}

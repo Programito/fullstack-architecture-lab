@@ -6,20 +6,36 @@
         <p class="mt-1 text-sm text-slate-500">Design your dining room, bar, kitchen and service areas.</p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <app-button variant="neutral" fill="outline" size="sm" (pressed)="openResizeModal()">
-          Resize layout
-        </app-button>
-        <app-button variant="neutral" size="sm" (pressed)="openAddElementModal()">
-          Add element
-        </app-button>
-        <app-button variant="primary" fill="outline" size="sm">
-          Save changes
-        </app-button>
+      <div class="flex flex-wrap items-center gap-3">
+        <div
+          class="inline-flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"
+          role="toolbar"
+          aria-label="Layout editing actions"
+        >
+          <app-button variant="neutral" fill="clear" size="sm" ariaLabel="Resize layout" (pressed)="openResizeModal()">
+            <span class="inline-flex items-center gap-1.5">
+              <app-icon name="tune" size="sm" />
+              <span>Resize layout</span>
+            </span>
+          </app-button>
+          <app-button variant="neutral" size="sm" ariaLabel="Add element" (pressed)="openAddElementModal()">
+            <span class="inline-flex items-center gap-1.5">
+              <app-icon name="add" size="sm" />
+              <span>Add element</span>
+            </span>
+          </app-button>
+          <app-button variant="primary" fill="outline" size="sm" ariaLabel="Save changes" disabled>
+            <span class="inline-flex items-center gap-1.5">
+              <app-icon name="save" size="sm" />
+              <span>Save changes</span>
+            </span>
+          </app-button>
+        </div>
         <a
-          class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500"
           routerLink="/restaurant-pos/service"
         >
+          <app-icon name="arrow_back" size="sm" />
           Back to service mode
         </a>
       </div>
@@ -31,7 +47,6 @@
       <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 class="text-lg font-semibold text-slate-950">Floor plan</h2>
-          <p class="text-sm text-slate-500">{{ store.gridColumns() }} columns x {{ store.gridRows() }} rows</p>
         </div>
 
         @if (store.errorMessage()) {
@@ -39,7 +54,21 @@
         }
       </div>
 
-      <app-floor-plan (editElement)="openEditElementModal($event)" (resizeElement)="openResizeElementModal($event)" />
+      <div
+        class="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-cyan-100 bg-cyan-50/60 px-3 py-2 text-xs font-medium text-slate-700"
+        aria-label="Layout status"
+      >
+        <span class="rounded-full bg-cyan-600 px-2 py-1 text-white">Layout mode</span>
+        <span>{{ store.gridColumns() }} columns x {{ store.gridRows() }} rows</span>
+        <span>{{ floorElementCountLabel() }}</span>
+        <span class="text-slate-500">{{ selectedLayoutElementLabel() }}</span>
+      </div>
+
+      <app-floor-plan
+        (editElement)="openEditElementModal($event)"
+        (resizeElement)="openResizeElementModal($event)"
+        (selectedElementChange)="handleSelectedLayoutElementChange($event)"
+      />
     </section>
   </div>
 
@@ -61,14 +90,14 @@
           </app-button>
         </div>
 
-        <p class="mt-5 rounded-md bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-900">{{ resizePreviewLabel() }}</p>
+        <p class="mt-4 rounded-md bg-cyan-50 px-3 py-1.5 text-sm font-semibold text-cyan-900">{{ resizePreviewLabel() }}</p>
 
-        <div class="mt-4 grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)]">
-          <div class="grid grid-cols-12 gap-1" aria-label="Resize matrix">
+        <div class="mt-4 grid gap-4">
+          <div class="grid place-content-start gap-0.5 justify-self-start [grid-template-columns:repeat(20,1rem)]" aria-label="Resize matrix">
             @for (cell of resizeCells; track cell.column + '-' + cell.row) {
               <button
                 type="button"
-                class="h-6 w-6 rounded-sm border transition"
+                class="h-4 w-4 rounded-[0.2rem] border transition focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 [ngClass]="resizeCellClass(cell)"
                 [attr.aria-label]="'Select ' + cell.column + ' columns x ' + cell.row + ' rows'"
                 [attr.aria-pressed]="isResizeCellSelected(cell)"
@@ -78,7 +107,7 @@
             }
           </div>
 
-          <div class="grid gap-4">
+          <div class="grid gap-3 sm:grid-cols-2">
             <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="resize-rows">
               Rows
               <input

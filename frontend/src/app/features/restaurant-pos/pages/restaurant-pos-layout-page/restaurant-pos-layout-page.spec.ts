@@ -8,9 +8,11 @@ describe('RestaurantPosLayoutPage', () => {
 
     expect(screen.getByText('Restaurant layout')).toBeTruthy();
     expect(screen.getByText('Design your dining room, bar, kitchen and service areas.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Resize layout' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add element' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
+    const toolbar = screen.getByRole('toolbar', { name: 'Layout editing actions' });
+    expect(within(toolbar).getByRole('button', { name: 'Resize layout' })).toBeTruthy();
+    expect(within(toolbar).getByRole('button', { name: 'Add element' })).toBeTruthy();
+    expect(within(toolbar).getByRole('button', { name: 'Save changes' })).toHaveProperty('disabled', true);
+    expect(within(toolbar).queryByRole('link', { name: 'Back to service mode' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Back to service mode' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /add row/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /add column/i })).toBeNull();
@@ -20,15 +22,30 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.queryByLabelText('Height')).toBeNull();
   });
 
+  it('shows compact layout status above the floor plan', async () => {
+    const { fixture } = await render(RestaurantPosLayoutPage);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    expect(screen.getByText('Layout mode')).toBeTruthy();
+    expect(screen.getByText('20 columns x 20 rows')).toBeTruthy();
+    expect(screen.getByText(`${store.floorElements().length} elements`)).toBeTruthy();
+    expect(screen.getByText('No element selected')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('M1 floor element'));
+
+    expect(screen.getByText('Selected: M1')).toBeTruthy();
+  });
+
   it('opens the resize layout modal from the toolbar', async () => {
     await render(RestaurantPosLayoutPage);
 
     fireEvent.click(screen.getByRole('button', { name: 'Resize layout' }));
 
     expect(screen.getByRole('dialog', { name: 'Resize layout' })).toBeTruthy();
-    expect(within(screen.getByRole('dialog', { name: 'Resize layout' })).getByText('10 columns x 10 rows')).toBeTruthy();
-    expect(screen.getByLabelText('Rows')).toHaveProperty('value', '10');
-    expect(screen.getByLabelText('Columns')).toHaveProperty('value', '10');
+    expect(within(screen.getByRole('dialog', { name: 'Resize layout' })).getByText('20 columns x 20 rows')).toBeTruthy();
+    expect(within(screen.getByLabelText('Resize matrix')).getAllByRole('button').length).toBe(400);
+    expect(screen.getByLabelText('Rows')).toHaveProperty('value', '20');
+    expect(screen.getByLabelText('Columns')).toHaveProperty('value', '20');
   });
 
   it('updates the rows and columns preview when selecting cells in the resize matrix', async () => {
@@ -62,7 +79,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply layout size' }));
     fixture.detectChanges();
 
-    expect(store.gridColumns()).toBe(10);
+    expect(store.gridColumns()).toBe(20);
     expect(screen.getAllByText('Cannot resize layout because some elements would be outside the grid.').length).toBeGreaterThan(0);
     expect(screen.getByRole('dialog', { name: 'Resize layout' })).toBeTruthy();
   });
@@ -74,8 +91,8 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resize layout' }));
     fireEvent.click(screen.getByRole('button', { name: 'Select 10 columns x 9 rows' }));
 
-    expect(store.gridRows()).toBe(10);
-    expect(store.gridColumns()).toBe(10);
+    expect(store.gridRows()).toBe(20);
+    expect(store.gridColumns()).toBe(20);
 
     fireEvent.click(screen.getByRole('button', { name: 'Apply layout size' }));
 
@@ -96,7 +113,7 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.getByLabelText('Tamaño predefinido')).toHaveProperty('value', 'small-table');
     expect(screen.getByLabelText('Ancho')).toHaveProperty('value', '2');
     expect(screen.getByLabelText('Alto')).toHaveProperty('value', '2');
-    expect(within(screen.getByRole('dialog', { name: 'Añadir elemento' })).getByText('10 columns x 10 rows')).toBeTruthy();
+    expect(within(screen.getByRole('dialog', { name: 'Añadir elemento' })).getByText('20 columns x 20 rows')).toBeTruthy();
   });
 
   it('shows a selected element preview and summary in the add element modal', async () => {
@@ -230,7 +247,7 @@ describe('RestaurantPosLayoutPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'stool' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
     fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento seleccionado' }));
 
     expect(store.floorElements().at(-1)).toEqual(
@@ -304,7 +321,11 @@ describe('RestaurantPosLayoutPage', () => {
   });
 
   it('uses custom occupied size when validating placement', async () => {
-    await render(RestaurantPosLayoutPage);
+    const { fixture } = await render(RestaurantPosLayoutPage);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    store.setGridSize(10, 10);
+    fixture.detectChanges();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
@@ -347,7 +368,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
 
-    const unavailableCell = screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' });
+    const unavailableCell = screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' });
     expect(unavailableCell.getAttribute('aria-disabled')).toBe('true');
     expect(unavailableCell.className).toContain('cursor-not-allowed');
   });

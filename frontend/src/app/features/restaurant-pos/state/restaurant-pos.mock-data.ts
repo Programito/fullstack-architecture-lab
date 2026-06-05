@@ -1,7 +1,7 @@
 import type { FloorElement, OrdersByTable, Product, RestaurantTable, TableOrder } from '../models/restaurant-pos.models';
 
-export const DEFAULT_GRID_ROWS = 10;
-export const DEFAULT_GRID_COLUMNS = 10;
+export const DEFAULT_GRID_ROWS = 20;
+export const DEFAULT_GRID_COLUMNS = 20;
 
 export const MOCK_FLOOR_ELEMENTS: FloorElement[] = [
   {

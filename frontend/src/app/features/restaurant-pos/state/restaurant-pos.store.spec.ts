@@ -10,8 +10,8 @@ describe('RestaurantPosStore', () => {
   });
 
   it('creates the initial state correctly', () => {
-    expect(store.gridRows()).toBe(10);
-    expect(store.gridColumns()).toBe(10);
+    expect(store.gridRows()).toBe(20);
+    expect(store.gridColumns()).toBe(20);
     expect(store.floorElements().length).toBeGreaterThan(0);
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({ x: 1, y: 1, width: 2, height: 2 }),
@@ -44,16 +44,16 @@ describe('RestaurantPosStore', () => {
   it('prevents setting a grid size smaller than one', () => {
     store.setGridSize(0, 6);
 
-    expect(store.gridRows()).toBe(10);
-    expect(store.gridColumns()).toBe(10);
+    expect(store.gridRows()).toBe(20);
+    expect(store.gridColumns()).toBe(20);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 
   it('prevents setting a grid size that would leave elements outside bounds', () => {
     store.setGridSize(4, 4);
 
-    expect(store.gridRows()).toBe(10);
-    expect(store.gridColumns()).toBe(10);
+    expect(store.gridRows()).toBe(20);
+    expect(store.gridColumns()).toBe(20);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 
@@ -200,7 +200,7 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Outside',
-      x: 10,
+      x: 20,
       y: 0,
       width: 1,
       height: 1,
@@ -329,7 +329,7 @@ describe('RestaurantPosStore', () => {
     const initialElementCount = store.floorElements().length;
     const initialTableCount = store.restaurantTables().length;
 
-    store.addTable(11, 1);
+    store.addTable(21, 1);
 
     expect(store.floorElements().length).toBe(initialElementCount);
     expect(store.restaurantTables().length).toBe(initialTableCount);
@@ -405,7 +405,7 @@ describe('RestaurantPosStore', () => {
   });
 
   it('prevents moving a floor element outside the grid', () => {
-    store.moveFloorElement('floor-element-1', 9, 0);
+    store.moveFloorElement('floor-element-1', 19, 0);
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({
@@ -444,15 +444,15 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Last row',
-      x: 9,
-      y: 9,
+      x: 19,
+      y: 19,
       width: 1,
       height: 1,
     });
 
     store.removeRow();
 
-    expect(store.gridRows()).toBe(10);
+    expect(store.gridRows()).toBe(20);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 
@@ -460,15 +460,15 @@ describe('RestaurantPosStore', () => {
     store.addFloorElement({
       type: 'blocked',
       label: 'Last column',
-      x: 9,
-      y: 9,
+      x: 19,
+      y: 19,
       width: 1,
       height: 1,
     });
 
     store.removeColumn();
 
-    expect(store.gridColumns()).toBe(10);
+    expect(store.gridColumns()).toBe(20);
     expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
   });
 });

@@ -4,7 +4,29 @@ import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { FloorPlan } from './floor-plan';
 
 type FloorPlanDragHarness = {
+  evaluateCanvasOverflow: () => void;
+  handleCanvasPointerDown: (event: PointerEvent) => void;
+  handleCanvasPointerMove: (event: PointerEvent) => void;
+  handleCanvasPointerUp: (event: PointerEvent) => void;
+  handleDragMoved: (event: { pointerPosition: { x: number; y: number } }) => void;
   handleDragEnded: (event: { distance: { x: number; y: number }; source: { getRootElement: () => HTMLElement; reset: () => void } }, element: FloorElement) => void;
+};
+
+const setElementSize = (
+  element: HTMLElement,
+  size: {
+    clientWidth: number;
+    clientHeight: number;
+    scrollWidth: number;
+    scrollHeight: number;
+  },
+) => {
+  Object.defineProperties(element, {
+    clientWidth: { configurable: true, value: size.clientWidth },
+    clientHeight: { configurable: true, value: size.clientHeight },
+    scrollWidth: { configurable: true, value: size.scrollWidth },
+    scrollHeight: { configurable: true, value: size.scrollHeight },
+  });
 };
 
 const createDragEndEvent = (distance: { x: number; y: number }) => {
@@ -49,8 +71,8 @@ describe('FloorPlan', () => {
     await render(FloorPlan);
 
     const matrix = screen.getByLabelText('Floor plan matrix');
-    expect(matrix.getAttribute('style')).toContain('grid-template-columns: repeat(10, 5.5rem)');
-    expect(matrix.getAttribute('style')).toContain('grid-template-rows: repeat(10, 5.5rem)');
+    expect(matrix.getAttribute('style')).toContain('grid-template-columns: repeat(20, 2.75rem)');
+    expect(matrix.getAttribute('style')).toContain('grid-template-rows: repeat(20, 2.75rem)');
     expect(matrix.className).toContain('border-stone-300');
     expect(matrix.className).toContain('bg-stone-50');
     expect(matrix.className).not.toContain('linear-gradient');
@@ -76,16 +98,122 @@ describe('FloorPlan', () => {
     expect(canvas.className.split(' ')).toContain('grid');
     expect(canvas.className.split(' ')).toContain('place-items-center');
     expect(canvas.className.split(' ')).toContain('overflow-auto');
+    expect(canvas.hasAttribute('cdkscrollable')).toBe(true);
     expect(canvas.className.split(' ')).not.toContain('overflow-x-auto');
     expect(canvas.className).toContain('pt-10');
     expect(canvas.className.split(' ')).not.toContain('pt-20');
+  });
+
+  it('shows a temporary hand hint when the canvas has scrollable overflow', async () => {
+    vi.useFakeTimers();
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas');
+
+    setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 640, scrollHeight: 520 });
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).evaluateCanvasOverflow();
+    fixture.detectChanges();
+
+    expect(screen.getByLabelText('Scrollable floor plan hint')).toBeTruthy();
+    expect(screen.getByText('pan_tool_alt')).toBeTruthy();
+
+    vi.advanceTimersByTime(3500);
+    fixture.detectChanges();
+
+    expect(screen.queryByLabelText('Scrollable floor plan hint')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('does not show the hand hint when the canvas fits without overflow', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas');
+
+    setElementSize(canvas, { clientWidth: 640, clientHeight: 520, scrollWidth: 640, scrollHeight: 520 });
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).evaluateCanvasOverflow();
+    fixture.detectChanges();
+
+    expect(screen.queryByLabelText('Scrollable floor plan hint')).toBeNull();
+  });
+
+  it('rechecks overflow when the layout grows to a 20 by 20 matrix', async () => {
+    vi.useFakeTimers();
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas');
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 1600, scrollHeight: 1600 });
+    store.setGridSize(20, 20);
+    fixture.detectChanges();
+    vi.runOnlyPendingTimers();
+    fixture.detectChanges();
+
+    expect(canvas.className).toContain('cursor-grab');
+    expect(screen.getByLabelText('Scrollable floor plan hint')).toBeTruthy();
+    vi.useRealTimers();
+  });
+
+  it('lets the user pan the empty matrix when the canvas has overflow', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 1200, scrollHeight: 1200 });
+    Object.defineProperties(canvas, {
+      scrollLeft: { configurable: true, writable: true, value: 80 },
+      scrollTop: { configurable: true, writable: true, value: 60 },
+    });
+    Object.defineProperty(canvas, 'setPointerCapture', { configurable: true, value: vi.fn() });
+    Object.defineProperty(canvas, 'releasePointerCapture', { configurable: true, value: vi.fn() });
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).evaluateCanvasOverflow();
+    fixture.detectChanges();
+
+    expect(canvas.className).toContain('cursor-grab');
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleCanvasPointerDown(
+      new PointerEvent('pointerdown', { button: 0, clientX: 220, clientY: 180, pointerId: 1 }),
+    );
+    fixture.detectChanges();
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleCanvasPointerMove(
+      new PointerEvent('pointermove', { clientX: 180, clientY: 150, pointerId: 1 }),
+    );
+
+    expect(canvas.scrollLeft).toBe(120);
+    expect(canvas.scrollTop).toBe(90);
+    expect(canvas.className).toContain('cursor-grabbing');
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleCanvasPointerUp(new PointerEvent('pointerup', { pointerId: 1 }));
+    fixture.detectChanges();
+
+    expect(canvas.className).toContain('cursor-grab');
+  });
+
+  it('does not start canvas panning from a floor element', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    const element = screen.getByLabelText('M1 floor element');
+    setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 1200, scrollHeight: 1200 });
+    Object.defineProperties(canvas, {
+      scrollLeft: { configurable: true, writable: true, value: 80 },
+      scrollTop: { configurable: true, writable: true, value: 60 },
+    });
+    Object.defineProperty(canvas, 'setPointerCapture', { configurable: true, value: vi.fn() });
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).evaluateCanvasOverflow();
+    const pointerDown = new PointerEvent('pointerdown', { button: 0, clientX: 220, clientY: 180, pointerId: 1, bubbles: true });
+    Object.defineProperty(pointerDown, 'target', { configurable: true, value: element });
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleCanvasPointerDown(pointerDown);
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleCanvasPointerMove(
+      new PointerEvent('pointermove', { clientX: 180, clientY: 150, pointerId: 1 }),
+    );
+
+    expect(canvas.scrollLeft).toBe(80);
+    expect(canvas.scrollTop).toBe(60);
   });
 
   it('keeps selected elements and their toolbar above the matrix without clipping overlays', async () => {
     await render(FloorPlan);
 
     const element = screen.getByLabelText('M1 floor element');
-    expect(element.className.split(' ')).toContain('p-1');
+    expect(element.className.split(' ')).toContain('p-0.5');
     expect(element.className.split(' ')).not.toContain('p-2');
 
     fireEvent.click(element);
@@ -238,6 +366,15 @@ describe('FloorPlan', () => {
     expect(screen.getByLabelText('M1 floor element').querySelectorAll('[cdkdraghandle]').length).toBeGreaterThan(1);
   });
 
+  it('uses a custom global drag preview and an empty matrix placeholder', async () => {
+    await render(FloorPlan);
+
+    const element = screen.getByLabelText('M1 floor element');
+
+    expect(element.hasAttribute('cdkdragpreviewcontainer')).toBe(false);
+    expect(element.getAttribute('cdkdragpreviewclass')).toBe('floor-plan-drag-preview');
+  });
+
   it('clamps movement to the first valid cell when dragging past the top or left edge', async () => {
     const { fixture } = await render(FloorPlan);
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
@@ -257,7 +394,222 @@ describe('FloorPlan', () => {
 
     (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragEnded(createDragEndEvent({ x: 800, y: 800 }), element!);
 
-    expect(moveFloorElement).toHaveBeenCalledWith('floor-element-2', 8, 8);
+    expect(moveFloorElement).toHaveBeenCalledWith('floor-element-2', 18, 18);
+  });
+
+  it('includes accumulated canvas scroll when placing a dragged element', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    Object.defineProperties(canvas, {
+      scrollLeft: { configurable: true, writable: true, value: 0 },
+      scrollTop: { configurable: true, writable: true, value: 0 },
+    });
+    canvas.getBoundingClientRect = () =>
+      ({
+        width: 300,
+        height: 240,
+        top: 20,
+        left: 10,
+        right: 310,
+        bottom: 260,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const moveFloorElement = vi.spyOn(store, 'moveFloorElement').mockImplementation(() => undefined);
+    const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-1');
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({ pointerPosition: { x: 150, y: 120 } });
+    canvas.scrollLeft = 120;
+    canvas.scrollTop = 120;
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragEnded(createDragEndEvent({ x: 0, y: 0 }), element!);
+
+    expect(moveFloorElement).toHaveBeenCalledTimes(1);
+    expect(moveFloorElement).toHaveBeenCalledWith('floor-element-1', 5, 5);
+  });
+
+  it('auto-scrolls the canvas when dragging near the right or bottom edge', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    const scrollBy = vi.fn();
+    const animationFrames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      animationFrames.push(callback);
+      return 1;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    Object.defineProperty(canvas, 'scrollBy', { configurable: true, value: scrollBy });
+    canvas.getBoundingClientRect = () =>
+      ({
+        width: 300,
+        height: 240,
+        top: 20,
+        left: 10,
+        right: 310,
+        bottom: 260,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({ pointerPosition: { x: 304, y: 254 } });
+    const queuedFrame = animationFrames[0];
+    if (!queuedFrame) {
+      throw new Error('Expected auto-scroll to queue an animation frame.');
+    }
+    queuedFrame(0);
+
+    expect(scrollBy).toHaveBeenCalledWith({ left: expect.any(Number), top: expect.any(Number), behavior: 'auto' });
+    expect(scrollBy.mock.calls[0][0].left).toBeGreaterThan(0);
+    expect(scrollBy.mock.calls[0][0].top).toBeGreaterThan(0);
+  });
+
+  it('does not manually rewrite the dragged element position during auto-scroll', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    const setFreeDragPosition = vi.fn();
+    const animationFrames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      animationFrames.push(callback);
+      return 1;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    Object.defineProperties(canvas, {
+      scrollLeft: { configurable: true, writable: true, value: 40 },
+      scrollTop: { configurable: true, writable: true, value: 20 },
+      scrollBy: {
+        configurable: true,
+        value: ({ left, top }: ScrollToOptions) => {
+          canvas.scrollLeft += Number(left ?? 0);
+          canvas.scrollTop += Number(top ?? 0);
+        },
+      },
+    });
+    canvas.getBoundingClientRect = () =>
+      ({
+        width: 300,
+        height: 240,
+        top: 20,
+        left: 10,
+        right: 310,
+        bottom: 260,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({
+      pointerPosition: { x: 304, y: 254 },
+      source: {
+        getFreeDragPosition: () => ({ x: 12, y: 8 }),
+        setFreeDragPosition,
+      },
+    } as Parameters<FloorPlanDragHarness['handleDragMoved']>[0]);
+    const queuedFrame = animationFrames[0];
+    if (!queuedFrame) {
+      throw new Error('Expected auto-scroll to queue an animation frame.');
+    }
+    queuedFrame(0);
+
+    expect(setFreeDragPosition).not.toHaveBeenCalled();
+  });
+
+  it('keeps auto-scrolling after the dragged pointer passes outside the visible edge', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    const scrollBy = vi.fn();
+    const animationFrames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      animationFrames.push(callback);
+      return 1;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    Object.defineProperty(canvas, 'scrollBy', { configurable: true, value: scrollBy });
+    canvas.getBoundingClientRect = () =>
+      ({
+        width: 300,
+        height: 240,
+        top: 20,
+        left: 10,
+        right: 310,
+        bottom: 260,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({ pointerPosition: { x: 340, y: 285 } });
+    const queuedFrame = animationFrames[0];
+    if (!queuedFrame) {
+      throw new Error('Expected auto-scroll to queue an animation frame.');
+    }
+    queuedFrame(0);
+
+    expect(scrollBy.mock.calls[0][0].left).toBeGreaterThan(0);
+    expect(scrollBy.mock.calls[0][0].top).toBeGreaterThan(0);
+  });
+
+  it('auto-scrolls both axes when dragging near a corner', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    const scrollBy = vi.fn();
+    const animationFrames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      animationFrames.push(callback);
+      return 1;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    Object.defineProperty(canvas, 'scrollBy', { configurable: true, value: scrollBy });
+    canvas.getBoundingClientRect = () =>
+      ({
+        width: 300,
+        height: 240,
+        top: 20,
+        left: 10,
+        right: 310,
+        bottom: 260,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({ pointerPosition: { x: 14, y: 24 } });
+    const queuedFrame = animationFrames[0];
+    if (!queuedFrame) {
+      throw new Error('Expected auto-scroll to queue an animation frame.');
+    }
+    queuedFrame(0);
+
+    expect(scrollBy.mock.calls[0][0].left).toBeLessThan(0);
+    expect(scrollBy.mock.calls[0][0].top).toBeLessThan(0);
+  });
+
+  it('stops auto-scroll when the drag ends', async () => {
+    const { fixture } = await render(FloorPlan);
+    const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
+    const cancelAnimationFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 42);
+    Object.defineProperty(canvas, 'scrollBy', { configurable: true, value: vi.fn() });
+    canvas.getBoundingClientRect = () =>
+      ({
+        width: 300,
+        height: 240,
+        top: 20,
+        left: 10,
+        right: 310,
+        bottom: 260,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-2');
+
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({ pointerPosition: { x: 304, y: 254 } });
+    (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragEnded(createDragEndEvent({ x: 0, y: 0 }), element!);
+
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(42);
   });
 
   it('disables drag and hides the edit toolbar outside layout mode', async () => {

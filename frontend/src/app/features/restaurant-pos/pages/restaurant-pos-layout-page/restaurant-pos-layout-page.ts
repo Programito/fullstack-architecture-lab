@@ -23,8 +23,8 @@ type ElementPreset = {
   shape?: TableShape;
 };
 
-const RESIZE_MATRIX_ROWS = 12;
-const RESIZE_MATRIX_COLUMNS = 12;
+const RESIZE_MATRIX_ROWS = 20;
+const RESIZE_MATRIX_COLUMNS = 20;
 
 const ELEMENT_PRESETS: ElementPreset[] = [
   { id: 'small-table', label: 'Small table 2 pax', type: 'table', width: 2, height: 2, capacity: 2, shape: 'round' },
@@ -57,6 +57,7 @@ export class RestaurantPosLayoutPage {
   protected readonly resizeElementWidthInput = signal(1);
   protected readonly resizeElementHeightInput = signal(1);
   protected readonly editingElementId = signal<string | null>(null);
+  protected readonly selectedLayoutElement = signal<FloorElement | null>(null);
   protected readonly selectedPresetId = signal(ELEMENT_PRESETS[0].id);
   protected readonly elementLabelInput = signal('');
   protected readonly elementWidthInput = signal(1);
@@ -77,6 +78,11 @@ export class RestaurantPosLayoutPage {
   );
   protected readonly resizePreviewLabel = computed(() => `${this.resizeColumnsInput()} columns x ${this.resizeRowsInput()} rows`);
   protected readonly addElementGridLabel = computed(() => `${this.store.gridColumns()} columns x ${this.store.gridRows()} rows`);
+  protected readonly floorElementCountLabel = computed(() => `${this.store.floorElements().length} elements`);
+  protected readonly selectedLayoutElementLabel = computed(() => {
+    const selectedElement = this.selectedLayoutElement();
+    return selectedElement ? `Selected: ${selectedElement.label}` : 'No element selected';
+  });
   protected readonly selectedPreset = computed(
     () => ELEMENT_PRESETS.find((preset) => preset.id === this.selectedPresetId()) ?? ELEMENT_PRESETS[0],
   );
@@ -117,6 +123,10 @@ export class RestaurantPosLayoutPage {
 
   protected closeResizeElementModal(): void {
     this.resizeElementModalOpen.set(false);
+  }
+
+  protected handleSelectedLayoutElementChange(element: FloorElement | null): void {
+    this.selectedLayoutElement.set(element);
   }
 
   protected updateResizeElementWidth(event: Event): void {
