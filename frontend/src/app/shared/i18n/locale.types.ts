@@ -5,10 +5,10 @@ export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 
 export const LOCALE_STORAGE_KEY = 'locale';
 
-export const LOCALE_OPTIONS: Array<{ label: string; value: AppLocale }> = [
-  { label: 'Español', value: 'es' },
-  { label: 'English', value: 'en' },
-  { label: 'Català', value: 'ca' },
+export const LOCALE_OPTIONS: Array<{ labelKey: string; value: AppLocale }> = [
+  { labelKey: 'languageSelect.languages.es', value: 'es' },
+  { labelKey: 'languageSelect.languages.en', value: 'en' },
+  { labelKey: 'languageSelect.languages.ca', value: 'ca' },
 ];
 
 export const isAppLocale = (value: string | null | undefined): value is AppLocale =>

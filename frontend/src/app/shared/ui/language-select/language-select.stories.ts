@@ -9,6 +9,8 @@ type LanguageSelectStoryArgs = {
   appearance: LanguageSelectAppearance;
   size: SelectSize;
   disabled: boolean;
+  showLabel: boolean;
+  showHint: boolean;
 };
 
 const meta: Meta<LanguageSelectStoryArgs> = {
@@ -26,12 +28,14 @@ const meta: Meta<LanguageSelectStoryArgs> = {
     },
   },
   args: {
-    label: 'Idioma',
+    label: '',
     name: 'locale',
-    hint: 'La preferencia se aplica a la interfaz.',
+    hint: '',
     appearance: 'default',
     size: 'md',
     disabled: false,
+    showLabel: true,
+    showHint: true,
   },
   render: (args) => ({
     props: args,
@@ -44,6 +48,8 @@ const meta: Meta<LanguageSelectStoryArgs> = {
           [appearance]="appearance"
           [size]="size"
           [disabled]="disabled"
+          [showLabel]="showLabel"
+          [showHint]="showHint"
         />
       </div>
     `,
@@ -78,6 +84,15 @@ export const Minimal: Story = {
   args: {
     appearance: 'minimal',
     hint: '',
+  },
+};
+
+export const Compact: Story = {
+  args: {
+    appearance: 'minimal',
+    size: 'sm',
+    showLabel: false,
+    showHint: false,
   },
 };
 

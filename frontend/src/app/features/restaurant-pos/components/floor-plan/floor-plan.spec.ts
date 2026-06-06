@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, within } from '@testing-library/angular';
+﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
+import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { FloorElement } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { FloorPlan } from './floor-plan';
@@ -58,8 +59,19 @@ const createDragEndEvent = (distance: { x: number; y: number }) => {
 };
 
 describe('FloorPlan', () => {
+  const renderFloorPlan = async (template: typeof FloorPlan | string = FloorPlan, options: any = {}) => {
+    const i18n = provideI18nTesting('en');
+    const renderOptions = {
+      ...options,
+      imports: [...(options.imports ?? []), ...i18n.imports],
+      providers: [...(options.providers ?? []), ...i18n.providers],
+    };
+
+    return typeof template === 'string' ? render(template, renderOptions) : render(template, renderOptions);
+  };
+
   it('renders floor elements as restaurant plan objects', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     expect(screen.getByLabelText('M1 floor element')).toBeTruthy();
     expect(screen.getByLabelText('Bar floor element')).toBeTruthy();
@@ -68,7 +80,7 @@ describe('FloorPlan', () => {
   });
 
   it('renders the floor matrix with stronger grid and cell borders', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const matrix = screen.getByLabelText('Floor plan matrix');
     expect(matrix.getAttribute('style')).toContain('grid-template-columns: repeat(20, 2.75rem)');
@@ -82,7 +94,7 @@ describe('FloorPlan', () => {
   });
 
   it('uses the inner matrix border as the placement boundary without extra inner padding', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const matrix = screen.getByLabelText('Floor plan matrix');
     expect(matrix.className.split(' ')).not.toContain('p-2');
@@ -92,7 +104,7 @@ describe('FloorPlan', () => {
   });
 
   it('keeps the outer canvas compact while leaving room for the selected toolbar', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const canvas = screen.getByLabelText('Floor plan canvas');
     expect(canvas.className.split(' ')).toContain('grid');
@@ -106,7 +118,7 @@ describe('FloorPlan', () => {
 
   it('shows a temporary hand hint when the canvas has scrollable overflow', async () => {
     vi.useFakeTimers();
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas');
 
     setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 640, scrollHeight: 520 });
@@ -124,7 +136,7 @@ describe('FloorPlan', () => {
   });
 
   it('does not show the hand hint when the canvas fits without overflow', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas');
 
     setElementSize(canvas, { clientWidth: 640, clientHeight: 520, scrollWidth: 640, scrollHeight: 520 });
@@ -136,7 +148,7 @@ describe('FloorPlan', () => {
 
   it('rechecks overflow when the layout grows to a 20 by 20 matrix', async () => {
     vi.useFakeTimers();
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas');
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
@@ -152,7 +164,7 @@ describe('FloorPlan', () => {
   });
 
   it('lets the user pan the empty matrix when the canvas has overflow', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 1200, scrollHeight: 1200 });
     Object.defineProperties(canvas, {
@@ -186,7 +198,7 @@ describe('FloorPlan', () => {
   });
 
   it('does not start canvas panning from a floor element', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     const element = screen.getByLabelText('M1 floor element');
     setElementSize(canvas, { clientWidth: 300, clientHeight: 240, scrollWidth: 1200, scrollHeight: 1200 });
@@ -210,7 +222,7 @@ describe('FloorPlan', () => {
   });
 
   it('keeps selected elements and their toolbar above the matrix without clipping overlays', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const element = screen.getByLabelText('M1 floor element');
     expect(element.className.split(' ')).toContain('p-0.5');
@@ -223,7 +235,7 @@ describe('FloorPlan', () => {
   });
 
   it('shows a subtle footprint border for the occupied element size', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const element = screen.getByLabelText('M1 floor element');
     expect(element.className.split(' ')).toContain('border-stone-300');
@@ -236,7 +248,7 @@ describe('FloorPlan', () => {
   });
 
   it('uses a tighter inset for small table visuals so the object reads larger inside the footprint', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     expect(screen.getByLabelText('M1 floor element').getAttribute('style')).toContain('grid-column: 2 / span 2');
     expect(screen.getByLabelText('M1 floor element').getAttribute('style')).toContain('grid-row: 2 / span 2');
@@ -244,7 +256,7 @@ describe('FloorPlan', () => {
   });
 
   it('renders the default bar one cell longer with three independent stools above it', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const bar = screen.getByLabelText('Bar floor element');
     const barObject = screen.getByLabelText('Bar object');
@@ -263,7 +275,7 @@ describe('FloorPlan', () => {
   });
 
   it('renders a vertical bar as a tall capsule that fills its footprint height', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     store.addFloorElement({ type: 'bar', label: 'Vertical bar', x: 4, y: 0, width: 1, height: 3 });
@@ -283,7 +295,7 @@ describe('FloorPlan', () => {
   });
 
   it('selects a floor element and shows one contextual toolbar in layout mode', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     expect(screen.queryByRole('toolbar', { name: 'Layout element actions' })).toBeNull();
 
@@ -299,7 +311,7 @@ describe('FloorPlan', () => {
   });
 
   it('shows the contextual toolbar only for the selected element', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     fireEvent.click(screen.getByLabelText('M1 floor element'));
     expect(screen.getByRole('button', { name: 'Edit M1' })).toBeTruthy();
@@ -311,7 +323,7 @@ describe('FloorPlan', () => {
   });
 
   it('does not render edit, move, or delete controls inside every element', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     expect(screen.queryByRole('button', { name: 'Edit M1' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Delete M1' })).toBeNull();
@@ -320,7 +332,7 @@ describe('FloorPlan', () => {
 
   it('emits the selected element when clicking Edit', async () => {
     const editElement = vi.fn();
-    await render('<app-floor-plan (editElement)="editElement($event)" />', {
+    await renderFloorPlan('<app-floor-plan (editElement)="editElement($event)" />', {
       imports: [FloorPlan],
       componentProperties: { editElement },
     });
@@ -333,7 +345,7 @@ describe('FloorPlan', () => {
 
   it('emits the selected element when clicking Resize', async () => {
     const resizeElement = vi.fn();
-    await render('<app-floor-plan (resizeElement)="resizeElement($event)" />', {
+    await renderFloorPlan('<app-floor-plan (resizeElement)="resizeElement($event)" />', {
       imports: [FloorPlan],
       componentProperties: { resizeElement },
     });
@@ -346,7 +358,7 @@ describe('FloorPlan', () => {
 
   it('asks for confirmation before deleting the selected element', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 floor element'));
@@ -357,7 +369,7 @@ describe('FloorPlan', () => {
   });
 
   it('allows moving the selected element from the object or the move toolbar action', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     fireEvent.click(screen.getByLabelText('M1 floor element'));
 
@@ -367,7 +379,7 @@ describe('FloorPlan', () => {
   });
 
   it('uses a custom global drag preview and an empty matrix placeholder', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     const element = screen.getByLabelText('M1 floor element');
 
@@ -376,7 +388,7 @@ describe('FloorPlan', () => {
   });
 
   it('clamps movement to the first valid cell when dragging past the top or left edge', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const moveFloorElement = vi.spyOn(store, 'moveFloorElement').mockImplementation(() => undefined);
     const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-1');
@@ -387,7 +399,7 @@ describe('FloorPlan', () => {
   });
 
   it('clamps movement to the last valid cell when dragging past the right or bottom edge', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const moveFloorElement = vi.spyOn(store, 'moveFloorElement').mockImplementation(() => undefined);
     const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-2');
@@ -398,7 +410,7 @@ describe('FloorPlan', () => {
   });
 
   it('includes accumulated canvas scroll when placing a dragged element', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     Object.defineProperties(canvas, {
       scrollLeft: { configurable: true, writable: true, value: 0 },
@@ -430,7 +442,7 @@ describe('FloorPlan', () => {
   });
 
   it('auto-scrolls the canvas when dragging near the right or bottom edge', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     const scrollBy = vi.fn();
     const animationFrames: FrameRequestCallback[] = [];
@@ -466,7 +478,7 @@ describe('FloorPlan', () => {
   });
 
   it('does not manually rewrite the dragged element position during auto-scroll', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     const setFreeDragPosition = vi.fn();
     const animationFrames: FrameRequestCallback[] = [];
@@ -516,7 +528,7 @@ describe('FloorPlan', () => {
   });
 
   it('keeps auto-scrolling after the dragged pointer passes outside the visible edge', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     const scrollBy = vi.fn();
     const animationFrames: FrameRequestCallback[] = [];
@@ -551,7 +563,7 @@ describe('FloorPlan', () => {
   });
 
   it('auto-scrolls both axes when dragging near a corner', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     const scrollBy = vi.fn();
     const animationFrames: FrameRequestCallback[] = [];
@@ -586,7 +598,7 @@ describe('FloorPlan', () => {
   });
 
   it('stops auto-scroll when the drag ends', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const canvas = screen.getByLabelText('Floor plan canvas') as HTMLElement;
     const cancelAnimationFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 42);
@@ -613,7 +625,7 @@ describe('FloorPlan', () => {
   });
 
   it('disables drag and hides the edit toolbar outside layout mode', async () => {
-    await render('<app-floor-plan [layoutMode]="false" />', { imports: [FloorPlan] });
+    await renderFloorPlan('<app-floor-plan [layoutMode]="false" />', { imports: [FloorPlan] });
 
     fireEvent.click(screen.getByLabelText('M1 floor element'));
 
@@ -623,7 +635,7 @@ describe('FloorPlan', () => {
   });
 
   it('renders table label and capacity without service state details in layout mode', async () => {
-    await render(FloorPlan);
+    await renderFloorPlan();
 
     expect(screen.getByText('M1')).toBeTruthy();
     expect(screen.getByText('2 pax')).toBeTruthy();
@@ -634,7 +646,7 @@ describe('FloorPlan', () => {
   });
 
   it('renders distinct bar, kitchen, entrance, bathroom, stool, and blocked objects', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     store.addFloorElement({ type: 'bathroom', label: 'Bathroom', x: 4, y: 4, width: 1, height: 1 });
@@ -652,7 +664,7 @@ describe('FloorPlan', () => {
   });
 
   it('keeps a large table label and capacity visible while the visual fills the element', async () => {
-    const { fixture } = await render(FloorPlan);
+    const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     store.addFloorElement({ type: 'table', label: 'M9', x: 4, y: 4, width: 3, height: 2, shape: 'long' });

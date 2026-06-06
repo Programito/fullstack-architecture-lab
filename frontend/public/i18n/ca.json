@@ -9,5 +9,140 @@
       "testingLibrary": "Testing Library",
       "playwright": "Playwright"
     }
+  },
+  "languageSelect": {
+    "label": "Idioma",
+    "hint": "La preferència s'aplica a la interfície.",
+    "buttonAriaLabel": "{{label}}: {{language}}",
+    "closeAriaLabel": "Tancar el selector d'idioma",
+    "listboxAriaLabel": "Idioma",
+    "languages": {
+      "es": "Español",
+      "ca": "Català",
+      "en": "English"
+    }
+  },
+  "restaurantPos": {
+    "common": {
+      "layout": "Plànol",
+      "service": "Servei",
+      "cancel": "Cancel·lar",
+      "saveChanges": "Desar els canvis",
+      "columnsRows": "{{columns}} columnes x {{rows}} files",
+      "pax": "{{count}} pax",
+      "capacity": "Capacitat: {{value}}"
+    },
+    "errors": {
+      "selectTableFirst": "Selecciona una taula primer.",
+      "productUnavailable": "El producte no està disponible.",
+      "cannotPlaceElement": "No es pot col·locar l'element aquí.",
+      "cannotResizeGrid": "No es pot redimensionar el plànol perquè alguns elements quedarien fora de la matriu."
+    },
+    "layout": {
+      "title": "Plànol del restaurant",
+      "description": "Dissenya el menjador, la barra, la cuina i les zones de servei.",
+      "editingActions": "Accions d'edició del plànol",
+      "resizeLayout": "Redimensionar plànol",
+      "addElement": "Afegir element",
+      "saveChanges": "Desar els canvis",
+      "backToService": "Tornar al mode servei",
+      "floorPlan": "Plànol de sala",
+      "status": "Estat del plànol",
+      "layoutMode": "Mode plànol",
+      "elementCount": "{{count}} elements",
+      "selectedElement": "Seleccionat: {{label}}",
+      "noElementSelected": "Cap element seleccionat",
+      "resizeDialog": {
+        "title": "Redimensionar plànol",
+        "description": "Tria la mida de la matriu abans d'aplicar-la.",
+        "close": "Tancar redimensionar plànol",
+        "controls": "Controls de mida del plànol",
+        "rows": "Files",
+        "columns": "Columnes",
+        "preview": "Vista prèvia de redimensió",
+        "matrix": "Matriu de redimensió",
+        "selectSize": "Seleccionar {{columns}} columnes x {{rows}} files",
+        "apply": "Aplicar mida del plànol"
+      },
+      "resizeElementDialog": {
+        "title": "Redimensionar element",
+        "description": "Canvia quantes cel·les de la matriu ocupa aquest element.",
+        "width": "Amplada de l'element",
+        "height": "Alçada de l'element",
+        "apply": "Aplicar mida"
+      },
+      "elementDialog": {
+        "addTitle": "Afegir element",
+        "editTitle": "Editar element",
+        "description": "Tria un preset i col·loca'l dins de la matriu actual.",
+        "close": "Tancar formulari d'element",
+        "configuration": "Configuració de l'element",
+        "type": "Tipus d'element",
+        "presetSize": "Mida predefinida",
+        "label": "Etiqueta de l'element",
+        "width": "Amplada",
+        "height": "Alçada",
+        "tableCapacity": "Capacitat de taula",
+        "preview": "Vista prèvia de l'element seleccionat",
+        "previewTitle": "Vista prèvia",
+        "positionTitle": "Selecciona una posició",
+        "positionDescription": "Selecciona la cantonada superior esquerra de l'element.",
+        "positionSelector": "Selector de posició",
+        "placeAt": "Col·locar a la columna {{column}} fila {{row}}",
+        "invalidPosition": "La posició seleccionada no està disponible. Tria una altra cel·la lliure dins de la matriu.",
+        "selectedPosition": "Posició: columna {{column}}, fila {{row}}",
+        "unselectedPosition": "Posició: sense seleccionar",
+        "unselectedPositionBadge": "Posició sense seleccionar",
+        "singleCellBadge": "Columna {{column}}, fila {{row}}",
+        "rangeBadge": "Columnes {{startColumn}}-{{endColumn}}, files {{startRow}}-{{endRow}}",
+        "size": "Mida: {{width}} x {{height}}",
+        "addNamed": "Afegir {{label}}",
+        "addElement": "Afegir element",
+        "saveChanges": "Desar els canvis"
+      }
+    },
+    "service": {
+      "eyebrow": "Operació de servei",
+      "title": "Vista de servei properament",
+      "sections": "Seccions del TPV restaurant",
+      "description": "Aquesta ruta gestionarà l'estat de les taules, les comandes, el flux de cuina i els pagaments en properes iteracions."
+    },
+    "floorPlan": {
+      "legend": "Llegenda del plànol",
+      "canvas": "Llenç del plànol",
+      "scrollHint": "Indicació de plànol desplaçable",
+      "matrix": "Matriu del plànol",
+      "cell": "Cel·la {{x}}, {{y}}",
+      "floorElement": "{{label}} element del plànol",
+      "object": "{{label}} objecte",
+      "tableShape": "Forma de taula {{shape}}",
+      "actions": "Accions de l'element del plànol",
+      "move": "Moure {{label}}",
+      "resize": "Redimensionar {{label}}",
+      "edit": "Editar {{label}}",
+      "delete": "Eliminar {{label}}",
+      "deleteConfirm": "Eliminar aquest element del plànol?",
+      "table": "Taula",
+      "bar": "Barra",
+      "kitchen": "Cuina",
+      "entrance": "Entrada",
+      "bathroom": "Bany",
+      "stool": "Tamboret",
+      "blocked": "Zona bloquejada"
+    },
+    "presets": {
+      "smallTable": "Taula petita 2 pax",
+      "squareTable": "Taula quadrada 4 pax",
+      "rectangularTable": "Taula rectangular 6 pax",
+      "largeTable": "Taula gran 8 pax",
+      "longTable": "Taula llarga",
+      "barHorizontal": "Barra horitzontal",
+      "barVertical": "Barra vertical",
+      "kitchen": "Cuina",
+      "bathroom": "Bany",
+      "entrance": "Entrada",
+      "blockedArea": "Zona bloquejada",
+      "stool": "Tamboret"
+    }
   }
 }

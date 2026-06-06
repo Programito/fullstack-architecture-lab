@@ -9,5 +9,140 @@
       "testingLibrary": "Testing Library",
       "playwright": "Playwright"
     }
+  },
+  "languageSelect": {
+    "label": "Language",
+    "hint": "The preference applies to the interface.",
+    "buttonAriaLabel": "{{label}}: {{language}}",
+    "closeAriaLabel": "Close language selector",
+    "listboxAriaLabel": "Language",
+    "languages": {
+      "es": "Español",
+      "ca": "Català",
+      "en": "English"
+    }
+  },
+  "restaurantPos": {
+    "common": {
+      "layout": "Layout",
+      "service": "Service",
+      "cancel": "Cancel",
+      "saveChanges": "Save changes",
+      "columnsRows": "{{columns}} columns x {{rows}} rows",
+      "pax": "{{count}} pax",
+      "capacity": "Capacity: {{value}}"
+    },
+    "errors": {
+      "selectTableFirst": "Select a table first.",
+      "productUnavailable": "Product is unavailable.",
+      "cannotPlaceElement": "Cannot place the element here.",
+      "cannotResizeGrid": "Cannot resize the layout because some elements would be outside the grid."
+    },
+    "layout": {
+      "title": "Restaurant layout",
+      "description": "Design your dining room, bar, kitchen, and service areas.",
+      "editingActions": "Layout editing actions",
+      "resizeLayout": "Resize layout",
+      "addElement": "Add element",
+      "saveChanges": "Save changes",
+      "backToService": "Back to service mode",
+      "floorPlan": "Floor plan",
+      "status": "Layout status",
+      "layoutMode": "Layout mode",
+      "elementCount": "{{count}} elements",
+      "selectedElement": "Selected: {{label}}",
+      "noElementSelected": "No element selected",
+      "resizeDialog": {
+        "title": "Resize layout",
+        "description": "Choose the dining room grid size before applying it.",
+        "close": "Close resize layout",
+        "controls": "Layout size controls",
+        "rows": "Rows",
+        "columns": "Columns",
+        "preview": "Resize preview",
+        "matrix": "Resize matrix",
+        "selectSize": "Select {{columns}} columns x {{rows}} rows",
+        "apply": "Apply layout size"
+      },
+      "resizeElementDialog": {
+        "title": "Resize element",
+        "description": "Change how many grid cells this element occupies.",
+        "width": "Element width",
+        "height": "Element height",
+        "apply": "Apply size"
+      },
+      "elementDialog": {
+        "addTitle": "Add element",
+        "editTitle": "Edit element",
+        "description": "Choose a preset and place it inside the current grid.",
+        "close": "Close element form",
+        "configuration": "Element configuration",
+        "type": "Element type",
+        "presetSize": "Preset size",
+        "label": "Element label",
+        "width": "Width",
+        "height": "Height",
+        "tableCapacity": "Table capacity",
+        "preview": "Selected element preview",
+        "previewTitle": "Preview",
+        "positionTitle": "Select a position",
+        "positionDescription": "Select the upper-left corner of the element.",
+        "positionSelector": "Position selector",
+        "placeAt": "Place at column {{column}} row {{row}}",
+        "invalidPosition": "The selected position is not available. Choose another free cell inside the grid.",
+        "selectedPosition": "Position: column {{column}}, row {{row}}",
+        "unselectedPosition": "Position: not selected",
+        "unselectedPositionBadge": "Position not selected",
+        "singleCellBadge": "Column {{column}}, row {{row}}",
+        "rangeBadge": "Columns {{startColumn}}-{{endColumn}}, rows {{startRow}}-{{endRow}}",
+        "size": "Size: {{width}} x {{height}}",
+        "addNamed": "Add {{label}}",
+        "addElement": "Add element",
+        "saveChanges": "Save changes"
+      }
+    },
+    "service": {
+      "eyebrow": "Service operation",
+      "title": "Service view coming next",
+      "sections": "Restaurant POS sections",
+      "description": "This route will handle table status, orders, kitchen flow, and payments in later iterations."
+    },
+    "floorPlan": {
+      "legend": "Floor plan legend",
+      "canvas": "Floor plan canvas",
+      "scrollHint": "Scrollable floor plan hint",
+      "matrix": "Floor plan matrix",
+      "cell": "Cell {{x}}, {{y}}",
+      "floorElement": "{{label}} floor element",
+      "object": "{{label}} object",
+      "tableShape": "Table shape {{shape}}",
+      "actions": "Layout element actions",
+      "move": "Move {{label}}",
+      "resize": "Resize {{label}}",
+      "edit": "Edit {{label}}",
+      "delete": "Delete {{label}}",
+      "deleteConfirm": "Delete this element from the layout?",
+      "table": "Table",
+      "bar": "Bar",
+      "kitchen": "Kitchen",
+      "entrance": "Entrance",
+      "bathroom": "Bathroom",
+      "stool": "Stool",
+      "blocked": "Blocked area"
+    },
+    "presets": {
+      "smallTable": "Small table 2 pax",
+      "squareTable": "Square table 4 pax",
+      "rectangularTable": "Rectangular table 6 pax",
+      "largeTable": "Large table 8 pax",
+      "longTable": "Long table",
+      "barHorizontal": "Bar horizontal",
+      "barVertical": "Bar vertical",
+      "kitchen": "Kitchen",
+      "bathroom": "Bathroom",
+      "entrance": "Entrance",
+      "blockedArea": "Blocked area",
+      "stool": "Stool"
+    }
   }
 }

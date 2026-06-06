@@ -9,5 +9,140 @@
       "testingLibrary": "Testing Library",
       "playwright": "Playwright"
     }
+  },
+  "languageSelect": {
+    "label": "Idioma",
+    "hint": "La preferencia se aplica a la interfaz.",
+    "buttonAriaLabel": "{{label}}: {{language}}",
+    "closeAriaLabel": "Cerrar selector de idioma",
+    "listboxAriaLabel": "Idioma",
+    "languages": {
+      "es": "Español",
+      "ca": "Català",
+      "en": "English"
+    }
+  },
+  "restaurantPos": {
+    "common": {
+      "layout": "Plano",
+      "service": "Servicio",
+      "cancel": "Cancelar",
+      "saveChanges": "Guardar cambios",
+      "columnsRows": "{{columns}} columnas x {{rows}} filas",
+      "pax": "{{count}} pax",
+      "capacity": "Capacidad: {{value}}"
+    },
+    "errors": {
+      "selectTableFirst": "Selecciona una mesa primero.",
+      "productUnavailable": "El producto no está disponible.",
+      "cannotPlaceElement": "No se puede colocar el elemento aquí.",
+      "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz."
+    },
+    "layout": {
+      "title": "Plano del restaurante",
+      "description": "Diseña el comedor, la barra, la cocina y las zonas de servicio.",
+      "editingActions": "Acciones de edición del plano",
+      "resizeLayout": "Redimensionar plano",
+      "addElement": "Añadir elemento",
+      "saveChanges": "Guardar cambios",
+      "backToService": "Volver al modo servicio",
+      "floorPlan": "Plano de sala",
+      "status": "Estado del plano",
+      "layoutMode": "Modo plano",
+      "elementCount": "{{count}} elementos",
+      "selectedElement": "Seleccionado: {{label}}",
+      "noElementSelected": "Ningún elemento seleccionado",
+      "resizeDialog": {
+        "title": "Redimensionar plano",
+        "description": "Elige el tamaño de la matriz antes de aplicarlo.",
+        "close": "Cerrar redimensionar plano",
+        "controls": "Controles de tamaño del plano",
+        "rows": "Filas",
+        "columns": "Columnas",
+        "preview": "Vista previa de redimensión",
+        "matrix": "Matriz de redimensión",
+        "selectSize": "Seleccionar {{columns}} columnas x {{rows}} filas",
+        "apply": "Aplicar tamaño del plano"
+      },
+      "resizeElementDialog": {
+        "title": "Redimensionar elemento",
+        "description": "Cambia cuántas celdas de la matriz ocupa este elemento.",
+        "width": "Ancho del elemento",
+        "height": "Alto del elemento",
+        "apply": "Aplicar tamaño"
+      },
+      "elementDialog": {
+        "addTitle": "Añadir elemento",
+        "editTitle": "Editar elemento",
+        "description": "Elige un preset y colócalo dentro de la matriz actual.",
+        "close": "Cerrar formulario de elemento",
+        "configuration": "Configuración del elemento",
+        "type": "Tipo de elemento",
+        "presetSize": "Tamaño predefinido",
+        "label": "Etiqueta del elemento",
+        "width": "Ancho",
+        "height": "Alto",
+        "tableCapacity": "Capacidad de mesa",
+        "preview": "Vista previa del elemento seleccionado",
+        "previewTitle": "Vista previa",
+        "positionTitle": "Selecciona una posición",
+        "positionDescription": "Selecciona la esquina superior izquierda del elemento.",
+        "positionSelector": "Selector de posición",
+        "placeAt": "Colocar en columna {{column}} fila {{row}}",
+        "invalidPosition": "La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.",
+        "selectedPosition": "Posición: columna {{column}}, fila {{row}}",
+        "unselectedPosition": "Posición: sin seleccionar",
+        "unselectedPositionBadge": "Posición sin seleccionar",
+        "singleCellBadge": "Columna {{column}}, fila {{row}}",
+        "rangeBadge": "Columnas {{startColumn}}-{{endColumn}}, filas {{startRow}}-{{endRow}}",
+        "size": "Tamaño: {{width}} x {{height}}",
+        "addNamed": "Añadir {{label}}",
+        "addElement": "Añadir elemento",
+        "saveChanges": "Guardar cambios"
+      }
+    },
+    "service": {
+      "eyebrow": "Operación de servicio",
+      "title": "Vista de servicio próximamente",
+      "sections": "Secciones del TPV restaurante",
+      "description": "Esta ruta gestionará el estado de las mesas, los pedidos, el flujo de cocina y los pagos en próximas iteraciones."
+    },
+    "floorPlan": {
+      "legend": "Leyenda del plano",
+      "canvas": "Lienzo del plano",
+      "scrollHint": "Indicación de plano desplazable",
+      "matrix": "Matriz del plano",
+      "cell": "Celda {{x}}, {{y}}",
+      "floorElement": "{{label}} elemento del plano",
+      "object": "{{label}} objeto",
+      "tableShape": "Forma de mesa {{shape}}",
+      "actions": "Acciones del elemento del plano",
+      "move": "Mover {{label}}",
+      "resize": "Redimensionar {{label}}",
+      "edit": "Editar {{label}}",
+      "delete": "Eliminar {{label}}",
+      "deleteConfirm": "¿Eliminar este elemento del plano?",
+      "table": "Mesa",
+      "bar": "Barra",
+      "kitchen": "Cocina",
+      "entrance": "Entrada",
+      "bathroom": "Baño",
+      "stool": "Taburete",
+      "blocked": "Zona bloqueada"
+    },
+    "presets": {
+      "smallTable": "Mesa pequeña 2 pax",
+      "squareTable": "Mesa cuadrada 4 pax",
+      "rectangularTable": "Mesa rectangular 6 pax",
+      "largeTable": "Mesa grande 8 pax",
+      "longTable": "Mesa larga",
+      "barHorizontal": "Barra horizontal",
+      "barVertical": "Barra vertical",
+      "kitchen": "Cocina",
+      "bathroom": "Baño",
+      "entrance": "Entrada",
+      "blockedArea": "Zona bloqueada",
+      "stool": "Taburete"
+    }
   }
 }

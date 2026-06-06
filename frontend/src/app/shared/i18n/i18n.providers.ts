@@ -1,9 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { EnvironmentProviders, inject, isDevMode, provideAppInitializer } from '@angular/core';
-import { provideTransloco } from '@jsverse/transloco';
+import { provideTransloco, TranslocoService } from '@jsverse/transloco';
+import { firstValueFrom } from 'rxjs';
 import { LocaleService } from './locale.service';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locale.types';
 import { TranslocoHttpLoader } from './transloco-http.loader';
+
+export const loadInitialTranslations = (localeService: LocaleService, transloco: TranslocoService): Promise<unknown> =>
+  firstValueFrom(transloco.load(localeService.locale()));
 
 export const provideAppI18n = (): EnvironmentProviders[] => [
   provideHttpClient(),
@@ -18,6 +22,9 @@ export const provideAppI18n = (): EnvironmentProviders[] => [
     loader: TranslocoHttpLoader,
   }),
   provideAppInitializer(() => {
-    inject(LocaleService);
+    const localeService = inject(LocaleService);
+    const transloco = inject(TranslocoService);
+
+    return loadInitialTranslations(localeService, transloco);
   }),
 ];

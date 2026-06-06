@@ -1,6 +1,6 @@
 <div [class]="classes()" (keydown.escape)="closeMenu()">
-  @if (label()) {
-    <span class="language-select__label" [id]="labelId">{{ label() }}</span>
+  @if (displayedLabel()) {
+    <span class="language-select__label" [id]="labelId">{{ displayedLabel() }}</span>
   }
 
   <div class="language-select__control">
@@ -25,7 +25,7 @@
         class="language-select__backdrop"
         type="button"
         tabindex="-1"
-        aria-label="Cerrar selector de idioma"
+        [attr.aria-label]="closeAriaLabel()"
         (click)="closeMenu()"
       ></button>
 
@@ -33,8 +33,8 @@
         class="language-select__menu"
         role="listbox"
         [id]="listboxId"
-        [attr.aria-labelledby]="label() ? labelId : null"
-        [attr.aria-label]="label() ? null : 'Idioma'"
+        [attr.aria-labelledby]="displayedLabel() ? labelId : null"
+        [attr.aria-label]="displayedLabel() ? null : listboxAriaLabel()"
       >
         @for (option of options(); track option.value) {
           <button
@@ -42,11 +42,11 @@
             type="button"
             role="option"
             [attr.aria-selected]="option.value === value()"
-            [attr.aria-label]="getOptionLabel(option.value, option.label)"
+            [attr.aria-label]="getOptionLabel(option.value, option.labelKey)"
             (click)="selectLocale(option.value)"
           >
             <span class="language-select__option-code">{{ option.value.toUpperCase() }}</span>
-            <span class="language-select__option-label">{{ option.label }}</span>
+            <span class="language-select__option-label">{{ getTranslatedLabel(option.labelKey) }}</span>
             @if (option.value === value()) {
               <span class="language-select__check" aria-hidden="true"></span>
             }
@@ -56,7 +56,7 @@
     }
   </div>
 
-  @if (hint()) {
-    <p class="language-select__hint" [id]="hintId">{{ hint() }}</p>
+  @if (displayedHint()) {
+    <p class="language-select__hint" [id]="hintId">{{ displayedHint() }}</p>
   }
 </div>

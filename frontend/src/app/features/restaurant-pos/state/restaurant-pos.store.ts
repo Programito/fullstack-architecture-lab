@@ -21,10 +21,10 @@ import {
   MOCK_RESTAURANT_TABLES,
 } from './restaurant-pos.mock-data';
 
-const SELECT_TABLE_ERROR = 'Select a table first';
-const PRODUCT_UNAVAILABLE_ERROR = 'Product is unavailable';
-const CANNOT_PLACE_ELEMENT_ERROR = 'Cannot place element here';
-const CANNOT_RESIZE_GRID_ERROR = 'Cannot resize layout because some elements would be outside the grid.';
+const SELECT_TABLE_ERROR = 'restaurantPos.errors.selectTableFirst';
+const PRODUCT_UNAVAILABLE_ERROR = 'restaurantPos.errors.productUnavailable';
+const CANNOT_PLACE_ELEMENT_ERROR = 'restaurantPos.errors.cannotPlaceElement';
+const CANNOT_RESIZE_GRID_ERROR = 'restaurantPos.errors.cannotResizeGrid';
 const DEFAULT_ELEMENT_LABELS: Record<EditableFloorElementType, string> = {
   table: 'Table',
   bar: 'Bar',

@@ -1,4 +1,6 @@
 import { booleanAttribute, Component, computed, inject, input, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { TranslocoService } from '@jsverse/transloco';
 import { LocaleService } from '../../i18n/locale.service';
 import { LOCALE_OPTIONS, type AppLocale } from '../../i18n/locale.types';
 import type { SelectFill, SelectSize, SelectVariant } from '../select/select';
@@ -12,8 +14,10 @@ export type LanguageSelectAppearance = 'default' | 'minimal';
 })
 export class LanguageSelect {
   private readonly localeService = inject(LocaleService);
+  private readonly transloco = inject(TranslocoService);
+  private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
 
-  readonly label = input('Idioma');
+  readonly label = input('');
   readonly name = input('locale');
   readonly hint = input('');
   readonly variant = input<SelectVariant>('neutral');
@@ -21,6 +25,8 @@ export class LanguageSelect {
   readonly appearance = input<LanguageSelectAppearance>('default');
   readonly size = input<SelectSize>('md');
   readonly disabled = input(false, { transform: booleanAttribute });
+  readonly showLabel = input(true, { transform: booleanAttribute });
+  readonly showHint = input(true, { transform: booleanAttribute });
 
   protected readonly value = this.localeService.locale;
   protected readonly options = computed(() => LOCALE_OPTIONS);
@@ -36,9 +42,24 @@ export class LanguageSelect {
 
   protected readonly selectedCode = computed(() => this.value().toUpperCase());
 
-  protected readonly describedBy = computed(() => (this.hint() ? this.hintId : null));
+  protected readonly accessibleLabel = computed(() => this.label() || this.translate('languageSelect.label'));
 
-  protected readonly buttonAriaLabel = computed(() => `${this.label()}: ${this.selectedOption().label}`);
+  protected readonly displayedLabel = computed(() => (this.showLabel() ? this.accessibleLabel() : ''));
+
+  protected readonly displayedHint = computed(() => (this.showHint() ? this.hint() || this.translate('languageSelect.hint') : ''));
+
+  protected readonly describedBy = computed(() => (this.displayedHint() ? this.hintId : null));
+
+  protected readonly buttonAriaLabel = computed(() =>
+    this.translate('languageSelect.buttonAriaLabel', {
+      label: this.accessibleLabel(),
+      language: this.translate(this.selectedOption().labelKey),
+    }),
+  );
+
+  protected readonly listboxAriaLabel = computed(() => this.translate('languageSelect.listboxAriaLabel'));
+
+  protected readonly closeAriaLabel = computed(() => this.translate('languageSelect.closeAriaLabel'));
 
   protected readonly classes = computed(() =>
     [
@@ -66,7 +87,16 @@ export class LanguageSelect {
     this.closeMenu();
   }
 
-  protected getOptionLabel(locale: AppLocale, label: string): string {
-    return `${locale.toUpperCase()} ${label}`;
+  protected getOptionLabel(locale: AppLocale, labelKey: string): string {
+    return `${locale.toUpperCase()} ${this.translate(labelKey)}`;
+  }
+
+  protected getTranslatedLabel(labelKey: string): string {
+    return this.translate(labelKey);
+  }
+
+  private translate(key: string, params?: Record<string, unknown>): string {
+    this.activeLang();
+    return this.transloco.translate(key, params);
   }
 }

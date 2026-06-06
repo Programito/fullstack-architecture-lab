@@ -1,8 +1,11 @@
 import { NgClass, NgStyle } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
+import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
 import { FloorPlan } from '../../components/floor-plan/floor-plan';
 import { TableVisual } from '../../components/table-visual/table-visual';
 import type { AddFloorElementInput, FloorElement, FloorElementType, TableShape } from '../../models/restaurant-pos.models';
@@ -15,7 +18,7 @@ type MatrixCell = {
 
 type ElementPreset = {
   id: string;
-  label: string;
+  labelKey: string;
   type: FloorElementType;
   width: number;
   height: number;
@@ -27,27 +30,29 @@ const RESIZE_MATRIX_ROWS = 20;
 const RESIZE_MATRIX_COLUMNS = 20;
 
 const ELEMENT_PRESETS: ElementPreset[] = [
-  { id: 'small-table', label: 'Small table 2 pax', type: 'table', width: 2, height: 2, capacity: 2, shape: 'round' },
-  { id: 'square-table', label: 'Square table 4 pax', type: 'table', width: 2, height: 2, capacity: 4, shape: 'square' },
-  { id: 'rectangular-table', label: 'Rectangular table 6 pax', type: 'table', width: 2, height: 1, capacity: 6, shape: 'rectangle' },
-  { id: 'large-table', label: 'Large table 8 pax', type: 'table', width: 2, height: 2, capacity: 8, shape: 'rectangle' },
-  { id: 'long-table', label: 'Long table', type: 'table', width: 3, height: 1, capacity: 10, shape: 'long' },
-  { id: 'bar-horizontal', label: 'Bar horizontal', type: 'bar', width: 3, height: 1 },
-  { id: 'bar-vertical', label: 'Bar vertical', type: 'bar', width: 1, height: 3 },
-  { id: 'kitchen', label: 'Kitchen', type: 'kitchen', width: 2, height: 1 },
-  { id: 'bathroom', label: 'Bathroom', type: 'bathroom', width: 1, height: 1 },
-  { id: 'entrance', label: 'Entrance', type: 'entrance', width: 1, height: 1 },
-  { id: 'blocked-area', label: 'Blocked area', type: 'blocked', width: 1, height: 1 },
-  { id: 'stool', label: 'Stool', type: 'stool', width: 1, height: 1 },
+  { id: 'small-table', labelKey: 'restaurantPos.presets.smallTable', type: 'table', width: 2, height: 2, capacity: 2, shape: 'round' },
+  { id: 'square-table', labelKey: 'restaurantPos.presets.squareTable', type: 'table', width: 2, height: 2, capacity: 4, shape: 'square' },
+  { id: 'rectangular-table', labelKey: 'restaurantPos.presets.rectangularTable', type: 'table', width: 2, height: 1, capacity: 6, shape: 'rectangle' },
+  { id: 'large-table', labelKey: 'restaurantPos.presets.largeTable', type: 'table', width: 2, height: 2, capacity: 8, shape: 'rectangle' },
+  { id: 'long-table', labelKey: 'restaurantPos.presets.longTable', type: 'table', width: 3, height: 1, capacity: 10, shape: 'long' },
+  { id: 'bar-horizontal', labelKey: 'restaurantPos.presets.barHorizontal', type: 'bar', width: 3, height: 1 },
+  { id: 'bar-vertical', labelKey: 'restaurantPos.presets.barVertical', type: 'bar', width: 1, height: 3 },
+  { id: 'kitchen', labelKey: 'restaurantPos.presets.kitchen', type: 'kitchen', width: 2, height: 1 },
+  { id: 'bathroom', labelKey: 'restaurantPos.presets.bathroom', type: 'bathroom', width: 1, height: 1 },
+  { id: 'entrance', labelKey: 'restaurantPos.presets.entrance', type: 'entrance', width: 1, height: 1 },
+  { id: 'blocked-area', labelKey: 'restaurantPos.presets.blockedArea', type: 'blocked', width: 1, height: 1 },
+  { id: 'stool', labelKey: 'restaurantPos.presets.stool', type: 'stool', width: 1, height: 1 },
 ];
 
 @Component({
   selector: 'app-restaurant-pos-layout-page',
-  imports: [Button, FloorPlan, Icon, NgClass, NgStyle, RouterLink, TableVisual],
+  imports: [Button, FloorPlan, Icon, LanguageSelect, NgClass, NgStyle, RouterLink, TableVisual, TranslocoPipe],
   templateUrl: './restaurant-pos-layout-page.html',
 })
 export class RestaurantPosLayoutPage {
   protected readonly store = inject(RestaurantPosStore);
+  private readonly transloco = inject(TranslocoService);
+  private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly resizeModalOpen = signal(false);
   protected readonly addElementModalOpen = signal(false);
   protected readonly resizeElementModalOpen = signal(false);
@@ -76,12 +81,20 @@ export class RestaurantPosLayoutPage {
       row: Math.floor(index / this.store.gridColumns()),
     })).map((cell) => ({ ...cell, row: cell.row + 1 })),
   );
-  protected readonly resizePreviewLabel = computed(() => `${this.resizeColumnsInput()} columns x ${this.resizeRowsInput()} rows`);
-  protected readonly addElementGridLabel = computed(() => `${this.store.gridColumns()} columns x ${this.store.gridRows()} rows`);
-  protected readonly floorElementCountLabel = computed(() => `${this.store.floorElements().length} elements`);
+  protected readonly resizePreviewLabel = computed(() =>
+    this.translate('restaurantPos.common.columnsRows', { columns: this.resizeColumnsInput(), rows: this.resizeRowsInput() }),
+  );
+  protected readonly addElementGridLabel = computed(() =>
+    this.translate('restaurantPos.common.columnsRows', { columns: this.store.gridColumns(), rows: this.store.gridRows() }),
+  );
+  protected readonly floorElementCountLabel = computed(() =>
+    this.translate('restaurantPos.layout.elementCount', { count: this.store.floorElements().length }),
+  );
   protected readonly selectedLayoutElementLabel = computed(() => {
     const selectedElement = this.selectedLayoutElement();
-    return selectedElement ? `Selected: ${selectedElement.label}` : 'No element selected';
+    return selectedElement
+      ? this.translate('restaurantPos.layout.selectedElement', { label: selectedElement.label })
+      : this.translate('restaurantPos.layout.noElementSelected');
   });
   protected readonly selectedPreset = computed(
     () => ELEMENT_PRESETS.find((preset) => preset.id === this.selectedPresetId()) ?? ELEMENT_PRESETS[0],
@@ -90,33 +103,50 @@ export class RestaurantPosLayoutPage {
   protected readonly selectedPlacement = computed(() => this.buildElementInput(this.selectedPosition()));
   protected readonly selectedPositionLabel = computed(() => {
     const position = this.selectedPosition();
-    return position ? `Posición: columna ${position.column}, fila ${position.row}` : 'Posición: sin seleccionar';
+    return position
+      ? this.translate('restaurantPos.layout.elementDialog.selectedPosition', { column: position.column, row: position.row })
+      : this.translate('restaurantPos.layout.elementDialog.unselectedPosition');
   });
   protected readonly selectedPositionBadgeLabel = computed(() => {
     const position = this.selectedPosition();
     if (!position) {
-      return 'Posición sin seleccionar';
+      return this.translate('restaurantPos.layout.elementDialog.unselectedPositionBadge');
     }
 
     const endColumn = position.column + this.elementWidthInput() - 1;
     const endRow = position.row + this.elementHeightInput() - 1;
 
     if (position.column === endColumn && position.row === endRow) {
-      return `Columna ${position.column}, fila ${position.row}`;
+      return this.translate('restaurantPos.layout.elementDialog.singleCellBadge', { column: position.column, row: position.row });
     }
 
-    return `Columnas ${position.column}-${endColumn}, filas ${position.row}-${endRow}`;
+    return this.translate('restaurantPos.layout.elementDialog.rangeBadge', {
+      startColumn: position.column,
+      endColumn,
+      startRow: position.row,
+      endRow,
+    });
   });
-  protected readonly elementSizeLabel = computed(() => `Tamaño: ${this.elementWidthInput()} x ${this.elementHeightInput()}`);
-  protected readonly previewCapacityLabel = computed(() => (this.selectedPreset().type === 'table' ? `${this.tableCapacityInput()} pax` : null));
-  protected readonly localizedElementModalTitle = computed(() => (this.editingElementId() ? 'Editar elemento' : 'Añadir elemento'));
+  protected readonly elementSizeLabel = computed(() =>
+    this.translate('restaurantPos.layout.elementDialog.size', { width: this.elementWidthInput(), height: this.elementHeightInput() }),
+  );
+  protected readonly previewCapacityLabel = computed(() =>
+    this.selectedPreset().type === 'table' ? this.translate('restaurantPos.common.pax', { count: this.tableCapacityInput() }) : null,
+  );
+  protected readonly localizedElementModalTitle = computed(() =>
+    this.editingElementId()
+      ? this.translate('restaurantPos.layout.elementDialog.editTitle')
+      : this.translate('restaurantPos.layout.elementDialog.addTitle'),
+  );
   protected readonly elementActionLabel = computed(() => {
     if (this.editingElementId()) {
-      return 'Guardar cambios';
+      return this.translate('restaurantPos.layout.elementDialog.saveChanges');
     }
 
     const label = this.elementLabelInput().trim();
-    return label ? `Añadir ${label}` : 'Añadir elemento';
+    return label
+      ? this.translate('restaurantPos.layout.elementDialog.addNamed', { label })
+      : this.translate('restaurantPos.layout.elementDialog.addElement');
   });
   protected readonly canAddSelectedElement = computed(() => {
     const placement = this.selectedPlacement();
@@ -242,7 +272,7 @@ export class RestaurantPosLayoutPage {
     this.tableCapacityInput.set(preset.capacity ?? this.tableCapacityInput());
 
     if (!this.editingElementId() && preset.type !== 'table') {
-      this.elementLabelInput.set(preset.label);
+      this.elementLabelInput.set(this.getPresetLabel(preset));
     }
   }
 
@@ -344,6 +374,18 @@ export class RestaurantPosLayoutPage {
 
   protected previewZoneIcon(): string {
     return this.zoneIcon(this.selectedPreset().type);
+  }
+
+  protected getPresetLabel(preset: ElementPreset): string {
+    return this.translate(preset.labelKey);
+  }
+
+  protected getResizeCellAriaLabel(cell: MatrixCell): string {
+    return this.translate('restaurantPos.layout.resizeDialog.selectSize', { columns: cell.column, rows: cell.row });
+  }
+
+  protected getPositionCellAriaLabel(cell: MatrixCell): string {
+    return this.translate('restaurantPos.layout.elementDialog.placeAt', { column: cell.column, row: cell.row });
   }
 
   protected previewObjectClass(): string {
@@ -493,5 +535,10 @@ export class RestaurantPosLayoutPage {
   private nextTableLabel(): string {
     const nextNumber = Math.max(0, ...this.store.restaurantTables().map((table) => table.number)) + 1;
     return `M${nextNumber}`;
+  }
+
+  private translate(key: string, params?: Record<string, unknown>): string {
+    this.activeLang();
+    return this.transloco.translate(key, params);
   }
 }

@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+﻿import { TestBed } from '@angular/core/testing';
 import { RestaurantPosStore } from './restaurant-pos.store';
 
 describe('RestaurantPosStore', () => {
@@ -46,7 +46,7 @@ describe('RestaurantPosStore', () => {
 
     expect(store.gridRows()).toBe(20);
     expect(store.gridColumns()).toBe(20);
-    expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotResizeGrid');
   });
 
   it('prevents setting a grid size that would leave elements outside bounds', () => {
@@ -54,7 +54,7 @@ describe('RestaurantPosStore', () => {
 
     expect(store.gridRows()).toBe(20);
     expect(store.gridColumns()).toBe(20);
-    expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotResizeGrid');
   });
 
   it('adds a product to the selected table order', () => {
@@ -93,7 +93,7 @@ describe('RestaurantPosStore', () => {
   it('sets an error when adding a product without a selected table', () => {
     store.addProductToSelectedTable('product-1');
 
-    expect(store.errorMessage()).toBe('Select a table first');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.selectTableFirst');
   });
 
   it('does not add unavailable products', () => {
@@ -101,7 +101,7 @@ describe('RestaurantPosStore', () => {
     store.addProductToSelectedTable('product-4');
 
     expect(store.ordersByTable()['table-1'].lines).toEqual([]);
-    expect(store.errorMessage()).toBe('Product is unavailable');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.productUnavailable');
   });
 
   it('sends the selected order to kitchen', () => {
@@ -191,7 +191,7 @@ describe('RestaurantPosStore', () => {
     });
 
     expect(store.floorElements().length).toBe(initialCount);
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('prevents floor elements outside the grid', () => {
@@ -207,7 +207,7 @@ describe('RestaurantPosStore', () => {
     });
 
     expect(store.floorElements().length).toBe(initialCount);
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('creates a floor element and restaurant table when adding a table element', () => {
@@ -322,7 +322,7 @@ describe('RestaurantPosStore', () => {
 
     expect(store.floorElements().length).toBe(initialElementCount);
     expect(store.restaurantTables().length).toBe(initialTableCount);
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('prevents adding tables that do not fit the grid', () => {
@@ -333,7 +333,7 @@ describe('RestaurantPosStore', () => {
 
     expect(store.floorElements().length).toBe(initialElementCount);
     expect(store.restaurantTables().length).toBe(initialTableCount);
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('renames a floor element', () => {
@@ -355,7 +355,7 @@ describe('RestaurantPosStore', () => {
         label: 'M1',
       }),
     );
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('resizes a floor element to a valid size', () => {
@@ -379,7 +379,7 @@ describe('RestaurantPosStore', () => {
         height: 2,
       }),
     );
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('deletes a table floor element and its restaurant table', () => {
@@ -413,7 +413,7 @@ describe('RestaurantPosStore', () => {
         y: 1,
       }),
     );
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('prevents moving a floor element above the first row', () => {
@@ -425,7 +425,7 @@ describe('RestaurantPosStore', () => {
         y: 1,
       }),
     );
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('prevents moving a floor element over another element', () => {
@@ -437,7 +437,7 @@ describe('RestaurantPosStore', () => {
         y: 1,
       }),
     );
-    expect(store.errorMessage()).toBe('Cannot place element here');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotPlaceElement');
   });
 
   it('prevents removing a row when existing elements would be outside the grid', () => {
@@ -453,7 +453,7 @@ describe('RestaurantPosStore', () => {
     store.removeRow();
 
     expect(store.gridRows()).toBe(20);
-    expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotResizeGrid');
   });
 
   it('prevents removing a column when existing elements would be outside the grid', () => {
@@ -469,6 +469,6 @@ describe('RestaurantPosStore', () => {
     store.removeColumn();
 
     expect(store.gridColumns()).toBe(20);
-    expect(store.errorMessage()).toBe('Cannot resize layout because some elements would be outside the grid.');
+    expect(store.errorMessage()).toBe('restaurantPos.errors.cannotResizeGrid');
   });
 });

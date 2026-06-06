@@ -2,6 +2,8 @@ import { NgClass, NgStyle, NgTemplateOutlet } from '@angular/common';
 import { CdkDrag, CdkDragHandle, CdkDragPlaceholder, CdkDragPreview, type CdkDragEnd, type CdkDragMove } from '@angular/cdk/drag-drop';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import { Component, computed, effect, ElementRef, inject, input, OnDestroy, output, signal, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { FloorElement, TableShape } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
@@ -27,7 +29,7 @@ type CanvasPanStart = {
 
 @Component({
   selector: 'app-floor-plan',
-  imports: [CdkDrag, CdkDragHandle, CdkDragPlaceholder, CdkDragPreview, CdkScrollable, Icon, NgClass, NgStyle, NgTemplateOutlet, TableVisual],
+  imports: [CdkDrag, CdkDragHandle, CdkDragPlaceholder, CdkDragPreview, CdkScrollable, Icon, NgClass, NgStyle, NgTemplateOutlet, TableVisual, TranslocoPipe],
   templateUrl: './floor-plan.html',
   styleUrl: './floor-plan.css',
 })
@@ -39,6 +41,8 @@ export class FloorPlan implements OnDestroy {
 
   protected readonly floorCanvas = viewChild<ElementRef<HTMLElement>>('floorCanvas');
   protected readonly store = inject(RestaurantPosStore);
+  private readonly transloco = inject(TranslocoService);
+  private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly selectedElementId = signal<string | null>(null);
   protected readonly hasCanvasOverflow = signal(false);
   protected readonly isPanningCanvas = signal(false);
@@ -109,7 +113,7 @@ export class FloorPlan implements OnDestroy {
   protected deleteElement(element: FloorElement, event: Event): void {
     event.stopPropagation();
 
-    if (confirm('Delete this element from the layout?')) {
+    if (confirm(this.translate('restaurantPos.floorPlan.deleteConfirm'))) {
       this.store.deleteFloorElement(element.id);
       this.selectedElementId.set(null);
       this.selectedElementChange.emit(null);
@@ -227,16 +231,16 @@ export class FloorPlan implements OnDestroy {
 
   protected displayLabel(element: FloorElement): string {
     if (!element.tableId) {
-      return element.label;
+      return this.localizedFloorElementLabel(element);
     }
 
     const table = this.store.restaurantTables().find((restaurantTable) => restaurantTable.id === element.tableId);
-    return element.label || (table ? `M${table.number}` : 'Table');
+    return element.label || (table ? `M${table.number}` : this.translate('restaurantPos.floorPlan.table'));
   }
 
   protected tableCapacity(element: FloorElement): string {
     const table = element.tableId ? this.store.restaurantTables().find((restaurantTable) => restaurantTable.id === element.tableId) : null;
-    return `${table?.capacity ?? 4} pax`;
+    return this.translate('restaurantPos.common.pax', { count: table?.capacity ?? 4 });
   }
 
   protected elementClass(element: FloorElement): string {
@@ -248,7 +252,7 @@ export class FloorPlan implements OnDestroy {
   }
 
   protected elementAriaLabel(element: FloorElement): string {
-    return `${this.displayLabel(element)} floor element`;
+    return this.translate('restaurantPos.floorPlan.floorElement', { label: this.displayLabel(element) });
   }
 
   protected tableShape(element: FloorElement): TableShape {
@@ -256,7 +260,19 @@ export class FloorPlan implements OnDestroy {
   }
 
   protected zoneObjectLabel(element: FloorElement): string {
-    return `${this.displayLabel(element)} object`;
+    return this.translate('restaurantPos.floorPlan.object', { label: this.displayLabel(element) });
+  }
+
+  protected tableShapeLabel(element: FloorElement): string {
+    return this.translate('restaurantPos.floorPlan.tableShape', { shape: this.tableShape(element) });
+  }
+
+  protected actionLabel(action: 'move' | 'resize' | 'edit' | 'delete', element: FloorElement): string {
+    return this.translate(`restaurantPos.floorPlan.${action}`, { label: this.displayLabel(element) });
+  }
+
+  protected cellLabel(x: number, y: number): string {
+    return this.translate('restaurantPos.floorPlan.cell', { x, y });
   }
 
   protected isVerticalBar(element: FloorElement): boolean {
@@ -448,5 +464,41 @@ export class FloorPlan implements OnDestroy {
       clearTimeout(this.hideScrollHintTimer);
       this.hideScrollHintTimer = null;
     }
+  }
+
+  private localizedFloorElementLabel(element: FloorElement): string {
+    const defaultLabelByType: Partial<Record<FloorElement['type'], string>> = {
+      bar: this.translate('restaurantPos.floorPlan.bar'),
+      kitchen: this.translate('restaurantPos.floorPlan.kitchen'),
+      entrance: this.translate('restaurantPos.floorPlan.entrance'),
+      bathroom: this.translate('restaurantPos.floorPlan.bathroom'),
+      blocked: this.translate('restaurantPos.floorPlan.blocked'),
+      stool: this.translate('restaurantPos.floorPlan.stool'),
+    };
+    const defaultSourceLabelByType: Partial<Record<FloorElement['type'], string>> = {
+      bar: 'Bar',
+      kitchen: 'Kitchen',
+      entrance: 'Entrance',
+      bathroom: 'Bathroom',
+      blocked: 'Blocked area',
+      stool: 'Stool',
+    };
+    const defaultLabel = defaultLabelByType[element.type];
+
+    if (!defaultLabel) {
+      return element.label;
+    }
+
+    if (element.type === 'stool') {
+      const match = element.label.match(/^Stool(?: (?<number>\d+))?$/);
+      return match?.groups?.['number'] ? `${defaultLabel} ${match.groups['number']}` : defaultLabel;
+    }
+
+    return element.label === defaultSourceLabelByType[element.type] || element.label === defaultLabelByType[element.type] ? defaultLabel : element.label;
+  }
+
+  private translate(key: string, params?: Record<string, unknown>): string {
+    this.activeLang();
+    return this.transloco.translate(key, params);
   }
 }
