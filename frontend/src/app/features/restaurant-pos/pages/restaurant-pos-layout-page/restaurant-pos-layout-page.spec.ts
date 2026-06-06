@@ -42,7 +42,11 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resize layout' }));
 
     expect(screen.getByRole('dialog', { name: 'Resize layout' })).toBeTruthy();
-    expect(within(screen.getByRole('dialog', { name: 'Resize layout' })).getByText('20 columns x 20 rows')).toBeTruthy();
+    const dialog = screen.getByRole('dialog', { name: 'Resize layout' });
+    expect(within(dialog).getByRole('button', { name: 'Close resize layout' })).toBeTruthy();
+    expect(within(dialog).getByLabelText('Layout size controls')).toBeTruthy();
+    expect(within(dialog).getByLabelText('Resize preview')).toBeTruthy();
+    expect(within(dialog).getByText('20 columns x 20 rows')).toBeTruthy();
     expect(within(screen.getByLabelText('Resize matrix')).getAllByRole('button').length).toBe(400);
     expect(screen.getByLabelText('Rows')).toHaveProperty('value', '20');
     expect(screen.getByLabelText('Columns')).toHaveProperty('value', '20');
@@ -105,7 +109,11 @@ describe('RestaurantPosLayoutPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
 
-    expect(screen.getByRole('dialog', { name: 'Añadir elemento' })).toBeTruthy();
+    const dialog = screen.getByRole('dialog', { name: 'Añadir elemento' });
+    expect(dialog).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: 'Cerrar formulario de elemento' })).toBeTruthy();
+    expect(within(dialog).getByLabelText('Configuración del elemento')).toBeTruthy();
+    expect(within(dialog).getByLabelText('Vista previa del elemento seleccionado')).toBeTruthy();
     expect(screen.getByLabelText('Tipo de elemento')).toHaveProperty('value', 'small-table');
     expect(screen.getByRole('option', { name: 'Bar horizontal' })).toBeTruthy();
     expect(screen.getByRole('option', { name: 'Bar vertical' })).toBeTruthy();
@@ -113,7 +121,33 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.getByLabelText('Tamaño predefinido')).toHaveProperty('value', 'small-table');
     expect(screen.getByLabelText('Ancho')).toHaveProperty('value', '2');
     expect(screen.getByLabelText('Alto')).toHaveProperty('value', '2');
-    expect(within(screen.getByRole('dialog', { name: 'Añadir elemento' })).getByText('20 columns x 20 rows')).toBeTruthy();
+    expect(within(dialog).getByText('20 columns x 20 rows')).toBeTruthy();
+  });
+
+  it('keeps the add element position selector visually clean while preserving accessible cell labels', async () => {
+    await render(RestaurantPosLayoutPage);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
+
+    const selector = screen.getByLabelText('Position selector');
+    expect(within(selector).getByRole('button', { name: 'Colocar en columna 9 fila 9' })).toBeTruthy();
+    expect(within(selector).queryByText('9,9')).toBeNull();
+    expect(screen.getByText('Posición sin seleccionar')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }));
+
+    expect(screen.getByText('Columnas 9-10, filas 9-10')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Colocar en columna 10 fila 9' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Colocar en columna 9 fila 10' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }).className).toContain('ring-cyan-700');
+    expect(screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' }).className).toContain('ring-cyan-500');
+
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Colocar en columna 12 fila 12' }));
+
+    expect(screen.getByRole('button', { name: 'Colocar en columna 12 fila 12' }).className).toContain('bg-sky-100');
+    expect(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }).className).toContain('ring-cyan-700');
   });
 
   it('shows a selected element preview and summary in the add element modal', async () => {
@@ -205,7 +239,7 @@ describe('RestaurantPosLayoutPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento seleccionado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M5' }));
 
     expect(store.floorElements().length).toBe(initialElementCount + 1);
     expect(store.restaurantTables().length).toBe(initialTableCount + 1);
@@ -228,7 +262,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '3' } });
     fireEvent.input(screen.getByLabelText('Alto'), { target: { value: '1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 5 fila 10' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento seleccionado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M5' }));
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -248,7 +282,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'stool' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento seleccionado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir Stool' }));
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -268,7 +302,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'bar-vertical' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 10 fila 2' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento seleccionado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir Bar vertical' }));
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -320,7 +354,7 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.getByRole('dialog', { name: 'Resize element' })).toBeTruthy();
   });
 
-  it('uses custom occupied size when validating placement', async () => {
+  it('keeps edge placement inside the grid for custom occupied sizes', async () => {
     const { fixture } = await render(RestaurantPosLayoutPage);
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
@@ -331,9 +365,16 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
     fireEvent.input(screen.getByLabelText('Alto'), { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M5' }));
 
-    expect(screen.getByText('La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Añadir elemento seleccionado' })).toHaveProperty('disabled', true);
+    expect(store.floorElements().at(-1)).toEqual(
+      expect.objectContaining({
+        x: 8,
+        y: 8,
+        width: 2,
+        height: 2,
+      }),
+    );
   });
 
   it('saves layout-only changes from the edit modal', async () => {
@@ -344,7 +385,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit M1' }));
     fireEvent.input(screen.getByLabelText('Etiqueta del elemento'), { target: { value: 'Terrace 1' } });
     fireEvent.input(screen.getByLabelText('Capacidad de mesa'), { target: { value: '6' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar elemento' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
       expect.objectContaining({ label: 'Terrace 1' }),
@@ -359,17 +400,31 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 1 fila 1' }));
 
     expect(screen.getByText('La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Añadir elemento seleccionado' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Añadir M5' })).toHaveProperty('disabled', true);
   });
 
-  it('marks cells where the selected element cannot fit as unavailable', async () => {
+  it('marks cells where the selected element cannot be placed as unavailable', async () => {
     await render(RestaurantPosLayoutPage);
 
     fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
 
-    const unavailableCell = screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' });
+    const availableCell = screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' });
+    expect(availableCell.className).toContain('bg-emerald-50');
+
+    const unavailableCell = screen.getByRole('button', { name: 'Colocar en columna 1 fila 1' });
     expect(unavailableCell.getAttribute('aria-disabled')).toBe('true');
     expect(unavailableCell.className).toContain('cursor-not-allowed');
+    expect(unavailableCell.className).toContain('repeating-linear-gradient');
+  });
+
+  it('allows the last matrix cell to anchor a fitting element inside the layout', async () => {
+    await render(RestaurantPosLayoutPage);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add element' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
+
+    expect(screen.getByText('Columnas 19-20, filas 19-20')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Añadir M5' })).toHaveProperty('disabled', false);
   });
 });

@@ -92,9 +92,32 @@ export class RestaurantPosLayoutPage {
     const position = this.selectedPosition();
     return position ? `Posición: columna ${position.column}, fila ${position.row}` : 'Posición: sin seleccionar';
   });
+  protected readonly selectedPositionBadgeLabel = computed(() => {
+    const position = this.selectedPosition();
+    if (!position) {
+      return 'Posición sin seleccionar';
+    }
+
+    const endColumn = position.column + this.elementWidthInput() - 1;
+    const endRow = position.row + this.elementHeightInput() - 1;
+
+    if (position.column === endColumn && position.row === endRow) {
+      return `Columna ${position.column}, fila ${position.row}`;
+    }
+
+    return `Columnas ${position.column}-${endColumn}, filas ${position.row}-${endRow}`;
+  });
   protected readonly elementSizeLabel = computed(() => `Tamaño: ${this.elementWidthInput()} x ${this.elementHeightInput()}`);
   protected readonly previewCapacityLabel = computed(() => (this.selectedPreset().type === 'table' ? `${this.tableCapacityInput()} pax` : null));
   protected readonly localizedElementModalTitle = computed(() => (this.editingElementId() ? 'Editar elemento' : 'Añadir elemento'));
+  protected readonly elementActionLabel = computed(() => {
+    if (this.editingElementId()) {
+      return 'Guardar cambios';
+    }
+
+    const label = this.elementLabelInput().trim();
+    return label ? `Añadir ${label}` : 'Añadir elemento';
+  });
   protected readonly canAddSelectedElement = computed(() => {
     const placement = this.selectedPlacement();
     return (
@@ -240,12 +263,12 @@ export class RestaurantPosLayoutPage {
   }
 
   protected selectPosition(cell: MatrixCell): void {
-    this.selectedPosition.set(cell);
+    this.selectedPosition.set(this.normalizePlacementCell(cell));
     this.hoveredPosition.set(null);
   }
 
   protected previewPositionAt(cell: MatrixCell): void {
-    this.hoveredPosition.set(cell);
+    this.hoveredPosition.set(this.normalizePlacementCell(cell));
   }
 
   protected clearPreviewPosition(): void {
@@ -282,15 +305,27 @@ export class RestaurantPosLayoutPage {
   }
 
   protected positionCellClass(cell: MatrixCell): string {
-    if (!this.isPositionPreviewCell(cell)) {
-      return this.isPositionUnavailable(cell)
-        ? 'cursor-not-allowed border-slate-300 bg-slate-50 text-slate-400 hover:border-red-300 hover:bg-red-50'
-        : 'border-slate-300 bg-white hover:border-cyan-400 hover:bg-cyan-50';
+    if (this.isSelectedAnchorCell(cell)) {
+      return this.isSelectedPlacementValid()
+        ? 'border-cyan-700 bg-cyan-300 shadow-[inset_0_0_0_3px_rgb(14_116_144_/_0.42)] ring-2 ring-cyan-700'
+        : 'border-red-700 bg-red-300 shadow-[inset_0_0_0_3px_rgb(185_28_28_/_0.42)] ring-2 ring-red-700';
     }
 
-    return this.isPreviewPlacementValid()
-      ? 'border-cyan-500 bg-cyan-100 text-cyan-950 ring-1 ring-cyan-500'
-      : 'border-red-500 bg-red-100 text-red-950 ring-1 ring-red-500';
+    if (this.isSelectedPlacementCell(cell)) {
+      return this.isSelectedPlacementValid()
+        ? 'border-cyan-600 bg-cyan-200 shadow-sm ring-1 ring-cyan-500'
+        : 'border-red-600 bg-red-200 ring-1 ring-red-500';
+    }
+
+    if (this.isHoveredPlacementCell(cell)) {
+      return this.isPreviewPlacementValid()
+        ? 'border-sky-400 bg-sky-100 shadow-[inset_0_0_0_1px_rgb(14_165_233_/_0.25)]'
+        : 'border-red-400 bg-red-100 shadow-[inset_0_0_0_1px_rgb(239_68_68_/_0.25)]';
+    }
+
+    return this.isPositionUnavailable(cell)
+      ? 'cursor-not-allowed border-slate-300 bg-[repeating-linear-gradient(135deg,#f8fafc_0,#f8fafc_6px,#e2e8f0_6px,#e2e8f0_12px)] opacity-70 hover:border-red-300 hover:bg-red-50'
+      : 'border-emerald-300 bg-emerald-50 shadow-sm hover:border-cyan-500 hover:bg-cyan-100';
   }
 
   protected isResizeCellSelected(cell: MatrixCell): boolean {
@@ -328,12 +363,16 @@ export class RestaurantPosLayoutPage {
   }
 
   protected isPositionUnavailable(cell: MatrixCell): boolean {
-    const placement = this.buildElementInput(cell);
+    const placement = this.buildElementInput(this.normalizePlacementCell(cell));
     return !placement || !this.store.canPlaceElement(placement, this.editingElementId() ?? undefined);
   }
 
   protected positionCellAriaDisabled(cell: MatrixCell): 'true' | null {
     return this.isPositionUnavailable(cell) ? 'true' : null;
+  }
+
+  protected positionCellAriaPressed(cell: MatrixCell): 'true' | null {
+    return this.isSelectedPlacementCell(cell) ? 'true' : null;
   }
 
   protected isSelectedPositionInvalid(): boolean {
@@ -358,8 +397,35 @@ export class RestaurantPosLayoutPage {
     };
   }
 
-  private isPositionPreviewCell(cell: MatrixCell): boolean {
-    const position = this.previewPosition();
+  private normalizePlacementCell(cell: MatrixCell): MatrixCell {
+    return {
+      column: Math.min(cell.column, Math.max(1, this.store.gridColumns() - this.elementWidthInput() + 1)),
+      row: Math.min(cell.row, Math.max(1, this.store.gridRows() - this.elementHeightInput() + 1)),
+    };
+  }
+
+  private isHoveredPlacementCell(cell: MatrixCell): boolean {
+    const position = this.hoveredPosition();
+
+    if (!position) {
+      return false;
+    }
+
+    return (
+      cell.column >= position.column &&
+      cell.column < position.column + this.elementWidthInput() &&
+      cell.row >= position.row &&
+      cell.row < position.row + this.elementHeightInput()
+    );
+  }
+
+  private isSelectedAnchorCell(cell: MatrixCell): boolean {
+    const position = this.selectedPosition();
+    return !!position && cell.column === position.column && cell.row === position.row;
+  }
+
+  private isSelectedPlacementCell(cell: MatrixCell): boolean {
+    const position = this.selectedPosition();
 
     if (!position) {
       return false;
@@ -375,6 +441,11 @@ export class RestaurantPosLayoutPage {
 
   private isPreviewPlacementValid(): boolean {
     const placement = this.buildElementInput(this.previewPosition());
+    return !!placement && this.store.canPlaceElement(placement, this.editingElementId() ?? undefined);
+  }
+
+  private isSelectedPlacementValid(): boolean {
+    const placement = this.buildElementInput(this.selectedPosition());
     return !!placement && this.store.canPlaceElement(placement, this.editingElementId() ?? undefined);
   }
 
