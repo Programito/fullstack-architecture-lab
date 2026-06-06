@@ -85,12 +85,10 @@ describe('FloorPlan', () => {
     const matrix = screen.getByLabelText('Floor plan matrix');
     expect(matrix.getAttribute('style')).toContain('grid-template-columns: repeat(20, 2.75rem)');
     expect(matrix.getAttribute('style')).toContain('grid-template-rows: repeat(20, 2.75rem)');
-    expect(matrix.className).toContain('border-stone-300');
-    expect(matrix.className).toContain('bg-stone-50');
+    expect(matrix.className).toContain('floor-plan-theme-matrix');
     expect(matrix.className).not.toContain('linear-gradient');
     expect(matrix.className).not.toContain('bg-[length:');
-    expect(screen.getByLabelText('Cell 0, 0').className).toContain('border-stone-200/35');
-    expect(screen.getByLabelText('Cell 0, 0').className).toContain('bg-white/5');
+    expect(screen.getByLabelText('Cell 0, 0').className).toContain('floor-plan-theme-cell');
   });
 
   it('uses the inner matrix border as the placement boundary without extra inner padding', async () => {
@@ -100,7 +98,7 @@ describe('FloorPlan', () => {
     expect(matrix.className.split(' ')).not.toContain('p-2');
     expect(matrix.className.split(' ')).toContain('overflow-visible');
     expect(matrix.className.split(' ')).not.toContain('overflow-hidden');
-    expect(matrix.className).toContain('border-stone-300');
+    expect(matrix.className).toContain('floor-plan-theme-matrix');
   });
 
   it('keeps the outer canvas compact while leaving room for the selected toolbar', async () => {
@@ -238,12 +236,11 @@ describe('FloorPlan', () => {
     await renderFloorPlan();
 
     const element = screen.getByLabelText('M1 floor element');
-    expect(element.className.split(' ')).toContain('border-stone-300');
-    expect(element.className.split(' ')).toContain('bg-white/20');
+    expect(element.className.split(' ')).toContain('floor-plan-theme-element');
 
     fireEvent.click(element);
 
-    expect(element.className.split(' ')).toContain('border-cyan-400');
+    expect(element.className.split(' ')).toContain('floor-plan-theme-element-selected');
     expect(element.className).toContain('ring-cyan-500');
   });
 
@@ -268,10 +265,14 @@ describe('FloorPlan', () => {
     expect(barCapsule.className.split(' ')).toContain('h-full');
     expect(barCapsule.className.split(' ')).toContain('w-full');
     expect(barCapsule.className.split(' ')).toContain('rounded-full');
+    expect(within(barCapsule).getByText('Bar').className).not.toContain('floor-plan-zone-label--vertical');
     expect(screen.queryByLabelText('Bar stools')).toBeNull();
     expect(screen.getByLabelText('Stool 1 floor element')).toBeTruthy();
     expect(screen.getByLabelText('Stool 2 floor element')).toBeTruthy();
     expect(screen.getByLabelText('Stool 3 floor element')).toBeTruthy();
+    expect(within(screen.getByLabelText('Stool 1 object')).getByText('T1')).toBeTruthy();
+    expect(within(screen.getByLabelText('Stool 2 object')).getByText('T2')).toBeTruthy();
+    expect(within(screen.getByLabelText('Stool 3 object')).getByText('T3')).toBeTruthy();
   });
 
   it('renders a vertical bar as a tall capsule that fills its footprint height', async () => {
@@ -292,6 +293,21 @@ describe('FloorPlan', () => {
     expect(barCapsule.className.split(' ')).toContain('w-full');
     expect(barCapsule.className.split(' ')).toContain('rounded-full');
     expect(within(barCapsule).getByText('Vertical bar')).toBeTruthy();
+    expect(within(barCapsule).getByText('Vertical bar').className).toContain('floor-plan-zone-label--vertical');
+  });
+
+  it('uses compact visual labels for stools while keeping accessible names complete', async () => {
+    const { fixture } = await renderFloorPlan();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    store.addFloorElement({ type: 'stool', label: 'Stool', x: 5, y: 4, width: 1, height: 1 });
+    store.addFloorElement({ type: 'stool', label: 'Custom stool label', x: 6, y: 4, width: 1, height: 1 });
+    fixture.detectChanges();
+
+    expect(screen.getAllByLabelText('Stool floor element').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('Custom stool label floor element')).toBeTruthy();
+    expect(within(screen.getAllByLabelText('Stool object')[0]).getByText('T')).toBeTruthy();
+    expect(within(screen.getByLabelText('Custom stool label object')).getByText('Custom stool label')).toBeTruthy();
   });
 
   it('selects a floor element and shows one contextual toolbar in layout mode', async () => {

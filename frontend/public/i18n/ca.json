@@ -22,6 +22,27 @@
       "en": "English"
     }
   },
+  "colorMode": {
+    "label": "Tema",
+    "buttonAriaLabel": "Tema: {{preference}}. Mode actiu: {{mode}}",
+    "switchToDark": "Canviar al mode fosc",
+    "switchToLight": "Canviar al mode clar",
+    "optionAriaLabel": "Usar tema {{option}}",
+    "options": {
+      "system": {
+        "label": "Sistema",
+        "description": "Segueix la preferència del dispositiu."
+      },
+      "light": {
+        "label": "Clar",
+        "description": "Interfície amb fons clar."
+      },
+      "dark": {
+        "label": "Fosc",
+        "description": "Interfície amb fons fosc."
+      }
+    }
+  },
   "restaurantPos": {
     "common": {
       "layout": "Plànol",

@@ -34,6 +34,128 @@
   box-shadow: none;
 }
 
+.button--primary-outline {
+  border-color: var(--ui-primary);
+  background: var(--ui-bg);
+  color: var(--ui-primary);
+}
+
+.button--primary-outline:hover:not(:disabled),
+.button--primary-clear:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-primary-ring) 58%, transparent);
+}
+
+.button--primary-outline:focus-visible,
+.button--primary-clear:focus-visible {
+  outline-color: var(--ui-primary-ring);
+}
+
+.button--primary-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ui-primary);
+}
+
+.button--secondary-outline {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg);
+  color: var(--ui-secondary);
+}
+
+.button--secondary-outline:hover:not(:disabled),
+.button--secondary-clear:hover:not(:disabled) {
+  background: var(--ui-surface);
+}
+
+.button--secondary-outline:focus-visible,
+.button--secondary-clear:focus-visible {
+  outline-color: var(--ui-secondary-ring);
+}
+
+.button--secondary-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ui-secondary);
+}
+
+.button--neutral-solid {
+  border-color: var(--ui-fg);
+  background: var(--ui-fg);
+  color: var(--ui-bg);
+}
+
+.button--neutral-solid:hover:not(:disabled) {
+  border-color: var(--ui-muted-fg);
+  background: var(--ui-muted-fg);
+}
+
+.button--neutral-solid:focus-visible,
+.button--neutral-outline:focus-visible,
+.button--neutral-clear:focus-visible {
+  outline-color: var(--ui-neutral-ring);
+}
+
+.button--neutral-outline {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.button--neutral-outline:hover:not(:disabled),
+.button--neutral-clear:hover:not(:disabled) {
+  background: var(--ui-surface-strong);
+}
+
+.button--neutral-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ui-fg);
+}
+
+.button--danger-outline {
+  border-color: var(--ui-danger);
+  background: var(--ui-bg);
+  color: var(--ui-danger);
+}
+
+.button--danger-outline:hover:not(:disabled),
+.button--danger-clear:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-danger-ring) 58%, transparent);
+}
+
+.button--danger-outline:focus-visible,
+.button--danger-clear:focus-visible {
+  outline-color: var(--ui-danger-ring);
+}
+
+.button--danger-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ui-danger);
+}
+
+.button--violet-outline {
+  border-color: var(--ui-violet);
+  background: var(--ui-bg);
+  color: var(--ui-violet);
+}
+
+.button--violet-outline:hover:not(:disabled),
+.button--violet-clear:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-violet-ring) 58%, transparent);
+}
+
+.button--violet-outline:focus-visible,
+.button--violet-clear:focus-visible {
+  outline-color: var(--ui-violet-ring);
+}
+
+.button--violet-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ui-violet);
+}
+
 .button--minimal {
   box-shadow: none;
 }

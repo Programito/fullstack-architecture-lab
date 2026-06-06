@@ -13,6 +13,18 @@ const TEST_TRANSLATIONS = {
       listboxAriaLabel: 'Idioma',
       languages: { es: 'Español', ca: 'Català', en: 'English' },
     },
+    colorMode: {
+      label: 'Tema',
+      buttonAriaLabel: 'Tema: {{preference}}. Modo activo: {{mode}}',
+      switchToDark: 'Cambiar a modo oscuro',
+      switchToLight: 'Cambiar a modo claro',
+      optionAriaLabel: 'Usar tema {{option}}',
+      options: {
+        system: { label: 'Sistema', description: 'Sigue la preferencia del dispositivo.' },
+        light: { label: 'Claro', description: 'Interfaz con fondo claro.' },
+        dark: { label: 'Oscuro', description: 'Interfaz con fondo oscuro.' },
+      },
+    },
     restaurantPos: {
       common: {
         layout: 'Plano',
@@ -146,6 +158,18 @@ const TEST_TRANSLATIONS = {
       listboxAriaLabel: 'Language',
       languages: { es: 'Español', ca: 'Català', en: 'English' },
     },
+    colorMode: {
+      label: 'Theme',
+      buttonAriaLabel: 'Theme: {{preference}}. Active mode: {{mode}}',
+      switchToDark: 'Switch to dark mode',
+      switchToLight: 'Switch to light mode',
+      optionAriaLabel: 'Use {{option}} theme',
+      options: {
+        system: { label: 'System', description: 'Follows the device preference.' },
+        light: { label: 'Light', description: 'Interface with a light background.' },
+        dark: { label: 'Dark', description: 'Interface with a dark background.' },
+      },
+    },
     restaurantPos: {
       common: {
         layout: 'Layout',
@@ -194,6 +218,18 @@ const TEST_TRANSLATIONS = {
       closeAriaLabel: "Tancar el selector d'idioma",
       listboxAriaLabel: 'Idioma',
       languages: { es: 'Español', ca: 'Català', en: 'English' },
+    },
+    colorMode: {
+      label: 'Tema',
+      buttonAriaLabel: 'Tema: {{preference}}. Mode actiu: {{mode}}',
+      switchToDark: 'Canviar al mode fosc',
+      switchToLight: 'Canviar al mode clar',
+      optionAriaLabel: 'Usar tema {{option}}',
+      options: {
+        system: { label: 'Sistema', description: 'Segueix la preferència del dispositiu.' },
+        light: { label: 'Clar', description: 'Interfície amb fons clar.' },
+        dark: { label: 'Fosc', description: 'Interfície amb fons fosc.' },
+      },
     },
     restaurantPos: {
       common: {

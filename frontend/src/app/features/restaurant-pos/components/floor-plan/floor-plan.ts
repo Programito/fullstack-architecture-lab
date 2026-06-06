@@ -238,6 +238,21 @@ export class FloorPlan implements OnDestroy {
     return element.label || (table ? `M${table.number}` : this.translate('restaurantPos.floorPlan.table'));
   }
 
+  protected displayCompactLabel(element: FloorElement): string {
+    const label = this.displayLabel(element);
+
+    if (element.type !== 'stool') {
+      return label;
+    }
+
+    const stoolMatch = label.match(/^(?:Stool|Taburete|Tamboret)(?:\s+(?<number>\d+))?$/i);
+    if (stoolMatch) {
+      return stoolMatch.groups?.['number'] ? `T${stoolMatch.groups['number']}` : 'T';
+    }
+
+    return label;
+  }
+
   protected tableCapacity(element: FloorElement): string {
     const table = element.tableId ? this.store.restaurantTables().find((restaurantTable) => restaurantTable.id === element.tableId) : null;
     return this.translate('restaurantPos.common.pax', { count: table?.capacity ?? 4 });
@@ -245,9 +260,9 @@ export class FloorPlan implements OnDestroy {
 
   protected elementClass(element: FloorElement): string {
     return [
-      'group relative z-10 grid min-h-10 place-items-center rounded-md border border-stone-300 bg-white/20 p-0.5 text-center transition focus:outline-none',
-      this.layoutMode() ? 'cursor-pointer hover:border-cyan-300 hover:bg-white/35' : '',
-      this.isSelected(element) ? 'z-40 border-cyan-400 ring-2 ring-cyan-500 ring-offset-2 ring-offset-stone-100' : '',
+      'floor-plan-theme-element group relative z-10 grid min-h-10 place-items-center rounded-md border p-0.5 text-center transition focus:outline-none',
+      this.layoutMode() ? 'cursor-pointer floor-plan-theme-element-interactive' : '',
+      this.isSelected(element) ? 'floor-plan-theme-element-selected z-40 ring-2 ring-cyan-500 ring-offset-2' : '',
     ].join(' ');
   }
 
@@ -490,8 +505,12 @@ export class FloorPlan implements OnDestroy {
     }
 
     if (element.type === 'stool') {
-      const match = element.label.match(/^Stool(?: (?<number>\d+))?$/);
-      return match?.groups?.['number'] ? `${defaultLabel} ${match.groups['number']}` : defaultLabel;
+      const match = element.label.match(/^(?:Stool|Taburete|Tamboret)(?: (?<number>\d+))?$/);
+      if (match) {
+        return match.groups?.['number'] ? `${defaultLabel} ${match.groups['number']}` : defaultLabel;
+      }
+
+      return element.label;
     }
 
     return element.label === defaultSourceLabelByType[element.type] || element.label === defaultLabelByType[element.type] ? defaultLabel : element.label;

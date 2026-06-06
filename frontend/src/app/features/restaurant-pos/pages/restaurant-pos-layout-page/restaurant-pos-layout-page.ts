@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
+import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
 import { FloorPlan } from '../../components/floor-plan/floor-plan';
@@ -46,7 +47,7 @@ const ELEMENT_PRESETS: ElementPreset[] = [
 
 @Component({
   selector: 'app-restaurant-pos-layout-page',
-  imports: [Button, FloorPlan, Icon, LanguageSelect, NgClass, NgStyle, RouterLink, TableVisual, TranslocoPipe],
+  imports: [Button, ColorModeMenu, FloorPlan, Icon, LanguageSelect, NgClass, NgStyle, RouterLink, TableVisual, TranslocoPipe],
   templateUrl: './restaurant-pos-layout-page.html',
 })
 export class RestaurantPosLayoutPage {
@@ -65,6 +66,7 @@ export class RestaurantPosLayoutPage {
   protected readonly selectedLayoutElement = signal<FloorElement | null>(null);
   protected readonly selectedPresetId = signal(ELEMENT_PRESETS[0].id);
   protected readonly elementLabelInput = signal('');
+  protected readonly automaticElementLabel = signal('');
   protected readonly elementWidthInput = signal(1);
   protected readonly elementHeightInput = signal(1);
   protected readonly tableCapacityInput = signal(2);
@@ -228,10 +230,12 @@ export class RestaurantPosLayoutPage {
 
   protected openAddElementModal(): void {
     const preset = ELEMENT_PRESETS[0];
+    const label = this.getDefaultElementLabel(preset);
 
     this.editingElementId.set(null);
     this.selectedPresetId.set(preset.id);
-    this.elementLabelInput.set(this.nextTableLabel());
+    this.elementLabelInput.set(label);
+    this.automaticElementLabel.set(label);
     this.elementWidthInput.set(preset.width);
     this.elementHeightInput.set(preset.height);
     this.tableCapacityInput.set(preset.capacity ?? 2);
@@ -250,6 +254,7 @@ export class RestaurantPosLayoutPage {
     this.editingElementId.set(element.id);
     this.selectedPresetId.set(matchingPreset.id);
     this.elementLabelInput.set(element.label);
+    this.automaticElementLabel.set('');
     this.elementWidthInput.set(element.width);
     this.elementHeightInput.set(element.height);
     this.tableCapacityInput.set(table?.capacity ?? matchingPreset.capacity ?? 2);
@@ -265,14 +270,19 @@ export class RestaurantPosLayoutPage {
   protected updateElementPreset(event: Event): void {
     const presetId = (event.target as HTMLSelectElement).value;
     const preset = ELEMENT_PRESETS.find((currentPreset) => currentPreset.id === presetId) ?? ELEMENT_PRESETS[0];
+    const shouldUpdateGeneratedLabel = !this.editingElementId() && this.elementLabelInput().trim() === this.automaticElementLabel();
+    const nextGeneratedLabel = this.getDefaultElementLabel(preset);
 
     this.selectedPresetId.set(presetId);
     this.elementWidthInput.set(preset.width);
     this.elementHeightInput.set(preset.height);
     this.tableCapacityInput.set(preset.capacity ?? this.tableCapacityInput());
 
-    if (!this.editingElementId() && preset.type !== 'table') {
-      this.elementLabelInput.set(this.getPresetLabel(preset));
+    if (!this.editingElementId()) {
+      this.automaticElementLabel.set(nextGeneratedLabel);
+      if (shouldUpdateGeneratedLabel) {
+        this.elementLabelInput.set(nextGeneratedLabel);
+      }
     }
   }
 
@@ -374,6 +384,11 @@ export class RestaurantPosLayoutPage {
 
   protected previewZoneIcon(): string {
     return this.zoneIcon(this.selectedPreset().type);
+  }
+
+  protected isPreviewVerticalBar(): boolean {
+    const preset = this.selectedPreset();
+    return preset.type === 'bar' && preset.height > preset.width;
   }
 
   protected getPresetLabel(preset: ElementPreset): string {
@@ -535,6 +550,26 @@ export class RestaurantPosLayoutPage {
   private nextTableLabel(): string {
     const nextNumber = Math.max(0, ...this.store.restaurantTables().map((table) => table.number)) + 1;
     return `M${nextNumber}`;
+  }
+
+  private nextStoolLabel(): string {
+    const stoolNumbers = this.store
+      .floorElements()
+      .filter((element) => element.type === 'stool')
+      .map((element) => {
+        const match = element.label.match(/^(?:T|Stool\s+|Taburete\s+|Tamboret\s+)(?<number>\d+)$/i);
+        return match?.groups?.['number'] ? Number(match.groups['number']) : 0;
+      });
+    const nextNumber = Math.max(stoolNumbers.length, ...stoolNumbers) + 1;
+    return `T${nextNumber}`;
+  }
+
+  private getDefaultElementLabel(preset: ElementPreset): string {
+    if (preset.type === 'table') {
+      return this.nextTableLabel();
+    }
+
+    return preset.type === 'stool' ? this.nextStoolLabel() : this.getPresetLabel(preset);
   }
 
   private translate(key: string, params?: Record<string, unknown>): string {

@@ -25,6 +25,85 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.65);
 }
 
+.floor-plan-theme-canvas {
+  border-color: color-mix(in srgb, var(--ui-border) 82%, var(--ui-border-strong));
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--ui-bg) 36%, transparent), transparent 34rem),
+    var(--ui-surface);
+}
+
+.floor-plan-theme-scroll-hint {
+  border-color: color-mix(in srgb, var(--ui-primary) 42%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-bg) 88%, transparent);
+  color: var(--ui-primary);
+}
+
+.floor-plan-theme-matrix {
+  border-color: color-mix(in srgb, var(--ui-border) 88%, var(--ui-border-strong));
+  background: color-mix(in srgb, var(--ui-bg) 78%, var(--ui-surface));
+}
+
+.floor-plan-theme-cell {
+  border-color: color-mix(in srgb, var(--ui-border) 54%, transparent);
+  background: color-mix(in srgb, var(--ui-bg) 52%, transparent);
+}
+
+.floor-plan-theme-cell:hover {
+  border-color: color-mix(in srgb, var(--ui-primary) 48%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-primary-ring) 42%, transparent);
+}
+
+.floor-plan-theme-element {
+  border-color: color-mix(in srgb, var(--ui-border-strong) 58%, transparent);
+  background: color-mix(in srgb, var(--ui-bg) 36%, transparent);
+}
+
+.floor-plan-theme-element-interactive:hover {
+  border-color: color-mix(in srgb, var(--ui-primary) 58%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-primary-ring) 30%, transparent);
+}
+
+.floor-plan-theme-element-selected {
+  border-color: var(--ui-primary);
+  --tw-ring-offset-color: var(--ui-surface);
+}
+
+.floor-plan-theme-toolbar {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-bg) 94%, transparent);
+  color: var(--ui-muted-fg);
+}
+
+.floor-plan-theme-action {
+  color: var(--ui-muted-fg);
+}
+
+.floor-plan-theme-action:hover {
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.floor-plan-theme-action-danger:hover {
+  background: color-mix(in srgb, var(--ui-danger-ring) 58%, transparent);
+  color: var(--ui-danger);
+}
+
+.floor-plan-theme-table-label {
+  background: color-mix(in srgb, var(--ui-bg) 84%, transparent);
+  color: var(--ui-fg);
+}
+
+.floor-plan-theme-table-label span:last-child {
+  color: var(--ui-muted-fg);
+}
+
+.floor-plan-zone-label--vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 @keyframes floor-plan-scroll-hint {
   0%,
   100% {

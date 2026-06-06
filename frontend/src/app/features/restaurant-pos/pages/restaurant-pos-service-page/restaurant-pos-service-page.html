@@ -1,25 +1,28 @@
-<main class="min-h-dvh bg-slate-100 text-slate-950">
-  <header class="border-b border-slate-200 bg-white px-4 py-4 lg:px-6">
+<main class="theme-page min-h-dvh">
+  <header class="theme-header border-b px-4 py-4 lg:px-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <p class="text-sm font-medium text-slate-500">{{ 'restaurantPos.service.eyebrow' | transloco }}</p>
-        <h1 class="text-2xl font-semibold text-slate-950">{{ 'restaurantPos.service.title' | transloco }}</h1>
+        <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.service.eyebrow' | transloco }}</p>
+        <h1 class="theme-title text-2xl font-semibold">{{ 'restaurantPos.service.title' | transloco }}</h1>
       </div>
 
       <nav class="flex flex-wrap items-center gap-2" [attr.aria-label]="'restaurantPos.service.sections' | transloco">
-        <app-language-select appearance="minimal" size="sm" />
-        <a class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" routerLink="/restaurant-pos/layout">
+        <div class="theme-panel flex items-center gap-1 rounded-lg border px-1 py-1 shadow-sm">
+          <app-color-mode-menu appearance="minimal" size="sm" />
+          <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
+        </div>
+        <a class="theme-nav-link rounded-md border px-3 py-2 text-sm font-medium" routerLink="/restaurant-pos/layout">
           {{ 'restaurantPos.common.layout' | transloco }}
         </a>
-        <a class="rounded-md bg-slate-950 px-3 py-2 text-sm font-medium text-white" routerLink="/restaurant-pos/service">
+        <a class="theme-nav-link-active rounded-md border px-3 py-2 text-sm font-medium" routerLink="/restaurant-pos/service">
           {{ 'restaurantPos.common.service' | transloco }}
         </a>
       </nav>
     </div>
   </header>
 
-  <section class="mx-auto mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-    <p class="text-sm leading-6 text-slate-600">
+  <section class="theme-panel mx-auto mt-6 max-w-3xl rounded-lg border p-6 shadow-sm">
+    <p class="theme-muted text-sm leading-6">
       {{ 'restaurantPos.service.description' | transloco }}
     </p>
   </section>

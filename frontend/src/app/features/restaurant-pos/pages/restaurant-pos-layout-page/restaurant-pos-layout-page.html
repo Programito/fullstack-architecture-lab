@@ -1,9 +1,9 @@
-<main class="min-h-dvh bg-slate-100 text-slate-950">
-  <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+<main class="theme-page min-h-dvh">
+  <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
     <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex min-w-0 flex-col gap-2">
         <a
-          class="inline-flex w-max items-center gap-1.5 rounded-md px-2 py-1 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          class="theme-muted inline-flex w-max items-center gap-1.5 rounded-md px-2 py-1 text-sm font-semibold transition hover:bg-[var(--ui-surface)] hover:text-[var(--ui-fg)] focus:outline-none focus:ring-2 focus:ring-cyan-500"
           routerLink="/restaurant-pos/service"
         >
           <app-icon name="arrow_back" size="sm" />
@@ -11,14 +11,14 @@
         </a>
 
         <div class="min-w-0">
-          <h1 class="truncate text-2xl font-semibold text-slate-950">{{ 'restaurantPos.layout.title' | transloco }}</h1>
-          <p class="mt-1 max-w-2xl text-sm leading-5 text-slate-500">{{ 'restaurantPos.layout.description' | transloco }}</p>
+          <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.layout.title' | transloco }}</h1>
+          <p class="theme-muted mt-1 max-w-2xl text-sm leading-5">{{ 'restaurantPos.layout.description' | transloco }}</p>
         </div>
       </div>
 
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
         <div
-          class="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-inner sm:inline-flex sm:items-center"
+          class="theme-control-group grid grid-cols-1 gap-1 rounded-lg border p-1 shadow-inner sm:inline-flex sm:items-center"
           role="toolbar"
           [attr.aria-label]="'restaurantPos.layout.editingActions' | transloco"
         >
@@ -42,7 +42,8 @@
           </app-button>
         </div>
 
-        <div class="flex justify-end rounded-lg border border-slate-200 bg-white px-1 py-1 shadow-sm">
+        <div class="theme-panel flex justify-end gap-1 rounded-lg border px-1 py-1 shadow-sm">
+          <app-color-mode-menu appearance="minimal" size="sm" />
           <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
         </div>
       </div>
@@ -50,10 +51,10 @@
   </header>
 
   <div class="mx-auto w-full max-w-7xl p-4 lg:p-6">
-    <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <section class="theme-panel rounded-lg border p-4 shadow-sm">
       <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 class="text-lg font-semibold text-slate-950">{{ 'restaurantPos.layout.floorPlan' | transloco }}</h2>
+          <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.layout.floorPlan' | transloco }}</h2>
         </div>
 
         @if (store.errorMessage()) {
@@ -62,13 +63,13 @@
       </div>
 
       <div
-        class="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-cyan-100 bg-cyan-50/60 px-3 py-2 text-xs font-medium text-slate-700"
+        class="theme-soft-panel mb-3 flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium"
         [attr.aria-label]="'restaurantPos.layout.status' | transloco"
       >
         <span class="rounded-full bg-cyan-600 px-2 py-1 text-white">{{ 'restaurantPos.layout.layoutMode' | transloco }}</span>
         <span>{{ 'restaurantPos.common.columnsRows' | transloco: { columns: store.gridColumns(), rows: store.gridRows() } }}</span>
         <span>{{ floorElementCountLabel() }}</span>
-        <span class="text-slate-500">{{ selectedLayoutElementLabel() }}</span>
+        <span class="theme-muted">{{ selectedLayoutElementLabel() }}</span>
       </div>
 
       <app-floor-plan
@@ -80,17 +81,17 @@
   </div>
 
   @if (resizeModalOpen()) {
-    <div class="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="presentation">
+    <div class="theme-overlay fixed inset-0 z-50 grid place-items-center p-4" role="presentation">
       <section
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
+        class="theme-dialog max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg p-5 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="resize-layout-title"
       >
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 id="resize-layout-title" class="text-xl font-semibold text-slate-950">{{ 'restaurantPos.layout.resizeDialog.title' | transloco }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ 'restaurantPos.layout.resizeDialog.description' | transloco }}</p>
+            <h2 id="resize-layout-title" class="theme-title text-xl font-semibold">{{ 'restaurantPos.layout.resizeDialog.title' | transloco }}</h2>
+            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.layout.resizeDialog.description' | transloco }}</p>
           </div>
           <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'restaurantPos.layout.resizeDialog.close' | transloco" (pressed)="closeResizeModal()">
             <app-icon name="close" size="sm" />
@@ -99,13 +100,13 @@
 
         <div class="mt-5 grid gap-5 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
           <div class="grid gap-4" [attr.aria-label]="'restaurantPos.layout.resizeDialog.controls' | transloco">
-            <p class="rounded-md bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-900">{{ resizePreviewLabel() }}</p>
+            <p class="theme-chip-primary rounded-md px-3 py-2 text-sm font-semibold">{{ resizePreviewLabel() }}</p>
 
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="resize-rows">
+            <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="resize-rows">
               {{ 'restaurantPos.layout.resizeDialog.rows' | transloco }}
               <input
                 id="resize-rows"
-                class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                 type="number"
                 min="1"
                 [value]="resizeRowsInput()"
@@ -113,11 +114,11 @@
               />
             </label>
 
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="resize-columns">
+            <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="resize-columns">
               {{ 'restaurantPos.layout.resizeDialog.columns' | transloco }}
               <input
                 id="resize-columns"
-                class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                 type="number"
                 min="1"
                 [value]="resizeColumnsInput()"
@@ -127,9 +128,9 @@
           </div>
 
           <div class="grid gap-3" [attr.aria-label]="'restaurantPos.layout.resizeDialog.preview' | transloco">
-            <div class="overflow-x-auto rounded-lg border border-stone-300 bg-slate-100 p-4 shadow-inner">
+            <div class="theme-soft-panel overflow-x-auto rounded-lg border p-4 shadow-inner">
               <div
-                class="mx-auto grid w-max place-content-center gap-1 rounded-md border border-stone-300 bg-white/40 p-2 [grid-template-columns:repeat(20,1.25rem)]"
+                class="theme-raised-panel mx-auto grid w-max place-content-center gap-1 rounded-md border p-2 [grid-template-columns:repeat(20,1.25rem)]"
                 [attr.aria-label]="'restaurantPos.layout.resizeDialog.matrix' | transloco"
               >
                 @for (cell of resizeCells; track cell.column + '-' + cell.row) {
@@ -165,17 +166,17 @@
   }
 
   @if (resizeElementModalOpen()) {
-    <div class="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="presentation">
+    <div class="theme-overlay fixed inset-0 z-50 grid place-items-center p-4" role="presentation">
       <section
-        class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
+        class="theme-dialog w-full max-w-md rounded-lg p-5 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="resize-element-title"
       >
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 id="resize-element-title" class="text-xl font-semibold text-slate-950">{{ 'restaurantPos.layout.resizeElementDialog.title' | transloco }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ 'restaurantPos.layout.resizeElementDialog.description' | transloco }}</p>
+            <h2 id="resize-element-title" class="theme-title text-xl font-semibold">{{ 'restaurantPos.layout.resizeElementDialog.title' | transloco }}</h2>
+            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.layout.resizeElementDialog.description' | transloco }}</p>
           </div>
           <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'restaurantPos.common.cancel' | transloco" (pressed)="closeResizeElementModal()">
             {{ 'restaurantPos.common.cancel' | transloco }}
@@ -183,11 +184,11 @@
         </div>
 
         <div class="mt-5 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]">
-          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="resize-element-width">
+          <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="resize-element-width">
             {{ 'restaurantPos.layout.resizeElementDialog.width' | transloco }}
             <input
               id="resize-element-width"
-              class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
               type="number"
               min="1"
               [value]="resizeElementWidthInput()"
@@ -195,11 +196,11 @@
             />
           </label>
 
-          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="resize-element-height">
+          <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="resize-element-height">
             {{ 'restaurantPos.layout.resizeElementDialog.height' | transloco }}
             <input
               id="resize-element-height"
-              class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
               type="number"
               min="1"
               [value]="resizeElementHeightInput()"
@@ -225,17 +226,17 @@
   }
 
   @if (addElementModalOpen()) {
-    <div class="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="presentation">
+    <div class="theme-overlay fixed inset-0 z-50 grid place-items-center p-4" role="presentation">
       <section
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
+        class="theme-dialog max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg p-5 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-element-title"
       >
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 id="add-element-title" class="text-xl font-semibold text-slate-950">{{ localizedElementModalTitle() }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ 'restaurantPos.layout.elementDialog.description' | transloco }}</p>
+            <h2 id="add-element-title" class="theme-title text-xl font-semibold">{{ localizedElementModalTitle() }}</h2>
+            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.layout.elementDialog.description' | transloco }}</p>
           </div>
           <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'restaurantPos.layout.elementDialog.close' | transloco" (pressed)="closeAddElementModal()">
             <app-icon name="close" size="sm" />
@@ -244,11 +245,11 @@
 
         <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
           <div class="grid gap-4 md:grid-cols-2" [attr.aria-label]="'restaurantPos.layout.elementDialog.configuration' | transloco">
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-type">
+            <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="element-type">
               {{ 'restaurantPos.layout.elementDialog.type' | transloco }}
               <select
                 id="element-type"
-                class="w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                 [value]="selectedPresetId()"
                 (change)="updateElementPreset($event)"
               >
@@ -258,11 +259,11 @@
               </select>
             </label>
 
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="preset-size">
+            <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="preset-size">
               {{ 'restaurantPos.layout.elementDialog.presetSize' | transloco }}
               <select
                 id="preset-size"
-                class="w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                 [value]="selectedPresetId()"
                 (change)="updateElementPreset($event)"
               >
@@ -272,11 +273,11 @@
               </select>
             </label>
 
-            <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700 md:col-span-2" for="element-label">
+            <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium md:col-span-2" for="element-label">
               {{ 'restaurantPos.layout.elementDialog.label' | transloco }}
               <input
                 id="element-label"
-                class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                 type="text"
                 [value]="elementLabelInput()"
                 (input)="updateElementLabel($event)"
@@ -284,11 +285,11 @@
             </label>
 
             <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]">
-              <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-width">
+              <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="element-width">
                 {{ 'restaurantPos.layout.elementDialog.width' | transloco }}
                 <input
                   id="element-width"
-                  class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                   type="number"
                   min="1"
                   [value]="elementWidthInput()"
@@ -296,11 +297,11 @@
                 />
               </label>
 
-              <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="element-height">
+              <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="element-height">
                 {{ 'restaurantPos.layout.elementDialog.height' | transloco }}
                 <input
                   id="element-height"
-                  class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                   type="number"
                   min="1"
                   [value]="elementHeightInput()"
@@ -310,11 +311,11 @@
             </div>
 
             @if (selectedPreset().type === 'table') {
-              <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700" for="table-capacity">
+              <label class="theme-muted grid min-w-0 gap-1 text-sm font-medium" for="table-capacity">
                 {{ 'restaurantPos.layout.elementDialog.tableCapacity' | transloco }}
                 <input
                   id="table-capacity"
-                  class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  class="theme-field w-full min-w-0 rounded-md border px-3 py-2 shadow-sm"
                   type="number"
                   min="1"
                   [value]="tableCapacityInput()"
@@ -325,18 +326,18 @@
           </div>
 
           <aside
-            class="grid content-start gap-3 border-t border-slate-200 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0"
+            class="grid content-start gap-3 border-t border-[var(--ui-border)] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0"
             [attr.aria-label]="'restaurantPos.layout.elementDialog.preview' | transloco"
           >
-            <p class="text-sm font-semibold text-slate-700">{{ 'restaurantPos.layout.elementDialog.previewTitle' | transloco }}</p>
-            <div class="grid min-h-36 place-items-center rounded-md border border-stone-300 bg-slate-50 p-4 shadow-inner">
+            <p class="theme-muted text-sm font-semibold">{{ 'restaurantPos.layout.elementDialog.previewTitle' | transloco }}</p>
+            <div class="theme-soft-panel grid min-h-36 place-items-center rounded-md border p-4 shadow-inner">
               @if (selectedPreset().type === 'table') {
                 <div class="relative h-28 w-full max-w-44">
                   <app-table-visual [shape]="selectedPreset().shape ?? 'rectangle'" [selected]="true" />
                   <div class="absolute inset-0 grid place-items-center">
-                    <span class="grid min-w-14 place-items-center rounded-md bg-white/85 px-2 py-1 text-center shadow-sm">
-                      <span class="max-w-full truncate text-sm font-semibold text-stone-950">{{ elementLabelInput() }}</span>
-                      <span class="text-[0.68rem] font-medium text-stone-600">{{ previewCapacityLabel() }}</span>
+                    <span class="theme-preview-label grid min-w-14 place-items-center rounded-md px-2 py-1 text-center shadow-sm">
+                      <span class="max-w-full truncate text-sm font-semibold">{{ elementLabelInput() }}</span>
+                      <span class="theme-muted text-[0.68rem] font-medium">{{ previewCapacityLabel() }}</span>
                     </span>
                   </div>
                 </div>
@@ -346,20 +347,22 @@
                     @if (selectedPreset().type !== 'bar' && selectedPreset().type !== 'stool') {
                       <app-icon [name]="previewZoneIcon()" size="sm" />
                     }
-                    <span class="max-w-full truncate text-sm font-semibold">{{ elementLabelInput() }}</span>
+                    <span class="max-w-full truncate text-sm font-semibold" [class.theme-vertical-label]="isPreviewVerticalBar()">
+                      {{ elementLabelInput() }}
+                    </span>
                   </div>
                 </div>
               }
             </div>
-            <div class="grid gap-2 text-sm text-slate-600">
-              <p class="font-semibold text-slate-800">{{ getPresetLabel(selectedPreset()) }}</p>
-              <p class="rounded-md bg-white px-3 py-2 ring-1 ring-slate-200">{{ elementSizeLabel() }}</p>
+            <div class="theme-muted grid gap-2 text-sm">
+              <p class="theme-title font-semibold">{{ getPresetLabel(selectedPreset()) }}</p>
+              <p class="theme-chip rounded-md px-3 py-2">{{ elementSizeLabel() }}</p>
               @if (previewCapacityLabel()) {
-                <p class="rounded-md bg-white px-3 py-2 ring-1 ring-slate-200">
+                <p class="theme-chip rounded-md px-3 py-2">
                   {{ 'restaurantPos.common.capacity' | transloco: { value: previewCapacityLabel() } }}
                 </p>
               }
-              <p class="rounded-md bg-white px-3 py-2 ring-1 ring-slate-200">{{ selectedPositionLabel() }}</p>
+              <p class="theme-chip rounded-md px-3 py-2">{{ selectedPositionLabel() }}</p>
             </div>
           </aside>
         </div>
@@ -367,17 +370,17 @@
         <div class="mt-5">
           <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p class="text-sm font-semibold text-slate-700">{{ 'restaurantPos.layout.elementDialog.positionTitle' | transloco }}</p>
-              <p class="text-xs text-slate-500">{{ 'restaurantPos.layout.elementDialog.positionDescription' | transloco }}</p>
+              <p class="theme-muted text-sm font-semibold">{{ 'restaurantPos.layout.elementDialog.positionTitle' | transloco }}</p>
+              <p class="theme-subtle text-xs">{{ 'restaurantPos.layout.elementDialog.positionDescription' | transloco }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 text-sm">
-              <span class="rounded-md bg-cyan-50 px-3 py-1.5 font-semibold text-cyan-900">{{ addElementGridLabel() }}</span>
-              <span class="rounded-md bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{{ selectedPositionBadgeLabel() }}</span>
+              <span class="theme-chip-primary rounded-md px-3 py-1.5 font-semibold">{{ addElementGridLabel() }}</span>
+              <span class="theme-chip rounded-md px-3 py-1.5 font-medium">{{ selectedPositionBadgeLabel() }}</span>
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-lg border border-stone-300 bg-slate-100 p-3 shadow-inner">
-            <div class="grid min-w-[28rem] gap-1 rounded-md border border-stone-300 bg-white/35 p-1" [attr.aria-label]="'restaurantPos.layout.elementDialog.positionSelector' | transloco" [ngStyle]="addElementGridStyle()">
+          <div class="theme-soft-panel overflow-x-auto rounded-lg border p-3 shadow-inner">
+            <div class="theme-raised-panel grid min-w-[28rem] gap-1 rounded-md border p-1" [attr.aria-label]="'restaurantPos.layout.elementDialog.positionSelector' | transloco" [ngStyle]="addElementGridStyle()">
               @for (cell of floorCells(); track cell.column + '-' + cell.row) {
                 <button
                   type="button"

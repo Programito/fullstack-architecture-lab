@@ -11,6 +11,7 @@ describe('RestaurantPosServicePage', () => {
     });
 
     expect(screen.getByRole('heading', { name: 'Vista de servicio próximamente' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cambiar a modo oscuro' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Idioma: Español' })).toBeTruthy();
   });
 });

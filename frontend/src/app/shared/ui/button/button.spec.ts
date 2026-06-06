@@ -65,4 +65,16 @@ describe('Button', () => {
 
     expect(screen.getByRole('button', { name: 'Ver detalles' }).className).toContain('button--minimal');
   });
+
+  it('uses theme-aware classes for neutral clear actions', async () => {
+    await render('<app-button variant="neutral" fill="clear">Redimensionar plano</app-button>', {
+      imports: [Button],
+    });
+
+    const button = screen.getByRole('button', { name: 'Redimensionar plano' });
+
+    expect(button.className).toContain('button--neutral-clear');
+    expect(button.className).not.toContain('text-zinc-700');
+    expect(button.className).not.toContain('hover:bg-zinc-100');
+  });
 });

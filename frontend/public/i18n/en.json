@@ -22,6 +22,27 @@
       "en": "English"
     }
   },
+  "colorMode": {
+    "label": "Theme",
+    "buttonAriaLabel": "Theme: {{preference}}. Active mode: {{mode}}",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "optionAriaLabel": "Use {{option}} theme",
+    "options": {
+      "system": {
+        "label": "System",
+        "description": "Follows the device preference."
+      },
+      "light": {
+        "label": "Light",
+        "description": "Interface with a light background."
+      },
+      "dark": {
+        "label": "Dark",
+        "description": "Interface with a dark background."
+      }
+    }
+  },
   "restaurantPos": {
     "common": {
       "layout": "Layout",

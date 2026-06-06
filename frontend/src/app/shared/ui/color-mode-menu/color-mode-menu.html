@@ -1,0 +1,11 @@
+<div [class]="classes()">
+  <button
+    class="color-mode-menu__trigger"
+    type="button"
+    [disabled]="disabled()"
+    [attr.aria-label]="triggerAriaLabel()"
+    (click)="toggle()"
+  >
+    <app-icon [name]="triggerIcon()" size="sm" />
+  </button>
+</div>

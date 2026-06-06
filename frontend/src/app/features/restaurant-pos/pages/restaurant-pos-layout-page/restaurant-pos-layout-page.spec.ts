@@ -19,11 +19,12 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.getByText('Diseña el comedor, la barra, la cocina y las zonas de servicio.')).toBeTruthy();
     const header = screen.getByRole('banner');
     const toolbar = screen.getByRole('toolbar', { name: 'Acciones de edición del plano' });
-    expect(within(toolbar).getByRole('button', { name: 'Redimensionar plano' })).toBeTruthy();
+    expect(within(toolbar).getByRole('button', { name: 'Redimensionar plano' }).className).toContain('button--neutral-clear');
     expect(within(toolbar).getByRole('button', { name: 'Añadir elemento' })).toBeTruthy();
     expect(within(toolbar).getByRole('button', { name: 'Guardar cambios' })).toHaveProperty('disabled', true);
     expect(within(toolbar).queryByRole('link', { name: 'Volver al modo servicio' })).toBeNull();
     expect(within(header).getByRole('link', { name: 'Volver al modo servicio' })).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Cambiar a modo oscuro' })).toBeTruthy();
     expect(within(header).getByRole('button', { name: 'Idioma: Español' })).toBeTruthy();
     expect(within(header).queryByText('La preferencia se aplica a la interfaz.')).toBeNull();
     expect(screen.queryByRole('button', { name: /add row/i })).toBeNull();
@@ -131,10 +132,12 @@ describe('RestaurantPosLayoutPage', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Añadir elemento' });
     expect(dialog).toBeTruthy();
+    expect(dialog.className).toContain('theme-dialog');
     expect(within(dialog).getByRole('button', { name: 'Cerrar formulario de elemento' })).toBeTruthy();
     expect(within(dialog).getByLabelText('Configuración del elemento')).toBeTruthy();
-    expect(within(dialog).getByLabelText('Vista previa del elemento seleccionado')).toBeTruthy();
+    expect(within(dialog).getByLabelText('Vista previa del elemento seleccionado').className).toContain('border-[var(--ui-border)]');
     expect(screen.getByLabelText('Tipo de elemento')).toHaveProperty('value', 'small-table');
+    expect(screen.getByLabelText('Tipo de elemento').className).toContain('theme-field');
     expect(screen.getByRole('option', { name: 'Barra horizontal' })).toBeTruthy();
     expect(screen.getByRole('option', { name: 'Barra vertical' })).toBeTruthy();
     expect(screen.getByRole('option', { name: 'Taburete' })).toBeTruthy();
@@ -224,6 +227,26 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.getByLabelText('Ancho')).toHaveProperty('value', '1');
     expect(screen.getByLabelText('Alto')).toHaveProperty('value', '3');
     expect(screen.getByText('Tamaño: 1 x 3')).toBeTruthy();
+    expect(screen.getAllByText('Barra vertical').some((element) => element.className.includes('theme-vertical-label'))).toBe(true);
+  });
+
+  it('updates generated element labels when changing presets until the user edits the label', async () => {
+    await renderLayoutPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+
+    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'M5');
+
+    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'bar-vertical' } });
+    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'Barra vertical');
+
+    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'stool' } });
+    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'T4');
+
+    fireEvent.input(screen.getByLabelText('Etiqueta del elemento'), { target: { value: 'VIP stool' } });
+    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'kitchen' } });
+
+    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'VIP stool');
   });
 
   it('opens the element modal in edit mode from the floor plan toolbar', async () => {
@@ -302,12 +325,13 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
     fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'stool' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir Taburete' }));
+    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'T4');
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir T4' }));
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
         type: 'stool',
-        label: 'Taburete',
+        label: 'T4',
         width: 1,
         height: 1,
       }),

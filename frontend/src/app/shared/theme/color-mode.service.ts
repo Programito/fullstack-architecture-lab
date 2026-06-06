@@ -67,7 +67,8 @@ export class ColorModeService {
       return null;
     }
 
-    return this.document.defaultView?.matchMedia('(prefers-color-scheme: dark)') ?? null;
+    const matchMedia = this.document.defaultView?.matchMedia;
+    return typeof matchMedia === 'function' ? matchMedia.call(this.document.defaultView, '(prefers-color-scheme: dark)') : null;
   }
 
   private watchSystemMode(): void {

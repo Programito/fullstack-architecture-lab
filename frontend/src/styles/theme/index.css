@@ -21,3 +21,122 @@ body {
   background: var(--ui-bg) !important;
   color: var(--ui-fg);
 }
+
+.theme-page {
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.theme-header {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-bg) 95%, transparent);
+  color: var(--ui-fg);
+}
+
+.theme-panel {
+  border-color: var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.theme-panel-muted {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.theme-title {
+  color: var(--ui-fg);
+}
+
+.theme-muted {
+  color: var(--ui-muted-fg);
+}
+
+.theme-subtle {
+  color: var(--ui-subtle-fg);
+}
+
+.theme-control-group {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.theme-overlay {
+  background: color-mix(in srgb, rgb(0 0 0) 62%, transparent);
+}
+
+.theme-dialog {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.28);
+}
+
+.theme-field {
+  border-color: var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.theme-field::placeholder {
+  color: var(--ui-placeholder);
+}
+
+.theme-field:focus {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-primary-ring) 72%, transparent);
+  outline: none;
+}
+
+.theme-soft-panel {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.theme-raised-panel {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-bg) 82%, var(--ui-surface));
+  color: var(--ui-fg);
+}
+
+.theme-chip {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+}
+
+.theme-chip-primary {
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 44%, transparent);
+  background: color-mix(in srgb, var(--ui-primary-ring) 64%, transparent);
+  color: var(--ui-primary);
+}
+
+.theme-preview-label {
+  background: color-mix(in srgb, var(--ui-bg) 88%, transparent);
+  color: var(--ui-fg);
+}
+
+.theme-vertical-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.theme-nav-link {
+  border-color: var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+}
+
+.theme-nav-link:hover {
+  background: var(--ui-surface);
+}
+
+.theme-nav-link-active {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-accent-fg);
+}

@@ -55,32 +55,32 @@ export class Button {
   private readonly appearanceClasses: Record<ButtonVariant, Record<Exclude<ButtonFill, 'default'>, string>> = {
     primary: {
       solid: 'border-cyan-600 bg-cyan-600 text-white hover:bg-cyan-500 focus-visible:outline-cyan-300',
-      outline: 'border-cyan-600 bg-white text-cyan-700 hover:bg-cyan-50 focus-visible:outline-cyan-300',
-      clear: 'border-transparent bg-transparent text-cyan-700 hover:bg-cyan-50 focus-visible:outline-cyan-300',
+      outline: 'button--primary-outline',
+      clear: 'button--primary-clear',
       gradient: 'button--gradient',
     },
     secondary: {
       solid: 'border-zinc-700 bg-zinc-900 text-zinc-50 hover:bg-zinc-800 focus-visible:outline-zinc-400',
-      outline: 'border-zinc-500 bg-white text-zinc-700 hover:bg-zinc-50 focus-visible:outline-zinc-400',
-      clear: 'border-transparent bg-transparent text-zinc-700 hover:bg-zinc-100 focus-visible:outline-zinc-400',
+      outline: 'button--secondary-outline',
+      clear: 'button--secondary-clear',
       gradient: 'button--gradient',
     },
     neutral: {
-      solid: 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 focus-visible:outline-zinc-400',
-      outline: 'border-zinc-400 bg-white text-zinc-700 hover:bg-zinc-50 focus-visible:outline-zinc-400',
-      clear: 'border-transparent bg-transparent text-zinc-700 hover:bg-zinc-100 focus-visible:outline-zinc-400',
+      solid: 'button--neutral-solid',
+      outline: 'button--neutral-outline',
+      clear: 'button--neutral-clear',
       gradient: 'button--gradient',
     },
     danger: {
       solid: 'border-red-600 bg-red-600 text-white hover:bg-red-500 focus-visible:outline-red-300',
-      outline: 'border-red-600 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-red-300',
-      clear: 'border-transparent bg-transparent text-red-700 hover:bg-red-50 focus-visible:outline-red-300',
+      outline: 'button--danger-outline',
+      clear: 'button--danger-clear',
       gradient: 'button--gradient',
     },
     violet: {
       solid: 'border-violet-600 bg-violet-600 text-white hover:bg-violet-500 focus-visible:outline-violet-300',
-      outline: 'border-violet-600 bg-white text-violet-700 hover:bg-violet-50 focus-visible:outline-violet-300',
-      clear: 'border-transparent bg-transparent text-violet-700 hover:bg-violet-50 focus-visible:outline-violet-300',
+      outline: 'button--violet-outline',
+      clear: 'button--violet-clear',
       gradient: 'button--gradient',
     },
   };
