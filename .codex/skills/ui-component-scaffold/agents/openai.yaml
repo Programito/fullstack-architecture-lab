@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Component Scaffold"
+  short_description: "Scaffold Angular shared UI components with tests and stories."
+  default_prompt: "Create a shared Angular UI component with tests and Storybook stories."

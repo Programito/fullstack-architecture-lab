@@ -28,6 +28,16 @@ Run commands from `frontend/` unless stated otherwise.
 
 Do not run Angular or Storybook hidden in the background. Keep dev servers visible so errors are easy to see.
 
+## Codex Skills
+
+Project Codex skills are versioned in:
+
+```txt
+.codex/skills/
+```
+
+These are the shared project copies. The active personal installation still lives in `~/.codex/skills/`; keep both in sync when changing project workflow skills.
+
 ## UI Components
 
 Reusable UI components live in:

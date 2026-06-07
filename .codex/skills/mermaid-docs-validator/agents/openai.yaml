@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mermaid Docs Validator"
+  short_description: "Validate Mermaid diagrams in Markdown and MDX documentation."
+  default_prompt: "Validate Mermaid diagrams in the documentation."

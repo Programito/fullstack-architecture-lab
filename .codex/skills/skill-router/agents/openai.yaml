@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Router"
+  short_description: "Choose and combine Codex skills for multi-area tasks."
+  default_prompt: "Help choose the right Codex skill for this task."
