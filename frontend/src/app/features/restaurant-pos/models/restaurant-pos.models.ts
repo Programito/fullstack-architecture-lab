@@ -18,7 +18,7 @@ export type AddFloorElementInput = Omit<FloorElement, 'id' | 'tableId'> & {
   tableId?: string;
 };
 
-export type TableStatus = 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'payment_pending' | 'reserved';
+export type TableStatus = 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'payment_pending' | 'paid' | 'cleaning' | 'reserved';
 
 export interface RestaurantTable {
   id: string;
@@ -27,6 +27,9 @@ export interface RestaurantTable {
   status: TableStatus;
   total: number;
   openDuration: string;
+  occupiedAt?: string;
+  serviceStartedAt?: string;
+  cleaningStartedAt?: string;
 }
 
 export interface Product {
@@ -44,9 +47,15 @@ export interface OrderLine {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  course: OrderCourse;
+  status: OrderLineStatus;
+  sentToKitchenAt?: string;
+  servedAt?: string;
 }
 
 export type OrderStatus = 'open' | 'sent_to_kitchen' | 'served' | 'payment_pending' | 'paid';
+export type OrderCourse = 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+export type OrderLineStatus = 'pending' | 'sent_to_kitchen' | 'served';
 
 export type PaymentMethod = 'cash' | 'card' | 'bizum' | 'pending';
 

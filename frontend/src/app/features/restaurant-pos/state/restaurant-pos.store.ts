@@ -3,9 +3,11 @@ import type {
   AddFloorElementInput,
   EditableFloorElementType,
   FloorElement,
+  OrderCourse,
   OrderLine,
   OrdersByTable,
   PaymentMethod,
+  Product,
   PosMode,
   RestaurantTable,
   TableOrder,
@@ -100,12 +102,16 @@ export class RestaurantPosStore {
     }
 
     const order = this.ensureOrder(tableId);
+    const table = this.getTable(tableId);
+    const now = this.nowIso();
     const nextLines = this.addProductLine(order.lines, {
       productId: product.id,
       productName: product.name,
       quantity: 1,
       unitPrice: product.price,
       subtotal: product.price,
+      course: this.getProductCourse(product.category),
+      status: 'pending',
     });
     const total = this.calculateOrderTotal(nextLines);
 
@@ -117,6 +123,29 @@ export class RestaurantPosStore {
     this.updateTable(tableId, {
       status: 'occupied',
       total,
+      occupiedAt: table?.occupiedAt ?? now,
+      serviceStartedAt: table?.serviceStartedAt ?? now,
+      cleaningStartedAt: undefined,
+    });
+    this.clearError();
+  }
+
+  occupySelectedTable(): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      this.setError(SELECT_TABLE_ERROR);
+      return;
+    }
+
+    const table = this.getTable(tableId);
+    const now = this.nowIso();
+
+    this.updateTable(tableId, {
+      status: 'occupied',
+      occupiedAt: table?.occupiedAt ?? now,
+      serviceStartedAt: table?.serviceStartedAt ?? now,
+      cleaningStartedAt: undefined,
     });
     this.clearError();
   }
@@ -130,6 +159,10 @@ export class RestaurantPosStore {
   }
 
   chargeSelectedTable(): void {
+    this.updateSelectedOrderStatus('paid', 'paid');
+  }
+
+  markSelectedPaymentPending(): void {
     this.updateSelectedOrderStatus('payment_pending', 'payment_pending');
   }
 
@@ -151,6 +184,24 @@ export class RestaurantPosStore {
     this.updateTable(tableId, {
       status: 'free',
       total: 0,
+      occupiedAt: undefined,
+      serviceStartedAt: undefined,
+      cleaningStartedAt: undefined,
+    });
+    this.clearError();
+  }
+
+  markSelectedTableForCleaning(): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      this.setError(SELECT_TABLE_ERROR);
+      return;
+    }
+
+    this.updateTable(tableId, {
+      status: 'cleaning',
+      cleaningStartedAt: this.nowIso(),
     });
     this.clearError();
   }
@@ -256,7 +307,7 @@ export class RestaurantPosStore {
     }
 
     const elementId = this.createFloorElementId();
-    const tableId = input.type === 'table' ? (input.tableId ?? this.createTableId()) : input.tableId;
+    const tableId = input.type === 'table' || input.type === 'stool' ? (input.tableId ?? this.createTableId()) : input.tableId;
     const element: FloorElement = {
       ...input,
       id: elementId,
@@ -265,8 +316,8 @@ export class RestaurantPosStore {
 
     this._floorElements.update((elements) => [...elements, element]);
 
-    if (input.type === 'table' && tableId && !this.getTable(tableId)) {
-      this.createRestaurantTable(tableId);
+    if ((input.type === 'table' || input.type === 'stool') && tableId && !this.getTable(tableId)) {
+      this.createRestaurantTable(tableId, input.type === 'stool' ? 1 : 4);
     }
 
     this.clearError();
@@ -434,11 +485,42 @@ export class RestaurantPosStore {
     this.setOrder(tableId, {
       ...order,
       status: orderStatus,
+      lines: this.updateLinesForStatus(order.lines, orderStatus),
     });
     this.updateTable(tableId, {
       status: tableStatus,
+      ...(tableStatus === 'payment_pending' ? {} : { cleaningStartedAt: undefined }),
     });
     this.clearError();
+  }
+
+  private updateLinesForStatus(lines: OrderLine[], orderStatus: TableOrder['status']): OrderLine[] {
+    if (orderStatus === 'sent_to_kitchen') {
+      const now = this.nowIso();
+
+      return lines.map((line) =>
+        line.status === 'pending'
+          ? {
+              ...line,
+              status: 'sent_to_kitchen',
+              sentToKitchenAt: now,
+            }
+          : line,
+      );
+    }
+
+    if (orderStatus === 'served') {
+      const now = this.nowIso();
+
+      return lines.map((line) => ({
+        ...line,
+        status: 'served',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        servedAt: line.servedAt ?? now,
+      }));
+    }
+
+    return lines;
   }
 
   private addProductLine(lines: OrderLine[], nextLine: OrderLine): OrderLine[] {
@@ -454,6 +536,8 @@ export class RestaurantPosStore {
             ...line,
             quantity: line.quantity + 1,
             subtotal: this.roundCurrency((line.quantity + 1) * line.unitPrice),
+            status: line.status === 'served' ? 'pending' : line.status,
+            servedAt: line.status === 'served' ? undefined : line.servedAt,
           }
         : line,
     );
@@ -495,12 +579,12 @@ export class RestaurantPosStore {
     );
   }
 
-  private createRestaurantTable(tableId: string): void {
+  private createRestaurantTable(tableId: string, capacity = 4): void {
     const nextNumber = this.getNextTableNumber();
     const table: RestaurantTable = {
       id: tableId,
       number: nextNumber,
-      capacity: 4,
+      capacity,
       status: 'free',
       total: 0,
       openDuration: '12m',
@@ -572,6 +656,27 @@ export class RestaurantPosStore {
 
   private roundCurrency(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  private getProductCourse(category: Product['category']): OrderCourse {
+    switch (category.toLowerCase()) {
+      case 'drinks':
+      case 'coffee':
+        return 'drinks';
+      case 'tapas':
+      case 'salads':
+        return 'starter';
+      case 'burgers':
+        return 'main';
+      case 'desserts':
+        return 'dessert';
+      default:
+        return 'other';
+    }
+  }
+
+  private nowIso(): string {
+    return new Date().toISOString();
   }
 
   private normalizeLabel(label: string | undefined): string {

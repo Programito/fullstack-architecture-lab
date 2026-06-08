@@ -20,6 +20,12 @@ describe('RestaurantPosStore', () => {
       expect.objectContaining({ x: 5, y: 1, width: 2, height: 2 }),
     );
     expect(store.restaurantTables().length).toBeGreaterThan(0);
+    expect(store.floorElements().find((element) => element.id === 'floor-element-6')).toEqual(
+      expect.objectContaining({ type: 'stool', tableId: 'stool-1' }),
+    );
+    expect(store.restaurantTables().find((table) => table.id === 'stool-1')).toEqual(
+      expect.objectContaining({ capacity: 1, status: 'free', total: 0 }),
+    );
     expect(store.products().length).toBeGreaterThan(0);
     expect(store.selectedTableId()).toBeNull();
     expect(store.mode()).toBe('operation');
@@ -71,11 +77,27 @@ describe('RestaurantPosStore', () => {
         quantity: 1,
         unitPrice: 12.5,
         subtotal: 12.5,
+        course: 'main',
+        status: 'pending',
       },
     ]);
     expect(order.total).toBe(12.5);
     expect(table?.total).toBe(12.5);
     expect(table?.status).toBe('occupied');
+    expect(table?.occupiedAt).toBeTruthy();
+    expect(table?.serviceStartedAt).toBeTruthy();
+  });
+
+  it('occupies the selected table and records service timestamps', () => {
+    store.selectTable('table-1');
+    store.occupySelectedTable();
+
+    const table = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1');
+
+    expect(table?.status).toBe('occupied');
+    expect(table?.occupiedAt).toBeTruthy();
+    expect(table?.serviceStartedAt).toBeTruthy();
+    expect(table?.cleaningStartedAt).toBeUndefined();
   });
 
   it('increases quantity when the product already exists in the order', () => {
@@ -113,6 +135,8 @@ describe('RestaurantPosStore', () => {
 
     expect(table?.status).toBe('waiting_kitchen');
     expect(store.ordersByTable()['table-1'].status).toBe('sent_to_kitchen');
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('sent_to_kitchen');
+    expect(store.ordersByTable()['table-1'].lines[0].sentToKitchenAt).toBeTruthy();
   });
 
   it('marks the selected order as served', () => {
@@ -125,17 +149,48 @@ describe('RestaurantPosStore', () => {
 
     expect(table?.status).toBe('served');
     expect(store.ordersByTable()['table-1'].status).toBe('served');
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('served');
+    expect(store.ordersByTable()['table-1'].lines[0].servedAt).toBeTruthy();
   });
 
-  it('charges the selected table', () => {
+  it('marks the selected table as paid when charging is accepted', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
     store.chargeSelectedTable();
 
     const table = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1');
 
+    expect(table?.status).toBe('paid');
+    expect(store.ordersByTable()['table-1'].status).toBe('paid');
+  });
+
+  it('can mark the selected table payment as pending before completion', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.markSelectedPaymentPending();
+
+    const table = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1');
+
     expect(table?.status).toBe('payment_pending');
     expect(store.ordersByTable()['table-1'].status).toBe('payment_pending');
+  });
+
+  it('lets a selected stool work as a one-person service point', () => {
+    store.selectTable('stool-1');
+    store.addProductToSelectedTable('product-3');
+
+    const stool = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'stool-1');
+    const order = store.ordersByTable()['stool-1'];
+
+    expect(stool).toEqual(
+      expect.objectContaining({
+        capacity: 1,
+        status: 'occupied',
+        total: 4.5,
+      }),
+    );
+    expect(order.lines[0]).toEqual(expect.objectContaining({ productName: 'Sparkling Lemonade', quantity: 1 }));
+    expect(order.total).toBe(4.5);
   });
 
   it('frees the selected table', () => {
@@ -151,6 +206,19 @@ describe('RestaurantPosStore', () => {
     expect(order.status).toBe('open');
     expect(table?.total).toBe(0);
     expect(table?.status).toBe('free');
+    expect(table?.occupiedAt).toBeUndefined();
+    expect(table?.serviceStartedAt).toBeUndefined();
+  });
+
+  it('marks the selected table for cleaning', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.markSelectedTableForCleaning();
+
+    const table = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1');
+
+    expect(table?.status).toBe('cleaning');
+    expect(table?.cleaningStartedAt).toBeTruthy();
   });
 
   it('adds a valid floor element', () => {
@@ -252,18 +320,18 @@ describe('RestaurantPosStore', () => {
     expect(element).toEqual(
       expect.objectContaining({
         type: 'table',
-        label: 'M5',
+        label: 'M8',
         x: 0,
         y: 0,
         width: 1,
         height: 1,
-        tableId: 'table-5',
+        tableId: 'table-8',
       }),
     );
     expect(table).toEqual(
       expect.objectContaining({
-        id: 'table-5',
-        number: 5,
+        id: 'table-8',
+        number: 8,
         status: 'free',
       }),
     );
@@ -310,8 +378,28 @@ describe('RestaurantPosStore', () => {
   it('selects the table created from the first available grid space', () => {
     store.addTable(1, 1);
 
-    expect(store.selectedTableId()).toBe('table-5');
+    expect(store.selectedTableId()).toBe('table-8');
     expect(store.errorMessage()).toBeNull();
+  });
+
+  it('creates a one-person service point when adding a stool floor element', () => {
+    const initialTableCount = store.restaurantTables().length;
+
+    store.addFloorElement({
+      type: 'stool',
+      label: 'Stool 9',
+      x: 4,
+      y: 4,
+      width: 1,
+      height: 1,
+    });
+
+    const element = store.floorElements().at(-1);
+    const servicePoint = store.restaurantTables().find((table) => table.id === element?.tableId);
+
+    expect(store.restaurantTables().length).toBe(initialTableCount + 1);
+    expect(element).toEqual(expect.objectContaining({ type: 'stool', tableId: expect.any(String) }));
+    expect(servicePoint).toEqual(expect.objectContaining({ capacity: 1, status: 'free', total: 0 }));
   });
 
   it('prevents adding tables with invalid dimensions', () => {

@@ -59,6 +59,7 @@ export const MOCK_FLOOR_ELEMENTS: FloorElement[] = [
     y: 5,
     width: 1,
     height: 1,
+    tableId: 'stool-1',
   },
   {
     id: 'floor-element-7',
@@ -68,6 +69,7 @@ export const MOCK_FLOOR_ELEMENTS: FloorElement[] = [
     y: 5,
     width: 1,
     height: 1,
+    tableId: 'stool-2',
   },
   {
     id: 'floor-element-8',
@@ -77,6 +79,7 @@ export const MOCK_FLOOR_ELEMENTS: FloorElement[] = [
     y: 5,
     width: 1,
     height: 1,
+    tableId: 'stool-3',
   },
 ];
 
@@ -112,6 +115,30 @@ export const MOCK_RESTAURANT_TABLES: RestaurantTable[] = [
     status: 'free',
     total: 0,
     openDuration: '1h 25m',
+  },
+  {
+    id: 'stool-1',
+    number: 5,
+    capacity: 1,
+    status: 'free',
+    total: 0,
+    openDuration: '0m',
+  },
+  {
+    id: 'stool-2',
+    number: 6,
+    capacity: 1,
+    status: 'free',
+    total: 0,
+    openDuration: '0m',
+  },
+  {
+    id: 'stool-3',
+    number: 7,
+    capacity: 1,
+    status: 'free',
+    total: 0,
+    openDuration: '0m',
   },
 ];
 

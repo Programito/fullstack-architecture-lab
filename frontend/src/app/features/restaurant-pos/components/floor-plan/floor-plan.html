@@ -50,6 +50,7 @@
           [class]="elementClass(element)"
           [ngStyle]="elementStyle(element)"
           data-floor-element="true"
+          [attr.data-floor-element-id]="element.id"
           [attr.data-table-shape]="element.type === 'table' ? tableShape(element) : null"
           [attr.aria-pressed]="isSelected(element)"
           [attr.aria-label]="elementAriaLabel(element)"
@@ -129,7 +130,17 @@
 
       <div class="floor-plan-theme-table-label relative z-10 grid min-w-10 place-items-center rounded-md px-1 py-0.5 text-center shadow-sm">
         <span class="max-w-full truncate text-xs font-semibold">{{ displayLabel(element) }}</span>
-        <span class="text-[0.55rem] font-medium">{{ tableCapacity(element) }}</span>
+        @if (layoutMode()) {
+          <span class="text-[0.55rem] font-medium">{{ tableCapacity(element) }}</span>
+        } @else {
+          @let table = tableForElement(element);
+          <span class="inline-flex max-w-full items-center gap-1 text-[0.55rem] font-semibold">
+            <span class="h-1.5 w-1.5 rounded-full" [ngClass]="tableStatusDotClass(table?.status ?? 'free')"></span>
+            <span class="truncate">{{ tableStatusLabel(table?.status ?? 'free') }}</span>
+          </span>
+          <span class="text-[0.55rem] font-semibold">{{ serviceTableTotal(table) }}</span>
+          <span class="text-[0.55rem] font-medium">{{ tableCapacity(element) }} · {{ serviceTableDuration(table) }}</span>
+        }
       </div>
     </div>
   } @else if (element.type === 'bar') {

@@ -643,11 +643,61 @@ describe('FloorPlan', () => {
   it('disables drag and hides the edit toolbar outside layout mode', async () => {
     await renderFloorPlan('<app-floor-plan [layoutMode]="false" />', { imports: [FloorPlan] });
 
-    fireEvent.click(screen.getByLabelText('M1 floor element'));
+    fireEvent.click(screen.getByLabelText('M1 table, Free'));
 
-    expect(screen.getByLabelText('M1 floor element').getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByLabelText('M1 table, Free').getAttribute('aria-disabled')).toBe('true');
     expect(screen.queryByRole('toolbar', { name: 'Layout element actions' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Move M1' })).toBeNull();
+  });
+
+  it('selects a stool as a one-person service point in service mode', async () => {
+    const { fixture } = await renderFloorPlan('<app-floor-plan [layoutMode]="false" />', { imports: [FloorPlan] });
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('Stool 1 table, Free'));
+    fixture.detectChanges();
+
+    expect(store.selectedTableId()).toBe('stool-1');
+    expect(screen.getByLabelText('Stool 1 table, Free').className).toContain('floor-plan-theme-element-selected');
+    expect(within(screen.getByLabelText('Stool 1 table, Free')).getByText('T1')).toBeTruthy();
+  });
+
+  it('scrolls and focuses a requested service point in service mode', async () => {
+    vi.useFakeTimers();
+    const scrollIntoView = vi.fn();
+    const focus = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const originalFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    HTMLElement.prototype.focus = focus;
+
+    await renderFloorPlan('<app-floor-plan [layoutMode]="false" [focusRequest]="focusRequest" />', {
+      imports: [FloorPlan],
+      componentProperties: { focusRequest: { elementId: 'floor-element-6', requestId: 1 } },
+    });
+
+    vi.runOnlyPendingTimers();
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'center', inline: 'center', behavior: 'smooth' });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    HTMLElement.prototype.focus = originalFocus;
+    vi.useRealTimers();
+  });
+
+  it('renders table status, total, and occupied time in service mode', async () => {
+    const { fixture } = await renderFloorPlan('<app-floor-plan [layoutMode]="false" />', { imports: [FloorPlan] });
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    fixture.detectChanges();
+
+    const table = screen.getByLabelText('M1 table, Occupied');
+    expect(within(table).getByText('Occupied')).toBeTruthy();
+    expect(within(table).getByText('€12.50')).toBeTruthy();
+    expect(within(table).getByText(/2 pax/)).toBeTruthy();
   });
 
   it('renders table label and capacity without service state details in layout mode', async () => {

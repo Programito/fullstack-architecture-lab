@@ -5,7 +5,7 @@ import { Component, computed, effect, ElementRef, inject, input, OnDestroy, outp
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import type { FloorElement, TableShape } from '../../models/restaurant-pos.models';
+import type { FloorElement, RestaurantTable, TableShape, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { TableVisual } from '../table-visual/table-visual';
 
@@ -27,6 +27,11 @@ type CanvasPanStart = {
   pointerId: number;
 };
 
+export type FloorPlanFocusRequest = {
+  elementId: string;
+  requestId: number;
+};
+
 @Component({
   selector: 'app-floor-plan',
   imports: [CdkDrag, CdkDragHandle, CdkDragPlaceholder, CdkDragPreview, CdkScrollable, Icon, NgClass, NgStyle, NgTemplateOutlet, TableVisual, TranslocoPipe],
@@ -35,6 +40,7 @@ type CanvasPanStart = {
 })
 export class FloorPlan implements OnDestroy {
   readonly layoutMode = input(true);
+  readonly focusRequest = input<FloorPlanFocusRequest | null>(null);
   readonly editElement = output<FloorElement>();
   readonly resizeElement = output<FloorElement>();
   readonly selectedElementChange = output<FloorElement | null>();
@@ -47,6 +53,7 @@ export class FloorPlan implements OnDestroy {
   protected readonly hasCanvasOverflow = signal(false);
   protected readonly isPanningCanvas = signal(false);
   protected readonly showScrollHint = signal(false);
+  protected readonly serviceNow = signal(new Date());
   protected readonly cells = computed(() =>
     Array.from({ length: this.store.gridRows() * this.store.gridColumns() }, (_, index) => ({
       x: index % this.store.gridColumns(),
@@ -55,6 +62,7 @@ export class FloorPlan implements OnDestroy {
   );
 
   private hideScrollHintTimer: ReturnType<typeof setTimeout> | null = null;
+  private serviceClockTimer: ReturnType<typeof setInterval> | null = null;
   private autoScrollFrameId: number | null = null;
   private autoScrollVector: ScrollVector = { x: 0, y: 0 };
   private dragScrollStart: ScrollVector | null = null;
@@ -66,9 +74,27 @@ export class FloorPlan implements OnDestroy {
       this.store.gridColumns();
       setTimeout(() => this.evaluateCanvasOverflow());
     });
+    effect(() => {
+      if (this.layoutMode()) {
+        this.stopServiceClock();
+        return;
+      }
+
+      this.startServiceClock();
+    });
+    effect(() => {
+      const request = this.focusRequest();
+
+      if (!request) {
+        return;
+      }
+
+      this.focusFloorElement(request.elementId);
+    });
   }
 
   ngOnDestroy(): void {
+    this.stopServiceClock();
     this.clearScrollHintTimer();
     this.stopAutoScroll(true);
     this.stopCanvasPan();
@@ -262,11 +288,20 @@ export class FloorPlan implements OnDestroy {
     return [
       'floor-plan-theme-element group relative z-10 grid min-h-10 place-items-center rounded-md border p-0.5 text-center transition focus:outline-none',
       this.layoutMode() ? 'cursor-pointer floor-plan-theme-element-interactive' : '',
+      !this.layoutMode() && element.tableId ? this.serviceTableClass(element) : '',
       this.isSelected(element) ? 'floor-plan-theme-element-selected z-40 ring-2 ring-cyan-500 ring-offset-2' : '',
     ].join(' ');
   }
 
   protected elementAriaLabel(element: FloorElement): string {
+    if (!this.layoutMode() && element.tableId) {
+      const table = this.tableForElement(element);
+      return this.translate('restaurantPos.floorPlan.serviceTable', {
+        label: this.displayLabel(element),
+        status: this.tableStatusLabel(table?.status ?? 'free'),
+      });
+    }
+
     return this.translate('restaurantPos.floorPlan.floorElement', { label: this.displayLabel(element) });
   }
 
@@ -343,6 +378,88 @@ export class FloorPlan implements OnDestroy {
     }
 
     return 'inset-0.5';
+  }
+
+  protected tableForElement(element: FloorElement): RestaurantTable | null {
+    return element.tableId ? (this.store.restaurantTables().find((table) => table.id === element.tableId) ?? null) : null;
+  }
+
+  protected tableStatusLabel(status: TableStatus): string {
+    return this.translate(`restaurantPos.tableStatus.${status}`);
+  }
+
+  protected tableStatusDotClass(status: TableStatus): string {
+    switch (status) {
+      case 'occupied':
+        return 'bg-emerald-500';
+      case 'waiting_kitchen':
+        return 'bg-amber-500';
+      case 'served':
+        return 'bg-cyan-500';
+      case 'payment_pending':
+        return 'bg-orange-500';
+      case 'paid':
+        return 'bg-cyan-600';
+      case 'cleaning':
+        return 'bg-sky-500';
+      case 'reserved':
+        return 'bg-violet-500';
+      default:
+        return 'bg-slate-400';
+    }
+  }
+
+  protected serviceTableDuration(table: RestaurantTable | null): string {
+    if (!table) {
+      return '';
+    }
+
+    const startedAt = table.occupiedAt ?? table.serviceStartedAt ?? table.cleaningStartedAt;
+    if (!startedAt) {
+      return table.openDuration;
+    }
+
+    return this.formatDuration(new Date(startedAt), this.serviceNow());
+  }
+
+  protected serviceTableTotal(table: RestaurantTable | null): string {
+    return new Intl.NumberFormat(this.activeLang(), { style: 'currency', currency: 'EUR' }).format(table?.total ?? 0);
+  }
+
+  protected serviceTableClass(element: FloorElement): string {
+    const table = this.tableForElement(element);
+
+    if (!table || table.status === 'free') {
+      return 'border-emerald-300 bg-emerald-50/80 text-emerald-950';
+    }
+
+    if (table.status === 'payment_pending') {
+      return 'border-orange-400 bg-orange-50 text-orange-950';
+    }
+
+    if (table.status === 'paid') {
+      return 'border-cyan-500 bg-cyan-50 text-cyan-950';
+    }
+
+    if (table.status === 'cleaning') {
+      return 'border-sky-400 bg-sky-50 text-sky-950';
+    }
+
+    if (table.status === 'reserved') {
+      return 'border-violet-400 bg-violet-50 text-violet-950';
+    }
+
+    const minutes = this.minutesSince(table.occupiedAt ?? table.serviceStartedAt);
+
+    if (minutes >= 60) {
+      return 'border-red-500 bg-red-50 text-red-950 shadow-[inset_0_0_0_2px_rgb(239_68_68_/_0.35)]';
+    }
+
+    if (minutes >= 30 || table.status === 'waiting_kitchen') {
+      return 'border-amber-500 bg-amber-50 text-amber-950 shadow-[inset_0_0_0_2px_rgb(245_158_11_/_0.28)]';
+    }
+
+    return 'border-emerald-400 bg-emerald-50 text-emerald-950';
   }
 
   private getAutoScrollVector(pointerPosition: { x: number; y: number }, canvas: HTMLElement): ScrollVector {
@@ -519,5 +636,65 @@ export class FloorPlan implements OnDestroy {
   private translate(key: string, params?: Record<string, unknown>): string {
     this.activeLang();
     return this.transloco.translate(key, params);
+  }
+
+  private focusFloorElement(elementId: string): void {
+    setTimeout(() => {
+      const canvas = this.floorCanvas()?.nativeElement;
+      const element = canvas?.querySelector<HTMLElement>(`[data-floor-element-id="${this.escapeAttributeValue(elementId)}"]`);
+
+      if (!element) {
+        return;
+      }
+
+      element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+      element.focus({ preventScroll: true });
+    });
+  }
+
+  private escapeAttributeValue(value: string): string {
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
+
+  private startServiceClock(): void {
+    if (this.serviceClockTimer) {
+      return;
+    }
+
+    this.serviceClockTimer = setInterval(() => this.serviceNow.set(new Date()), 60000);
+  }
+
+  private stopServiceClock(): void {
+    if (!this.serviceClockTimer) {
+      return;
+    }
+
+    clearInterval(this.serviceClockTimer);
+    this.serviceClockTimer = null;
+  }
+
+  private minutesSince(value: string | undefined): number {
+    if (!value) {
+      return 0;
+    }
+
+    const startedAt = new Date(value).getTime();
+    if (!Number.isFinite(startedAt)) {
+      return 0;
+    }
+
+    return Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
+  }
+
+  private formatDuration(startedAt: Date, now: Date): string {
+    const minutes = Math.max(0, Math.floor((now.getTime() - startedAt.getTime()) / 60000));
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${remainingMinutes}m`;
+    }
+
+    return `${minutes}m`;
   }
 }
