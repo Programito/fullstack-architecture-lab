@@ -1,14 +1,25 @@
 import { routes } from './app.routes';
 
 describe('app routes', () => {
-  it('redirects restaurant-pos to the layout route', () => {
+  it('redirects restaurant-pos to the service route', () => {
     const restaurantPosRoute = routes.find((route) => route.path === 'restaurant-pos');
     const redirectRoute = restaurantPosRoute?.children?.find((route) => route.path === '');
 
     expect(redirectRoute).toEqual(
       expect.objectContaining({
         pathMatch: 'full',
-        redirectTo: 'layout',
+        redirectTo: 'service',
+      }),
+    );
+  });
+
+  it('redirects the app root to the service route', () => {
+    const redirectRoute = routes.find((route) => route.path === '');
+
+    expect(redirectRoute).toEqual(
+      expect.objectContaining({
+        pathMatch: 'full',
+        redirectTo: 'restaurant-pos/service',
       }),
     );
   });

@@ -164,7 +164,21 @@
       "markServed": "Servido",
       "charge": "Cobrar",
       "cleaning": "Limpieza",
-      "freeTable": "Liberar mesa"
+      "freeTable": "Liberar mesa",
+      "kitchenActions": "Acciones de cocina",
+      "paymentActions": "Acciones de pago",
+      "closingActions": "Acciones de cierre de mesa",
+      "sendKitchenActionLabel": "Enviar el pedido de la mesa seleccionada a cocina",
+      "markServedActionLabel": "Marcar el pedido de la mesa seleccionada como servido",
+      "chargeActionLabel": "Cobrar la mesa seleccionada",
+      "setCashPaymentActionLabel": "Seleccionar pago en efectivo para la mesa seleccionada",
+      "setCardPaymentActionLabel": "Seleccionar pago con tarjeta para la mesa seleccionada",
+      "cleaningActionLabel": "Marcar la mesa seleccionada para limpieza",
+      "freeTableActionLabel": "Liberar la mesa seleccionada",
+      "freeTableConfirmTitle": "Liberar mesa",
+      "freeTableConfirmDescription": "Esta accion vaciara el pedido y dejara la mesa libre.",
+      "confirmFreeTable": "Liberar mesa",
+      "cancelFreeTable": "Mantener mesa"
     },
     "tableStatus": {
       "free": "Libre",

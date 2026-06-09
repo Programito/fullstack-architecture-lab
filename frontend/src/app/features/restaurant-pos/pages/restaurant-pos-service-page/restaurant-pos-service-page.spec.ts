@@ -164,7 +164,11 @@ describe('RestaurantPosServicePage', () => {
     expect(store.selectedTable()?.status).toBe('cleaning');
     expect(within(screen.getByLabelText('Panel de mesa seleccionada')).getAllByText('Limpieza').length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: /Liberar mesa/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Liberar la mesa seleccionada/i }));
+    fixture.detectChanges();
+
+    expect(screen.getByRole('dialog', { name: 'Liberar mesa' })).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Liberar mesa' })).getByRole('button', { name: 'Liberar mesa' }));
     fixture.detectChanges();
 
     expect(store.selectedTable()?.status).toBe('free');

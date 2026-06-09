@@ -1,29 +1,42 @@
-import { NgClass } from '@angular/common';
-import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
-import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
-import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import { FloorPlan, type FloorPlanFocusRequest } from '../../components/floor-plan/floor-plan';
-import type { FloorElement, OrderCourse, OrderLineStatus, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
+import { PaymentGatewayDialog } from '../../components/payment-gateway-dialog/payment-gateway-dialog';
+import { ProductSearchDialog } from '../../components/product-search-dialog/product-search-dialog';
+import { ServicePointSearchDialog } from '../../components/service-point-search-dialog/service-point-search-dialog';
+import { ServiceSummary } from '../../components/service-summary/service-summary';
+import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
+import type { FloorElement, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 @Component({
   selector: 'app-restaurant-pos-service-page',
-  imports: [Button, ColorModeMenu, Dialog, FloorPlan, Icon, LanguageSelect, NgClass, RouterLink, SearchInput, TranslocoPipe],
+  imports: [
+    Button,
+    ColorModeMenu,
+    FloorPlan,
+    Icon,
+    LanguageSelect,
+    PaymentGatewayDialog,
+    ProductSearchDialog,
+    RouterLink,
+    ServicePointSearchDialog,
+    ServiceSummary,
+    ServiceTablePanel,
+    TranslocoPipe,
+  ],
   templateUrl: './restaurant-pos-service-page.html',
 })
-export class RestaurantPosServicePage implements OnDestroy {
+export class RestaurantPosServicePage {
   protected readonly store = inject(RestaurantPosStore);
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
-  private readonly now = signal(new Date());
-  private readonly clockTimer = setInterval(() => this.now.set(new Date()), 60000);
   protected readonly productSearchOpen = signal(false);
   protected readonly productSearchQuery = signal('');
   protected readonly servicePointSearchOpen = signal(false);
@@ -81,10 +94,20 @@ export class RestaurantPosServicePage implements OnDestroy {
     const order = this.store.selectedOrder();
     return !!order?.lines.some((line) => line.status !== 'served');
   });
+  protected readonly canCharge = computed(() => {
+    const table = this.store.selectedTable();
+    const order = this.store.selectedOrder();
 
-  ngOnDestroy(): void {
-    clearInterval(this.clockTimer);
-  }
+    return !!table && !!order && order.total > 0 && table.status !== 'paid' && table.status !== 'cleaning';
+  });
+  protected readonly canMarkCleaning = computed(() => {
+    const status = this.store.selectedTable()?.status;
+    return status === 'occupied' || status === 'served' || status === 'payment_pending' || status === 'paid';
+  });
+  protected readonly canFreeTable = computed(() => {
+    const status = this.store.selectedTable()?.status;
+    return status === 'paid' || status === 'cleaning';
+  });
 
   protected occupySelectedTable(): void {
     this.store.occupySelectedTable();
@@ -155,6 +178,10 @@ export class RestaurantPosServicePage implements OnDestroy {
   }
 
   protected chargeTable(): void {
+    if (!this.canCharge()) {
+      return;
+    }
+
     const paymentMethod = this.store.selectedOrder()?.paymentMethod;
 
     if (paymentMethod === 'card') {
@@ -186,10 +213,18 @@ export class RestaurantPosServicePage implements OnDestroy {
   }
 
   protected markCleaning(): void {
+    if (!this.canMarkCleaning()) {
+      return;
+    }
+
     this.store.markSelectedTableForCleaning();
   }
 
   protected freeTable(): void {
+    if (!this.canFreeTable()) {
+      return;
+    }
+
     this.store.freeSelectedTable();
   }
 
@@ -201,68 +236,8 @@ export class RestaurantPosServicePage implements OnDestroy {
     return this.translate(`restaurantPos.tableStatus.${status}`);
   }
 
-  protected lineStatusLabel(status: OrderLineStatus): string {
-    return this.translate(`restaurantPos.lineStatus.${status}`);
-  }
-
-  protected courseLabel(course: OrderCourse): string {
-    return this.translate(`restaurantPos.course.${course}`);
-  }
-
   protected formatCurrency(value: number): string {
     return new Intl.NumberFormat(this.activeLang(), { style: 'currency', currency: 'EUR' }).format(value);
-  }
-
-  protected formatClock(value: string | undefined): string {
-    if (!value) {
-      return this.translate('restaurantPos.service.notStarted');
-    }
-
-    return new Intl.DateTimeFormat(this.activeLang(), { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
-  }
-
-  protected formatDuration(value: string | undefined, fallback: string): string {
-    if (!value) {
-      return fallback;
-    }
-
-    const minutes = Math.max(0, Math.floor((this.now().getTime() - new Date(value).getTime()) / 60000));
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${remainingMinutes}m`;
-    }
-
-    return `${minutes}m`;
-  }
-
-  protected paymentMethodClass(paymentMethod: PaymentMethod): string {
-    return this.store.selectedOrder()?.paymentMethod === paymentMethod ? 'border-cyan-600 bg-cyan-50 text-cyan-950' : 'theme-field';
-  }
-
-  protected serviceAttentionClass(table: RestaurantTable): string {
-    if (table.status === 'waiting_kitchen') {
-      return 'border-amber-200 bg-amber-50 text-amber-900';
-    }
-
-    if (table.status === 'payment_pending') {
-      return 'border-orange-200 bg-orange-50 text-orange-900';
-    }
-
-    if (table.status === 'paid') {
-      return 'border-cyan-200 bg-cyan-50 text-cyan-900';
-    }
-
-    if (table.status === 'cleaning') {
-      return 'border-sky-200 bg-sky-50 text-sky-900';
-    }
-
-    return 'theme-chip';
-  }
-
-  protected productAllergenLabel(product: Product): string {
-    return product.allergens?.length ? product.allergens.join(', ') : this.translate('restaurantPos.service.noAllergens');
   }
 
   protected cardGatewayStatusLabel(): string {

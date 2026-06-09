@@ -21,13 +21,13 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'layout',
+        redirectTo: 'service',
       },
     ],
   },
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'restaurant-pos/layout',
+    redirectTo: 'restaurant-pos/service',
   },
 ];

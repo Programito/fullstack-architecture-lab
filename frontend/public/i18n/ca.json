@@ -164,7 +164,21 @@
       "markServed": "Servit",
       "charge": "Cobrar",
       "cleaning": "Neteja",
-      "freeTable": "Alliberar taula"
+      "freeTable": "Alliberar taula",
+      "kitchenActions": "Accions de cuina",
+      "paymentActions": "Accions de pagament",
+      "closingActions": "Accions de tancament de taula",
+      "sendKitchenActionLabel": "Enviar la comanda de la taula seleccionada a cuina",
+      "markServedActionLabel": "Marcar la comanda de la taula seleccionada com a servida",
+      "chargeActionLabel": "Cobrar la taula seleccionada",
+      "setCashPaymentActionLabel": "Seleccionar pagament en efectiu per a la taula seleccionada",
+      "setCardPaymentActionLabel": "Seleccionar pagament amb targeta per a la taula seleccionada",
+      "cleaningActionLabel": "Marcar la taula seleccionada per a neteja",
+      "freeTableActionLabel": "Alliberar la taula seleccionada",
+      "freeTableConfirmTitle": "Alliberar taula",
+      "freeTableConfirmDescription": "Aquesta accio buidara la comanda i deixara la taula lliure.",
+      "confirmFreeTable": "Alliberar taula",
+      "cancelFreeTable": "Mantenir taula"
     },
     "tableStatus": {
       "free": "Lliure",

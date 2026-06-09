@@ -1,0 +1,32 @@
+<app-dialog
+  [open]="open()"
+  [title]="'restaurantPos.paymentGateway.title' | transloco"
+  [description]="'restaurantPos.paymentGateway.description' | transloco"
+  [closeAriaLabel]="'restaurantPos.paymentGateway.cancel' | transloco"
+  size="sm"
+  (closed)="closed.emit()"
+>
+  <div class="grid gap-4">
+    <div class="theme-soft-panel rounded-md border px-4 py-3">
+      <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.total' | transloco }}</p>
+      <p class="theme-title text-2xl font-semibold">{{ total() }}</p>
+      <p class="theme-muted mt-1 text-sm">{{ tableTitle() }}</p>
+    </div>
+
+    <p class="rounded-md border px-3 py-2 text-sm font-semibold" [ngClass]="rejected() ? 'border-red-200 bg-red-50 text-red-900' : 'border-cyan-200 bg-cyan-50 text-cyan-900'">
+      {{ statusLabel() }}
+    </p>
+
+    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <app-button variant="primary" size="sm" (pressed)="accepted.emit()">
+        {{ 'restaurantPos.paymentGateway.accept' | transloco }}
+      </app-button>
+      <app-button variant="danger" fill="outline" size="sm" (pressed)="rejectedPayment.emit()">
+        {{ 'restaurantPos.paymentGateway.error' | transloco }}
+      </app-button>
+      <app-button variant="neutral" fill="outline" size="sm" (pressed)="closed.emit()">
+        {{ 'restaurantPos.paymentGateway.cancel' | transloco }}
+      </app-button>
+    </div>
+  </div>
+</app-dialog>

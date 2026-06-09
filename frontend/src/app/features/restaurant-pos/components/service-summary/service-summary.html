@@ -1,0 +1,14 @@
+<div class="grid gap-2 sm:grid-cols-3" [attr.aria-label]="'restaurantPos.service.shiftSummary' | transloco">
+  <div class="theme-panel rounded-md border px-3 py-2 shadow-sm">
+    <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.occupiedTables' | transloco }}</p>
+    <p class="theme-title text-lg font-semibold">{{ occupiedTables() }}/{{ totalTables() }}</p>
+  </div>
+  <div class="theme-panel rounded-md border px-3 py-2 shadow-sm">
+    <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.kitchenQueue' | transloco }}</p>
+    <p class="theme-title text-lg font-semibold">{{ kitchenQueue() }}</p>
+  </div>
+  <div class="theme-panel rounded-md border px-3 py-2 shadow-sm">
+    <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.salesToday' | transloco }}</p>
+    <p class="theme-title text-lg font-semibold">{{ salesToday() }}</p>
+  </div>
+</div>

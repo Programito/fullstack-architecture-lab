@@ -1,0 +1,39 @@
+<app-dialog
+  [open]="open()"
+  [title]="'restaurantPos.service.searchServicePoint' | transloco"
+  [description]="'restaurantPos.service.searchServicePointDescription' | transloco"
+  [closeAriaLabel]="'restaurantPos.service.closeServicePointSearch' | transloco"
+  size="lg"
+  (closed)="closed.emit()"
+>
+  <div class="grid gap-4">
+    <app-search-input
+      [label]="'restaurantPos.service.searchServicePoint' | transloco"
+      [placeholder]="'restaurantPos.service.searchServicePointPlaceholder' | transloco"
+      [value]="query()"
+      [clearAriaLabel]="'restaurantPos.service.clearServicePointSearch' | transloco"
+      (valueChange)="queryChanged.emit($event)"
+      (searched)="searched.emit($event)"
+    />
+
+    <div class="grid max-h-[22rem] gap-2 overflow-y-auto pr-1">
+      @for (servicePoint of servicePoints(); track servicePoint.element.id) {
+        <button
+          type="button"
+          class="theme-field flex min-h-16 items-center justify-between gap-4 rounded-md border px-3 py-2 text-left text-sm transition hover:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          (click)="servicePointSelected.emit(servicePoint.element)"
+        >
+          <span class="min-w-0">
+            <span class="theme-title block truncate font-semibold">{{ servicePoint.element.label }}</span>
+            <span class="theme-muted block text-xs">
+              {{ servicePointTypeLabel(servicePoint.element) }} &middot; {{ tableStatusLabel(servicePoint.table!.status) }} &middot; {{ 'restaurantPos.common.pax' | transloco: { count: servicePoint.table!.capacity } }}
+            </span>
+          </span>
+          <span class="shrink-0 font-semibold">{{ formatCurrency(servicePoint.table!.total) }}</span>
+        </button>
+      } @empty {
+        <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'restaurantPos.service.noServicePointResults' | transloco }}</p>
+      }
+    </div>
+  </div>
+</app-dialog>

@@ -7,6 +7,14 @@
   animation: button-spin 650ms linear infinite;
 }
 
+.button__content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 @keyframes button-spin {
   to {
     transform: rotate(360deg);

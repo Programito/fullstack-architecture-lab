@@ -7,20 +7,12 @@
       </div>
 
       <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-end">
-        <div class="grid gap-2 sm:grid-cols-3" [attr.aria-label]="'restaurantPos.service.shiftSummary' | transloco">
-          <div class="theme-panel rounded-md border px-3 py-2 shadow-sm">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.occupiedTables' | transloco }}</p>
-            <p class="theme-title text-lg font-semibold">{{ store.occupiedTables() }}/{{ store.restaurantTables().length }}</p>
-          </div>
-          <div class="theme-panel rounded-md border px-3 py-2 shadow-sm">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.kitchenQueue' | transloco }}</p>
-            <p class="theme-title text-lg font-semibold">{{ store.kitchenQueue() }}</p>
-          </div>
-          <div class="theme-panel rounded-md border px-3 py-2 shadow-sm">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.salesToday' | transloco }}</p>
-            <p class="theme-title text-lg font-semibold">{{ formatCurrency(store.salesToday()) }}</p>
-          </div>
-        </div>
+        <app-service-summary
+          [occupiedTables]="store.occupiedTables()"
+          [totalTables]="store.restaurantTables().length"
+          [kitchenQueue]="store.kitchenQueue()"
+          [salesToday]="formatCurrency(store.salesToday())"
+        />
 
         <nav class="flex flex-wrap items-center gap-2" [attr.aria-label]="'restaurantPos.service.sections' | transloco">
           <div class="theme-panel flex items-center gap-1 rounded-lg border px-1 py-1 shadow-sm">
@@ -63,247 +55,57 @@
       <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" />
     </section>
 
-    <aside class="theme-panel rounded-lg border p-4 shadow-sm" [attr.aria-label]="'restaurantPos.service.tablePanel' | transloco">
-      @if (store.selectedTable(); as table) {
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.service.selectedTable' | transloco }}</p>
-            <h2 class="theme-title text-xl font-semibold">{{ selectedTableTitle() }}</h2>
-          </div>
-          <span class="rounded-full border px-2.5 py-1 text-xs font-semibold" [ngClass]="serviceAttentionClass(table)">
-            {{ tableStatusLabel(table.status) }}
-          </span>
-        </div>
-
-        <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-          <div class="theme-soft-panel rounded-md border px-3 py-2">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.startedAt' | transloco }}</p>
-            <p class="theme-title font-semibold">{{ formatClock(table.serviceStartedAt) }}</p>
-          </div>
-          <div class="theme-soft-panel rounded-md border px-3 py-2">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.occupiedFor' | transloco }}</p>
-            <p class="theme-title font-semibold">{{ formatDuration(table.occupiedAt, table.openDuration) }}</p>
-          </div>
-          <div class="theme-soft-panel rounded-md border px-3 py-2">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.guests' | transloco }}</p>
-            <p class="theme-title font-semibold">{{ 'restaurantPos.common.pax' | transloco: { count: table.capacity } }}</p>
-          </div>
-          <div class="theme-soft-panel rounded-md border px-3 py-2">
-            <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.total' | transloco }}</p>
-            <p class="theme-title font-semibold">{{ formatCurrency(table.total) }}</p>
-          </div>
-        </div>
-
-        <div class="mt-4 grid gap-2">
-          <app-button variant="neutral" fill="outline" expand="block" size="sm" (pressed)="occupySelectedTable()">
-            <span class="inline-flex items-center gap-1.5"><app-icon name="event_seat" size="sm" />{{ 'restaurantPos.service.startService' | transloco }}</span>
-          </app-button>
-          <app-button variant="primary" fill="outline" expand="block" size="sm" (pressed)="openProductSearch()">
-            <span class="inline-flex items-center gap-1.5"><app-icon name="search" size="sm" />{{ 'restaurantPos.service.searchProduct' | transloco }}</span>
-          </app-button>
-        </div>
-
-        <section class="mt-5">
-          <h3 class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.quickProducts' | transloco }}</h3>
-          <div class="mt-2 grid gap-2">
-            @for (product of availableProducts(); track product.id) {
-              <button
-                type="button"
-                class="theme-field flex min-h-12 items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition hover:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                (click)="addProduct(product.id)"
-              >
-                <span class="min-w-0">
-                  <span class="theme-title block truncate font-semibold">{{ product.name }}</span>
-                  <span class="theme-muted block text-xs">{{ product.category }}</span>
-                </span>
-                <span class="font-semibold">{{ formatCurrency(product.price) }}</span>
-              </button>
-            }
-          </div>
-        </section>
-
-        <section class="mt-5">
-          <div class="flex items-center justify-between gap-3">
-            <h3 class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.order' | transloco }}</h3>
-            <span class="theme-muted text-xs font-semibold">{{ formatCurrency(store.selectedOrder()?.total ?? 0) }}</span>
-          </div>
-
-          <div class="mt-2 grid gap-2">
-            @if (store.selectedOrder()?.lines?.length) {
-              @for (line of store.selectedOrder()?.lines ?? []; track line.productId) {
-                <div class="theme-soft-panel rounded-md border px-3 py-2 text-sm">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <p class="theme-title truncate font-semibold">{{ line.quantity }} x {{ line.productName }}</p>
-                      <p class="theme-muted text-xs">{{ courseLabel(line.course) }} · {{ lineStatusLabel(line.status) }}</p>
-                    </div>
-                    <p class="font-semibold">{{ formatCurrency(line.subtotal) }}</p>
-                  </div>
-                </div>
-              }
-            } @else {
-              <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'restaurantPos.service.emptyOrder' | transloco }}</p>
-            }
-          </div>
-        </section>
-
-        <section class="mt-5 grid gap-2">
-          <div class="grid grid-cols-2 gap-2">
-            <app-button variant="primary" expand="block" size="sm" [disabled]="!canSendToKitchen()" (pressed)="sendToKitchen()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="skillet" size="sm" />{{ 'restaurantPos.service.sendKitchen' | transloco }}</span>
-            </app-button>
-            <app-button variant="secondary" expand="block" size="sm" [disabled]="!canMarkServed()" (pressed)="markServed()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.markServed' | transloco }}</span>
-            </app-button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" class="rounded-md border px-3 py-2 text-sm font-semibold" [ngClass]="paymentMethodClass('cash')" (click)="setPaymentMethod('cash')">
-              {{ 'restaurantPos.payment.cash' | transloco }}
-            </button>
-            <button type="button" class="rounded-md border px-3 py-2 text-sm font-semibold" [ngClass]="paymentMethodClass('card')" (click)="setPaymentMethod('card')">
-              {{ 'restaurantPos.payment.card' | transloco }}
-            </button>
-          </div>
-
-          <app-button variant="primary" expand="block" (pressed)="chargeTable()">
-            <span class="inline-flex items-center gap-1.5"><app-icon name="payments" size="sm" />{{ 'restaurantPos.service.charge' | transloco }}</span>
-          </app-button>
-          <div class="grid grid-cols-2 gap-2">
-            <app-button variant="neutral" fill="outline" expand="block" size="sm" (pressed)="markCleaning()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="cleaning_services" size="sm" />{{ 'restaurantPos.service.cleaning' | transloco }}</span>
-            </app-button>
-            <app-button variant="danger" fill="outline" expand="block" size="sm" (pressed)="freeTable()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="table_restaurant" size="sm" />{{ 'restaurantPos.service.freeTable' | transloco }}</span>
-            </app-button>
-          </div>
-        </section>
-
-        @if (store.errorMessage()) {
-          <p class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">{{ store.errorMessage()! | transloco }}</p>
-        }
-      } @else {
-        <div class="grid min-h-80 place-items-center text-center">
-          <div class="max-w-64">
-            <div class="mx-auto grid h-12 w-12 place-items-center rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700">
-              <app-icon name="touch_app" size="md" />
-            </div>
-            <h2 class="theme-title mt-4 text-lg font-semibold">{{ selectedTableTitle() }}</h2>
-            <p class="theme-muted mt-2 text-sm">{{ 'restaurantPos.service.noTableDescription' | transloco }}</p>
-          </div>
-        </div>
-      }
-    </aside>
+    <app-service-table-panel
+      [table]="store.selectedTable()"
+      [order]="store.selectedOrder()"
+      [title]="selectedTableTitle()"
+      [quickProducts]="availableProducts()"
+      [errorMessage]="store.errorMessage()"
+      [canSendToKitchen]="canSendToKitchen()"
+      [canMarkServed]="canMarkServed()"
+      [canCharge]="canCharge()"
+      [canMarkCleaning]="canMarkCleaning()"
+      [canFreeTable]="canFreeTable()"
+      (occupy)="occupySelectedTable()"
+      (openProductSearch)="openProductSearch()"
+      (addProduct)="addProduct($event)"
+      (sendToKitchen)="sendToKitchen()"
+      (markServed)="markServed()"
+      (setPaymentMethod)="setPaymentMethod($event)"
+      (charge)="chargeTable()"
+      (markCleaning)="markCleaning()"
+      (freeTable)="freeTable()"
+    />
   </div>
 </main>
 
-<app-dialog
+<app-product-search-dialog
   [open]="productSearchOpen()"
-  [title]="'restaurantPos.service.searchProduct' | transloco"
-  [description]="'restaurantPos.service.searchProductDescription' | transloco"
-  [closeAriaLabel]="'restaurantPos.service.closeProductSearch' | transloco"
-  size="lg"
+  [query]="productSearchQuery()"
+  [products]="filteredProducts()"
   (closed)="closeProductSearch()"
->
-  <div class="grid gap-4">
-    <app-search-input
-      [label]="'restaurantPos.service.searchProduct' | transloco"
-      [placeholder]="'restaurantPos.service.searchProductPlaceholder' | transloco"
-      [value]="productSearchQuery()"
-      [clearAriaLabel]="'restaurantPos.service.clearProductSearch' | transloco"
-      (valueChange)="updateProductSearch($event)"
-      (searched)="submitProductSearch($event)"
-    />
+  (queryChanged)="updateProductSearch($event)"
+  (searched)="submitProductSearch($event)"
+  (productSelected)="addProduct($event)"
+/>
 
-    <div class="grid max-h-[22rem] gap-2 overflow-y-auto pr-1">
-      @for (product of filteredProducts(); track product.id) {
-        <button
-          type="button"
-          class="theme-field flex min-h-16 items-center justify-between gap-4 rounded-md border px-3 py-2 text-left text-sm transition hover:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          (click)="addProduct(product.id)"
-        >
-          <span class="min-w-0">
-            <span class="theme-title block truncate font-semibold">{{ product.name }}</span>
-            <span class="theme-muted block text-xs">{{ product.category }} · {{ productAllergenLabel(product) }}</span>
-          </span>
-          <span class="shrink-0 font-semibold">{{ formatCurrency(product.price) }}</span>
-        </button>
-      } @empty {
-        <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'restaurantPos.service.noProductResults' | transloco }}</p>
-      }
-    </div>
-  </div>
-</app-dialog>
-
-<app-dialog
+<app-service-point-search-dialog
   [open]="servicePointSearchOpen()"
-  [title]="'restaurantPos.service.searchServicePoint' | transloco"
-  [description]="'restaurantPos.service.searchServicePointDescription' | transloco"
-  [closeAriaLabel]="'restaurantPos.service.closeServicePointSearch' | transloco"
-  size="lg"
+  [query]="servicePointSearchQuery()"
+  [servicePoints]="filteredServicePoints()"
   (closed)="closeServicePointSearch()"
->
-  <div class="grid gap-4">
-    <app-search-input
-      [label]="'restaurantPos.service.searchServicePoint' | transloco"
-      [placeholder]="'restaurantPos.service.searchServicePointPlaceholder' | transloco"
-      [value]="servicePointSearchQuery()"
-      [clearAriaLabel]="'restaurantPos.service.clearServicePointSearch' | transloco"
-      (valueChange)="updateServicePointSearch($event)"
-      (searched)="submitServicePointSearch($event)"
-    />
+  (queryChanged)="updateServicePointSearch($event)"
+  (searched)="submitServicePointSearch($event)"
+  (servicePointSelected)="selectServicePoint($event)"
+/>
 
-    <div class="grid max-h-[22rem] gap-2 overflow-y-auto pr-1">
-      @for (servicePoint of filteredServicePoints(); track servicePoint.element.id) {
-        <button
-          type="button"
-          class="theme-field flex min-h-16 items-center justify-between gap-4 rounded-md border px-3 py-2 text-left text-sm transition hover:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          (click)="selectServicePoint(servicePoint.element)"
-        >
-          <span class="min-w-0">
-            <span class="theme-title block truncate font-semibold">{{ servicePoint.element.label }}</span>
-            <span class="theme-muted block text-xs">
-              {{ servicePointTypeLabel(servicePoint.element) }} · {{ tableStatusLabel(servicePoint.table!.status) }} · {{ 'restaurantPos.common.pax' | transloco: { count: servicePoint.table!.capacity } }}
-            </span>
-          </span>
-          <span class="shrink-0 font-semibold">{{ formatCurrency(servicePoint.table!.total) }}</span>
-        </button>
-      } @empty {
-        <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'restaurantPos.service.noServicePointResults' | transloco }}</p>
-      }
-    </div>
-  </div>
-</app-dialog>
-
-<app-dialog
+<app-payment-gateway-dialog
   [open]="cardGatewayOpen()"
-  [title]="'restaurantPos.paymentGateway.title' | transloco"
-  [description]="'restaurantPos.paymentGateway.description' | transloco"
-  [closeAriaLabel]="'restaurantPos.paymentGateway.cancel' | transloco"
-  size="sm"
+  [total]="formatCurrency(store.selectedOrder()?.total ?? 0)"
+  [tableTitle]="selectedTableTitle()"
+  [statusLabel]="cardGatewayStatusLabel()"
+  [rejected]="cardGatewayStatus() === 'rejected'"
   (closed)="closeCardGateway()"
->
-  <div class="grid gap-4">
-    <div class="theme-soft-panel rounded-md border px-4 py-3">
-      <p class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.total' | transloco }}</p>
-      <p class="theme-title text-2xl font-semibold">{{ formatCurrency(store.selectedOrder()?.total ?? 0) }}</p>
-      <p class="theme-muted mt-1 text-sm">{{ selectedTableTitle() }}</p>
-    </div>
-
-    <p class="rounded-md border px-3 py-2 text-sm font-semibold" [ngClass]="cardGatewayStatus() === 'rejected' ? 'border-red-200 bg-red-50 text-red-900' : 'border-cyan-200 bg-cyan-50 text-cyan-900'">
-      {{ cardGatewayStatusLabel() }}
-    </p>
-
-    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-      <app-button variant="primary" size="sm" (pressed)="acceptCardPayment()">
-        {{ 'restaurantPos.paymentGateway.accept' | transloco }}
-      </app-button>
-      <app-button variant="danger" fill="outline" size="sm" (pressed)="rejectCardPayment()">
-        {{ 'restaurantPos.paymentGateway.error' | transloco }}
-      </app-button>
-      <app-button variant="neutral" fill="outline" size="sm" (pressed)="closeCardGateway()">
-        {{ 'restaurantPos.paymentGateway.cancel' | transloco }}
-      </app-button>
-    </div>
-  </div>
-</app-dialog>
+  (accepted)="acceptCardPayment()"
+  (rejectedPayment)="rejectCardPayment()"
+/>

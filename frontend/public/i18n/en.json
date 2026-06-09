@@ -164,7 +164,21 @@
       "markServed": "Served",
       "charge": "Charge",
       "cleaning": "Cleaning",
-      "freeTable": "Free table"
+      "freeTable": "Free table",
+      "kitchenActions": "Kitchen actions",
+      "paymentActions": "Payment actions",
+      "closingActions": "Table closing actions",
+      "sendKitchenActionLabel": "Send the selected table order to the kitchen",
+      "markServedActionLabel": "Mark the selected table order as served",
+      "chargeActionLabel": "Charge the selected table",
+      "setCashPaymentActionLabel": "Select cash payment for the selected table",
+      "setCardPaymentActionLabel": "Select card payment for the selected table",
+      "cleaningActionLabel": "Mark the selected table for cleaning",
+      "freeTableActionLabel": "Free the selected table",
+      "freeTableConfirmTitle": "Free table",
+      "freeTableConfirmDescription": "This action will clear the order and leave the table free.",
+      "confirmFreeTable": "Free table",
+      "cancelFreeTable": "Keep table"
     },
     "tableStatus": {
       "free": "Free",
