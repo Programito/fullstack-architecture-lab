@@ -1,16 +1,24 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
+import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 
 describe('RestaurantPosServicePage', () => {
-  const renderServicePage = async () => {
+  const renderServicePage = async (storage?: KeyValueStorage) => {
     const i18n = provideI18nTesting();
 
     return render(RestaurantPosServicePage, {
       imports: [...i18n.imports],
-      providers: [...i18n.providers],
+      providers: storage ? [...i18n.providers, { provide: KEY_VALUE_STORAGE, useValue: storage }] : [...i18n.providers],
     });
+  };
+
+  const addProductFromSearch = (fixture: { detectChanges: () => void }, productName: RegExp) => {
+    fireEvent.click(screen.getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: productName }));
+    fixture.detectChanges();
   };
 
   it('renders a compact service floor and empty selected-table panel', async () => {
@@ -19,7 +27,9 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByRole('heading', { name: 'Servicio de sala' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Plano de servicio' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Selecciona una mesa' })).toBeTruthy();
+    expect(screen.getByText('0/5')).toBeTruthy();
     expect(screen.getByText('Pagada')).toBeTruthy();
+    expect(screen.queryByText('Añadir rápido')).toBeNull();
     expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toBeTruthy();
     expect(screen.getByLabelText('M1 mesa, Libre')).toBeTruthy();
     expect(screen.queryByRole('toolbar', { name: 'Acciones del elemento del plano' })).toBeNull();
@@ -51,15 +61,90 @@ describe('RestaurantPosServicePage', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
-    fireEvent.click(screen.getByRole('button', { name: /Buscar producto/i }));
-    fireEvent.input(screen.getByRole('searchbox', { name: /Buscar producto/i }), { target: { value: 'lemon' } });
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fireEvent.input(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('searchbox', { name: /Buscar producto/i }), {
+      target: { value: 'lemon' },
+    });
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: /Sparkling Lemonade/i }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: /^Sparkling Lemonade/ }));
     fixture.detectChanges();
 
     expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ productName: 'Sparkling Lemonade' }));
     expect(screen.getByText('1 x Sparkling Lemonade')).toBeTruthy();
     expect(screen.getByRole('dialog', { name: /Buscar producto/i })).toBeTruthy();
+    expect(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByText('Añadido')).toBeTruthy();
+  });
+
+  it('filters the product search by favorites and lets favorites be updated from the dialog', async () => {
+    const { fixture } = await renderServicePage();
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
+    fixture.detectChanges();
+
+    expect(within(dialog).getByRole('button', { name: /^Craft Burger/ })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /^Sparkling Lemonade/ })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: /^Iberian Ham Croquettes/ })).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Quitar Craft Burger de favoritos' }));
+    fixture.detectChanges();
+
+    expect(within(dialog).queryByRole('button', { name: /^Craft Burger/ })).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Todos' }));
+    fixture.detectChanges();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir Iberian Ham Croquettes a favoritos' }));
+    fixture.detectChanges();
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
+    fixture.detectChanges();
+
+    expect(within(dialog).getByRole('button', { name: /^Iberian Ham Croquettes/ })).toBeTruthy();
+  });
+
+  it('loads and persists favorite products in local storage', async () => {
+    const storage = new MemoryKeyValueStorage();
+    storage.setItem('locale', 'es');
+    storage.setItem('restaurant-pos.favorite-products', JSON.stringify(['product-2']));
+    const { fixture } = await renderServicePage(storage);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
+    fixture.detectChanges();
+
+    expect(within(dialog).getByRole('button', { name: /^Iberian Ham Croquettes/ })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: /^Craft Burger/ })).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Todos' }));
+    fixture.detectChanges();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir Craft Burger a favoritos' }));
+    fixture.detectChanges();
+
+    expect(storage.getItem('restaurant-pos.favorite-products')).toBe(JSON.stringify(['product-2', 'product-1']));
+  });
+
+  it('filters the product search by service course from the category selector', async () => {
+    const { fixture } = await renderServicePage();
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Categoría' }), { target: { value: 'drinks' } });
+    fixture.detectChanges();
+
+    expect(within(dialog).getByRole('button', { name: /^Sparkling Lemonade/ })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /^Espresso/ })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: /^Craft Burger/ })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: /^Caesar Salad/ })).toBeNull();
   });
 
   it('adds products and advances the selected table through kitchen, served, and payment states', async () => {
@@ -67,23 +152,30 @@ describe('RestaurantPosServicePage', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
-    fireEvent.click(screen.getByRole('button', { name: /Craft Burger/i }));
+    addProductFromSearch(fixture, /^Craft Burger/);
 
     expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
-    expect(screen.getByText('Principal · Pendiente')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Craft Burger' }));
+    fixture.detectChanges();
+    expect(screen.getByText('2 x Craft Burger')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
+    fixture.detectChanges();
+    expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Principal' })).toBeTruthy();
+    expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
     expect(store.selectedTable()?.status).toBe('occupied');
 
     fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
     fixture.detectChanges();
 
     expect(store.selectedTable()?.status).toBe('waiting_kitchen');
-    expect(screen.getByText('Principal · En cocina')).toBeTruthy();
+    expect(screen.getAllByText('En cocina').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /Servido/i }));
     fixture.detectChanges();
 
     expect(store.selectedTable()?.status).toBe('served');
-    expect(screen.getByText('Principal · Servido')).toBeTruthy();
+    expect(screen.getAllByText('Servido').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /Efectivo/i }));
     fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
@@ -99,7 +191,7 @@ describe('RestaurantPosServicePage', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
-    fireEvent.click(screen.getByRole('button', { name: /Craft Burger/i }));
+    addProductFromSearch(fixture, /^Craft Burger/);
     fireEvent.click(screen.getByRole('button', { name: /Tarjeta/i }));
     fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
     fixture.detectChanges();
@@ -157,7 +249,7 @@ describe('RestaurantPosServicePage', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
-    fireEvent.click(screen.getByRole('button', { name: /Craft Burger/i }));
+    addProductFromSearch(fixture, /^Craft Burger/);
     fireEvent.click(screen.getByRole('button', { name: /Limpieza/i }));
     fixture.detectChanges();
 

@@ -39,6 +39,63 @@ describe('RestaurantPosStore', () => {
     expect(store.errorMessage()).toBeNull();
   });
 
+  it('derives service info for a selected table even when its order is missing', () => {
+    store.selectTable('table-1');
+    (store as unknown as { _ordersByTable: { set: (orders: Record<string, never>) => void } })._ordersByTable.set({});
+
+    expect(store.selectedServiceInfo()).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1' }),
+        order: expect.objectContaining({ tableId: 'table-1', lines: [], total: 0, status: 'open' }),
+        servicePhase: { course: null, status: 'no_order' },
+        nextAction: { type: 'none', count: 0 },
+      }),
+    );
+  });
+
+  it('derives selected service info and service points from private state', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-3');
+    store.addProductToSelectedTable('product-1');
+
+    const serviceInfo = store.selectedServiceInfo();
+
+    expect(serviceInfo).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1', status: 'occupied', total: 17 }),
+        order: expect.objectContaining({ tableId: 'table-1', total: 17 }),
+        pendingKitchenCount: 2,
+        servicePhase: { course: 'drinks', status: 'pending' },
+        nextAction: { type: 'send_kitchen', count: 2 },
+        canSendToKitchen: true,
+        canMarkServed: true,
+        canCharge: true,
+        canMarkCleaning: true,
+        canFreeTable: false,
+      }),
+    );
+    expect(serviceInfo?.courseGroups).toEqual([
+      expect.objectContaining({ course: 'drinks', quantity: 1, total: 4.5 }),
+      expect.objectContaining({ course: 'main', quantity: 1, total: 12.5 }),
+    ]);
+    expect(store.servicePoints().find((servicePoint) => servicePoint.table.id === 'table-1')).toEqual(
+      expect.objectContaining({
+        element: expect.objectContaining({ tableId: 'table-1' }),
+        table: expect.objectContaining({ id: 'table-1' }),
+      }),
+    );
+  });
+
+  it('counts occupied service points from the visible floor plan only', () => {
+    expect(store.servicePoints().length).toBe(5);
+    expect(store.occupiedTables()).toBe(0);
+
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+
+    expect(store.occupiedTables()).toBe(1);
+  });
+
   it('sets the full grid size when the value is valid', () => {
     store.setGridSize(9, 10);
 
@@ -110,6 +167,24 @@ describe('RestaurantPosStore', () => {
     expect(line.quantity).toBe(2);
     expect(line.subtotal).toBe(25);
     expect(store.ordersByTable()['table-1'].total).toBe(25);
+  });
+
+  it('decreases quantity and removes the line when it reaches zero', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-1');
+
+    store.decreaseSelectedOrderLine('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ quantity: 1, subtotal: 12.5 }));
+    expect(store.ordersByTable()['table-1'].total).toBe(12.5);
+    expect(store.restaurantTables().find((table) => table.id === 'table-1')?.total).toBe(12.5);
+
+    store.decreaseSelectedOrderLine('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines).toEqual([]);
+    expect(store.ordersByTable()['table-1'].total).toBe(0);
+    expect(store.restaurantTables().find((table) => table.id === 'table-1')?.total).toBe(0);
   });
 
   it('sets an error when adding a product without a selected table', () => {

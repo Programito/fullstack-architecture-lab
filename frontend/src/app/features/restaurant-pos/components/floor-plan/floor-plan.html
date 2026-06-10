@@ -134,6 +134,11 @@
           <span class="text-[0.55rem] font-medium">{{ tableCapacity(element) }}</span>
         } @else {
           @let table = tableForElement(element);
+          @if (isSelected(element)) {
+            <span class="rounded-full border border-cyan-200 bg-cyan-50 px-1.5 py-0.5 text-[0.5rem] font-semibold text-cyan-900 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100">
+              {{ 'restaurantPos.floorPlan.selectedServicePoint' | transloco }}
+            </span>
+          }
           <span class="inline-flex max-w-full items-center gap-1 text-[0.55rem] font-semibold">
             <span class="h-1.5 w-1.5 rounded-full" [ngClass]="tableStatusDotClass(table?.status ?? 'free')"></span>
             <span class="truncate">{{ tableStatusLabel(table?.status ?? 'free') }}</span>
@@ -153,6 +158,11 @@
     </div>
   } @else if (element.type === 'stool') {
     <div cdkDragHandle class="grid h-full min-h-8 w-full cursor-grab place-items-center active:cursor-grabbing" [attr.aria-label]="zoneObjectLabel(element)">
+      @if (!layoutMode() && isSelected(element)) {
+        <span class="absolute -top-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-cyan-200 bg-cyan-50 px-1.5 py-0.5 text-[0.5rem] font-semibold text-cyan-900 shadow-sm dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100">
+          {{ 'restaurantPos.floorPlan.selectedServicePoint' | transloco }}
+        </span>
+      }
       <div class="grid h-6 w-6 place-items-center rounded-full border shadow-sm" [ngClass]="zoneClass(element)">
         <span class="text-[0.5rem] font-semibold">{{ displayCompactLabel(element) }}</span>
       </div>

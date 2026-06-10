@@ -660,6 +660,7 @@ describe('FloorPlan', () => {
     expect(store.selectedTableId()).toBe('stool-1');
     expect(screen.getByLabelText('Stool 1 table, Free').className).toContain('floor-plan-theme-element-selected');
     expect(within(screen.getByLabelText('Stool 1 table, Free')).getByText('T1')).toBeTruthy();
+    expect(within(screen.getByLabelText('Stool 1 table, Free')).getByText('Selected')).toBeTruthy();
   });
 
   it('scrolls and focuses a requested service point in service mode', async () => {

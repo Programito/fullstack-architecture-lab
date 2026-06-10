@@ -3,6 +3,7 @@ import type {
   AddFloorElementInput,
   EditableFloorElementType,
   FloorElement,
+  OrderCourseGroup,
   OrderCourse,
   OrderLine,
   OrdersByTable,
@@ -10,6 +11,8 @@ import type {
   Product,
   PosMode,
   RestaurantTable,
+  ServiceTableInfo,
+  ServicePoint,
   TableOrder,
   TableStatus,
   TableShape,
@@ -32,6 +35,7 @@ const DEFAULT_ELEMENT_LABELS: Record<EditableFloorElementType, string> = {
   bar: 'Bar',
   kitchen: 'Kitchen',
 };
+const COURSE_SERVICE_ORDER: OrderCourse[] = ['drinks', 'starter', 'main', 'dessert', 'other'];
 
 @Injectable({
   providedIn: 'root',
@@ -64,7 +68,31 @@ export class RestaurantPosStore {
     const selectedTableId = this._selectedTableId();
     return selectedTableId ? (this._ordersByTable()[selectedTableId] ?? null) : null;
   });
-  readonly occupiedTables = computed(() => this._restaurantTables().filter((table) => table.status !== 'free').length);
+  readonly servicePoints = computed<ServicePoint[]>(() =>
+    this._floorElements()
+      .filter((element) => !!element.tableId && (element.type === 'table' || element.type === 'stool'))
+      .map((element) => {
+        const table = this._restaurantTables().find((restaurantTable) => restaurantTable.id === element.tableId);
+        return table ? { element, table } : null;
+      })
+      .filter((servicePoint): servicePoint is ServicePoint => servicePoint !== null),
+  );
+  readonly selectedServicePoint = computed(() => {
+    const selectedTableId = this._selectedTableId();
+    return selectedTableId ? (this.servicePoints().find((servicePoint) => servicePoint.table.id === selectedTableId) ?? null) : null;
+  });
+  readonly selectedServiceInfo = computed<ServiceTableInfo | null>(() => {
+    const table = this.selectedTable();
+
+    if (!table) {
+      return null;
+    }
+
+    const order = this.selectedOrder() ?? this.createEmptyOrder(table.id);
+
+    return this.createServiceTableInfo(table, order);
+  });
+  readonly occupiedTables = computed(() => this.servicePoints().filter((servicePoint) => this.isOccupiedServicePoint(servicePoint.table.status)).length);
   readonly activeOrders = computed(
     () => Object.values(this._ordersByTable()).filter((order) => order.lines.length > 0 && order.status !== 'paid').length,
   );
@@ -127,6 +155,48 @@ export class RestaurantPosStore {
       serviceStartedAt: table?.serviceStartedAt ?? now,
       cleaningStartedAt: undefined,
     });
+    this.clearError();
+  }
+
+  increaseSelectedOrderLine(productId: string): void {
+    this.addProductToSelectedTable(productId);
+  }
+
+  decreaseSelectedOrderLine(productId: string): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      this.setError(SELECT_TABLE_ERROR);
+      return;
+    }
+
+    const order = this.ensureOrder(tableId);
+    const existingLine = order.lines.find((line) => line.productId === productId);
+
+    if (!existingLine) {
+      return;
+    }
+
+    const nextLines =
+      existingLine.quantity <= 1
+        ? order.lines.filter((line) => line.productId !== productId)
+        : order.lines.map((line) =>
+            line.productId === productId
+              ? {
+                  ...line,
+                  quantity: line.quantity - 1,
+                  subtotal: this.roundCurrency((line.quantity - 1) * line.unitPrice),
+                }
+              : line,
+          );
+    const total = this.calculateOrderTotal(nextLines);
+
+    this.setOrder(tableId, {
+      ...order,
+      lines: nextLines,
+      total,
+    });
+    this.updateTable(tableId, { total });
     this.clearError();
   }
 
@@ -494,6 +564,91 @@ export class RestaurantPosStore {
     this.clearError();
   }
 
+  private createServiceTableInfo(table: RestaurantTable, order: TableOrder): ServiceTableInfo {
+    const pendingKitchenCount = this.getPendingKitchenCount(order.lines);
+    const canSendToKitchen = pendingKitchenCount > 0;
+    const canMarkServed = order.lines.some((line) => line.status !== 'served');
+    const canCharge = order.total > 0 && table.status !== 'paid' && table.status !== 'cleaning';
+    const canMarkCleaning = table.status === 'occupied' || table.status === 'served' || table.status === 'payment_pending' || table.status === 'paid';
+    const canFreeTable = table.status === 'paid' || table.status === 'cleaning';
+
+    return {
+      table,
+      order,
+      courseGroups: this.groupOrderCourses(order.lines),
+      pendingKitchenCount,
+      servicePhase: this.getServicePhase(order.lines),
+      nextAction: this.getNextServiceAction({ canSendToKitchen, canMarkServed, canCharge, canMarkCleaning, canFreeTable, pendingKitchenCount }),
+      canSendToKitchen,
+      canMarkServed,
+      canCharge,
+      canMarkCleaning,
+      canFreeTable,
+    };
+  }
+
+  private groupOrderCourses(lines: OrderLine[]): OrderCourseGroup[] {
+    return COURSE_SERVICE_ORDER.map((course) => {
+      const courseLines = lines.filter((line) => line.course === course);
+
+      return {
+        course,
+        lines: courseLines,
+        quantity: courseLines.reduce((sum, line) => sum + line.quantity, 0),
+        total: this.roundCurrency(courseLines.reduce((sum, line) => sum + line.subtotal, 0)),
+      };
+    }).filter((group) => group.lines.length > 0);
+  }
+
+  private getPendingKitchenCount(lines: OrderLine[]): number {
+    return lines.filter((line) => line.status === 'pending').reduce((sum, line) => sum + line.quantity, 0);
+  }
+
+  private getServicePhase(lines: OrderLine[]): ServiceTableInfo['servicePhase'] {
+    if (lines.length === 0) {
+      return { course: null, status: 'no_order' };
+    }
+
+    const pendingLine = COURSE_SERVICE_ORDER.map((course) => lines.find((line) => line.course === course && line.status !== 'served')).find(Boolean);
+
+    if (pendingLine) {
+      return { course: pendingLine.course, status: 'pending' };
+    }
+
+    return { course: null, status: 'ready_to_charge' };
+  }
+
+  private getNextServiceAction(input: {
+    canSendToKitchen: boolean;
+    canMarkServed: boolean;
+    canCharge: boolean;
+    canMarkCleaning: boolean;
+    canFreeTable: boolean;
+    pendingKitchenCount: number;
+  }): ServiceTableInfo['nextAction'] {
+    if (input.canSendToKitchen && input.pendingKitchenCount > 0) {
+      return { type: 'send_kitchen', count: input.pendingKitchenCount };
+    }
+
+    if (input.canMarkServed) {
+      return { type: 'mark_served', count: 0 };
+    }
+
+    if (input.canCharge) {
+      return { type: 'charge', count: 0 };
+    }
+
+    if (input.canMarkCleaning) {
+      return { type: 'cleaning', count: 0 };
+    }
+
+    if (input.canFreeTable) {
+      return { type: 'free_table', count: 0 };
+    }
+
+    return { type: 'none', count: 0 };
+  }
+
   private updateLinesForStatus(lines: OrderLine[], orderStatus: TableOrder['status']): OrderLine[] {
     if (orderStatus === 'sent_to_kitchen') {
       const now = this.nowIso();
@@ -555,15 +710,17 @@ export class RestaurantPosStore {
   }
 
   private ensureOrder(tableId: string): TableOrder {
-    return (
-      this._ordersByTable()[tableId] ?? {
-        tableId,
-        lines: [],
-        total: 0,
-        status: 'open',
-        paymentMethod: 'pending',
-      }
-    );
+    return this._ordersByTable()[tableId] ?? this.createEmptyOrder(tableId);
+  }
+
+  private createEmptyOrder(tableId: string): TableOrder {
+    return {
+      tableId,
+      lines: [],
+      total: 0,
+      status: 'open',
+      paymentMethod: 'pending',
+    };
   }
 
   private updateTable(tableId: string, patch: Partial<RestaurantTable>): void {
@@ -681,6 +838,10 @@ export class RestaurantPosStore {
 
   private normalizeLabel(label: string | undefined): string {
     return label?.trim() ?? '';
+  }
+
+  private isOccupiedServicePoint(status: TableStatus): boolean {
+    return status !== 'free' && status !== 'reserved';
   }
 
   private setError(message: string): void {

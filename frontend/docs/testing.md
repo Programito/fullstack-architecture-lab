@@ -56,6 +56,37 @@ flowchart TB
 - Reserva tests unitarios estrechos para funciones puras, reducers, formatters y lógica con bordes claros.
 - Usa Playwright para flujos críticos que dependan de rutas, navegador o páginas reales.
 
+## UI De Feature
+
+Para cambios de UI dentro de una feature, empieza con el test más cercano al comportamiento y amplía
+solo cuando el estado real viva fuera del componente.
+
+Patrón recomendado:
+
+- Component spec para comprobar render accesible, labels, roles, eventos emitidos y estados ARIA.
+- Page spec cuando el componente recibe datos ya filtrados o cuando la page coordina signals, store,
+  búsqueda, favoritos, categorías o selección.
+- Store spec cuando cambia una regla de negocio o un cálculo compartido.
+- Build final cuando cambien templates, imports standalone, clases Tailwind nuevas o barrels de
+  modelos.
+
+Ejemplo: un diálogo de búsqueda puede tener un spec que valide `radio`, `combobox`, `aria-pressed`,
+estrella favorita y eventos emitidos. La page debe cubrir que favoritos, búsqueda y categoría filtran
+los productos reales.
+
+## Decisiones UX En Tests
+
+No pruebes todas las clases visuales. Sí conviene proteger clases cuando representan una decisión UX
+concreta y fácil de romper:
+
+- `focus-visible` para evitar anillos de foco después de clicks de ratón.
+- Alturas fijas o scroll interno cuando un modal debe mantener tamaño estable.
+- Estados ARIA como `aria-pressed`, `aria-expanded`, `aria-selected` y `aria-checked`.
+- Labels accesibles de botones icon-only, buscadores, selects y controles segmentados.
+
+Si el test solo repite Tailwind sin explicar comportamiento, prefiere buscar una señal más cercana a
+la persona usuaria: rol, nombre accesible, texto visible, estado ARIA o evento emitido.
+
 ## Comandos
 
 Ejecuta desde `frontend/`:

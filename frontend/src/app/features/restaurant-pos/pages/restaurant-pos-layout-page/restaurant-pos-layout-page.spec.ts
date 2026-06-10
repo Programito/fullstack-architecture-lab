@@ -180,7 +180,7 @@ describe('RestaurantPosLayoutPage', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Añadir elemento' });
     expect(within(dialog).getByLabelText('Vista previa del elemento seleccionado')).toBeTruthy();
-    expect(within(dialog).getByText('M5')).toBeTruthy();
+    expect(within(dialog).getByText('M8')).toBeTruthy();
     expect(within(dialog).getByText('2 pax')).toBeTruthy();
     expect(within(dialog).getByText('Tamaño: 2 x 2')).toBeTruthy();
     expect(within(dialog).getByText('Posición: sin seleccionar')).toBeTruthy();
@@ -235,7 +235,7 @@ describe('RestaurantPosLayoutPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
 
-    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'M5');
+    expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'M8');
 
     fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'bar-vertical' } });
     expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'Barra vertical');
@@ -282,13 +282,13 @@ describe('RestaurantPosLayoutPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir M5' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
 
     expect(store.floorElements().length).toBe(initialElementCount + 1);
     expect(store.restaurantTables().length).toBe(initialTableCount + 1);
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
-        label: 'M5',
+        label: 'M8',
         x: 8,
         y: 8,
         width: 2,
@@ -305,7 +305,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '3' } });
     fireEvent.input(screen.getByLabelText('Alto'), { target: { value: '1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 5 fila 10' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir M5' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -317,7 +317,7 @@ describe('RestaurantPosLayoutPage', () => {
     );
   });
 
-  it('adds a stool as an independent floor element', async () => {
+  it('adds a stool as a one-person service point', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const initialTableCount = store.restaurantTables().length;
@@ -336,7 +336,8 @@ describe('RestaurantPosLayoutPage', () => {
         height: 1,
       }),
     );
-    expect(store.restaurantTables().length).toBe(initialTableCount);
+    expect(store.restaurantTables().length).toBe(initialTableCount + 1);
+    expect(store.restaurantTables().at(-1)).toEqual(expect.objectContaining({ capacity: 1, status: 'free', total: 0 }));
   });
 
   it('adds a vertical bar as a bar floor element without changing the model type', async () => {
@@ -409,7 +410,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
     fireEvent.input(screen.getByLabelText('Alto'), { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir M5' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -444,7 +445,7 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 1 fila 1' }));
 
     expect(screen.getByText('La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Añadir M5' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Añadir M8' })).toHaveProperty('disabled', true);
   });
 
   it('marks cells where the selected element cannot be placed as unavailable', async () => {
@@ -469,6 +470,6 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
 
     expect(screen.getByText('Columnas 19-20, filas 19-20')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Añadir M5' })).toHaveProperty('disabled', false);
+    expect(screen.getByRole('button', { name: 'Añadir M8' })).toHaveProperty('disabled', false);
   });
 });
