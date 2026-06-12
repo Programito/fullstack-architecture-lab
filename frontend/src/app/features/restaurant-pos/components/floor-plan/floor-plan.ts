@@ -44,6 +44,7 @@ export class FloorPlan implements OnDestroy {
   readonly editElement = output<FloorElement>();
   readonly resizeElement = output<FloorElement>();
   readonly selectedElementChange = output<FloorElement | null>();
+  readonly servicePointSelected = output<FloorElement>();
 
   protected readonly floorCanvas = viewChild<ElementRef<HTMLElement>>('floorCanvas');
   protected readonly store = inject(RestaurantPosStore);
@@ -122,6 +123,7 @@ export class FloorPlan implements OnDestroy {
     }
 
     if (element.tableId) {
+      this.servicePointSelected.emit(element);
       this.store.selectTable(element.tableId);
     }
   }
@@ -647,8 +649,8 @@ export class FloorPlan implements OnDestroy {
         return;
       }
 
-      element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
-      element.focus({ preventScroll: true });
+      element.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
+      element.focus?.({ preventScroll: true });
     });
   }
 

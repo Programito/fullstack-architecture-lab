@@ -1,11 +1,8 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
-import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { KEY_VALUE_STORAGE } from '../../../../shared/utils/storage/key-value-storage';
 import { FloorPlan, type FloorPlanFocusRequest } from '../../components/floor-plan/floor-plan';
@@ -18,24 +15,25 @@ import type { FloorElement, OrderCourse, PaymentMethod, Product, RestaurantTable
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 const PRODUCT_CATEGORY_FILTER_ORDER = ['starter', 'main', 'dessert', 'drinks', 'other'] as const satisfies readonly OrderCourse[];
+const SERVICE_POINT_STATUS_FILTER_ORDER = ['free', 'occupied', 'waiting_kitchen', 'served', 'payment_pending', 'paid', 'cleaning', 'reserved'] as const satisfies readonly TableStatus[];
 const FAVORITE_PRODUCTS_STORAGE_KEY = 'restaurant-pos.favorite-products';
 const DEFAULT_FAVORITE_PRODUCT_IDS = ['product-1', 'product-3'] as const;
 type ProductCategoryFilter = (typeof PRODUCT_CATEGORY_FILTER_ORDER)[number] | 'all';
+type ServicePointStatusFilter = (typeof SERVICE_POINT_STATUS_FILTER_ORDER)[number] | 'all';
 
 const isProductCategoryFilter = (value: string): value is ProductCategoryFilter =>
   value === 'all' || PRODUCT_CATEGORY_FILTER_ORDER.includes(value as (typeof PRODUCT_CATEGORY_FILTER_ORDER)[number]);
+const isServicePointStatusFilter = (value: string): value is ServicePointStatusFilter =>
+  value === 'all' || SERVICE_POINT_STATUS_FILTER_ORDER.includes(value as (typeof SERVICE_POINT_STATUS_FILTER_ORDER)[number]);
 
 @Component({
   selector: 'app-restaurant-pos-service-page',
   imports: [
     Button,
-    ColorModeMenu,
     FloorPlan,
     Icon,
-    LanguageSelect,
     PaymentGatewayDialog,
     ProductSearchDialog,
-    RouterLink,
     ServicePointSearchDialog,
     ServiceSummary,
     ServiceTablePanel,
@@ -56,6 +54,8 @@ export class RestaurantPosServicePage {
   protected readonly lastAddedProductId = signal<string | null>(null);
   protected readonly servicePointSearchOpen = signal(false);
   protected readonly servicePointSearchQuery = signal('');
+  protected readonly servicePointStatusFilter = signal<ServicePointStatusFilter>('all');
+  protected readonly lastSelectedTableId = signal<string | null>(null);
   protected readonly floorFocusRequest = signal<FloorPlanFocusRequest | null>(null);
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
@@ -83,15 +83,41 @@ export class RestaurantPosServicePage {
       value: category,
     })),
   ]);
+  protected readonly productQuantities = computed<Record<string, number>>(() =>
+    (this.store.selectedOrder()?.lines ?? []).reduce<Record<string, number>>((quantities, line) => {
+      quantities[line.productId] = line.quantity;
+      return quantities;
+    }, {}),
+  );
   protected readonly filteredServicePoints = computed(() => {
     const query = this.normalizeSearch(this.servicePointSearchQuery());
-    const servicePoints = this.store.servicePoints();
+    const statusFilter = this.servicePointStatusFilter();
+    const servicePoints = this.store.servicePoints().filter((servicePoint) => statusFilter === 'all' || servicePoint.table.status === statusFilter);
 
     if (!query) {
       return servicePoints;
     }
 
     return servicePoints.filter((servicePoint) => this.servicePointSearchText(servicePoint.element, servicePoint.table).includes(query));
+  });
+  protected readonly servicePointStatusOptions = computed<SelectOption[]>(() => [
+    { label: this.translate('restaurantPos.service.allServicePointStatuses'), value: 'all' },
+    ...SERVICE_POINT_STATUS_FILTER_ORDER.map((status) => ({
+      label: this.tableStatusLabel(status),
+      value: status,
+    })),
+  ]);
+  protected readonly lastSelectedServicePoint = computed(() => {
+    const lastSelectedTableId = this.lastSelectedTableId();
+    return lastSelectedTableId ? (this.store.servicePoints().find((servicePoint) => servicePoint.table.id === lastSelectedTableId) ?? null) : null;
+  });
+  protected readonly returnToLastServicePointLabel = computed(() => {
+    const lastSelectedServicePoint = this.lastSelectedServicePoint();
+    return lastSelectedServicePoint
+      ? this.translate('restaurantPos.service.returnToLastServicePoint', {
+          label: this.servicePointDisplayLabel(lastSelectedServicePoint.element),
+        })
+      : '';
   });
   protected readonly selectedTableTitle = computed(() => {
     const table = this.store.selectedTable();
@@ -134,6 +160,7 @@ export class RestaurantPosServicePage {
   protected closeServicePointSearch(): void {
     this.servicePointSearchOpen.set(false);
     this.servicePointSearchQuery.set('');
+    this.servicePointStatusFilter.set('all');
   }
 
   protected updateServicePointSearch(query: string): void {
@@ -148,14 +175,35 @@ export class RestaurantPosServicePage {
     }
   }
 
+  protected setServicePointStatusFilter(status: string): void {
+    if (isServicePointStatusFilter(status)) {
+      this.servicePointStatusFilter.set(status);
+    }
+  }
+
   protected selectServicePoint(element: FloorElement): void {
     if (!element.tableId) {
       return;
     }
 
+    this.rememberCurrentServicePoint(element.tableId);
     this.store.selectTable(element.tableId);
     this.floorFocusRequest.set({ elementId: element.id, requestId: Date.now() });
     this.closeServicePointSearch();
+  }
+
+  protected selectServicePointFromFloor(element: FloorElement): void {
+    if (element.tableId) {
+      this.rememberCurrentServicePoint(element.tableId);
+    }
+  }
+
+  protected returnToLastServicePoint(): void {
+    const lastSelectedServicePoint = this.lastSelectedServicePoint();
+
+    if (lastSelectedServicePoint) {
+      this.selectServicePoint(lastSelectedServicePoint.element);
+    }
   }
 
   protected updateProductSearch(query: string): void {
@@ -210,6 +258,22 @@ export class RestaurantPosServicePage {
 
   protected decreaseProductQuantity(productId: string): void {
     this.store.decreaseSelectedOrderLine(productId);
+  }
+
+  protected markProductReady(productId: string): void {
+    this.store.markSelectedOrderLineReady(productId);
+  }
+
+  protected markProductServed(productId: string): void {
+    this.store.markSelectedOrderLineServed(productId);
+  }
+
+  protected removeProduct(productId: string): void {
+    this.store.removeSelectedOrderLine(productId);
+  }
+
+  protected updateProductNote(change: { productId: string; note: string }): void {
+    this.store.updateSelectedOrderLineNote(change.productId, change.note);
   }
 
   protected chargeTable(): void {
@@ -288,6 +352,17 @@ export class RestaurantPosServicePage {
   private compactServicePointLabel(element: FloorElement): string {
     const match = element.label.match(/^(?:Stool|Taburete|Tamboret)\s*(?<number>\d+)?$/i);
     return match?.groups?.['number'] ? `T${match.groups['number']}` : element.label;
+  }
+
+  private servicePointDisplayLabel(element: FloorElement): string {
+    return element.type === 'stool' ? this.compactServicePointLabel(element) : element.label;
+  }
+
+  private rememberCurrentServicePoint(nextTableId: string): void {
+    const selectedTableId = this.store.selectedTableId();
+    if (selectedTableId && selectedTableId !== nextTableId) {
+      this.lastSelectedTableId.set(selectedTableId);
+    }
   }
 
   private productSearchText(product: Product): string {

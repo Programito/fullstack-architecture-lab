@@ -2,6 +2,7 @@ import { Component, computed, inject, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
+import { Icon } from '../../../../shared/ui/icon/icon';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
@@ -11,7 +12,7 @@ export type ProductSearchView = 'all' | 'favorites';
 
 @Component({
   selector: 'app-product-search-dialog',
-  imports: [Dialog, SearchInput, Select, SegmentedControl, TranslocoPipe],
+  imports: [Dialog, Icon, SearchInput, Select, SegmentedControl, TranslocoPipe],
   templateUrl: './product-search-dialog.html',
 })
 export class ProductSearchDialog {
@@ -23,14 +24,17 @@ export class ProductSearchDialog {
   readonly productCategoryOptions = input<SelectOption[]>([]);
   readonly favoriteProductIds = input<readonly string[]>([]);
   readonly lastAddedProductId = input<string | null>(null);
+  readonly productQuantities = input<Record<string, number>>({});
 
   readonly closed = output<void>();
+  readonly finished = output<void>();
   readonly queryChanged = output<string>();
   readonly searched = output<string>();
   readonly productViewChanged = output<ProductSearchView>();
   readonly productCategoryFilterChanged = output<string>();
   readonly favoriteToggled = output<string>();
-  readonly productSelected = output<string>();
+  readonly productIncremented = output<string>();
+  readonly productDecremented = output<string>();
 
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
@@ -53,6 +57,22 @@ export class ProductSearchDialog {
 
   protected wasRecentlyAdded(productId: string): boolean {
     return this.lastAddedProductId() === productId;
+  }
+
+  protected productQuantity(productId: string): number {
+    return this.productQuantities()[productId] ?? 0;
+  }
+
+  protected productRowClass(productId: string): string {
+    const selectedClass =
+      this.productQuantity(productId) > 0 || this.wasRecentlyAdded(productId)
+        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20'
+        : '';
+
+    return [
+      'theme-field grid min-h-16 grid-cols-[minmax(0,1fr)_auto_2.5rem] items-stretch gap-2 rounded-md border p-1 text-sm transition',
+      selectedClass,
+    ].join(' ');
   }
 
   protected favoriteAriaLabel(product: Product): string {

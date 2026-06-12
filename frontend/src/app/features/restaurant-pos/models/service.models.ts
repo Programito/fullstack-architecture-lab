@@ -1,5 +1,5 @@
 import type { FloorElement } from './floor-plan.models';
-import type { OrderCourse, TableOrder } from './order.models';
+import type { OrderCourse, OrderLine, OrderLineStatus, TableOrder } from './order.models';
 import type { RestaurantTable } from './table.models';
 
 export type NextServiceAction = 'send_kitchen' | 'mark_served' | 'charge' | 'cleaning' | 'free_table' | 'none';
@@ -34,6 +34,19 @@ export interface ServiceTableInfo {
 export interface ServicePoint {
   element: FloorElement;
   table: RestaurantTable;
+}
+
+export interface KitchenOrderTicket {
+  table: RestaurantTable;
+  servicePoint: FloorElement | null;
+  lines: OrderLine[];
+}
+
+export type KitchenBoardStatus = Extract<OrderLineStatus, 'sent_to_kitchen' | 'preparing' | 'ready'>;
+
+export interface KitchenBoardColumn {
+  status: KitchenBoardStatus;
+  tickets: KitchenOrderTicket[];
 }
 
 export type PosMode = 'operation' | 'edit_layout';

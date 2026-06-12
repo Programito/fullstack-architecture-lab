@@ -3,6 +3,10 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: 'restaurant-pos',
+    loadComponent: () =>
+      import('./features/restaurant-pos/pages/restaurant-pos-shell-page/restaurant-pos-shell-page').then(
+        (module) => module.RestaurantPosShellPage,
+      ),
     children: [
       {
         path: 'layout',
@@ -16,6 +20,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page').then(
             (module) => module.RestaurantPosServicePage,
+          ),
+      },
+      {
+        path: 'kitchen',
+        loadComponent: () =>
+          import('./features/restaurant-pos/pages/restaurant-pos-kitchen-page/restaurant-pos-kitchen-page').then(
+            (module) => module.RestaurantPosKitchenPage,
           ),
       },
       {

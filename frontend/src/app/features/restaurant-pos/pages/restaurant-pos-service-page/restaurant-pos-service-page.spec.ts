@@ -17,7 +17,11 @@ describe('RestaurantPosServicePage', () => {
   const addProductFromSearch = (fixture: { detectChanges: () => void }, productName: RegExp) => {
     fireEvent.click(screen.getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: productName }));
+    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    const product = within(dialog).getByText(productName).textContent ?? '';
+    fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(`Añadir una unidad de ${product}`) }));
+    fixture.detectChanges();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Finalizar' }));
     fixture.detectChanges();
   };
 
@@ -66,13 +70,47 @@ describe('RestaurantPosServicePage', () => {
       target: { value: 'lemon' },
     });
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: /^Sparkling Lemonade/ }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: 'Añadir una unidad de Sparkling Lemonade' }));
     fixture.detectChanges();
 
     expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ productName: 'Sparkling Lemonade' }));
     expect(screen.getByText('1 x Sparkling Lemonade')).toBeTruthy();
     expect(screen.getByRole('dialog', { name: /Buscar producto/i })).toBeTruthy();
     expect(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByText('Añadido')).toBeTruthy();
+    expect(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByLabelText('Cantidad de Sparkling Lemonade: 1')).toBeTruthy();
+  });
+
+  it('updates product quantities live from the search modal and closes it with finish', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir una unidad de Craft Burger' }));
+    fixture.detectChanges();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir una unidad de Craft Burger' }));
+    fixture.detectChanges();
+
+    expect(store.selectedOrder()?.lines.find((line) => line.productName === 'Craft Burger')).toEqual(expect.objectContaining({ quantity: 2 }));
+    expect(screen.getByText('2 x Craft Burger')).toBeTruthy();
+    expect(within(dialog).getByLabelText('Cantidad de Craft Burger: 2')).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
+    fixture.detectChanges();
+    expect(store.selectedOrder()?.lines.find((line) => line.productName === 'Craft Burger')).toEqual(expect.objectContaining({ quantity: 1 }));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
+    fixture.detectChanges();
+    expect(store.selectedOrder()?.lines.find((line) => line.productName === 'Craft Burger')).toBeUndefined();
+    expect(within(dialog).getByRole('button', { name: 'Quitar una unidad de Craft Burger' }).hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Finalizar' }));
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('dialog', { name: /Buscar producto/i })).toBeNull();
   });
 
   it('filters the product search by favorites and lets favorites be updated from the dialog', async () => {
@@ -86,14 +124,14 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
     fixture.detectChanges();
 
-    expect(within(dialog).getByRole('button', { name: /^Craft Burger/ })).toBeTruthy();
-    expect(within(dialog).getByRole('button', { name: /^Sparkling Lemonade/ })).toBeTruthy();
-    expect(within(dialog).queryByRole('button', { name: /^Iberian Ham Croquettes/ })).toBeNull();
+    expect(within(dialog).getByText('Craft Burger')).toBeTruthy();
+    expect(within(dialog).getByText('Sparkling Lemonade')).toBeTruthy();
+    expect(within(dialog).queryByText('Iberian Ham Croquettes')).toBeNull();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Quitar Craft Burger de favoritos' }));
     fixture.detectChanges();
 
-    expect(within(dialog).queryByRole('button', { name: /^Craft Burger/ })).toBeNull();
+    expect(within(dialog).queryByText('Craft Burger')).toBeNull();
 
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Todos' }));
     fixture.detectChanges();
@@ -102,7 +140,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
     fixture.detectChanges();
 
-    expect(within(dialog).getByRole('button', { name: /^Iberian Ham Croquettes/ })).toBeTruthy();
+    expect(within(dialog).getByText('Iberian Ham Croquettes')).toBeTruthy();
   });
 
   it('loads and persists favorite products in local storage', async () => {
@@ -119,8 +157,8 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
     fixture.detectChanges();
 
-    expect(within(dialog).getByRole('button', { name: /^Iberian Ham Croquettes/ })).toBeTruthy();
-    expect(within(dialog).queryByRole('button', { name: /^Craft Burger/ })).toBeNull();
+    expect(within(dialog).getByText('Iberian Ham Croquettes')).toBeTruthy();
+    expect(within(dialog).queryByText('Craft Burger')).toBeNull();
 
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Todos' }));
     fixture.detectChanges();
@@ -141,10 +179,10 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.change(within(dialog).getByRole('combobox', { name: 'Categoría' }), { target: { value: 'drinks' } });
     fixture.detectChanges();
 
-    expect(within(dialog).getByRole('button', { name: /^Sparkling Lemonade/ })).toBeTruthy();
-    expect(within(dialog).getByRole('button', { name: /^Espresso/ })).toBeTruthy();
-    expect(within(dialog).queryByRole('button', { name: /^Craft Burger/ })).toBeNull();
-    expect(within(dialog).queryByRole('button', { name: /^Caesar Salad/ })).toBeNull();
+    expect(within(dialog).getByText('Sparkling Lemonade')).toBeTruthy();
+    expect(within(dialog).getByText('Espresso')).toBeTruthy();
+    expect(within(dialog).queryByText('Craft Burger')).toBeNull();
+    expect(within(dialog).queryByText('Caesar Salad')).toBeNull();
   });
 
   it('adds products and advances the selected table through kitchen, served, and payment states', async () => {
@@ -171,7 +209,14 @@ describe('RestaurantPosServicePage', () => {
     expect(store.selectedTable()?.status).toBe('waiting_kitchen');
     expect(screen.getAllByText('En cocina').length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: /Servido/i }));
+    fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Craft Burger' }), { target: { value: 'Sin cebolla' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar Craft Burger como preparado' }));
+    fixture.detectChanges();
+
+    expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ note: 'Sin cebolla', status: 'ready' }));
+    expect(screen.getAllByText('Preparado').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar Craft Burger como servido' }));
     fixture.detectChanges();
 
     expect(store.selectedTable()?.status).toBe('served');
@@ -184,6 +229,22 @@ describe('RestaurantPosServicePage', () => {
     expect(store.selectedOrder()?.paymentMethod).toBe('cash');
     expect(store.selectedOrder()?.status).toBe('paid');
     expect(store.selectedTable()?.status).toBe('paid');
+  });
+
+  it('removes a product line from the selected order', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Craft Burger/);
+    addProductFromSearch(fixture, /^Sparkling Lemonade/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+    fixture.detectChanges();
+
+    expect(store.selectedOrder()?.lines.map((line) => line.productName)).toEqual(['Sparkling Lemonade']);
+    expect(screen.queryByText('1 x Craft Burger')).toBeNull();
+    expect(screen.getByText('1 x Sparkling Lemonade')).toBeTruthy();
   });
 
   it('opens a simulated card gateway and accepts or rejects payment without losing the order', async () => {
@@ -242,6 +303,35 @@ describe('RestaurantPosServicePage', () => {
     HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
     HTMLElement.prototype.focus = originalFocus;
     vi.useRealTimers();
+  });
+
+  it('filters service point search by table status', async () => {
+    const { fixture } = await renderServicePage();
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Craft Burger/);
+    fireEvent.click(screen.getByRole('button', { name: /Buscar mesa\/taburete/i }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Estado' }), { target: { value: 'occupied' } });
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: /Buscar mesa\/taburete/i });
+    expect(within(dialog).getByRole('button', { name: /M1/ })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: /M2/ })).toBeNull();
+  });
+
+  it('returns to the previous selected service point', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(screen.getByLabelText('M2 mesa, Libre'));
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a M1' }));
+    fixture.detectChanges();
+
+    expect(store.selectedTableId()).toBe('table-1');
+    expect(screen.getByRole('button', { name: 'Volver a M2' })).toBeTruthy();
   });
 
   it('marks cleaning and frees the selected table from the service panel', async () => {

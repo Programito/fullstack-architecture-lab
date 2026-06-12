@@ -97,6 +97,15 @@ describe('LanguageSelect', () => {
     expect(container.querySelector('.language-select')?.className).toContain('language-select--minimal');
   });
 
+  it('supports opening the menu upward', async () => {
+    const { container } = await render('<app-language-select placement="top" />', {
+      imports: [LanguageSelect, ...provideI18nTesting().imports],
+      providers: [...provideI18nTesting().providers],
+    });
+
+    expect(container.querySelector('.language-select')?.className).toContain('language-select--top');
+  });
+
   it('can hide the visible label and hint while keeping an accessible trigger name', async () => {
     await render('<app-language-select [showLabel]="false" [showHint]="false" />', {
       imports: [LanguageSelect, ...provideI18nTesting().imports],

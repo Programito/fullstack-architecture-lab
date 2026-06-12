@@ -1,12 +1,9 @@
 import { NgClass, NgStyle } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
-import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
 import { FloorPlan } from '../../components/floor-plan/floor-plan';
 import { TableVisual } from '../../components/table-visual/table-visual';
 import type { AddFloorElementInput, FloorElement, FloorElementType, TableShape } from '../../models/restaurant-pos.models';
@@ -47,7 +44,7 @@ const ELEMENT_PRESETS: ElementPreset[] = [
 
 @Component({
   selector: 'app-restaurant-pos-layout-page',
-  imports: [Button, ColorModeMenu, FloorPlan, Icon, LanguageSelect, NgClass, NgStyle, RouterLink, TableVisual, TranslocoPipe],
+  imports: [Button, FloorPlan, Icon, NgClass, NgStyle, TableVisual, TranslocoPipe],
   templateUrl: './restaurant-pos-layout-page.html',
 })
 export class RestaurantPosLayoutPage {

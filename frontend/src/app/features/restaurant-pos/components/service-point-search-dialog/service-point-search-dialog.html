@@ -16,6 +16,15 @@
       (searched)="searched.emit($event)"
     />
 
+    <app-select
+      [label]="'restaurantPos.service.servicePointStatusFilter' | transloco"
+      [value]="statusFilter()"
+      [options]="statusOptions()"
+      size="sm"
+      fill="outline"
+      (valueChange)="statusFilterChanged.emit($event)"
+    />
+
     <div class="grid max-h-[22rem] gap-2 overflow-y-auto pr-1">
       @for (servicePoint of servicePoints(); track servicePoint.element.id) {
         <button

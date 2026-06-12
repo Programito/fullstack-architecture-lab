@@ -5,7 +5,12 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import type { OrderCourse, OrderCourseGroup, OrderLineStatus, PaymentMethod, RestaurantTable, ServiceTableInfo, TableStatus } from '../../models/restaurant-pos.models';
+import type { OrderCourse, OrderCourseGroup, OrderLine, OrderLineStatus, PaymentMethod, RestaurantTable, ServiceTableInfo, TableStatus } from '../../models/restaurant-pos.models';
+
+export interface OrderLineNoteChange {
+  productId: string;
+  note: string;
+}
 
 @Component({
   selector: 'app-service-table-panel',
@@ -23,6 +28,10 @@ export class ServiceTablePanel {
   readonly markServed = output<void>();
   readonly increaseProduct = output<string>();
   readonly decreaseProduct = output<string>();
+  readonly markProductReady = output<string>();
+  readonly markProductServed = output<string>();
+  readonly removeProduct = output<string>();
+  readonly updateProductNote = output<OrderLineNoteChange>();
   readonly setPaymentMethod = output<PaymentMethod>();
   readonly charge = output<void>();
   readonly markCleaning = output<void>();
@@ -224,6 +233,18 @@ export class ServiceTablePanel {
 
   protected lineActionLabel(key: string, productName: string): string {
     return this.translate(`restaurantPos.service.${key}`, { name: productName });
+  }
+
+  protected canMarkLineReady(line: OrderLine): boolean {
+    return line.status === 'sent_to_kitchen' || line.status === 'preparing';
+  }
+
+  protected canMarkLineServed(line: OrderLine): boolean {
+    return line.status === 'sent_to_kitchen' || line.status === 'preparing' || line.status === 'ready' || line.status === 'picked_up';
+  }
+
+  protected updateLineNote(productId: string, event: Event): void {
+    this.updateProductNote.emit({ productId, note: (event.target as HTMLTextAreaElement).value });
   }
 
   protected requestFreeTable(): void {

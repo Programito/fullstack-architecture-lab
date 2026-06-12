@@ -1,4 +1,4 @@
-<main class="theme-page min-h-dvh">
+<main class="min-h-dvh">
   <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
     <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
       <div class="min-w-0">
@@ -13,19 +13,6 @@
           [kitchenQueue]="store.kitchenQueue()"
           [salesToday]="formatCurrency(store.salesToday())"
         />
-
-        <nav class="flex flex-wrap items-center gap-2" [attr.aria-label]="'restaurantPos.service.sections' | transloco">
-          <div class="theme-panel flex items-center gap-1 rounded-lg border px-1 py-1 shadow-sm">
-            <app-color-mode-menu appearance="minimal" size="sm" />
-            <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
-          </div>
-          <a class="theme-nav-link rounded-md border px-3 py-2 text-sm font-medium" routerLink="/restaurant-pos/layout">
-            {{ 'restaurantPos.common.layout' | transloco }}
-          </a>
-          <a class="theme-nav-link-active rounded-md border px-3 py-2 text-sm font-medium" routerLink="/restaurant-pos/service">
-            {{ 'restaurantPos.common.service' | transloco }}
-          </a>
-        </nav>
       </div>
     </div>
   </header>
@@ -49,10 +36,15 @@
           <app-button variant="neutral" fill="outline" size="sm" (pressed)="openServicePointSearch()">
             <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
           </app-button>
+          @if (lastSelectedServicePoint()) {
+            <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
+              <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
+            </app-button>
+          }
         </div>
       </div>
 
-      <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" />
+      <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
     </section>
 
     <app-service-table-panel
@@ -65,6 +57,10 @@
       (markServed)="markServed()"
       (increaseProduct)="increaseProductQuantity($event)"
       (decreaseProduct)="decreaseProductQuantity($event)"
+      (markProductReady)="markProductReady($event)"
+      (markProductServed)="markProductServed($event)"
+      (removeProduct)="removeProduct($event)"
+      (updateProductNote)="updateProductNote($event)"
       (setPaymentMethod)="setPaymentMethod($event)"
       (charge)="chargeTable()"
       (markCleaning)="markCleaning()"
@@ -82,22 +78,28 @@
   [productCategoryOptions]="productCategoryOptions()"
   [favoriteProductIds]="favoriteProductIds()"
   [lastAddedProductId]="lastAddedProductId()"
+  [productQuantities]="productQuantities()"
   (closed)="closeProductSearch()"
+  (finished)="closeProductSearch()"
   (queryChanged)="updateProductSearch($event)"
   (searched)="submitProductSearch($event)"
   (productViewChanged)="setProductSearchView($event)"
   (productCategoryFilterChanged)="setProductCategoryFilter($event)"
   (favoriteToggled)="toggleFavoriteProduct($event)"
-  (productSelected)="addProduct($event)"
+  (productIncremented)="addProduct($event)"
+  (productDecremented)="decreaseProductQuantity($event)"
 />
 
 <app-service-point-search-dialog
   [open]="servicePointSearchOpen()"
   [query]="servicePointSearchQuery()"
+  [statusFilter]="servicePointStatusFilter()"
+  [statusOptions]="servicePointStatusOptions()"
   [servicePoints]="filteredServicePoints()"
   (closed)="closeServicePointSearch()"
   (queryChanged)="updateServicePointSearch($event)"
   (searched)="submitServicePointSearch($event)"
+  (statusFilterChanged)="setServicePointStatusFilter($event)"
   (servicePointSelected)="selectServicePoint($event)"
 />
 

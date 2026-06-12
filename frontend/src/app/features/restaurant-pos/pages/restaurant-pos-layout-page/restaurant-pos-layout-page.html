@@ -1,19 +1,9 @@
-<main class="theme-page min-h-dvh">
+<main class="min-h-dvh">
   <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
     <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div class="flex min-w-0 flex-col gap-2">
-        <a
-          class="theme-muted inline-flex w-max items-center gap-1.5 rounded-md px-2 py-1 text-sm font-semibold transition hover:bg-[var(--ui-surface)] hover:text-[var(--ui-fg)] focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          routerLink="/restaurant-pos/service"
-        >
-          <app-icon name="arrow_back" size="sm" />
-          {{ 'restaurantPos.layout.backToService' | transloco }}
-        </a>
-
-        <div class="min-w-0">
-          <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.layout.title' | transloco }}</h1>
-          <p class="theme-muted mt-1 max-w-2xl text-sm leading-5">{{ 'restaurantPos.layout.description' | transloco }}</p>
-        </div>
+      <div class="min-w-0">
+        <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.layout.title' | transloco }}</h1>
+        <p class="theme-muted mt-1 max-w-2xl text-sm leading-5">{{ 'restaurantPos.layout.description' | transloco }}</p>
       </div>
 
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
@@ -40,11 +30,6 @@
               <span>{{ 'restaurantPos.layout.saveChanges' | transloco }}</span>
             </span>
           </app-button>
-        </div>
-
-        <div class="theme-panel flex justify-end gap-1 rounded-lg border px-1 py-1 shadow-sm">
-          <app-color-mode-menu appearance="minimal" size="sm" />
-          <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
         </div>
       </div>
     </div>

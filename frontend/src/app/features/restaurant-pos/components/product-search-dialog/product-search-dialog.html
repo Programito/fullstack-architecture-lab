@@ -3,8 +3,12 @@
   [title]="'restaurantPos.service.searchProduct' | transloco"
   [description]="'restaurantPos.service.searchProductDescription' | transloco"
   [closeAriaLabel]="'restaurantPos.service.closeProductSearch' | transloco"
+  showActions
+  [showCancel]="false"
+  [confirmLabel]="'restaurantPos.service.finishProductSearch' | transloco"
   size="lg"
   (closed)="closed.emit()"
+  (confirmed)="finished.emit()"
 >
   <div class="grid gap-4">
     <app-search-input
@@ -39,11 +43,11 @@
 
     <div data-testid="product-search-results" class="grid h-[22rem] content-start gap-2 overflow-y-auto pr-1">
       @for (product of products(); track product.id) {
-        <div class="theme-field grid min-h-16 grid-cols-[minmax(0,1fr)_2.5rem] items-stretch gap-2 rounded-md border p-1 text-sm">
-          <button
-            type="button"
-            class="flex min-w-0 items-center justify-between gap-4 rounded px-2 py-1 text-left transition hover:bg-cyan-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:hover:bg-cyan-950/25"
-            (click)="productSelected.emit(product.id)"
+        <div
+          [class]="productRowClass(product.id)"
+        >
+          <div
+            class="flex min-w-0 items-center justify-between gap-4 rounded px-2 py-1 text-left"
           >
             <span class="min-w-0">
               <span class="theme-title block truncate font-semibold">{{ product.name }}</span>
@@ -55,7 +59,34 @@
               }
             </span>
             <span class="shrink-0 font-semibold">{{ formatCurrency(product.price) }}</span>
-          </button>
+          </div>
+
+          <div class="grid grid-cols-[2.5rem_2rem_2.5rem] items-center rounded-md border bg-[var(--ui-bg)]">
+            <button
+              type="button"
+              class="grid h-10 place-items-center rounded-l-md text-lg font-semibold transition hover:bg-[var(--ui-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
+              [attr.aria-label]="'restaurantPos.service.decreaseProductQuantityActionLabel' | transloco: { name: product.name }"
+              [disabled]="productQuantity(product.id) === 0"
+              (click)="productDecremented.emit(product.id)"
+            >
+              <app-icon name="remove" size="sm" />
+            </button>
+            <span
+              class="text-center text-sm font-semibold"
+              [attr.aria-label]="'restaurantPos.service.productQuantityLabel' | transloco: { name: product.name, count: productQuantity(product.id) }"
+            >
+              {{ productQuantity(product.id) }}
+            </span>
+            <button
+              type="button"
+              class="grid h-10 place-items-center rounded-r-md text-lg font-semibold transition hover:bg-[var(--ui-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+              [attr.aria-label]="'restaurantPos.service.increaseProductQuantityActionLabel' | transloco: { name: product.name }"
+              (click)="productIncremented.emit(product.id)"
+            >
+              <app-icon name="add" size="sm" />
+            </button>
+          </div>
+
           <button
             type="button"
             class="group grid transform-gpu place-items-center rounded text-cyan-700 transition-[background-color,color,transform] duration-150 ease-out hover:bg-cyan-50 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 aria-pressed:scale-105 aria-pressed:bg-amber-50 aria-pressed:text-amber-600 dark:text-cyan-200 dark:hover:bg-cyan-950/25 dark:aria-pressed:bg-amber-950/25 dark:aria-pressed:text-amber-300"

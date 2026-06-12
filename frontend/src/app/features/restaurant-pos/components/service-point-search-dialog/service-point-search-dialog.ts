@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import type { FloorElement, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
 
 export interface ServicePointSearchResult {
@@ -12,17 +13,20 @@ export interface ServicePointSearchResult {
 
 @Component({
   selector: 'app-service-point-search-dialog',
-  imports: [Dialog, SearchInput, TranslocoPipe],
+  imports: [Dialog, SearchInput, Select, TranslocoPipe],
   templateUrl: './service-point-search-dialog.html',
 })
 export class ServicePointSearchDialog {
   readonly open = input(false);
   readonly query = input('');
+  readonly statusFilter = input('all');
+  readonly statusOptions = input<SelectOption[]>([]);
   readonly servicePoints = input<readonly ServicePointSearchResult[]>([]);
 
   readonly closed = output<void>();
   readonly queryChanged = output<string>();
   readonly searched = output<string>();
+  readonly statusFilterChanged = output<string>();
   readonly servicePointSelected = output<FloorElement>();
 
   private readonly transloco = inject(TranslocoService);

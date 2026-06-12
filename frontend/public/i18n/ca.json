@@ -47,6 +47,9 @@
     "common": {
       "layout": "Plànol",
       "service": "Servei",
+      "kitchen": "Cuina",
+      "pos": "TPV restaurant",
+      "navigation": "Navegació principal",
       "cancel": "Cancel·lar",
       "saveChanges": "Desar els canvis",
       "columnsRows": "{{columns}} columnes x {{rows}} files",
@@ -161,6 +164,9 @@
       "searchServicePoint": "Buscar taula/tamboret",
       "searchServicePointDescription": "Busca una taula o tamboret i porta'l al centre del plànol de servei.",
       "searchServicePointPlaceholder": "Buscar taula, tamboret, estat o capacitat",
+      "servicePointStatusFilter": "Estat",
+      "allServicePointStatuses": "Tots els estats",
+      "returnToLastServicePoint": "Tornar a {{label}}",
       "closeServicePointSearch": "Tancar cercador de taules i tamborets",
       "clearServicePointSearch": "Netejar cerca de taules i tamborets",
       "searchProduct": "Buscar producte",
@@ -172,6 +178,8 @@
       "productCategoryFilter": "Categoria",
       "allProductCategories": "Totes",
       "productAdded": "Afegit",
+      "finishProductSearch": "Finalitzar",
+      "productQuantityLabel": "Quantitat de {{name}}: {{count}}",
       "addFavoriteProduct": "Afegir {{name}} a favorits",
       "removeFavoriteProduct": "Treure {{name}} de favorits",
       "closeProductSearch": "Tancar buscador de productes",
@@ -194,15 +202,67 @@
       "markServedActionLabel": "Marcar la comanda de la taula seleccionada com a servida",
       "increaseProductQuantityActionLabel": "Afegir una unitat de {{name}}",
       "decreaseProductQuantityActionLabel": "Treure una unitat de {{name}}",
+      "lineNote": "Nota",
+      "lineNoteActionLabel": "Nota per a {{name}}",
+      "markProductReady": "Preparat",
+      "markProductServed": "Servir",
+      "removeProduct": "Eliminar",
+      "markProductReadyActionLabel": "Marcar {{name}} com a preparat",
+      "markProductServedActionLabel": "Marcar {{name}} com a servit",
+      "removeProductActionLabel": "Eliminar {{name}} de la comanda",
       "chargeActionLabel": "Cobrar la taula seleccionada",
       "setCashPaymentActionLabel": "Seleccionar pagament en efectiu per a la taula seleccionada",
       "setCardPaymentActionLabel": "Seleccionar pagament amb targeta per a la taula seleccionada",
       "cleaningActionLabel": "Marcar la taula seleccionada per a neteja",
       "freeTableActionLabel": "Alliberar la taula seleccionada",
       "freeTableConfirmTitle": "Alliberar taula",
-      "freeTableConfirmDescription": "Aquesta accio buidara la comanda i deixara la taula lliure.",
+      "freeTableConfirmDescription": "Aquesta acció buidarà la comanda i deixarà la taula lliure.",
       "confirmFreeTable": "Alliberar taula",
       "cancelFreeTable": "Mantenir taula"
+    },
+    "kitchen": {
+      "eyebrow": "Producció",
+      "title": "Cuina",
+      "queueTitle": "Comandes en preparació",
+      "queueDescription": "Revisa els plats enviats des de sala i marca cada línia quan estigui preparada.",
+      "pending": "Pendents",
+      "preparing": "Preparant-se",
+      "ready": "Preparats",
+      "orders": "Comandes de cuina",
+      "emptyTitle": "Sense comandes a cuina",
+      "emptyDescription": "Quan sala enviï una comanda a cuina, apareixerà aquí per preparar-la.",
+      "openTable": "Veure taula",
+      "startPreparing": "Començar",
+      "startPreparingActionLabel": "Començar {{name}}",
+      "markReady": "Preparat",
+      "markReadyActionLabel": "Marcar {{name}} com a preparat",
+      "readyForPickup": "A punt per recollir",
+      "readyForPickupActionLabel": "{{name}} a punt per recollir",
+      "archive": "Arxivar",
+      "archiveActionLabel": "Arxivar {{name}} de cuina",
+      "moveBackActionLabel": "Tornar {{name}} a la fase anterior",
+      "ticketElapsed": "Temps màxim: {{time}}",
+      "lineElapsed": "Espera: {{time}}",
+      "elapsedPending": "sense enviar",
+      "elapsedLessThanMinute": "menys d'1 min",
+      "elapsedMinutes": "{{count}} min",
+      "columns": {
+        "sent_to_kitchen": {
+          "title": "En cua",
+          "description": "Pendent de començar.",
+          "empty": "No hi ha plats en cua."
+        },
+        "preparing": {
+          "title": "Preparant-se",
+          "description": "Plats que cuina està preparant.",
+          "empty": "No hi ha plats preparant-se."
+        },
+        "ready": {
+          "title": "Preparat per recollir",
+          "description": "A punt perquè sala el reculli.",
+          "empty": "No hi ha plats a punt per recollir."
+        }
+      }
     },
     "tableStatus": {
       "free": "Lliure",
@@ -217,6 +277,9 @@
     "lineStatus": {
       "pending": "Pendent",
       "sent_to_kitchen": "A cuina",
+      "preparing": "Preparant-se",
+      "ready": "Preparat",
+      "picked_up": "Recollit",
       "served": "Servit"
     },
     "course": {

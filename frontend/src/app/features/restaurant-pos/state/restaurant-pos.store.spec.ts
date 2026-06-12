@@ -228,6 +228,169 @@ describe('RestaurantPosStore', () => {
     expect(store.ordersByTable()['table-1'].lines[0].servedAt).toBeTruthy();
   });
 
+  it('marks one selected order line as ready and then served', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+    store.sendSelectedOrderToKitchen();
+
+    store.markSelectedOrderLineReady('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'ready', readyAt: expect.any(String) }),
+    );
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-3')).toEqual(
+      expect.objectContaining({ status: 'sent_to_kitchen' }),
+    );
+    expect(store.selectedServiceInfo()?.canMarkServed).toBe(true);
+
+    store.markSelectedOrderLineServed('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'served', servedAt: expect.any(String) }),
+    );
+    expect(store.restaurantTables().find((table) => table.id === 'table-1')?.status).toBe('waiting_kitchen');
+  });
+
+  it('moves kitchen lines through preparing and ready states', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+    store.sendSelectedOrderToKitchen();
+
+    store.markOrderLinePreparing('table-1', 'product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'preparing', preparingAt: expect.any(String) }),
+    );
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-3')).toEqual(
+      expect.objectContaining({ status: 'sent_to_kitchen' }),
+    );
+
+    store.markOrderLineReady('table-1', 'product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'ready', readyAt: expect.any(String) }),
+    );
+  });
+
+  it('archives ready kitchen lines without marking them as served', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+    store.sendSelectedOrderToKitchen();
+    store.markOrderLineReady('table-1', 'product-1');
+
+    store.archiveOrderLineFromKitchen('table-1', 'product-1');
+    store.archiveOrderLineFromKitchen('table-1', 'product-3');
+
+    const archivedLine = store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1');
+
+    expect(archivedLine).toEqual(expect.objectContaining({ status: 'picked_up', pickedUpAt: expect.any(String) }));
+    expect(archivedLine).not.toHaveProperty('servedAt');
+    const queuedLine = store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-3');
+
+    expect(queuedLine).toEqual(expect.objectContaining({ status: 'sent_to_kitchen' }));
+    expect(queuedLine).not.toHaveProperty('pickedUpAt');
+    expect(store.kitchenTickets().flatMap((ticket) => ticket.lines).map((line) => line.productId)).toEqual(['product-3']);
+    expect(store.selectedServiceInfo()?.canMarkServed).toBe(true);
+
+    store.markSelectedOrderLineServed('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'served', servedAt: expect.any(String), pickedUpAt: expect.any(String) }),
+    );
+  });
+
+  it('moves kitchen lines back one phase without changing queued, picked up, or served lines', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+    store.sendSelectedOrderToKitchen();
+    store.markOrderLinePreparing('table-1', 'product-1');
+    store.markOrderLineReady('table-1', 'product-1');
+
+    store.moveOrderLineBackInKitchen('table-1', 'product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'preparing', readyAt: undefined }),
+    );
+
+    store.moveOrderLineBackInKitchen('table-1', 'product-1');
+    store.moveOrderLineBackInKitchen('table-1', 'product-3');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'sent_to_kitchen', preparingAt: undefined }),
+    );
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-3')).toEqual(
+      expect.objectContaining({ status: 'sent_to_kitchen' }),
+    );
+
+    store.markOrderLineReady('table-1', 'product-1');
+    store.archiveOrderLineFromKitchen('table-1', 'product-1');
+    store.moveOrderLineBackInKitchen('table-1', 'product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'picked_up' }),
+    );
+
+    store.markSelectedOrderAsServed();
+    store.moveOrderLineBackInKitchen('table-1', 'product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1')).toEqual(
+      expect.objectContaining({ status: 'served' }),
+    );
+  });
+
+  it('groups kitchen board columns by line phase and table', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+    store.sendSelectedOrderToKitchen();
+    store.markOrderLinePreparing('table-1', 'product-1');
+
+    const queuedColumn = store.kitchenBoardColumns().find((column) => column.status === 'sent_to_kitchen');
+    const preparingColumn = store.kitchenBoardColumns().find((column) => column.status === 'preparing');
+
+    expect(queuedColumn?.tickets[0]).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1' }),
+        lines: [expect.objectContaining({ productId: 'product-3' })],
+      }),
+    );
+    expect(preparingColumn?.tickets[0]).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1' }),
+        lines: [expect.objectContaining({ productId: 'product-1' })],
+      }),
+    );
+  });
+
+  it('removes an order line and keeps order totals in sync', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+
+    store.removeSelectedOrderLine('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines.map((line) => line.productId)).toEqual(['product-3']);
+    expect(store.ordersByTable()['table-1'].total).toBe(4.5);
+    expect(store.restaurantTables().find((table) => table.id === 'table-1')?.total).toBe(4.5);
+  });
+
+  it('updates and clears a note on a selected order line', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+
+    store.updateSelectedOrderLineNote('product-1', 'Sin cebolla');
+
+    expect(store.ordersByTable()['table-1'].lines[0].note).toBe('Sin cebolla');
+
+    store.updateSelectedOrderLineNote('product-1', '   ');
+
+    expect(store.ordersByTable()['table-1'].lines[0].note).toBeUndefined();
+  });
+
   it('marks the selected table as paid when charging is accepted', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');

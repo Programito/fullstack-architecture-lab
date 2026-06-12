@@ -1,12 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import type { SelectSize } from '../select/select';
-import { LanguageSelect, type LanguageSelectAppearance } from './language-select';
+import { LanguageSelect, type LanguageSelectAppearance, type LanguageSelectPlacement } from './language-select';
 
 type LanguageSelectStoryArgs = {
   label: string;
   name: string;
   hint: string;
   appearance: LanguageSelectAppearance;
+  placement: LanguageSelectPlacement;
   size: SelectSize;
   disabled: boolean;
   showLabel: boolean;
@@ -26,12 +27,17 @@ const meta: Meta<LanguageSelectStoryArgs> = {
       control: 'select',
       options: ['default', 'minimal'],
     },
+    placement: {
+      control: 'inline-radio',
+      options: ['bottom', 'top'],
+    },
   },
   args: {
     label: '',
     name: 'locale',
     hint: '',
     appearance: 'default',
+    placement: 'bottom',
     size: 'md',
     disabled: false,
     showLabel: true,
@@ -46,6 +52,7 @@ const meta: Meta<LanguageSelectStoryArgs> = {
           [name]="name"
           [hint]="hint"
           [appearance]="appearance"
+          [placement]="placement"
           [size]="size"
           [disabled]="disabled"
           [showLabel]="showLabel"
@@ -91,6 +98,15 @@ export const Compact: Story = {
   args: {
     appearance: 'minimal',
     size: 'sm',
+    showLabel: false,
+    showHint: false,
+  },
+};
+
+export const OpensUpward: Story = {
+  args: {
+    appearance: 'minimal',
+    placement: 'top',
     showLabel: false,
     showHint: false,
   },

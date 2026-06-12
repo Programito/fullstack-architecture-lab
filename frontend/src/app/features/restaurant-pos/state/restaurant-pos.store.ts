@@ -3,6 +3,9 @@ import type {
   AddFloorElementInput,
   EditableFloorElementType,
   FloorElement,
+  KitchenBoardColumn,
+  KitchenBoardStatus,
+  KitchenOrderTicket,
   OrderCourseGroup,
   OrderCourse,
   OrderLine,
@@ -36,6 +39,7 @@ const DEFAULT_ELEMENT_LABELS: Record<EditableFloorElementType, string> = {
   kitchen: 'Kitchen',
 };
 const COURSE_SERVICE_ORDER: OrderCourse[] = ['drinks', 'starter', 'main', 'dessert', 'other'];
+const KITCHEN_BOARD_STATUSES: KitchenBoardStatus[] = ['sent_to_kitchen', 'preparing', 'ready'];
 
 @Injectable({
   providedIn: 'root',
@@ -97,7 +101,36 @@ export class RestaurantPosStore {
     () => Object.values(this._ordersByTable()).filter((order) => order.lines.length > 0 && order.status !== 'paid').length,
   );
   readonly kitchenQueue = computed(
-    () => Object.values(this._ordersByTable()).filter((order) => order.status === 'sent_to_kitchen').length,
+    () => Object.values(this._ordersByTable()).filter((order) => order.lines.some((line) => this.isKitchenLine(line))).length,
+  );
+  readonly kitchenTickets = computed<KitchenOrderTicket[]>(() =>
+    Object.values(this._ordersByTable())
+      .filter((order) => order.lines.some((line) => this.isKitchenLine(line)))
+      .map((order) => {
+        const table = this._restaurantTables().find((currentTable) => currentTable.id === order.tableId);
+
+        if (!table) {
+          return null;
+        }
+
+        return {
+          table,
+          servicePoint: this._floorElements().find((element) => element.tableId === table.id) ?? null,
+          lines: order.lines.filter((line) => this.isKitchenLine(line)),
+        };
+      })
+      .filter((ticket): ticket is KitchenOrderTicket => ticket !== null),
+  );
+  readonly kitchenBoardColumns = computed<KitchenBoardColumn[]>(() =>
+    KITCHEN_BOARD_STATUSES.map((status) => ({
+      status,
+      tickets: this.kitchenTickets()
+        .map((ticket) => ({
+          ...ticket,
+          lines: ticket.lines.filter((line) => line.status === status),
+        }))
+        .filter((ticket) => ticket.lines.length > 0),
+    })),
   );
   readonly salesToday = computed(() => this.roundCurrency(this._restaurantTables().reduce((total, table) => total + table.total, 0)));
   readonly averageTicket = computed(() => {
@@ -226,6 +259,143 @@ export class RestaurantPosStore {
 
   markSelectedOrderAsServed(): void {
     this.updateSelectedOrderStatus('served', 'served');
+  }
+
+  markSelectedOrderLineReady(productId: string): void {
+    this.updateSelectedOrderLine(productId, (line) => {
+      if (line.status === 'served') {
+        return line;
+      }
+
+      const now = this.nowIso();
+      return {
+        ...line,
+        status: 'ready',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+        readyAt: line.readyAt ?? now,
+      };
+    });
+  }
+
+  markOrderLinePreparing(tableId: string, productId: string): void {
+    this.updateOrderLine(tableId, productId, (line) => {
+      if (line.status !== 'sent_to_kitchen') {
+        return line;
+      }
+
+      const now = this.nowIso();
+      return {
+        ...line,
+        status: 'preparing',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+      };
+    });
+  }
+
+  markOrderLineReady(tableId: string, productId: string): void {
+    this.updateOrderLine(tableId, productId, (line) => {
+      if (line.status === 'served') {
+        return line;
+      }
+
+      const now = this.nowIso();
+      return {
+        ...line,
+        status: 'ready',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+        readyAt: line.readyAt ?? now,
+      };
+    });
+  }
+
+  moveOrderLineBackInKitchen(tableId: string, productId: string): void {
+    this.updateOrderLine(tableId, productId, (line) => {
+      if (line.status === 'ready') {
+        return {
+          ...line,
+          status: 'preparing',
+          readyAt: undefined,
+        };
+      }
+
+      if (line.status === 'preparing') {
+        return {
+          ...line,
+          status: 'sent_to_kitchen',
+          preparingAt: undefined,
+          readyAt: undefined,
+        };
+      }
+
+      return line;
+    });
+  }
+
+  archiveOrderLineFromKitchen(tableId: string, productId: string): void {
+    this.updateOrderLine(tableId, productId, (line) => {
+      if (line.status !== 'ready') {
+        return line;
+      }
+
+      const now = this.nowIso();
+      return {
+        ...line,
+        status: 'picked_up',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+        readyAt: line.readyAt ?? now,
+        pickedUpAt: line.pickedUpAt ?? now,
+      };
+    });
+  }
+
+  markSelectedOrderLineServed(productId: string): void {
+    this.updateSelectedOrderLine(productId, (line) => {
+      const now = this.nowIso();
+      return {
+        ...line,
+        status: 'served',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+        readyAt: line.readyAt ?? now,
+        pickedUpAt: line.pickedUpAt,
+        servedAt: line.servedAt ?? now,
+      };
+    });
+    this.syncSelectedTableStatusAfterLineUpdate();
+  }
+
+  removeSelectedOrderLine(productId: string): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      this.setError(SELECT_TABLE_ERROR);
+      return;
+    }
+
+    const order = this.ensureOrder(tableId);
+    const nextLines = order.lines.filter((line) => line.productId !== productId);
+    const total = this.calculateOrderTotal(nextLines);
+
+    this.setOrder(tableId, {
+      ...order,
+      lines: nextLines,
+      total,
+    });
+    this.updateTable(tableId, { total });
+    this.clearError();
+  }
+
+  updateSelectedOrderLineNote(productId: string, note: string): void {
+    const normalizedNote = note.trim();
+
+    this.updateSelectedOrderLine(productId, (line) => ({
+      ...line,
+      ...(normalizedNote ? { note: normalizedNote } : { note: undefined }),
+    }));
   }
 
   chargeSelectedTable(): void {
@@ -604,6 +774,10 @@ export class RestaurantPosStore {
     return lines.filter((line) => line.status === 'pending').reduce((sum, line) => sum + line.quantity, 0);
   }
 
+  private isKitchenLine(line: OrderLine): boolean {
+    return line.status === 'sent_to_kitchen' || line.status === 'preparing' || line.status === 'ready';
+  }
+
   private getServicePhase(lines: OrderLine[]): ServiceTableInfo['servicePhase'] {
     if (lines.length === 0) {
       return { course: null, status: 'no_order' };
@@ -671,6 +845,9 @@ export class RestaurantPosStore {
         ...line,
         status: 'served',
         sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+        readyAt: line.readyAt ?? now,
+        pickedUpAt: line.pickedUpAt,
         servedAt: line.servedAt ?? now,
       }));
     }
@@ -693,6 +870,7 @@ export class RestaurantPosStore {
             subtotal: this.roundCurrency((line.quantity + 1) * line.unitPrice),
             status: line.status === 'served' ? 'pending' : line.status,
             servedAt: line.status === 'served' ? undefined : line.servedAt,
+            pickedUpAt: line.status === 'served' ? undefined : line.pickedUpAt,
           }
         : line,
     );
@@ -711,6 +889,46 @@ export class RestaurantPosStore {
 
   private ensureOrder(tableId: string): TableOrder {
     return this._ordersByTable()[tableId] ?? this.createEmptyOrder(tableId);
+  }
+
+  private updateSelectedOrderLine(productId: string, updateLine: (line: OrderLine) => OrderLine): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      this.setError(SELECT_TABLE_ERROR);
+      return;
+    }
+
+    this.updateOrderLine(tableId, productId, updateLine);
+    this.clearError();
+  }
+
+  private updateOrderLine(tableId: string, productId: string, updateLine: (line: OrderLine) => OrderLine): void {
+    const order = this.ensureOrder(tableId);
+
+    this.setOrder(tableId, {
+      ...order,
+      lines: order.lines.map((line) => (line.productId === productId ? updateLine(line) : line)),
+    });
+    this.clearError();
+  }
+
+  private syncSelectedTableStatusAfterLineUpdate(): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      return;
+    }
+
+    const order = this.ensureOrder(tableId);
+
+    if (order.lines.length > 0 && order.lines.every((line) => line.status === 'served')) {
+      this.setOrder(tableId, {
+        ...order,
+        status: 'served',
+      });
+      this.updateTable(tableId, { status: 'served' });
+    }
   }
 
   private createEmptyOrder(tableId: string): TableOrder {

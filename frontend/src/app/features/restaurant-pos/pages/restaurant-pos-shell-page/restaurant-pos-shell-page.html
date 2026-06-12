@@ -1,0 +1,51 @@
+<div class="theme-page min-h-dvh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+  <aside class="theme-header sticky top-0 z-40 border-b px-3 py-3 shadow-sm backdrop-blur lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r lg:px-4">
+    <div class="mx-auto flex max-w-7xl flex-col gap-3 lg:h-full">
+      <div class="flex items-center justify-between gap-3 lg:grid lg:gap-2">
+        <a
+          class="theme-title inline-flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-base font-semibold transition hover:bg-[var(--ui-surface)] focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          routerLink="/restaurant-pos/service"
+        >
+          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-cyan-600 text-white">
+            <app-icon name="point_of_sale" size="sm" />
+          </span>
+          <span class="truncate">{{ 'restaurantPos.common.pos' | transloco }}</span>
+        </a>
+
+        <div class="theme-panel flex items-center gap-1 rounded-lg border px-1 py-1 shadow-sm lg:hidden">
+          <app-color-mode-menu appearance="minimal" size="sm" />
+          <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
+        </div>
+      </div>
+
+      <nav
+        class="flex gap-2 overflow-x-auto pb-1 lg:grid lg:overflow-visible lg:pb-0"
+        [attr.aria-label]="'restaurantPos.common.navigation' | transloco"
+      >
+        @for (item of navigationItems; track item.path) {
+          <a
+            class="theme-nav-link inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium"
+            routerLinkActive="theme-nav-link-active"
+            ariaCurrentWhenActive="page"
+            [routerLink]="item.path"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <app-icon [name]="item.icon" size="sm" />
+            <span>{{ item.labelKey | transloco }}</span>
+          </a>
+        }
+      </nav>
+
+      <div class="mt-auto hidden lg:block">
+        <div class="theme-panel flex items-center justify-between gap-1 rounded-lg border px-1 py-1 shadow-sm">
+          <app-color-mode-menu appearance="minimal" size="sm" />
+          <app-language-select appearance="minimal" placement="top" size="sm" [showLabel]="false" [showHint]="false" />
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="min-w-0">
+    <router-outlet />
+  </div>
+</div>

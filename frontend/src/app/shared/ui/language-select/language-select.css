@@ -147,6 +147,14 @@
   transform: translateY(0.125rem) rotate(225deg);
 }
 
+.language-select--top .language-select__chevron {
+  transform: translateY(0.125rem) rotate(225deg);
+}
+
+.language-select--top.language-select--open .language-select__chevron {
+  transform: translateY(-0.125rem) rotate(45deg);
+}
+
 .language-select__backdrop {
   position: fixed;
   inset: 0;
@@ -168,6 +176,11 @@
   border-radius: 0.5rem;
   background: var(--ui-bg);
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.18);
+}
+
+.language-select--top .language-select__menu {
+  top: auto;
+  bottom: calc(100% + 0.5rem);
 }
 
 .language-select--minimal .language-select__menu {

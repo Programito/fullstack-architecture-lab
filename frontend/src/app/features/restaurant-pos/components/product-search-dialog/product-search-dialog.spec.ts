@@ -21,12 +21,14 @@ describe('ProductSearchDialog', () => {
     },
   ];
 
-  it('renders product view segments and lets products be marked as favorites independently from adding them', async () => {
+  it('renders quantity controls and keeps favorites independent from adding products', async () => {
     const i18n = provideI18nTesting();
     const productViewChanged = vi.fn();
     const productCategoryFilterChanged = vi.fn();
     const favoriteToggled = vi.fn();
-    const productSelected = vi.fn();
+    const productIncremented = vi.fn();
+    const productDecremented = vi.fn();
+    const finished = vi.fn();
 
     const { fixture } = await render(ProductSearchDialog, {
       imports: [...i18n.imports],
@@ -44,15 +46,20 @@ describe('ProductSearchDialog', () => {
         ],
         favoriteProductIds: ['burger'],
         lastAddedProductId: 'lemonade',
+        productQuantities: { burger: 2 },
       },
     });
     fixture.componentInstance.productViewChanged.subscribe(productViewChanged);
     fixture.componentInstance.productCategoryFilterChanged.subscribe(productCategoryFilterChanged);
     fixture.componentInstance.favoriteToggled.subscribe(favoriteToggled);
-    fixture.componentInstance.productSelected.subscribe(productSelected);
+    fixture.componentInstance.productIncremented.subscribe(productIncremented);
+    fixture.componentInstance.productDecremented.subscribe(productDecremented);
+    fixture.componentInstance.finished.subscribe(finished);
 
     const favoriteButton = screen.getByRole('button', { name: 'Quitar Craft Burger de favoritos' });
     const regularButton = screen.getAllByRole('button').find((button) => button.getAttribute('aria-pressed') === 'false');
+    const burgerDecrease = screen.getByRole('button', { name: 'Quitar una unidad de Craft Burger' });
+    const lemonadeDecrease = screen.getByRole('button', { name: 'Quitar una unidad de Sparkling Lemonade' });
 
     expect(favoriteButton.getAttribute('aria-pressed')).toBe('true');
     expect(favoriteButton.className).toContain('focus-visible:ring-2');
@@ -61,7 +68,12 @@ describe('ProductSearchDialog', () => {
     expect(regularButton?.getAttribute('aria-pressed')).toBe('false');
     expect(regularButton?.textContent?.trim()).toBe('\u2606');
     expect(screen.getByText('Añadido')).toBeTruthy();
+    expect(screen.getByLabelText('Cantidad de Craft Burger: 2')).toBeTruthy();
+    expect(screen.getByLabelText('Cantidad de Sparkling Lemonade: 0')).toBeTruthy();
+    expect(burgerDecrease.hasAttribute('disabled')).toBe(false);
+    expect(lemonadeDecrease.hasAttribute('disabled')).toBe(true);
     expect(screen.getByTestId('product-search-results').className).toContain('h-[22rem]');
+
     expect(screen.getByRole('radio', { name: 'Todos' }).getAttribute('aria-checked')).toBe('true');
     fireEvent.click(screen.getByRole('radio', { name: 'Favoritos' }));
 
@@ -72,9 +84,14 @@ describe('ProductSearchDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Quitar Craft Burger de favoritos' }));
     expect(favoriteToggled).toHaveBeenCalledWith('burger');
-    expect(productSelected).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: /^Sparkling Lemonade/ }));
-    expect(productSelected).toHaveBeenCalledWith('lemonade');
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Sparkling Lemonade' }));
+    expect(productIncremented).toHaveBeenCalledWith('lemonade');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
+    expect(productDecremented).toHaveBeenCalledWith('burger');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finalizar' }));
+    expect(finished).toHaveBeenCalledOnce();
   });
 });

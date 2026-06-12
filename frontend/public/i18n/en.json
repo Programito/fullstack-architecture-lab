@@ -47,6 +47,9 @@
     "common": {
       "layout": "Layout",
       "service": "Service",
+      "kitchen": "Kitchen",
+      "pos": "Restaurant POS",
+      "navigation": "Primary navigation",
       "cancel": "Cancel",
       "saveChanges": "Save changes",
       "columnsRows": "{{columns}} columns x {{rows}} rows",
@@ -161,6 +164,9 @@
       "searchServicePoint": "Search table/stool",
       "searchServicePointDescription": "Find a table or stool and bring it into view on the service floor.",
       "searchServicePointPlaceholder": "Search table, stool, status, or capacity",
+      "servicePointStatusFilter": "Status",
+      "allServicePointStatuses": "All statuses",
+      "returnToLastServicePoint": "Return to {{label}}",
       "closeServicePointSearch": "Close table and stool search",
       "clearServicePointSearch": "Clear table and stool search",
       "searchProduct": "Search product",
@@ -172,6 +178,8 @@
       "productCategoryFilter": "Category",
       "allProductCategories": "All categories",
       "productAdded": "Added",
+      "finishProductSearch": "Finish",
+      "productQuantityLabel": "{{name}} quantity: {{count}}",
       "addFavoriteProduct": "Add {{name}} to favorites",
       "removeFavoriteProduct": "Remove {{name}} from favorites",
       "closeProductSearch": "Close product search",
@@ -194,6 +202,14 @@
       "markServedActionLabel": "Mark the selected table order as served",
       "increaseProductQuantityActionLabel": "Add one {{name}}",
       "decreaseProductQuantityActionLabel": "Remove one {{name}}",
+      "lineNote": "Note",
+      "lineNoteActionLabel": "Note for {{name}}",
+      "markProductReady": "Ready",
+      "markProductServed": "Serve",
+      "removeProduct": "Remove",
+      "markProductReadyActionLabel": "Mark {{name}} as ready",
+      "markProductServedActionLabel": "Mark {{name}} as served",
+      "removeProductActionLabel": "Remove {{name}} from the order",
       "chargeActionLabel": "Charge the selected table",
       "setCashPaymentActionLabel": "Select cash payment for the selected table",
       "setCardPaymentActionLabel": "Select card payment for the selected table",
@@ -203,6 +219,50 @@
       "freeTableConfirmDescription": "This action will clear the order and leave the table free.",
       "confirmFreeTable": "Free table",
       "cancelFreeTable": "Keep table"
+    },
+    "kitchen": {
+      "eyebrow": "Production",
+      "title": "Kitchen",
+      "queueTitle": "Orders in progress",
+      "queueDescription": "Review dishes sent from the dining room and mark each line when it is ready.",
+      "pending": "Pending",
+      "preparing": "Preparing",
+      "ready": "Ready",
+      "orders": "Kitchen orders",
+      "emptyTitle": "No kitchen orders",
+      "emptyDescription": "When service sends an order to the kitchen, it will appear here for preparation.",
+      "openTable": "View table",
+      "startPreparing": "Start",
+      "startPreparingActionLabel": "Start {{name}}",
+      "markReady": "Ready",
+      "markReadyActionLabel": "Mark {{name}} as ready",
+      "readyForPickup": "Ready for pickup",
+      "readyForPickupActionLabel": "{{name}} ready for pickup",
+      "archive": "Archive",
+      "archiveActionLabel": "Archive {{name}} from kitchen",
+      "moveBackActionLabel": "Move {{name}} back to the previous phase",
+      "ticketElapsed": "Max time: {{time}}",
+      "lineElapsed": "Waiting: {{time}}",
+      "elapsedPending": "not sent",
+      "elapsedLessThanMinute": "less than 1 min",
+      "elapsedMinutes": "{{count}} min",
+      "columns": {
+        "sent_to_kitchen": {
+          "title": "Queued",
+          "description": "Waiting to start.",
+          "empty": "No dishes queued."
+        },
+        "preparing": {
+          "title": "Preparing",
+          "description": "Dishes currently being prepared.",
+          "empty": "No dishes being prepared."
+        },
+        "ready": {
+          "title": "Ready for pickup",
+          "description": "Ready for service to collect.",
+          "empty": "No dishes ready for pickup."
+        }
+      }
     },
     "tableStatus": {
       "free": "Free",
@@ -217,6 +277,9 @@
     "lineStatus": {
       "pending": "Pending",
       "sent_to_kitchen": "In kitchen",
+      "preparing": "Preparing",
+      "ready": "Ready",
+      "picked_up": "Picked up",
       "served": "Served"
     },
     "course": {

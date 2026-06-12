@@ -17,16 +17,14 @@ describe('RestaurantPosLayoutPage', () => {
 
     expect(screen.getByText('Plano del restaurante')).toBeTruthy();
     expect(screen.getByText('Diseña el comedor, la barra, la cocina y las zonas de servicio.')).toBeTruthy();
-    const header = screen.getByRole('banner');
     const toolbar = screen.getByRole('toolbar', { name: 'Acciones de edición del plano' });
     expect(within(toolbar).getByRole('button', { name: 'Redimensionar plano' }).className).toContain('button--neutral-clear');
     expect(within(toolbar).getByRole('button', { name: 'Añadir elemento' })).toBeTruthy();
     expect(within(toolbar).getByRole('button', { name: 'Guardar cambios' })).toHaveProperty('disabled', true);
     expect(within(toolbar).queryByRole('link', { name: 'Volver al modo servicio' })).toBeNull();
-    expect(within(header).getByRole('link', { name: 'Volver al modo servicio' })).toBeTruthy();
-    expect(within(header).getByRole('button', { name: 'Cambiar a modo oscuro' })).toBeTruthy();
-    expect(within(header).getByRole('button', { name: 'Idioma: Español' })).toBeTruthy();
-    expect(within(header).queryByText('La preferencia se aplica a la interfaz.')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Volver al modo servicio' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cambiar a modo oscuro' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Idioma: Español' })).toBeNull();
     expect(screen.queryByRole('button', { name: /add row/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /add column/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /remove row/i })).toBeNull();

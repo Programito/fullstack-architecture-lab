@@ -6,6 +6,7 @@ import { LOCALE_OPTIONS, type AppLocale } from '../../i18n/locale.types';
 import type { SelectFill, SelectSize, SelectVariant } from '../select/select';
 
 export type LanguageSelectAppearance = 'default' | 'minimal';
+export type LanguageSelectPlacement = 'bottom' | 'top';
 
 @Component({
   selector: 'app-language-select',
@@ -23,6 +24,7 @@ export class LanguageSelect {
   readonly variant = input<SelectVariant>('neutral');
   readonly fill = input<SelectFill>('outline');
   readonly appearance = input<LanguageSelectAppearance>('default');
+  readonly placement = input<LanguageSelectPlacement>('bottom');
   readonly size = input<SelectSize>('md');
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly showLabel = input(true, { transform: booleanAttribute });
@@ -68,6 +70,7 @@ export class LanguageSelect {
       `language-select--${this.fill()}`,
       `language-select--${this.variant()}`,
       `language-select--${this.appearance()}`,
+      `language-select--${this.placement()}`,
       this.isOpen() ? 'language-select--open' : '',
     ].join(' '),
   );

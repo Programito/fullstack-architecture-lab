@@ -13,6 +13,12 @@ describe('app routes', () => {
     );
   });
 
+  it('wraps restaurant-pos routes in the restaurant shell', () => {
+    const restaurantPosRoute = routes.find((route) => route.path === 'restaurant-pos');
+
+    expect(restaurantPosRoute?.loadComponent).toBeTypeOf('function');
+  });
+
   it('redirects the app root to the service route', () => {
     const redirectRoute = routes.find((route) => route.path === '');
 
@@ -24,10 +30,11 @@ describe('app routes', () => {
     );
   });
 
-  it('defines layout and service routes', () => {
+  it('defines layout, service, and kitchen routes', () => {
     const childPaths = routes.find((route) => route.path === 'restaurant-pos')?.children?.map((route) => route.path);
 
     expect(childPaths).toContain('layout');
     expect(childPaths).toContain('service');
+    expect(childPaths).toContain('kitchen');
   });
 });

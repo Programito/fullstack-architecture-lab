@@ -47,6 +47,9 @@
     "common": {
       "layout": "Plano",
       "service": "Servicio",
+      "kitchen": "Cocina",
+      "pos": "TPV restaurante",
+      "navigation": "Navegación principal",
       "cancel": "Cancelar",
       "saveChanges": "Guardar cambios",
       "columnsRows": "{{columns}} columnas x {{rows}} filas",
@@ -161,6 +164,9 @@
       "searchServicePoint": "Buscar mesa/taburete",
       "searchServicePointDescription": "Busca una mesa o taburete y selecciónalo en el plano de servicio.",
       "searchServicePointPlaceholder": "Buscar mesa, taburete, estado o capacidad",
+      "servicePointStatusFilter": "Estado",
+      "allServicePointStatuses": "Todos los estados",
+      "returnToLastServicePoint": "Volver a {{label}}",
       "closeServicePointSearch": "Cerrar buscador de mesas y taburetes",
       "clearServicePointSearch": "Limpiar búsqueda de mesas y taburetes",
       "searchProduct": "Buscar producto",
@@ -172,6 +178,8 @@
       "productCategoryFilter": "Categoría",
       "allProductCategories": "Todas",
       "productAdded": "Añadido",
+      "finishProductSearch": "Finalizar",
+      "productQuantityLabel": "Cantidad de {{name}}: {{count}}",
       "addFavoriteProduct": "Añadir {{name}} a favoritos",
       "removeFavoriteProduct": "Quitar {{name}} de favoritos",
       "closeProductSearch": "Cerrar buscador de productos",
@@ -194,15 +202,67 @@
       "markServedActionLabel": "Marcar el pedido de la mesa seleccionada como servido",
       "increaseProductQuantityActionLabel": "Añadir una unidad de {{name}}",
       "decreaseProductQuantityActionLabel": "Quitar una unidad de {{name}}",
+      "lineNote": "Nota",
+      "lineNoteActionLabel": "Nota para {{name}}",
+      "markProductReady": "Preparado",
+      "markProductServed": "Servir",
+      "removeProduct": "Eliminar",
+      "markProductReadyActionLabel": "Marcar {{name}} como preparado",
+      "markProductServedActionLabel": "Marcar {{name}} como servido",
+      "removeProductActionLabel": "Eliminar {{name}} del pedido",
       "chargeActionLabel": "Cobrar la mesa seleccionada",
       "setCashPaymentActionLabel": "Seleccionar pago en efectivo para la mesa seleccionada",
       "setCardPaymentActionLabel": "Seleccionar pago con tarjeta para la mesa seleccionada",
       "cleaningActionLabel": "Marcar la mesa seleccionada para limpieza",
       "freeTableActionLabel": "Liberar la mesa seleccionada",
       "freeTableConfirmTitle": "Liberar mesa",
-      "freeTableConfirmDescription": "Esta accion vaciara el pedido y dejara la mesa libre.",
+      "freeTableConfirmDescription": "Esta acción vaciará el pedido y dejará la mesa libre.",
       "confirmFreeTable": "Liberar mesa",
       "cancelFreeTable": "Mantener mesa"
+    },
+    "kitchen": {
+      "eyebrow": "Producción",
+      "title": "Cocina",
+      "queueTitle": "Comandas en preparación",
+      "queueDescription": "Revisa los platos enviados desde sala y marca cada línea cuando esté preparada.",
+      "pending": "Pendientes",
+      "preparing": "Preparándose",
+      "ready": "Preparados",
+      "orders": "Comandas de cocina",
+      "emptyTitle": "Sin comandas en cocina",
+      "emptyDescription": "Cuando sala envíe un pedido a cocina, aparecerá aquí para prepararlo.",
+      "openTable": "Ver mesa",
+      "startPreparing": "Empezar",
+      "startPreparingActionLabel": "Empezar {{name}}",
+      "markReady": "Preparado",
+      "markReadyActionLabel": "Marcar {{name}} como preparado",
+      "readyForPickup": "Listo para coger",
+      "readyForPickupActionLabel": "{{name}} preparado para coger",
+      "archive": "Archivar",
+      "archiveActionLabel": "Archivar {{name}} de cocina",
+      "moveBackActionLabel": "Volver {{name}} a la fase anterior",
+      "ticketElapsed": "Tiempo máximo: {{time}}",
+      "lineElapsed": "Espera: {{time}}",
+      "elapsedPending": "sin enviar",
+      "elapsedLessThanMinute": "menos de 1 min",
+      "elapsedMinutes": "{{count}} min",
+      "columns": {
+        "sent_to_kitchen": {
+          "title": "En cola",
+          "description": "Pendiente de empezar.",
+          "empty": "No hay platos en cola."
+        },
+        "preparing": {
+          "title": "Preparándose",
+          "description": "Platos que cocina está preparando.",
+          "empty": "No hay platos preparándose."
+        },
+        "ready": {
+          "title": "Preparado para coger",
+          "description": "Listo para que sala lo recoja.",
+          "empty": "No hay platos listos para coger."
+        }
+      }
     },
     "tableStatus": {
       "free": "Libre",
@@ -217,6 +277,9 @@
     "lineStatus": {
       "pending": "Pendiente",
       "sent_to_kitchen": "En cocina",
+      "preparing": "Preparándose",
+      "ready": "Preparado",
+      "picked_up": "Recogido",
       "served": "Servido"
     },
     "course": {

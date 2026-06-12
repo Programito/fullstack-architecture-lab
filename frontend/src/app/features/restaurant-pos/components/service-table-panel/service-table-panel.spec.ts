@@ -82,7 +82,7 @@ describe('ServiceTablePanel', () => {
     const increaseProduct = vi.fn();
     const decreaseProduct = vi.fn();
 
-    const { fixture } = await render(ServiceTablePanel, {
+    const { fixture, container } = await render(ServiceTablePanel, {
       imports: [...i18n.imports],
       providers: [...i18n.providers],
       inputs: {
@@ -106,6 +106,8 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByText('Principal pendiente')).toBeTruthy();
     expect(screen.getByText('4 pax')).toBeTruthy();
     expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
+    expect(container.querySelector('.theme-order-line')).toBeTruthy();
+    expect(container.querySelector('.theme-quantity-stepper')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Craft Burger' }));
     fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
     expect(increaseProduct).toHaveBeenCalledWith('burger');
@@ -155,6 +157,82 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByRole('heading', { name: 'Principal' })).toBeTruthy();
     expect(screen.getByText('1 x Agua')).toBeTruthy();
     expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
+  });
+
+  it('emits granular line actions for kitchen readiness, serving, removal, and notes', async () => {
+    const i18n = provideI18nTesting();
+    const markProductReady = vi.fn();
+    const markProductServed = vi.fn();
+    const removeProduct = vi.fn();
+    const updateProductNote = vi.fn();
+    const kitchenOrder: TableOrder = {
+      ...order,
+      lines: [
+        {
+          ...order.lines[0],
+          status: 'sent_to_kitchen',
+          note: 'Sin cebolla',
+        },
+      ],
+    };
+
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, kitchenOrder, {
+          canSendToKitchen: false,
+          canMarkServed: true,
+        }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.markProductReady.subscribe(markProductReady);
+    fixture.componentInstance.markProductServed.subscribe(markProductServed);
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+    fixture.componentInstance.updateProductNote.subscribe(updateProductNote);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar Craft Burger como preparado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar Craft Burger como servido' }));
+    fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Craft Burger' }), { target: { value: 'Muy hecho' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+
+    expect(markProductReady).toHaveBeenCalledWith('burger');
+    expect(markProductServed).toHaveBeenCalledWith('burger');
+    expect(updateProductNote).toHaveBeenCalledWith({ productId: 'burger', note: 'Muy hecho' });
+    expect(removeProduct).toHaveBeenCalledWith('burger');
+  });
+
+  it('allows picked up kitchen lines to be served from the dining room', async () => {
+    const i18n = provideI18nTesting();
+    const pickedUpOrder: TableOrder = {
+      ...order,
+      lines: [
+        {
+          ...order.lines[0],
+          status: 'picked_up',
+          pickedUpAt: '2026-06-10T12:20:00.000Z',
+        },
+      ],
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, pickedUpOrder, {
+          canSendToKitchen: false,
+          canMarkServed: true,
+        }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByText('Recogido')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Marcar Craft Burger como servido' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: 'Marcar Craft Burger como preparado' }).hasAttribute('disabled')).toBe(true);
   });
 
   it('disables closing actions until the table can be closed and confirms before freeing it', async () => {
