@@ -31,11 +31,15 @@ describe('ServiceTablePanel', () => {
     total: 12.5,
     lines: [
       {
+        id: 'line-burger',
         productId: 'burger',
         productName: 'Craft Burger',
         quantity: 1,
+        basePrice: 12.5,
+        selectedModifiers: [],
         unitPrice: 12.5,
         subtotal: 12.5,
+        configurationSignature: 'burger::',
         course: 'main',
         status: 'pending',
       },
@@ -110,8 +114,8 @@ describe('ServiceTablePanel', () => {
     expect(container.querySelector('.theme-quantity-stepper')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Craft Burger' }));
     fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
-    expect(increaseProduct).toHaveBeenCalledWith('burger');
-    expect(decreaseProduct).toHaveBeenCalledWith('burger');
+    expect(increaseProduct).toHaveBeenCalledWith('line-burger');
+    expect(decreaseProduct).toHaveBeenCalledWith('line-burger');
     expect(screen.getByRole('button', { name: /Cocina/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Cobrar/i })).toBeTruthy();
     expect(screen.queryByText('Añadir rápido')).toBeNull();
@@ -124,11 +128,15 @@ describe('ServiceTablePanel', () => {
       total: 17,
       lines: [
         {
+          id: 'line-water',
           productId: 'water',
           productName: 'Agua',
           quantity: 1,
+          basePrice: 2,
+          selectedModifiers: [],
           unitPrice: 2,
           subtotal: 2,
+          configurationSignature: 'water::',
           course: 'drinks',
           status: 'served',
         },
@@ -171,6 +179,7 @@ describe('ServiceTablePanel', () => {
         {
           ...order.lines[0],
           status: 'sent_to_kitchen',
+          kitchenNote: 'Sin cebolla',
           note: 'Sin cebolla',
         },
       ],
@@ -198,10 +207,10 @@ describe('ServiceTablePanel', () => {
     fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Craft Burger' }), { target: { value: 'Muy hecho' } });
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
 
-    expect(markProductReady).toHaveBeenCalledWith('burger');
-    expect(markProductServed).toHaveBeenCalledWith('burger');
-    expect(updateProductNote).toHaveBeenCalledWith({ productId: 'burger', note: 'Muy hecho' });
-    expect(removeProduct).toHaveBeenCalledWith('burger');
+    expect(markProductReady).toHaveBeenCalledWith('line-burger');
+    expect(markProductServed).toHaveBeenCalledWith('line-burger');
+    expect(updateProductNote).toHaveBeenCalledWith({ lineId: 'line-burger', note: 'Muy hecho' });
+    expect(removeProduct).toHaveBeenCalledWith('line-burger');
   });
 
   it('allows picked up kitchen lines to be served from the dining room', async () => {

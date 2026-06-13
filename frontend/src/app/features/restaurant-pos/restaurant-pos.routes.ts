@@ -1,6 +1,6 @@
 import type { Type } from '@angular/core';
 
-export type RestaurantPosSectionPath = 'service' | 'kitchen' | 'layout';
+export type RestaurantPosSectionPath = 'service' | 'menu' | 'kitchen' | 'layout';
 
 export type RestaurantPosSection = {
   path: RestaurantPosSectionPath;
@@ -20,6 +20,12 @@ export const RESTAURANT_POS_SECTIONS: readonly RestaurantPosSection[] = [
     icon: 'room_service',
     loadComponent: () =>
       import('./pages/restaurant-pos-service-page/restaurant-pos-service-page').then((module) => module.RestaurantPosServicePage),
+  },
+  {
+    path: 'menu',
+    labelKey: 'restaurantPos.common.menu',
+    icon: 'restaurant_menu',
+    loadComponent: () => import('../menu/pages/menu-page/menu-page').then((module) => module.MenuPage),
   },
   {
     path: 'kitchen',

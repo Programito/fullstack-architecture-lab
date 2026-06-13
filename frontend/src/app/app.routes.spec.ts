@@ -40,7 +40,7 @@ describe('app routes', () => {
     );
   });
 
-  it('defines layout, service, and kitchen routes', () => {
+  it('defines restaurant-pos section routes from the shared config', () => {
     const childPaths = restaurantPosRoute()?.children?.map((route) => route.path);
 
     expect(childPaths).toEqual(expect.arrayContaining(RESTAURANT_POS_SECTIONS.map((section) => section.path)));

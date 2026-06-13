@@ -1,0 +1,181 @@
+<main class="min-h-dvh">
+  <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div class="min-w-0">
+        <p class="theme-muted text-sm font-medium">{{ 'menu.page.eyebrow' | transloco }}</p>
+        <h1 class="theme-title truncate text-2xl font-semibold">{{ 'menu.page.title' | transloco }}</h1>
+        <p class="theme-muted mt-1 text-sm">{{ 'menu.page.description' | transloco }}</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div class="theme-soft-panel rounded-md border px-3 py-2">
+          <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.available' | transloco }}</p>
+          <p class="theme-title text-lg font-semibold">{{ availableCount() }}/{{ products().length }}</p>
+        </div>
+        <div class="theme-soft-panel rounded-md border px-3 py-2">
+          <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.customizable' | transloco }}</p>
+          <p class="theme-title text-lg font-semibold">{{ customizableCount() }}</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:p-6">
+    <section class="grid content-start gap-4">
+      <div class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+        <app-search-input
+          [label]="'menu.page.searchLabel' | transloco"
+          [placeholder]="'menu.page.searchPlaceholder' | transloco"
+          [value]="query()"
+          [clearAriaLabel]="'menu.page.clearSearch' | transloco"
+          (valueChange)="updateQuery($event)"
+          (searched)="updateQuery($event)"
+        />
+
+        <div class="grid gap-3 xl:grid-cols-[minmax(12rem,1fr)_auto_auto] xl:items-end">
+          <app-select
+            size="sm"
+            fill="outline"
+            variant="neutral"
+            [label]="'menu.page.categoryFilter' | transloco"
+            [value]="categoryFilter()"
+            [options]="categoryOptions()"
+            (valueChange)="setCategoryFilter($event)"
+          />
+
+          <app-segmented-control
+            size="sm"
+            variant="pill"
+            [ariaLabel]="'menu.page.availabilityFilter' | transloco"
+            [options]="availabilityOptions()"
+            [value]="availabilityFilter()"
+            (valueChange)="setAvailabilityFilter($event)"
+          />
+
+          <app-segmented-control
+            size="sm"
+            variant="pill"
+            [ariaLabel]="'menu.page.customizationFilter' | transloco"
+            [options]="customizationOptions()"
+            [value]="customizationFilter()"
+            (valueChange)="setCustomizationFilter($event)"
+          />
+        </div>
+      </div>
+
+      <div class="grid content-start gap-2">
+        @for (product of filteredProducts(); track product.id) {
+          <button
+            type="button"
+            class="theme-panel grid gap-3 rounded-lg border p-4 text-left shadow-sm transition hover:border-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 md:grid-cols-[minmax(0,1fr)_auto]"
+            [class.border-cyan-500]="isSelected(product)"
+            [class.opacity-65]="!product.available"
+            (click)="selectProduct(product)"
+          >
+            <span class="min-w-0">
+              <span class="flex flex-wrap items-center gap-2">
+                <span class="theme-title text-base font-semibold">{{ product.name }}</span>
+                @if (!product.available) {
+                  <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
+                }
+                @if (isCustomizable(product)) {
+                  <app-badge variant="secondary" size="sm">{{ 'menu.page.customizableBadge' | transloco }}</app-badge>
+                }
+              </span>
+              <span class="theme-muted mt-1 block text-sm">{{ categoryName(product) }} &middot; {{ 'restaurantPos.course.' + product.course | transloco }}</span>
+              @if (product.description) {
+                <span class="theme-muted mt-2 block text-sm">{{ product.description }}</span>
+              }
+              @if (product.allergens?.length) {
+                <span class="theme-muted mt-2 block text-xs">{{ 'menu.page.allergens' | transloco }}: {{ product.allergens?.join(', ') }}</span>
+              }
+            </span>
+            <span class="theme-title text-lg font-semibold">{{ product.basePrice | currency: 'EUR' }}</span>
+          </button>
+        } @empty {
+          <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noResults' | transloco }}</p>
+        }
+      </div>
+    </section>
+
+    <aside class="theme-panel h-fit rounded-lg border p-4 shadow-sm">
+      @if (selectedProduct(); as product) {
+        <div class="grid gap-4">
+          <header class="grid gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="theme-title text-xl font-semibold">{{ product.name }}</h2>
+              @if (!product.available) {
+                <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
+              }
+              @if (isCustomizable(product)) {
+                <app-badge variant="secondary" size="sm">{{ 'menu.page.customizableBadge' | transloco }}</app-badge>
+              }
+            </div>
+            <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ 'restaurantPos.course.' + product.course | transloco }}</p>
+            @if (product.description) {
+              <p class="theme-muted text-sm">{{ product.description }}</p>
+            }
+          </header>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="theme-soft-panel rounded-md border px-3 py-2">
+              <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.customizer.basePrice' | transloco }}</p>
+              <p class="theme-title text-lg font-semibold">{{ product.basePrice | currency: 'EUR' }}</p>
+            </div>
+            <div class="theme-soft-panel rounded-md border px-3 py-2">
+              <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.previewPrice' | transloco }}</p>
+              <p class="theme-title text-lg font-semibold">{{ previewPrice() | currency: 'EUR' }}</p>
+            </div>
+          </div>
+
+          @if (product.allergens?.length) {
+            <section>
+              <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.allergens' | transloco }}</h3>
+              <p class="theme-muted mt-1 text-sm">{{ product.allergens?.join(', ') }}</p>
+            </section>
+          }
+
+          @if (selectedModifierGroups().length) {
+            <section class="grid gap-3">
+              <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.modifiers' | transloco }}</h3>
+              @for (group of selectedModifierGroups(); track group.id) {
+                <fieldset class="grid gap-2 rounded-md border p-3">
+                  <legend class="theme-title px-1 text-sm font-semibold">
+                    {{ group.name }}
+                    @if (group.required) {
+                      <span class="theme-muted text-xs">({{ 'menu.customizer.required' | transloco }})</span>
+                    }
+                  </legend>
+
+                  @for (option of group.options; track option.id) {
+                    <label class="theme-field flex min-h-10 items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                      <span class="inline-flex items-center gap-2">
+                        <input
+                          [type]="group.type === 'single' ? 'radio' : 'checkbox'"
+                          [name]="group.id"
+                          [checked]="isOptionSelected(option.id)"
+                          (change)="group.type === 'single' ? selectSingle(group, option.id) : toggleOption(option.id)"
+                        />
+                        <span>{{ group.type === 'remove' ? ('menu.customizer.without' | transloco: { name: option.name }) : option.name }}</span>
+                      </span>
+                      <span class="theme-muted text-xs font-semibold">
+                        @if (option.priceDelta > 0) {
+                          +{{ option.priceDelta | currency: 'EUR' }}
+                        } @else {
+                          {{ 0 | currency: 'EUR' }}
+                        }
+                      </span>
+                    </label>
+                  }
+                </fieldset>
+              }
+            </section>
+          } @else {
+            <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'menu.page.noModifiers' | transloco }}</p>
+          }
+        </div>
+      } @else {
+        <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSelection' | transloco }}</p>
+      }
+    </aside>
+  </div>
+</main>

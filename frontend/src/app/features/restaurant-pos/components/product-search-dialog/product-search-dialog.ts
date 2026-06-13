@@ -51,6 +51,18 @@ export class ProductSearchDialog {
     return product.allergens?.length ? product.allergens.join(', ') : this.translate('restaurantPos.service.noAllergens');
   }
 
+  protected productPrice(product: Product): number {
+    return product.basePrice ?? product.price ?? 0;
+  }
+
+  protected productCategoryLabel(product: Product): string {
+    return product.category ?? product.categoryId;
+  }
+
+  protected isCustomizable(product: Product): boolean {
+    return product.modifierGroupIds.length > 0;
+  }
+
   protected isFavorite(productId: string): boolean {
     return this.favoriteProductIds().includes(productId);
   }
@@ -70,8 +82,9 @@ export class ProductSearchDialog {
         : '';
 
     return [
-      'theme-field grid min-h-16 grid-cols-[minmax(0,1fr)_auto_2.5rem] items-stretch gap-2 rounded-md border p-1 text-sm transition',
+      'theme-field grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-md border p-2 text-sm transition sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center',
       selectedClass,
+      this.products().find((product) => product.id === productId)?.available === false ? 'opacity-60' : '',
     ].join(' ');
   }
 

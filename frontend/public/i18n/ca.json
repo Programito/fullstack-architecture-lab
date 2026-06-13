@@ -47,6 +47,7 @@
     "common": {
       "layout": "Plànol",
       "service": "Servei",
+      "menu": "Menú",
       "kitchen": "Cuina",
       "pos": "TPV restaurant",
       "navigation": "Navegació principal",
@@ -190,6 +191,8 @@
       "noProductResults": "No hi ha productes que coincideixin amb la cerca.",
       "noServicePointResults": "No hi ha taules ni tamborets que coincideixin amb la cerca.",
       "noAllergens": "Sense al·lergògens indicats",
+      "customizable": "Personalitzable",
+      "soldOut": "Esgotat",
       "sendKitchen": "Cuina",
       "markServed": "Servit",
       "charge": "Cobrar",
@@ -204,6 +207,8 @@
       "decreaseProductQuantityActionLabel": "Treure una unitat de {{name}}",
       "lineNote": "Nota",
       "lineNoteActionLabel": "Nota per a {{name}}",
+      "kitchenNotePrefix": "Nota:",
+      "withoutModifier": "SENSE {{name}}",
       "markProductReady": "Preparat",
       "markProductServed": "Servir",
       "removeProduct": "Eliminar",
@@ -342,6 +347,48 @@
       "entrance": "Entrada",
       "blockedArea": "Zona bloquejada",
       "stool": "Tamboret"
+    }
+  },
+  "menu": {
+    "page": {
+      "eyebrow": "Catàleg operatiu",
+      "title": "Menú",
+      "description": "Revisa productes, disponibilitat, categories i modificadors abans del servei.",
+      "available": "Disponibles",
+      "customizable": "Personalitzables",
+      "categories": "Categories",
+      "soldOut": "Esgotat",
+      "customizableBadge": "Personalitzable",
+      "searchLabel": "Buscar al catàleg",
+      "searchPlaceholder": "Buscar producte, categoria, al·lergen o modificador",
+      "clearSearch": "Netejar cerca del catàleg",
+      "categoryFilter": "Categoria",
+      "allCategories": "Totes les categories",
+      "availabilityFilter": "Disponibilitat",
+      "availabilityAll": "Tots",
+      "availabilityAvailable": "Disponibles",
+      "availabilitySoldOut": "Esgotats",
+      "customizationFilter": "Personalització",
+      "customizationAll": "Tots",
+      "customizationCustomizable": "Personalitzables",
+      "customizationSimple": "Simples",
+      "allergens": "Al·lergògens",
+      "modifiers": "Modificadors",
+      "previewPrice": "Preu preview",
+      "noModifiers": "Aquest producte no té modificadors.",
+      "noResults": "No hi ha productes que coincideixin amb els filtres.",
+      "noSelection": "Selecciona un producte per revisar-ne el detall."
+    },
+    "customizer": {
+      "title": "Personalitzar producte",
+      "description": "Selecciona modificadors i afegeix una nota per a cuina si cal.",
+      "close": "Tancar personalització",
+      "basePrice": "Preu base",
+      "required": "obligatori",
+      "without": "SENSE {{name}}",
+      "kitchenNote": "Nota de cuina",
+      "kitchenNotePlaceholder": "Exemple: sense sal, poc fet, salsa a part...",
+      "addFor": "Afegir per {{price}}"
     }
   }
 }

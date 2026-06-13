@@ -1,3 +1,4 @@
+import { MOCK_MENU_PRODUCTS } from '../../menu/services/menu-mock.service';
 import type { FloorElement, OrdersByTable, Product, RestaurantTable, TableOrder } from '../models/restaurant-pos.models';
 
 export const DEFAULT_GRID_ROWS = 20;
@@ -142,54 +143,7 @@ export const MOCK_RESTAURANT_TABLES: RestaurantTable[] = [
   },
 ];
 
-export const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 'product-1',
-    name: 'Craft Burger',
-    category: 'Burgers',
-    price: 12.5,
-    available: true,
-    allergens: ['gluten', 'milk', 'egg'],
-  },
-  {
-    id: 'product-2',
-    name: 'Iberian Ham Croquettes',
-    category: 'Tapas',
-    price: 8.75,
-    available: true,
-    allergens: ['gluten', 'milk'],
-  },
-  {
-    id: 'product-3',
-    name: 'Sparkling Lemonade',
-    category: 'Drinks',
-    price: 4.5,
-    available: true,
-  },
-  {
-    id: 'product-4',
-    name: 'Chocolate Coulant',
-    category: 'Desserts',
-    price: 7,
-    available: false,
-    allergens: ['gluten', 'egg', 'milk'],
-  },
-  {
-    id: 'product-5',
-    name: 'Caesar Salad',
-    category: 'Salads',
-    price: 10,
-    available: true,
-    allergens: ['egg', 'fish'],
-  },
-  {
-    id: 'product-6',
-    name: 'Espresso',
-    category: 'Coffee',
-    price: 2.5,
-    available: true,
-  },
-];
+export const MOCK_PRODUCTS: Product[] = MOCK_MENU_PRODUCTS;
 
 const createOpenOrder = (tableId: string): TableOrder => ({
   tableId,

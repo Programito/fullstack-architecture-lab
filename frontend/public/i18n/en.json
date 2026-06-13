@@ -47,6 +47,7 @@
     "common": {
       "layout": "Layout",
       "service": "Service",
+      "menu": "Menu",
       "kitchen": "Kitchen",
       "pos": "Restaurant POS",
       "navigation": "Primary navigation",
@@ -190,6 +191,8 @@
       "noProductResults": "No products match the search.",
       "noServicePointResults": "No tables or stools match the search.",
       "noAllergens": "No allergens listed",
+      "customizable": "Customizable",
+      "soldOut": "Sold out",
       "sendKitchen": "Kitchen",
       "markServed": "Served",
       "charge": "Charge",
@@ -204,6 +207,8 @@
       "decreaseProductQuantityActionLabel": "Remove one {{name}}",
       "lineNote": "Note",
       "lineNoteActionLabel": "Note for {{name}}",
+      "kitchenNotePrefix": "Note:",
+      "withoutModifier": "NO {{name}}",
       "markProductReady": "Ready",
       "markProductServed": "Serve",
       "removeProduct": "Remove",
@@ -342,6 +347,48 @@
       "entrance": "Entrance",
       "blockedArea": "Blocked area",
       "stool": "Stool"
+    }
+  },
+  "menu": {
+    "page": {
+      "eyebrow": "Operational catalog",
+      "title": "Menu",
+      "description": "Review products, availability, categories, and modifiers before service.",
+      "available": "Available",
+      "customizable": "Customizable",
+      "categories": "Categories",
+      "soldOut": "Sold out",
+      "customizableBadge": "Customizable",
+      "searchLabel": "Search catalog",
+      "searchPlaceholder": "Search product, category, allergen, or modifier",
+      "clearSearch": "Clear catalog search",
+      "categoryFilter": "Category",
+      "allCategories": "All categories",
+      "availabilityFilter": "Availability",
+      "availabilityAll": "All",
+      "availabilityAvailable": "Available",
+      "availabilitySoldOut": "Sold out",
+      "customizationFilter": "Customization",
+      "customizationAll": "All",
+      "customizationCustomizable": "Customizable",
+      "customizationSimple": "Simple",
+      "allergens": "Allergens",
+      "modifiers": "Modifiers",
+      "previewPrice": "Preview price",
+      "noModifiers": "This product has no modifiers.",
+      "noResults": "No products match the filters.",
+      "noSelection": "Select a product to review its details."
+    },
+    "customizer": {
+      "title": "Customize product",
+      "description": "Select modifiers and add a kitchen note when needed.",
+      "close": "Close customization",
+      "basePrice": "Base price",
+      "required": "required",
+      "without": "NO {{name}}",
+      "kitchenNote": "Kitchen note",
+      "kitchenNotePlaceholder": "Example: no salt, little done, sauce aside...",
+      "addFor": "Add for {{price}}"
     }
   }
 }

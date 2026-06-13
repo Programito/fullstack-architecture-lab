@@ -48,31 +48,31 @@ describe('RestaurantPosKitchenPage', () => {
     expect(screen.getByRole('heading', { name: 'Preparándose' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Preparado para coger' })).toBeTruthy();
     expect(within(getColumn('En cola')).getByRole('heading', { name: 'M1' })).toBeTruthy();
-    expect(within(getColumn('En cola')).getByText('1 x Craft Burger')).toBeTruthy();
-    expect(within(getColumn('En cola')).getByText('1 x Iberian Ham Croquettes')).toBeTruthy();
+    expect(within(getColumn('En cola')).getByText('1 x Hamburguesa craft')).toBeTruthy();
+    expect(within(getColumn('En cola')).getByText('1 x Croquetas de jamón ibérico')).toBeTruthy();
     expect(screen.getAllByText(/Espera: 4 min/).length).toBe(2);
     expect(screen.getByText('Sin salsa')).toBeTruthy();
 
-    fireEvent.click(within(screen.getByText('1 x Craft Burger').closest('li')!).getByRole('button', { name: 'Empezar Craft Burger' }));
+    fireEvent.click(within(screen.getByText('1 x Hamburguesa craft').closest('li')!).getByRole('button', { name: 'Empezar Hamburguesa craft' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('preparing');
-    expect(within(getColumn('Preparándose')).getByText('1 x Craft Burger')).toBeTruthy();
-    expect(within(getColumn('En cola')).getByText('1 x Iberian Ham Croquettes')).toBeTruthy();
+    expect(within(getColumn('Preparándose')).getByText('1 x Hamburguesa craft')).toBeTruthy();
+    expect(within(getColumn('En cola')).getByText('1 x Croquetas de jamón ibérico')).toBeTruthy();
     expect(screen.getAllByRole('heading', { name: 'M1' }).length).toBe(2);
 
-    fireEvent.click(within(screen.getByText('1 x Craft Burger').closest('li')!).getByRole('button', { name: 'Marcar Craft Burger como preparado' }));
+    fireEvent.click(within(screen.getByText('1 x Hamburguesa craft').closest('li')!).getByRole('button', { name: 'Marcar Hamburguesa craft como preparado' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('ready');
-    expect(within(getColumn('Preparado para coger')).getByText('1 x Craft Burger')).toBeTruthy();
+    expect(within(getColumn('Preparado para coger')).getByText('1 x Hamburguesa craft')).toBeTruthy();
 
-    fireEvent.click(within(screen.getByText('1 x Craft Burger').closest('li')!).getByRole('button', { name: 'Volver Craft Burger a la fase anterior' }));
+    fireEvent.click(within(screen.getByText('1 x Hamburguesa craft').closest('li')!).getByRole('button', { name: 'Volver Hamburguesa craft a la fase anterior' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('preparing');
-    expect(within(getColumn('Preparándose')).getByText('1 x Craft Burger')).toBeTruthy();
-    expect(within(getColumn('En cola')).getByText('1 x Iberian Ham Croquettes')).toBeTruthy();
+    expect(within(getColumn('Preparándose')).getByText('1 x Hamburguesa craft')).toBeTruthy();
+    expect(within(getColumn('En cola')).getByText('1 x Croquetas de jamón ibérico')).toBeTruthy();
   });
 
   it('archives ready lines from kitchen without serving the table order', async () => {
@@ -82,16 +82,16 @@ describe('RestaurantPosKitchenPage', () => {
     store.markOrderLineReady('table-1', 'product-1');
     fixture.detectChanges();
 
-    expect(within(getColumn('Preparado para coger')).getByText('1 x Craft Burger')).toBeTruthy();
+    expect(within(getColumn('Preparado para coger')).getByText('1 x Hamburguesa craft')).toBeTruthy();
 
-    fireEvent.click(within(screen.getByText('1 x Craft Burger').closest('li')!).getByRole('button', { name: 'Archivar Craft Burger de cocina' }));
+    fireEvent.click(within(screen.getByText('1 x Hamburguesa craft').closest('li')!).getByRole('button', { name: 'Archivar Hamburguesa craft de cocina' }));
     fixture.detectChanges();
 
     const archivedLine = store.ordersByTable()['table-1'].lines.find((line) => line.productId === 'product-1');
 
     expect(archivedLine).toEqual(expect.objectContaining({ status: 'picked_up' }));
     expect(archivedLine).not.toHaveProperty('servedAt');
-    expect(within(getColumn('Preparado para coger')).queryByText('1 x Craft Burger')).toBeNull();
-    expect(within(getColumn('En cola')).getByText('1 x Iberian Ham Croquettes')).toBeTruthy();
+    expect(within(getColumn('Preparado para coger')).queryByText('1 x Hamburguesa craft')).toBeNull();
+    expect(within(getColumn('En cola')).getByText('1 x Croquetas de jamón ibérico')).toBeTruthy();
   });
 });

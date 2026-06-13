@@ -5,6 +5,8 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { KEY_VALUE_STORAGE } from '../../../../shared/utils/storage/key-value-storage';
+import { ProductCustomizerDialog, type ProductCustomizationConfirmed } from '../../../menu/components/product-customizer-dialog/product-customizer-dialog';
+import { MenuPricingService } from '../../../menu/services/menu-pricing.service';
 import { FloorPlan, type FloorPlanFocusRequest } from '../../components/floor-plan/floor-plan';
 import { PaymentGatewayDialog } from '../../components/payment-gateway-dialog/payment-gateway-dialog';
 import { ProductSearchDialog, type ProductSearchView } from '../../components/product-search-dialog/product-search-dialog';
@@ -33,6 +35,7 @@ const isServicePointStatusFilter = (value: string): value is ServicePointStatusF
     FloorPlan,
     Icon,
     PaymentGatewayDialog,
+    ProductCustomizerDialog,
     ProductSearchDialog,
     ServicePointSearchDialog,
     ServiceSummary,
@@ -45,6 +48,7 @@ export class RestaurantPosServicePage {
   protected readonly store = inject(RestaurantPosStore);
   private readonly transloco = inject(TranslocoService);
   private readonly storage = inject(KEY_VALUE_STORAGE);
+  private readonly menuPricing = inject(MenuPricingService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly productSearchOpen = signal(false);
   protected readonly productSearchQuery = signal('');
@@ -52,6 +56,8 @@ export class RestaurantPosServicePage {
   protected readonly productCategoryFilter = signal<ProductCategoryFilter>('all');
   protected readonly favoriteProductIds = signal<readonly string[]>(this.loadFavoriteProductIds());
   protected readonly lastAddedProductId = signal<string | null>(null);
+  protected readonly productCustomizerOpen = signal(false);
+  protected readonly customizingProductId = signal<string | null>(null);
   protected readonly servicePointSearchOpen = signal(false);
   protected readonly servicePointSearchQuery = signal('');
   protected readonly servicePointStatusFilter = signal<ServicePointStatusFilter>('all');
@@ -68,7 +74,7 @@ export class RestaurantPosServicePage {
       .products()
       .filter((product) => product.available)
       .filter((product) => this.productSearchView() === 'all' || favoriteProductIds.has(product.id))
-      .filter((product) => categoryFilter === 'all' || this.productCourse(product) === categoryFilter);
+      .filter((product) => categoryFilter === 'all' || product.course === categoryFilter);
 
     if (!query) {
       return products;
@@ -85,10 +91,18 @@ export class RestaurantPosServicePage {
   ]);
   protected readonly productQuantities = computed<Record<string, number>>(() =>
     (this.store.selectedOrder()?.lines ?? []).reduce<Record<string, number>>((quantities, line) => {
-      quantities[line.productId] = line.quantity;
+      quantities[line.productId] = (quantities[line.productId] ?? 0) + line.quantity;
       return quantities;
     }, {}),
   );
+  protected readonly customizingProduct = computed(() => {
+    const productId = this.customizingProductId();
+    return productId ? (this.store.products().find((product) => product.id === productId) ?? null) : null;
+  });
+  protected readonly customizingModifierGroups = computed(() => {
+    const product = this.customizingProduct();
+    return product ? this.menuPricing.getModifierGroupsForProduct(product) : [];
+  });
   protected readonly filteredServicePoints = computed(() => {
     const query = this.normalizeSearch(this.servicePointSearchQuery());
     const statusFilter = this.servicePointStatusFilter();
@@ -148,6 +162,7 @@ export class RestaurantPosServicePage {
 
   protected closeProductSearch(): void {
     this.productSearchOpen.set(false);
+    this.closeProductCustomizer();
     this.productSearchQuery.set('');
     this.productCategoryFilter.set('all');
     this.lastAddedProductId.set(null);
@@ -240,8 +255,36 @@ export class RestaurantPosServicePage {
   }
 
   protected addProduct(productId: string): void {
+    const product = this.store.products().find((currentProduct) => currentProduct.id === productId);
+
+    if (!this.store.selectedTableId()) {
+      this.store.addProductToSelectedTable(productId);
+      return;
+    }
+
+    if (product?.modifierGroupIds.length) {
+      this.customizingProductId.set(productId);
+      this.productCustomizerOpen.set(true);
+      return;
+    }
+
     this.store.addProductToSelectedTable(productId);
     this.lastAddedProductId.set(productId);
+  }
+
+  protected closeProductCustomizer(): void {
+    this.productCustomizerOpen.set(false);
+    this.customizingProductId.set(null);
+  }
+
+  protected confirmProductCustomization(customization: ProductCustomizationConfirmed): void {
+    this.store.addCustomizedProductToSelectedTable(
+      customization.productId,
+      customization.selectedModifierOptionIds,
+      customization.kitchenNote,
+    );
+    this.lastAddedProductId.set(customization.productId);
+    this.closeProductCustomizer();
   }
 
   protected sendToKitchen(): void {
@@ -272,8 +315,8 @@ export class RestaurantPosServicePage {
     this.store.removeSelectedOrderLine(productId);
   }
 
-  protected updateProductNote(change: { productId: string; note: string }): void {
-    this.store.updateSelectedOrderLineNote(change.productId, change.note);
+  protected updateProductNote(change: { lineId: string; note: string }): void {
+    this.store.updateSelectedOrderLineNote(change.lineId, change.note);
   }
 
   protected chargeTable(): void {
@@ -366,24 +409,7 @@ export class RestaurantPosServicePage {
   }
 
   private productSearchText(product: Product): string {
-    return this.normalizeSearch([product.name, product.category, ...(product.allergens ?? [])].join(' '));
-  }
-
-  private productCourse(product: Product): OrderCourse {
-    switch (product.category.toLowerCase()) {
-      case 'drinks':
-      case 'coffee':
-        return 'drinks';
-      case 'tapas':
-        return 'starter';
-      case 'desserts':
-        return 'dessert';
-      case 'burgers':
-      case 'salads':
-        return 'main';
-      default:
-        return 'other';
-    }
+    return this.normalizeSearch([product.name, product.category, product.categoryId, ...(product.allergens ?? [])].filter(Boolean).join(' '));
   }
 
   private servicePointSearchText(element: FloorElement, table: RestaurantTable | null): string {

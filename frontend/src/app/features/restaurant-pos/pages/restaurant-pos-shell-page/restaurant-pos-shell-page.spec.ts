@@ -38,6 +38,7 @@ describe('RestaurantPosShellPage', () => {
     expect(screen.getByRole('link', { name: /TPV restaurante/i })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: /Navegaci.n principal/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Servicio/i }).getAttribute('href')).toBe('/restaurant-pos/service');
+    expect(screen.getByRole('link', { name: /Menú/i }).getAttribute('href')).toBe('/restaurant-pos/menu');
     expect(screen.getByRole('link', { name: /Cocina/i }).getAttribute('href')).toBe('/restaurant-pos/kitchen');
     expect(screen.getByRole('link', { name: /Plano/i }).getAttribute('href')).toBe('/restaurant-pos/layout');
   });

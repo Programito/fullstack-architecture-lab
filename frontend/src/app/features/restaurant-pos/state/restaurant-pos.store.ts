@@ -1,4 +1,4 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
   AddFloorElementInput,
   EditableFloorElementType,
@@ -20,12 +20,14 @@ import type {
   TableStatus,
   TableShape,
 } from '../models/restaurant-pos.models';
+import { MenuPricingService } from '../../menu/services/menu-pricing.service';
+import { MenuValidationService } from '../../menu/services/menu-validation.service';
+import { MenuMockService } from '../../menu/services/menu-mock.service';
 import {
   DEFAULT_GRID_COLUMNS,
   DEFAULT_GRID_ROWS,
   MOCK_FLOOR_ELEMENTS,
   MOCK_ORDERS_BY_TABLE,
-  MOCK_PRODUCTS,
   MOCK_RESTAURANT_TABLES,
 } from './restaurant-pos.mock-data';
 
@@ -45,11 +47,13 @@ const KITCHEN_BOARD_STATUSES: KitchenBoardStatus[] = ['sent_to_kitchen', 'prepar
   providedIn: 'root',
 })
 export class RestaurantPosStore {
+  private readonly menu = inject(MenuMockService);
+  private readonly menuPricing = inject(MenuPricingService);
+  private readonly menuValidation = inject(MenuValidationService);
   private readonly _gridRows = signal(DEFAULT_GRID_ROWS);
   private readonly _gridColumns = signal(DEFAULT_GRID_COLUMNS);
   private readonly _floorElements = signal<FloorElement[]>(structuredClone(MOCK_FLOOR_ELEMENTS));
   private readonly _restaurantTables = signal<RestaurantTable[]>(structuredClone(MOCK_RESTAURANT_TABLES));
-  private readonly _products = signal(structuredClone(MOCK_PRODUCTS));
   private readonly _ordersByTable = signal<OrdersByTable>(structuredClone(MOCK_ORDERS_BY_TABLE));
   private readonly _selectedTableId = signal<string | null>(null);
   private readonly _mode = signal<PosMode>('operation');
@@ -59,7 +63,7 @@ export class RestaurantPosStore {
   readonly gridColumns = this._gridColumns.asReadonly();
   readonly floorElements = this._floorElements.asReadonly();
   readonly restaurantTables = this._restaurantTables.asReadonly();
-  readonly products = this._products.asReadonly();
+  readonly products = this.menu.products;
   readonly ordersByTable = this._ordersByTable.asReadonly();
   readonly selectedTableId = this._selectedTableId.asReadonly();
   readonly mode = this._mode.asReadonly();
@@ -148,6 +152,12 @@ export class RestaurantPosStore {
   }
 
   addProductToSelectedTable(productId: string): void {
+    const product = this.products().find((currentProduct) => currentProduct.id === productId);
+    const defaultOptionIds = product ? this.getDefaultModifierOptionIds(product) : [];
+    this.addCustomizedProductToSelectedTable(productId, defaultOptionIds);
+  }
+
+  addCustomizedProductToSelectedTable(productId: string, selectedModifierOptionIds: string[] = [], kitchenNote = ''): void {
     const tableId = this._selectedTableId();
 
     if (!tableId) {
@@ -155,9 +165,16 @@ export class RestaurantPosStore {
       return;
     }
 
-    const product = this._products().find((currentProduct) => currentProduct.id === productId);
+    const product = this.products().find((currentProduct) => currentProduct.id === productId);
 
     if (!product?.available) {
+      this.setError(PRODUCT_UNAVAILABLE_ERROR);
+      return;
+    }
+
+    const validation = this.menuValidation.validateCustomization(product, selectedModifierOptionIds);
+
+    if (!validation.valid) {
       this.setError(PRODUCT_UNAVAILABLE_ERROR);
       return;
     }
@@ -165,13 +182,23 @@ export class RestaurantPosStore {
     const order = this.ensureOrder(tableId);
     const table = this.getTable(tableId);
     const now = this.nowIso();
+    const selectedModifiers = this.menuPricing.buildSelectedModifiers(product, selectedModifierOptionIds);
+    const unitPrice = this.menuPricing.calculateCustomizedProductPrice(product, selectedModifiers);
+    const configurationSignature = this.menuPricing.createConfigurationSignature(product.id, selectedModifierOptionIds, kitchenNote);
+    const lineId = this.createOrderLineId(configurationSignature);
+    const normalizedKitchenNote = kitchenNote.trim();
     const nextLines = this.addProductLine(order.lines, {
+      id: lineId,
       productId: product.id,
       productName: product.name,
       quantity: 1,
-      unitPrice: product.price,
-      subtotal: product.price,
-      course: this.getProductCourse(product.category),
+      basePrice: product.basePrice,
+      selectedModifiers,
+      ...(normalizedKitchenNote ? { kitchenNote: normalizedKitchenNote, note: normalizedKitchenNote } : {}),
+      unitPrice,
+      subtotal: unitPrice,
+      configurationSignature,
+      course: product.course,
       status: 'pending',
     });
     const total = this.calculateOrderTotal(nextLines);
@@ -191,11 +218,24 @@ export class RestaurantPosStore {
     this.clearError();
   }
 
-  increaseSelectedOrderLine(productId: string): void {
-    this.addProductToSelectedTable(productId);
+  increaseSelectedOrderLine(lineIdOrProductId: string): void {
+    const tableId = this._selectedTableId();
+    const order = tableId ? this.ensureOrder(tableId) : null;
+    const existingLine = order ? this.findOrderLine(order, lineIdOrProductId) : null;
+
+    if (!existingLine) {
+      this.addProductToSelectedTable(lineIdOrProductId);
+      return;
+    }
+
+    this.addCustomizedProductToSelectedTable(
+      existingLine.productId,
+      existingLine.selectedModifiers.map((modifier) => modifier.optionId),
+      existingLine.kitchenNote,
+    );
   }
 
-  decreaseSelectedOrderLine(productId: string): void {
+  decreaseSelectedOrderLine(lineIdOrProductId: string): void {
     const tableId = this._selectedTableId();
 
     if (!tableId) {
@@ -204,7 +244,7 @@ export class RestaurantPosStore {
     }
 
     const order = this.ensureOrder(tableId);
-    const existingLine = order.lines.find((line) => line.productId === productId);
+    const existingLine = this.findOrderLine(order, lineIdOrProductId);
 
     if (!existingLine) {
       return;
@@ -212,9 +252,9 @@ export class RestaurantPosStore {
 
     const nextLines =
       existingLine.quantity <= 1
-        ? order.lines.filter((line) => line.productId !== productId)
+        ? order.lines.filter((line) => line.id !== existingLine.id)
         : order.lines.map((line) =>
-            line.productId === productId
+            line.id === existingLine.id
               ? {
                   ...line,
                   quantity: line.quantity - 1,
@@ -261,8 +301,8 @@ export class RestaurantPosStore {
     this.updateSelectedOrderStatus('served', 'served');
   }
 
-  markSelectedOrderLineReady(productId: string): void {
-    this.updateSelectedOrderLine(productId, (line) => {
+  markSelectedOrderLineReady(lineIdOrProductId: string): void {
+    this.updateSelectedOrderLine(lineIdOrProductId, (line) => {
       if (line.status === 'served') {
         return line;
       }
@@ -278,8 +318,8 @@ export class RestaurantPosStore {
     });
   }
 
-  markOrderLinePreparing(tableId: string, productId: string): void {
-    this.updateOrderLine(tableId, productId, (line) => {
+  markOrderLinePreparing(tableId: string, lineIdOrProductId: string): void {
+    this.updateOrderLine(tableId, lineIdOrProductId, (line) => {
       if (line.status !== 'sent_to_kitchen') {
         return line;
       }
@@ -294,8 +334,8 @@ export class RestaurantPosStore {
     });
   }
 
-  markOrderLineReady(tableId: string, productId: string): void {
-    this.updateOrderLine(tableId, productId, (line) => {
+  markOrderLineReady(tableId: string, lineIdOrProductId: string): void {
+    this.updateOrderLine(tableId, lineIdOrProductId, (line) => {
       if (line.status === 'served') {
         return line;
       }
@@ -311,8 +351,8 @@ export class RestaurantPosStore {
     });
   }
 
-  moveOrderLineBackInKitchen(tableId: string, productId: string): void {
-    this.updateOrderLine(tableId, productId, (line) => {
+  moveOrderLineBackInKitchen(tableId: string, lineIdOrProductId: string): void {
+    this.updateOrderLine(tableId, lineIdOrProductId, (line) => {
       if (line.status === 'ready') {
         return {
           ...line,
@@ -334,8 +374,8 @@ export class RestaurantPosStore {
     });
   }
 
-  archiveOrderLineFromKitchen(tableId: string, productId: string): void {
-    this.updateOrderLine(tableId, productId, (line) => {
+  archiveOrderLineFromKitchen(tableId: string, lineIdOrProductId: string): void {
+    this.updateOrderLine(tableId, lineIdOrProductId, (line) => {
       if (line.status !== 'ready') {
         return line;
       }
@@ -352,8 +392,8 @@ export class RestaurantPosStore {
     });
   }
 
-  markSelectedOrderLineServed(productId: string): void {
-    this.updateSelectedOrderLine(productId, (line) => {
+  markSelectedOrderLineServed(lineIdOrProductId: string): void {
+    this.updateSelectedOrderLine(lineIdOrProductId, (line) => {
       const now = this.nowIso();
       return {
         ...line,
@@ -368,7 +408,7 @@ export class RestaurantPosStore {
     this.syncSelectedTableStatusAfterLineUpdate();
   }
 
-  removeSelectedOrderLine(productId: string): void {
+  removeSelectedOrderLine(lineIdOrProductId: string): void {
     const tableId = this._selectedTableId();
 
     if (!tableId) {
@@ -377,7 +417,8 @@ export class RestaurantPosStore {
     }
 
     const order = this.ensureOrder(tableId);
-    const nextLines = order.lines.filter((line) => line.productId !== productId);
+    const existingLine = this.findOrderLine(order, lineIdOrProductId);
+    const nextLines = existingLine ? order.lines.filter((line) => line.id !== existingLine.id) : order.lines;
     const total = this.calculateOrderTotal(nextLines);
 
     this.setOrder(tableId, {
@@ -389,12 +430,12 @@ export class RestaurantPosStore {
     this.clearError();
   }
 
-  updateSelectedOrderLineNote(productId: string, note: string): void {
+  updateSelectedOrderLineNote(lineIdOrProductId: string, note: string): void {
     const normalizedNote = note.trim();
 
-    this.updateSelectedOrderLine(productId, (line) => ({
+    this.updateSelectedOrderLine(lineIdOrProductId, (line) => ({
       ...line,
-      ...(normalizedNote ? { note: normalizedNote } : { note: undefined }),
+      ...(normalizedNote ? { note: normalizedNote, kitchenNote: normalizedNote } : { note: undefined, kitchenNote: undefined }),
     }));
   }
 
@@ -856,14 +897,14 @@ export class RestaurantPosStore {
   }
 
   private addProductLine(lines: OrderLine[], nextLine: OrderLine): OrderLine[] {
-    const existingLine = lines.find((line) => line.productId === nextLine.productId);
+    const existingLine = lines.find((line) => line.configurationSignature === nextLine.configurationSignature);
 
     if (!existingLine) {
       return [...lines, nextLine];
     }
 
     return lines.map((line) =>
-      line.productId === nextLine.productId
+      line.configurationSignature === nextLine.configurationSignature
         ? {
             ...line,
             quantity: line.quantity + 1,
@@ -891,7 +932,7 @@ export class RestaurantPosStore {
     return this._ordersByTable()[tableId] ?? this.createEmptyOrder(tableId);
   }
 
-  private updateSelectedOrderLine(productId: string, updateLine: (line: OrderLine) => OrderLine): void {
+  private updateSelectedOrderLine(lineIdOrProductId: string, updateLine: (line: OrderLine) => OrderLine): void {
     const tableId = this._selectedTableId();
 
     if (!tableId) {
@@ -899,18 +940,48 @@ export class RestaurantPosStore {
       return;
     }
 
-    this.updateOrderLine(tableId, productId, updateLine);
+    this.updateOrderLine(tableId, lineIdOrProductId, updateLine);
     this.clearError();
   }
 
-  private updateOrderLine(tableId: string, productId: string, updateLine: (line: OrderLine) => OrderLine): void {
+  private updateOrderLine(tableId: string, lineIdOrProductId: string, updateLine: (line: OrderLine) => OrderLine): void {
     const order = this.ensureOrder(tableId);
+    const existingLine = this.findOrderLine(order, lineIdOrProductId);
 
     this.setOrder(tableId, {
       ...order,
-      lines: order.lines.map((line) => (line.productId === productId ? updateLine(line) : line)),
+      lines: order.lines.map((line) => (existingLine && line.id === existingLine.id ? updateLine(line) : line)),
     });
     this.clearError();
+  }
+
+  private findOrderLine(order: TableOrder, lineIdOrProductId: string): OrderLine | null {
+    return (
+      order.lines.find((line) => line.id === lineIdOrProductId) ??
+      order.lines.find((line) => line.configurationSignature === lineIdOrProductId) ??
+      order.lines.find((line) => line.productId === lineIdOrProductId) ??
+      null
+    );
+  }
+
+  private getDefaultModifierOptionIds(product: Product): string[] {
+    return this.menuPricing
+      .getModifierGroupsForProduct(product)
+      .flatMap((group) => group.options.filter((option) => option.selectedByDefault).map((option) => option.id));
+  }
+
+  private createOrderLineId(configurationSignature: string): string {
+    return `line-${this.hashText(configurationSignature)}`;
+  }
+
+  private hashText(value: string): string {
+    let hash = 0;
+
+    for (let index = 0; index < value.length; index += 1) {
+      hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+    }
+
+    return hash.toString(36);
   }
 
   private syncSelectedTableStatusAfterLineUpdate(): void {
@@ -1034,7 +1105,7 @@ export class RestaurantPosStore {
   }
 
   private getProductCourse(category: Product['category']): OrderCourse {
-    switch (category.toLowerCase()) {
+    switch ((category ?? 'other').toLowerCase()) {
       case 'drinks':
       case 'coffee':
         return 'drinks';

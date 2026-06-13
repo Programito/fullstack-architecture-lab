@@ -1,11 +1,17 @@
 import type { PaymentMethod } from './payment.models';
+import type { SelectedModifier } from '../../menu/models/menu.models';
 
 export interface OrderLine {
+  id: string;
   productId: string;
   productName: string;
   quantity: number;
+  basePrice: number;
+  selectedModifiers: SelectedModifier[];
+  kitchenNote?: string;
   unitPrice: number;
   subtotal: number;
+  configurationSignature: string;
   course: OrderCourse;
   status: OrderLineStatus;
   note?: string;

@@ -74,6 +74,40 @@ Ejemplo: un diálogo de búsqueda puede tener un spec que valide `radio`, `combo
 estrella favorita y eventos emitidos. La page debe cubrir que favoritos, búsqueda y categoría filtran
 los productos reales.
 
+## Módulo Menu V1
+
+El módulo `features/menu/` combina lógica pura, integración con la store del POS y UI de
+personalización. La cobertura debe proteger la frontera entre catálogo mutable y snapshot de pedido.
+
+Tests puros recomendados:
+
+- `MenuPricingService`: precio base, extras simples y múltiples, modificadores `remove` sin coste,
+  construcción de `selectedModifiers` y firmas iguales o distintas por modificadores y nota.
+- `MenuValidationService`: producto no disponible, opción inválida, grupos requeridos, selección
+  única y máximos por grupo.
+- Mocks de menú: mantener categorías, disponibilidad y grupos realistas para hamburguesas, bebidas
+  y café sin depender de backend.
+
+Tests de integración con POS:
+
+- `RestaurantPosStore` debe cubrir producto simple, producto personalizado, merge por
+  `configurationSignature`, separación por nota o modificadores distintos, rechazo de
+  personalización inválida y totales con modificadores.
+- Las operaciones de servicio y cocina se prueban por `line.id` para soportar varias líneas del
+  mismo producto con configuraciones distintas.
+- Las notas se verifican como `kitchenNote` en el snapshot, manteniendo compatibilidad con el campo
+  antiguo cuando exista.
+
+Tests UI principales:
+
+- `ProductCustomizerDialog` renderiza grupos, permite seleccionar opciones, recalcula el precio en
+  vivo, captura nota de cocina y emite la confirmación.
+- `ProductSearchDialog` muestra precio, categoría, disponibilidad y badge de producto
+  personalizable.
+- `ServiceTablePanel` muestra extras, `SIN ...` y nota de cocina bajo cada línea.
+- La vista de cocina muestra modificadores y notas sin crear una nueva pantalla de cocina.
+- La navegación del shell incluye `Menú` apuntando a `/restaurant-pos/menu`.
+
 ## Decisiones UX En Tests
 
 No pruebes todas las clases visuales. Sí conviene proteger clases cuando representan una decisión UX

@@ -64,6 +64,14 @@ export class RestaurantPosKitchenPage {
     return this.transloco.translate(`restaurantPos.lineStatus.${line.status}`);
   }
 
+  protected modifierLabel(line: OrderLine): string {
+    return line.selectedModifiers
+      .map((modifier) =>
+        modifier.type === 'remove' ? this.transloco.translate('restaurantPos.service.withoutModifier', { name: modifier.name }) : modifier.name,
+      )
+      .join(', ');
+  }
+
   protected columnTitle(status: KitchenBoardStatus): string {
     return this.transloco.translate(`restaurantPos.kitchen.columns.${status}.title`);
   }
@@ -130,17 +138,17 @@ export class RestaurantPosKitchenPage {
 
   protected handlePrimaryAction(ticket: KitchenOrderTicket, line: OrderLine): void {
     if (line.status === 'sent_to_kitchen') {
-      this.markPreparing(ticket.table.id, line.productId);
+      this.markPreparing(ticket.table.id, line.id);
       return;
     }
 
     if (line.status === 'preparing') {
-      this.markReady(ticket.table.id, line.productId);
+      this.markReady(ticket.table.id, line.id);
       return;
     }
 
     if (line.status === 'ready') {
-      this.archiveLine(ticket.table.id, line.productId);
+      this.archiveLine(ticket.table.id, line.id);
     }
   }
 

@@ -72,7 +72,7 @@
                     </div>
 
                     <ul class="mt-3 grid gap-2">
-                      @for (line of ticket.lines; track line.productId) {
+                      @for (line of ticket.lines; track line.id) {
                         <li class="rounded-md border p-3" [ngClass]="lineCardClass(line)">
                           <div class="flex gap-2">
                             <div class="min-w-0 flex-1">
@@ -82,8 +82,11 @@
                               <p class="mt-1 text-xs opacity-80">
                                 {{ 'restaurantPos.course.' + line.course | transloco }} · {{ lineStatusLabel(line) }} · {{ lineElapsedLabel(line) }}
                               </p>
-                              @if (line.note) {
-                                <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-sm text-amber-900">{{ line.note }}</p>
+                              @if (line.selectedModifiers.length) {
+                                <p class="mt-2 rounded-md border px-2 py-1 text-xs opacity-90">{{ modifierLabel(line) }}</p>
+                              }
+                              @if (line.kitchenNote) {
+                                <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-sm text-amber-900">{{ line.kitchenNote }}</p>
                               }
                             </div>
 
@@ -92,7 +95,7 @@
                               class="inline-flex size-8 shrink-0 items-center justify-center rounded-md border text-sm font-semibold transition hover:bg-[var(--ui-surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-ring)] disabled:cursor-not-allowed disabled:opacity-40"
                               [attr.aria-label]="moveBackAriaLabel(line)"
                               [disabled]="!canMoveBack(line)"
-                              (click)="moveBack(ticket.table.id, line.productId)"
+                              (click)="moveBack(ticket.table.id, line.id)"
                             >
                               X
                             </button>

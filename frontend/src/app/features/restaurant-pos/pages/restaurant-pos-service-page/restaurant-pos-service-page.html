@@ -103,6 +103,14 @@
   (servicePointSelected)="selectServicePoint($event)"
 />
 
+<app-product-customizer-dialog
+  [open]="productCustomizerOpen()"
+  [product]="customizingProduct()"
+  [modifierGroups]="customizingModifierGroups()"
+  (closed)="closeProductCustomizer()"
+  (confirmed)="confirmProductCustomization($event)"
+/>
+
 <app-payment-gateway-dialog
   [open]="cardGatewayOpen()"
   [total]="formatCurrency(store.selectedOrder()?.total ?? 0)"

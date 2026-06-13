@@ -8,7 +8,7 @@ import { Icon } from '../../../../shared/ui/icon/icon';
 import type { OrderCourse, OrderCourseGroup, OrderLine, OrderLineStatus, PaymentMethod, RestaurantTable, ServiceTableInfo, TableStatus } from '../../models/restaurant-pos.models';
 
 export interface OrderLineNoteChange {
-  productId: string;
+  lineId: string;
   note: string;
 }
 
@@ -243,8 +243,18 @@ export class ServiceTablePanel {
     return line.status === 'sent_to_kitchen' || line.status === 'preparing' || line.status === 'ready' || line.status === 'picked_up';
   }
 
-  protected updateLineNote(productId: string, event: Event): void {
-    this.updateProductNote.emit({ productId, note: (event.target as HTMLTextAreaElement).value });
+  protected modifierLabel(line: OrderLine): string {
+    return line.selectedModifiers
+      .map((modifier) => (modifier.type === 'remove' ? this.translate('restaurantPos.service.withoutModifier', { name: modifier.name }) : modifier.name))
+      .join(', ');
+  }
+
+  protected hasModifiers(line: OrderLine): boolean {
+    return line.selectedModifiers.length > 0;
+  }
+
+  protected updateLineNote(lineId: string, event: Event): void {
+    this.updateProductNote.emit({ lineId, note: (event.target as HTMLTextAreaElement).value });
   }
 
   protected requestFreeTable(): void {

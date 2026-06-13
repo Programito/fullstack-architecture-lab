@@ -5,7 +5,12 @@ describe('RestaurantPosStore', () => {
   let store: RestaurantPosStore;
 
   beforeEach(() => {
+    const i18n = provideI18nTesting('en');
     TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+    });
     store = TestBed.inject(RestaurantPosStore);
   });
 
@@ -128,15 +133,19 @@ describe('RestaurantPosStore', () => {
     const table = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1');
 
     expect(order.lines).toEqual([
-      {
+      expect.objectContaining({
+        id: expect.any(String),
         productId: 'product-1',
         productName: 'Craft Burger',
         quantity: 1,
+        basePrice: 12.5,
+        selectedModifiers: expect.arrayContaining([expect.objectContaining({ optionId: 'point-medium' })]),
         unitPrice: 12.5,
         subtotal: 12.5,
+        configurationSignature: expect.any(String),
         course: 'main',
         status: 'pending',
-      },
+      }),
     ]);
     expect(order.total).toBe(12.5);
     expect(table?.total).toBe(12.5);
@@ -167,6 +176,49 @@ describe('RestaurantPosStore', () => {
     expect(line.quantity).toBe(2);
     expect(line.subtotal).toBe(25);
     expect(store.ordersByTable()['table-1'].total).toBe(25);
+  });
+
+  it('adds customized products as snapshots and merges identical configurations', () => {
+    store.selectTable('table-1');
+    store.addCustomizedProductToSelectedTable('product-1', ['point-medium', 'extra-bacon', 'remove-onion'], 'Little done');
+    store.addCustomizedProductToSelectedTable('product-1', ['remove-onion', 'extra-bacon', 'point-medium'], 'Little done');
+
+    const [line] = store.ordersByTable()['table-1'].lines;
+
+    expect(line).toEqual(
+      expect.objectContaining({
+        productName: 'Craft Burger',
+        quantity: 2,
+        basePrice: 12.5,
+        unitPrice: 14,
+        subtotal: 28,
+        kitchenNote: 'Little done',
+        selectedModifiers: expect.arrayContaining([
+          expect.objectContaining({ name: 'Bacon', priceDelta: 1.5 }),
+          expect.objectContaining({ name: 'Onion', type: 'remove', priceDelta: 0 }),
+        ]),
+      }),
+    );
+    expect(store.ordersByTable()['table-1'].total).toBe(28);
+  });
+
+  it('keeps different modifiers and kitchen notes as separate order lines', () => {
+    store.selectTable('table-1');
+    store.addCustomizedProductToSelectedTable('product-1', ['point-medium', 'extra-bacon'], 'Little done');
+    store.addCustomizedProductToSelectedTable('product-1', ['point-medium', 'extra-cheese'], 'Little done');
+    store.addCustomizedProductToSelectedTable('product-1', ['point-medium', 'extra-bacon'], 'No salt');
+
+    expect(store.ordersByTable()['table-1'].lines).toHaveLength(3);
+    expect(store.ordersByTable()['table-1'].lines.map((line) => line.configurationSignature)).toHaveLength(3);
+    expect(new Set(store.ordersByTable()['table-1'].lines.map((line) => line.configurationSignature)).size).toBe(3);
+  });
+
+  it('does not add customized products when validation fails', () => {
+    store.selectTable('table-1');
+    store.addCustomizedProductToSelectedTable('product-1', ['extra-bacon']);
+
+    expect(store.ordersByTable()['table-1'].lines).toEqual([]);
+    expect(store.errorMessage()).toBe('restaurantPos.errors.productUnavailable');
   });
 
   it('decreases quantity and removes the line when it reaches zero', () => {
@@ -798,3 +850,4 @@ describe('RestaurantPosStore', () => {
     expect(store.errorMessage()).toBe('restaurantPos.errors.cannotResizeGrid');
   });
 });
+import { provideI18nTesting } from '../../../shared/i18n/i18n-testing';

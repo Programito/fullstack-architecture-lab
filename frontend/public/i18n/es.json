@@ -47,6 +47,7 @@
     "common": {
       "layout": "Plano",
       "service": "Servicio",
+      "menu": "Menú",
       "kitchen": "Cocina",
       "pos": "TPV restaurante",
       "navigation": "Navegación principal",
@@ -190,6 +191,8 @@
       "noProductResults": "No hay productos que coincidan con la búsqueda.",
       "noServicePointResults": "No hay mesas ni taburetes que coincidan con la búsqueda.",
       "noAllergens": "Sin alérgenos indicados",
+      "customizable": "Personalizable",
+      "soldOut": "Agotado",
       "sendKitchen": "Cocina",
       "markServed": "Servido",
       "charge": "Cobrar",
@@ -204,6 +207,8 @@
       "decreaseProductQuantityActionLabel": "Quitar una unidad de {{name}}",
       "lineNote": "Nota",
       "lineNoteActionLabel": "Nota para {{name}}",
+      "kitchenNotePrefix": "Nota:",
+      "withoutModifier": "SIN {{name}}",
       "markProductReady": "Preparado",
       "markProductServed": "Servir",
       "removeProduct": "Eliminar",
@@ -342,6 +347,48 @@
       "entrance": "Entrada",
       "blockedArea": "Zona bloqueada",
       "stool": "Taburete"
+    }
+  },
+  "menu": {
+    "page": {
+      "eyebrow": "Catálogo operativo",
+      "title": "Menú",
+      "description": "Revisa productos, disponibilidad, categorías y modificadores antes del servicio.",
+      "available": "Disponibles",
+      "customizable": "Personalizables",
+      "categories": "Categorías",
+      "soldOut": "Agotado",
+      "customizableBadge": "Personalizable",
+      "searchLabel": "Buscar en el catálogo",
+      "searchPlaceholder": "Buscar producto, categoría, alérgeno o modificador",
+      "clearSearch": "Limpiar búsqueda de catálogo",
+      "categoryFilter": "Categoría",
+      "allCategories": "Todas las categorías",
+      "availabilityFilter": "Disponibilidad",
+      "availabilityAll": "Todos",
+      "availabilityAvailable": "Disponibles",
+      "availabilitySoldOut": "Agotados",
+      "customizationFilter": "Personalización",
+      "customizationAll": "Todos",
+      "customizationCustomizable": "Personalizables",
+      "customizationSimple": "Simples",
+      "allergens": "Alérgenos",
+      "modifiers": "Modificadores",
+      "previewPrice": "Precio preview",
+      "noModifiers": "Este producto no tiene modificadores.",
+      "noResults": "No hay productos que coincidan con los filtros.",
+      "noSelection": "Selecciona un producto para revisar su detalle."
+    },
+    "customizer": {
+      "title": "Personalizar producto",
+      "description": "Selecciona modificadores y añade una nota para cocina si hace falta.",
+      "close": "Cerrar personalización",
+      "basePrice": "Precio base",
+      "required": "obligatorio",
+      "without": "SIN {{name}}",
+      "kitchenNote": "Nota de cocina",
+      "kitchenNotePlaceholder": "Ejemplo: sin sal, poco hecho, salsa aparte...",
+      "addFor": "Añadir por {{price}}"
     }
   }
 }
