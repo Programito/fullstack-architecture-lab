@@ -4,12 +4,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
-
-type RestaurantPosNavigationItem = {
-  labelKey: string;
-  path: string;
-  icon: string;
-};
+import { RESTAURANT_POS_BASE_PATH, RESTAURANT_POS_DEFAULT_URL, RESTAURANT_POS_SECTIONS } from '../../restaurant-pos.routes';
 
 @Component({
   selector: 'app-restaurant-pos-shell-page',
@@ -17,9 +12,10 @@ type RestaurantPosNavigationItem = {
   templateUrl: './restaurant-pos-shell-page.html',
 })
 export class RestaurantPosShellPage {
-  protected readonly navigationItems: readonly RestaurantPosNavigationItem[] = [
-    { labelKey: 'restaurantPos.common.service', path: '/restaurant-pos/service', icon: 'room_service' },
-    { labelKey: 'restaurantPos.common.kitchen', path: '/restaurant-pos/kitchen', icon: 'restaurant' },
-    { labelKey: 'restaurantPos.common.layout', path: '/restaurant-pos/layout', icon: 'dashboard_customize' },
-  ];
+  protected readonly defaultPath = `/${RESTAURANT_POS_DEFAULT_URL}`;
+  protected readonly navigationItems = RESTAURANT_POS_SECTIONS.map((section) => ({
+    labelKey: section.labelKey,
+    path: `/${RESTAURANT_POS_BASE_PATH}/${section.path}`,
+    icon: section.icon,
+  }));
 }

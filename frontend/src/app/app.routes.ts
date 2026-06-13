@@ -1,44 +1,38 @@
 import { Routes } from '@angular/router';
+import {
+  RESTAURANT_POS_BASE_PATH,
+  RESTAURANT_POS_DEFAULT_SECTION,
+  RESTAURANT_POS_DEFAULT_URL,
+  RESTAURANT_POS_SECTIONS,
+} from './features/restaurant-pos/restaurant-pos.routes';
 
 export const routes: Routes = [
   {
-    path: 'restaurant-pos',
+    path: RESTAURANT_POS_BASE_PATH,
     loadComponent: () =>
       import('./features/restaurant-pos/pages/restaurant-pos-shell-page/restaurant-pos-shell-page').then(
         (module) => module.RestaurantPosShellPage,
       ),
     children: [
-      {
-        path: 'layout',
-        loadComponent: () =>
-          import('./features/restaurant-pos/pages/restaurant-pos-layout-page/restaurant-pos-layout-page').then(
-            (module) => module.RestaurantPosLayoutPage,
-          ),
-      },
-      {
-        path: 'service',
-        loadComponent: () =>
-          import('./features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page').then(
-            (module) => module.RestaurantPosServicePage,
-          ),
-      },
-      {
-        path: 'kitchen',
-        loadComponent: () =>
-          import('./features/restaurant-pos/pages/restaurant-pos-kitchen-page/restaurant-pos-kitchen-page').then(
-            (module) => module.RestaurantPosKitchenPage,
-          ),
-      },
+      ...RESTAURANT_POS_SECTIONS.map(({ path, loadComponent }) => ({ path, loadComponent })),
       {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'service',
+        redirectTo: RESTAURANT_POS_DEFAULT_SECTION,
+      },
+      {
+        path: '**',
+        redirectTo: RESTAURANT_POS_DEFAULT_SECTION,
       },
     ],
   },
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'restaurant-pos/service',
+    redirectTo: RESTAURANT_POS_DEFAULT_URL,
+  },
+  {
+    path: '**',
+    redirectTo: RESTAURANT_POS_DEFAULT_URL,
   },
 ];

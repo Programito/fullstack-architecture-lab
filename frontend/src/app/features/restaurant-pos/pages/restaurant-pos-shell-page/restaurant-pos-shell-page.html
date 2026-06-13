@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between gap-3 lg:grid lg:gap-2">
         <a
           class="theme-title inline-flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-base font-semibold transition hover:bg-[var(--ui-surface)] focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          routerLink="/restaurant-pos/service"
+          [routerLink]="defaultPath"
         >
           <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-cyan-600 text-white">
             <app-icon name="point_of_sale" size="sm" />

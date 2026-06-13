@@ -1,9 +1,11 @@
 import { routes } from './app.routes';
+import { RESTAURANT_POS_SECTIONS } from './features/restaurant-pos/restaurant-pos.routes';
 
 describe('app routes', () => {
+  const restaurantPosRoute = () => routes.find((route) => route.path === 'restaurant-pos');
+
   it('redirects restaurant-pos to the service route', () => {
-    const restaurantPosRoute = routes.find((route) => route.path === 'restaurant-pos');
-    const redirectRoute = restaurantPosRoute?.children?.find((route) => route.path === '');
+    const redirectRoute = restaurantPosRoute()?.children?.find((route) => route.path === '');
 
     expect(redirectRoute).toEqual(
       expect.objectContaining({
@@ -14,9 +16,7 @@ describe('app routes', () => {
   });
 
   it('wraps restaurant-pos routes in the restaurant shell', () => {
-    const restaurantPosRoute = routes.find((route) => route.path === 'restaurant-pos');
-
-    expect(restaurantPosRoute?.loadComponent).toBeTypeOf('function');
+    expect(restaurantPosRoute()?.loadComponent).toBeTypeOf('function');
   });
 
   it('redirects the app root to the service route', () => {
@@ -30,11 +30,29 @@ describe('app routes', () => {
     );
   });
 
-  it('defines layout, service, and kitchen routes', () => {
-    const childPaths = routes.find((route) => route.path === 'restaurant-pos')?.children?.map((route) => route.path);
+  it('redirects unknown app routes to the service route', () => {
+    const wildcardRoute = routes.find((route) => route.path === '**');
 
-    expect(childPaths).toContain('layout');
-    expect(childPaths).toContain('service');
-    expect(childPaths).toContain('kitchen');
+    expect(wildcardRoute).toEqual(
+      expect.objectContaining({
+        redirectTo: 'restaurant-pos/service',
+      }),
+    );
+  });
+
+  it('defines layout, service, and kitchen routes', () => {
+    const childPaths = restaurantPosRoute()?.children?.map((route) => route.path);
+
+    expect(childPaths).toEqual(expect.arrayContaining(RESTAURANT_POS_SECTIONS.map((section) => section.path)));
+  });
+
+  it('redirects unknown restaurant-pos child routes to service', () => {
+    const wildcardRoute = restaurantPosRoute()?.children?.find((route) => route.path === '**');
+
+    expect(wildcardRoute).toEqual(
+      expect.objectContaining({
+        redirectTo: 'service',
+      }),
+    );
   });
 });
