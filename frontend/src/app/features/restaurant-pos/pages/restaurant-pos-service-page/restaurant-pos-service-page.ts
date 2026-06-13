@@ -257,6 +257,10 @@ export class RestaurantPosServicePage {
   protected addProduct(productId: string): void {
     const product = this.store.products().find((currentProduct) => currentProduct.id === productId);
 
+    if (product?.type === 'combo') {
+      return;
+    }
+
     if (!this.store.selectedTableId()) {
       this.store.addProductToSelectedTable(productId);
       return;

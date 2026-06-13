@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideI18nTesting } from '../../../shared/i18n/i18n-testing';
-import { MOCK_MENU_PRODUCTS } from './menu-mock.service';
+import { MOCK_COMBO_PRODUCT_DEFINITIONS, MOCK_MENU_PRODUCTS } from './menu-mock.service';
 import { MenuPricingService } from './menu-pricing.service';
 import { MenuValidationService } from './menu-validation.service';
 
@@ -8,6 +8,8 @@ describe('menu business logic', () => {
   let pricing: MenuPricingService;
   let validation: MenuValidationService;
   const burger = () => MOCK_MENU_PRODUCTS.find((product) => product.id === 'product-1')!;
+  const combo = () => MOCK_MENU_PRODUCTS.find((product) => product.id === 'product-16')!;
+  const comboDefinition = () => MOCK_COMBO_PRODUCT_DEFINITIONS.find((definition) => definition.productId === combo().id)!;
   const water = () => MOCK_MENU_PRODUCTS.find((product) => product.id === 'product-10')!;
   const unavailable = () => MOCK_MENU_PRODUCTS.find((product) => product.id === 'product-4')!;
 
@@ -68,6 +70,28 @@ describe('menu business logic', () => {
       expect.objectContaining({ groupName: 'Burger extras', name: 'Cheese', priceDelta: 1, type: 'multiple' }),
       expect.objectContaining({ groupName: 'Remove ingredients', name: 'Onion', priceDelta: 0, type: 'remove' }),
       expect.objectContaining({ groupName: 'Burger point', name: 'Medium', priceDelta: 0, type: 'single' }),
+    ]);
+  });
+
+  it('calculates combo base, supplements and total from slot selections', () => {
+    const selections = [
+      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+    ];
+
+    expect(pricing.calculateComboBasePrice(combo())).toBe(13.5);
+    expect(pricing.calculateComboSlotSupplements(comboDefinition(), selections)).toBe(3);
+    expect(pricing.calculateComboTotalPrice(combo(), comboDefinition(), selections)).toBe(16.5);
+  });
+
+  it('defines required combo slots with min, max and default products in mock data', () => {
+    expect(combo().type).toBe('combo');
+    expect(combo().comboDefinitionId).toBe('combo-classic-burger-menu');
+    expect(comboDefinition().slots).toEqual([
+      expect.objectContaining({ id: 'combo-burger', required: true, minSelections: 1, maxSelections: 1, defaultProductId: 'product-12' }),
+      expect.objectContaining({ id: 'combo-side', required: true, minSelections: 1, maxSelections: 1, defaultProductId: 'product-13' }),
+      expect.objectContaining({ id: 'combo-drink', required: true, minSelections: 1, maxSelections: 1, defaultProductId: 'product-14' }),
     ]);
   });
 });

@@ -72,14 +72,9 @@
             (click)="selectProduct(product)"
           >
             <span class="min-w-0">
-              <span class="flex flex-wrap items-center gap-2">
-                <span class="theme-title text-base font-semibold">{{ product.name }}</span>
-                @if (!product.available) {
-                  <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
-                }
-                @if (isCustomizable(product)) {
-                  <app-badge variant="secondary" size="sm">{{ 'menu.page.customizableBadge' | transloco }}</app-badge>
-                }
+              <span class="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                <span class="theme-title truncate text-base font-semibold">{{ product.name }}</span>
+                <span class="theme-title shrink-0 text-base font-semibold sm:text-right">{{ product.basePrice | currency: 'EUR' }}</span>
               </span>
               <span class="theme-muted mt-1 block text-sm">{{ categoryName(product) }} &middot; {{ 'restaurantPos.course.' + product.course | transloco }}</span>
               @if (product.description) {
@@ -88,8 +83,18 @@
               @if (product.allergens?.length) {
                 <span class="theme-muted mt-2 block text-xs">{{ 'menu.page.allergens' | transloco }}: {{ product.allergens?.join(', ') }}</span>
               }
+              <span class="mt-2 flex flex-wrap gap-1">
+                @if (isCustomizable(product)) {
+                  <app-badge variant="secondary" size="sm">{{ 'menu.page.customizableBadge' | transloco }}</app-badge>
+                }
+                @if (isCombo(product)) {
+                  <app-badge variant="violet" size="sm">{{ 'menu.page.comboBadge' | transloco }}</app-badge>
+                }
+                @if (!product.available) {
+                  <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
+                }
+              </span>
             </span>
-            <span class="theme-title text-lg font-semibold">{{ product.basePrice | currency: 'EUR' }}</span>
           </button>
         } @empty {
           <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noResults' | transloco }}</p>
@@ -103,11 +108,14 @@
           <header class="grid gap-2">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="theme-title text-xl font-semibold">{{ product.name }}</h2>
-              @if (!product.available) {
-                <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
-              }
               @if (isCustomizable(product)) {
                 <app-badge variant="secondary" size="sm">{{ 'menu.page.customizableBadge' | transloco }}</app-badge>
+              }
+              @if (isCombo(product)) {
+                <app-badge variant="violet" size="sm">{{ 'menu.page.comboBadge' | transloco }}</app-badge>
+              }
+              @if (!product.available) {
+                <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
               }
             </div>
             <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ 'restaurantPos.course.' + product.course | transloco }}</p>

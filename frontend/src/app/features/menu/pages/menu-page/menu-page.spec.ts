@@ -48,6 +48,22 @@ describe('MenuPage', () => {
     expect(screen.queryByText('No hay productos que coincidan con los filtros.')).toBeNull();
   });
 
+  it('lists combo products with a combo badge and keeps them out of the simple filter', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Categoría' }), { target: { value: 'menus' } });
+    fixture.detectChanges();
+
+    expect(screen.getAllByText('Menu Classic Burger').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Combo').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Simples' }));
+    fixture.detectChanges();
+
+    expect(screen.queryByText('Menu Classic Burger')).toBeNull();
+    expect(screen.getByText('No hay productos que coincidan con los filtros.')).toBeTruthy();
+  });
+
   it('shows selected product details and updates preview price from modifiers', async () => {
     const { fixture } = await renderPage();
 

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { MenuMockService, MOCK_MENU_PRODUCTS, MOCK_MODIFIER_GROUPS } from './menu-mock.service';
-import type { ModifierGroup, Product, SelectedModifier } from '../models/menu.models';
+import type { ComboProductDefinition, ComboSlotSelection, ModifierGroup, Product, SelectedModifier } from '../models/menu.models';
 
 @Injectable({ providedIn: 'root' })
 export class MenuPricingService {
@@ -37,6 +37,24 @@ export class MenuPricingService {
 
   calculateCustomizedProductPrice(product: Product, selectedModifiers: SelectedModifier[]): number {
     return this.roundCurrency(product.basePrice + selectedModifiers.reduce((total, modifier) => total + modifier.priceDelta, 0));
+  }
+
+  calculateComboBasePrice(comboProduct: Product): number {
+    return this.roundCurrency(comboProduct.basePrice);
+  }
+
+  calculateComboSlotSupplements(comboDefinition: ComboProductDefinition, slotSelections: ComboSlotSelection[]): number {
+    const selectedProductIds = new Set(slotSelections.flatMap((selection) => selection.selectedProductIds));
+
+    return this.roundCurrency(
+      comboDefinition.supplements
+        .filter((supplement) => selectedProductIds.has(supplement.productId))
+        .reduce((total, supplement) => total + supplement.supplementPrice, 0),
+    );
+  }
+
+  calculateComboTotalPrice(comboProduct: Product, comboDefinition: ComboProductDefinition, slotSelections: ComboSlotSelection[]): number {
+    return this.roundCurrency(this.calculateComboBasePrice(comboProduct) + this.calculateComboSlotSupplements(comboDefinition, slotSelections));
   }
 
   createConfigurationSignature(productId: string, selectedModifierOptionIds: string[] = [], kitchenNote = ''): string {

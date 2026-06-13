@@ -55,7 +55,7 @@ export class MenuPage {
     return this.products()
       .filter((product) => categoryFilter === 'all' || product.categoryId === categoryFilter)
       .filter((product) => availabilityFilter === 'all' || (availabilityFilter === 'available' ? product.available : !product.available))
-      .filter((product) => customizationFilter === 'all' || (customizationFilter === 'customizable' ? this.isCustomizable(product) : !this.isCustomizable(product)))
+      .filter((product) => customizationFilter === 'all' || (customizationFilter === 'customizable' ? this.isCustomizable(product) : this.isSimple(product)))
       .filter((product) => !query || this.productSearchText(product).includes(query));
   });
   protected readonly selectedProduct = computed(() => {
@@ -115,6 +115,14 @@ export class MenuPage {
 
   protected isCustomizable(product: Product): boolean {
     return product.modifierGroupIds.length > 0;
+  }
+
+  protected isCombo(product: Product): boolean {
+    return product.type === 'combo';
+  }
+
+  protected isSimple(product: Product): boolean {
+    return product.type === 'simple' && !this.isCustomizable(product);
   }
 
   protected categoryName(product: Product): string {

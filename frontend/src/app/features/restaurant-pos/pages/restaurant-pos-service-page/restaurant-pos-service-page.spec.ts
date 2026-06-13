@@ -14,19 +14,25 @@ describe('RestaurantPosServicePage', () => {
     });
   };
 
+  const getProductDialog = () => screen.getByRole('dialog', { name: /Añadir productos/i });
+  const queryProductDialog = () => screen.queryByRole('dialog', { name: /Añadir productos/i });
+
   const addProductFromSearch = (fixture: { detectChanges: () => void }, productName: RegExp) => {
     fireEvent.click(screen.getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
-    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    const dialog = getProductDialog();
     const product = within(dialog).getByText(productName).textContent ?? '';
-    fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(`Añadir una unidad de ${product}`) }));
+    const action =
+      within(dialog).queryByRole('button', { name: new RegExp(`Añadir una unidad de ${product}`) }) ??
+      within(dialog).getByRole('button', { name: new RegExp(`Configurar ${product}`) });
+    fireEvent.click(action);
     fixture.detectChanges();
     const customizer = screen.queryByRole('dialog', { name: new RegExp(product) });
     if (customizer) {
       fireEvent.click(within(customizer).getByRole('button', { name: /Añadir por/i }));
       fixture.detectChanges();
     }
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Finalizar' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
     fixture.detectChanges();
   };
 
@@ -71,18 +77,18 @@ describe('RestaurantPosServicePage', () => {
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
-    fireEvent.input(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('searchbox', { name: /Buscar producto/i }), {
+    fireEvent.input(within(getProductDialog()).getByRole('searchbox', { name: /Buscar producto/i }), {
       target: { value: 'limonada' },
     });
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
+    fireEvent.click(within(getProductDialog()).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
     fixture.detectChanges();
 
     expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ productName: 'Limonada con gas' }));
     expect(screen.getByText('1 x Limonada con gas')).toBeTruthy();
-    expect(screen.getByRole('dialog', { name: /Buscar producto/i })).toBeTruthy();
-    expect(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByText('Añadido')).toBeTruthy();
-    expect(within(screen.getByRole('dialog', { name: /Buscar producto/i })).getByLabelText('Cantidad de Limonada con gas: 1')).toBeTruthy();
+    expect(getProductDialog()).toBeTruthy();
+    expect(within(getProductDialog()).getByText('Añadido')).toBeTruthy();
+    expect(within(getProductDialog()).getByLabelText('Cantidad de Limonada con gas: 1')).toBeTruthy();
   });
 
   it('updates product quantities live from the search modal and closes it with finish', async () => {
@@ -93,7 +99,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
 
-    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    const dialog = getProductDialog();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
     fixture.detectChanges();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
@@ -110,12 +116,13 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Quitar una unidad de Limonada con gas' }));
     fixture.detectChanges();
     expect(store.selectedOrder()?.lines.find((line) => line.productName === 'Limonada con gas')).toBeUndefined();
-    expect(within(dialog).getByRole('button', { name: 'Quitar una unidad de Limonada con gas' }).hasAttribute('disabled')).toBe(true);
+    expect(within(dialog).queryByRole('button', { name: 'Quitar una unidad de Limonada con gas' })).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' })).toBeTruthy();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Finalizar' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
     fixture.detectChanges();
 
-    expect(screen.queryByRole('dialog', { name: /Buscar producto/i })).toBeNull();
+    expect(queryProductDialog()).toBeNull();
   });
 
   it('opens the customizer for configurable products and adds the selected snapshot', async () => {
@@ -126,8 +133,8 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
 
-    const searchDialog = screen.getByRole('dialog', { name: /Buscar producto/i });
-    fireEvent.click(within(searchDialog).getByRole('button', { name: 'Añadir una unidad de Hamburguesa craft' }));
+    const searchDialog = getProductDialog();
+    fireEvent.click(within(searchDialog).getByRole('button', { name: 'Configurar Hamburguesa craft' }));
     fixture.detectChanges();
 
     const customizer = screen.getByRole('dialog', { name: /Hamburguesa craft/i });
@@ -150,6 +157,27 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByText(/Nota: Sin prisa/)).toBeTruthy();
   });
 
+  it('shows combos in product search but keeps them disabled until slot selection exists', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = getProductDialog();
+    const comboAdd = within(dialog).getByRole('button', { name: 'Configuración de menú próximamente para Menu Classic Burger' });
+
+    expect(within(dialog).getByText('Menu Classic Burger')).toBeTruthy();
+    expect(within(dialog).getByText('Menú')).toBeTruthy();
+    expect(comboAdd.hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(comboAdd);
+    fixture.detectChanges();
+
+    expect(store.selectedOrder()?.lines.some((line) => line.productId === 'product-16')).toBe(false);
+  });
+
   it('filters the product search by favorites and lets favorites be updated from the dialog', async () => {
     const { fixture } = await renderServicePage();
 
@@ -157,7 +185,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
 
-    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    const dialog = getProductDialog();
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
     fixture.detectChanges();
 
@@ -190,7 +218,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
 
-    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    const dialog = getProductDialog();
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
     fixture.detectChanges();
 
@@ -212,7 +240,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
 
-    const dialog = screen.getByRole('dialog', { name: /Buscar producto/i });
+    const dialog = getProductDialog();
     fireEvent.change(within(dialog).getByRole('combobox', { name: 'Categoría' }), { target: { value: 'drinks' } });
     fixture.detectChanges();
 

@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import type { AppLocale } from '../../../shared/i18n/locale.types';
-import type { MenuCategory, ModifierGroup, ModifierOption, Product } from '../models/menu.models';
+import type { ComboProductDefinition, ComboSlot, MenuCategory, ModifierGroup, ModifierOption, Product } from '../models/menu.models';
 
 type LocalizedText = Record<AppLocale, string>;
 type LocalizedOptionalText = Partial<Record<AppLocale, string>>;
@@ -25,6 +25,14 @@ type ProductDefinition = Omit<Product, 'name' | 'description' | 'category' | 'al
   name: LocalizedText;
   description?: LocalizedOptionalText;
   allergens?: LocalizedText[];
+};
+
+type ComboSlotDefinition = Omit<ComboSlot, 'name'> & {
+  name: LocalizedText;
+};
+
+type ComboProductDefinitionSource = Omit<ComboProductDefinition, 'slots'> & {
+  slots: ComboSlotDefinition[];
 };
 
 export const MOCK_MENU_CATEGORY_DEFINITIONS: MenuCategoryDefinition[] = [
@@ -299,6 +307,64 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     type: 'simple',
     modifierGroupIds: [],
   },
+  {
+    id: 'product-16',
+    name: { es: 'Menu Classic Burger', en: 'Classic Burger Menu', ca: 'Menu Classic Burger' },
+    description: {
+      es: 'Menu con hamburguesa, acompanamiento y bebida. Configuracion de slots proximamente.',
+      en: 'Menu with burger, side, and drink. Slot configuration coming soon.',
+      ca: 'Menu amb hamburguesa, acompanyament i beguda. Configuracio de slots properament.',
+    },
+    categoryId: 'menus',
+    basePrice: 13.5,
+    price: 13.5,
+    available: true,
+    course: 'main',
+    type: 'combo',
+    modifierGroupIds: [],
+    comboDefinitionId: 'combo-classic-burger-menu',
+  },
+];
+
+export const MOCK_COMBO_PRODUCT_DEFINITION_SOURCES: ComboProductDefinitionSource[] = [
+  {
+    productId: 'product-16',
+    pricingMode: 'base_plus_supplements',
+    supplements: [
+      { productId: 'product-7', supplementPrice: 2 },
+      { productId: 'product-9', supplementPrice: 1 },
+      { productId: 'product-11', supplementPrice: 1.5 },
+    ],
+    slots: [
+      {
+        id: 'combo-burger',
+        name: { es: 'Hamburguesa', en: 'Burger', ca: 'Hamburguesa' },
+        required: true,
+        minSelections: 1,
+        maxSelections: 1,
+        allowedProductIds: ['product-12', 'product-7', 'product-8'],
+        defaultProductId: 'product-12',
+      },
+      {
+        id: 'combo-side',
+        name: { es: 'Acompanamiento', en: 'Side', ca: 'Acompanyament' },
+        required: true,
+        minSelections: 1,
+        maxSelections: 1,
+        allowedProductIds: ['product-13', 'product-9', 'product-5'],
+        defaultProductId: 'product-13',
+      },
+      {
+        id: 'combo-drink',
+        name: { es: 'Bebida', en: 'Drink', ca: 'Beguda' },
+        required: true,
+        minSelections: 1,
+        maxSelections: 1,
+        allowedProductIds: ['product-14', 'product-10', 'product-11'],
+        defaultProductId: 'product-14',
+      },
+    ],
+  },
 ];
 
 export const localizeMenuCategories = (locale: AppLocale): MenuCategory[] =>
@@ -329,9 +395,19 @@ export const localizeMenuProducts = (locale: AppLocale): Product[] => {
   }));
 };
 
+export const localizeComboProductDefinitions = (locale: AppLocale): ComboProductDefinition[] =>
+  MOCK_COMBO_PRODUCT_DEFINITION_SOURCES.map((definition) => ({
+    ...definition,
+    slots: definition.slots.map((slot) => ({
+      ...slot,
+      name: localizeText(slot.name, locale),
+    })),
+  }));
+
 export const MOCK_MENU_CATEGORIES: MenuCategory[] = localizeMenuCategories('en');
 export const MOCK_MODIFIER_GROUPS: ModifierGroup[] = localizeModifierGroups('en');
 export const MOCK_MENU_PRODUCTS: Product[] = localizeMenuProducts('en');
+export const MOCK_COMBO_PRODUCT_DEFINITIONS: ComboProductDefinition[] = localizeComboProductDefinitions('en');
 
 @Injectable({ providedIn: 'root' })
 export class MenuMockService {
@@ -341,6 +417,7 @@ export class MenuMockService {
   readonly categories = computed(() => localizeMenuCategories(this.locale()));
   readonly modifierGroups = computed(() => localizeModifierGroups(this.locale()));
   readonly products = computed(() => localizeMenuProducts(this.locale()));
+  readonly comboProductDefinitions = computed(() => localizeComboProductDefinitions(this.locale()));
 
   private toSupportedLocale(locale: string): AppLocale {
     return locale === 'en' || locale === 'ca' ? locale : 'es';

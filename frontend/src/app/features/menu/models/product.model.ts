@@ -13,7 +13,7 @@ export interface Product {
   course: OrderCourse;
   type: ProductType;
   modifierGroupIds: string[];
+  comboDefinitionId?: string;
   category?: string;
   price?: number;
 }
-
