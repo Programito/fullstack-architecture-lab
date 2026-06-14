@@ -1,0 +1,84 @@
+<app-dialog
+  [open]="open()"
+  [title]="comboProduct()?.name ?? ('menu.comboCustomizer.title' | transloco)"
+  [description]="comboProduct()?.description ?? ('menu.comboCustomizer.description' | transloco)"
+  [closeAriaLabel]="'menu.comboCustomizer.close' | transloco"
+  [showActions]="false"
+  size="md"
+  (closed)="close()"
+>
+  @if (comboProduct(); as currentProduct) {
+    @if (comboDefinition(); as definition) {
+      <div class="grid gap-4">
+        <header class="theme-soft-panel grid gap-1 rounded-md border px-3 py-2">
+          <span class="theme-muted text-xs font-semibold uppercase">{{ 'restaurantPos.service.comboBasePrice' | transloco }}</span>
+          <span class="theme-title text-lg font-semibold">{{ formatCurrency(currentProduct.basePrice) }}</span>
+        </header>
+
+        @for (slot of definition.slots; track slot.id) {
+          <fieldset class="grid gap-2 rounded-md border p-3">
+            <legend class="theme-title px-1 text-sm font-semibold">
+              {{ slot.name }}
+              @if (slot.required) {
+                <span class="theme-muted text-xs">({{ 'menu.customizer.required' | transloco }})</span>
+              }
+            </legend>
+
+            @if (noValidProducts(slot)) {
+              <p class="theme-muted rounded-md border border-dashed px-3 py-2 text-sm">{{ 'menu.comboCustomizer.noValidProducts' | transloco }}</p>
+            } @else {
+              <div class="grid gap-2">
+                @for (product of slotProducts(slot); track product.id) {
+                  <label
+                    class="theme-field flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition"
+                    [class.opacity-55]="!product.available"
+                  >
+                    <span class="inline-flex min-w-0 items-center gap-2">
+                      <input
+                        [type]="slot.maxSelections === 1 ? 'radio' : 'checkbox'"
+                        [name]="slot.id"
+                        [checked]="isSelected(slot.id, product.id)"
+                        [disabled]="!product.available"
+                        (change)="selectProduct(slot, product)"
+                      />
+                      <span class="min-w-0 truncate">{{ product.name }}</span>
+                    </span>
+                    <span class="theme-muted shrink-0 text-xs font-semibold">
+                      @if (!product.available) {
+                        {{ 'restaurantPos.service.soldOut' | transloco }}
+                      } @else if (supplementPrice(slot.id, product.id) > 0) {
+                        +{{ formatCurrency(supplementPrice(slot.id, product.id)) }}
+                      } @else {
+                        {{ formatCurrency(0) }}
+                      }
+                    </span>
+                  </label>
+                }
+              </div>
+            }
+          </fieldset>
+        }
+
+        <footer class="grid gap-3 border-t pt-3">
+          <div class="flex items-center justify-between gap-3">
+            <span class="theme-muted text-sm font-semibold">{{ 'restaurantPos.service.comboTotal' | transloco }}</span>
+            <span class="theme-title text-lg font-semibold">{{ formatCurrency(totalPrice()) }}</span>
+          </div>
+
+          @if (!validationResult().valid) {
+            <p class="theme-muted rounded-md border border-dashed px-3 py-2 text-sm">{{ 'menu.comboCustomizer.invalidSelection' | transloco }}</p>
+          }
+
+          <div class="grid grid-cols-2 gap-2">
+            <app-button variant="neutral" fill="outline" expand="block" (pressed)="close()">
+              {{ 'restaurantPos.common.cancel' | transloco }}
+            </app-button>
+            <app-button variant="primary" expand="block" [disabled]="!validationResult().valid" (pressed)="confirm()">
+              {{ 'restaurantPos.service.addComboToOrder' | transloco }}
+            </app-button>
+          </div>
+        </footer>
+      </div>
+    }
+  }
+</app-dialog>

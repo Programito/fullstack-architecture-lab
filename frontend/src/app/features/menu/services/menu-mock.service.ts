@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import type { AppLocale } from '../../../shared/i18n/locale.types';
-import type { ComboProductDefinition, ComboSlot, MenuCategory, ModifierGroup, ModifierOption, Product } from '../models/menu.models';
+import type { ComboProductDefinition, ComboSlot, MenuCategory, ModifierGroup, ModifierOption, Product, ProductPreparationPolicy } from '../models/menu.models';
 
 type LocalizedText = Record<AppLocale, string>;
 type LocalizedOptionalText = Partial<Record<AppLocale, string>>;
@@ -43,6 +43,7 @@ export const MOCK_MENU_CATEGORY_DEFINITIONS: MenuCategoryDefinition[] = [
   { id: 'burgers-premium', name: { es: 'Premium', en: 'Premium', ca: 'Premium' }, parentId: 'burgers', sortOrder: 32 },
   { id: 'burgers-veggie', name: { es: 'Vegetales', en: 'Veggie', ca: 'Vegetals' }, parentId: 'burgers', sortOrder: 33 },
   { id: 'salads', name: { es: 'Ensaladas', en: 'Salads', ca: 'Amanides' }, sortOrder: 40 },
+  { id: 'platters', name: { es: 'Platos combinados', en: 'Platters', ca: 'Plats combinats' }, sortOrder: 45 },
   { id: 'desserts', name: { es: 'Postres', en: 'Desserts', ca: 'Postres' }, sortOrder: 50 },
   { id: 'coffee', name: { es: 'Café', en: 'Coffee', ca: 'Cafè' }, sortOrder: 60 },
   { id: 'menus', name: { es: 'Menús', en: 'Menus', ca: 'Menús' }, sortOrder: 70 },
@@ -114,6 +115,32 @@ export const MOCK_MODIFIER_GROUP_DEFINITIONS: ModifierGroupDefinition[] = [
       { id: 'coffee-decaf', name: { es: 'Descafeinado', en: 'Decaf', ca: 'Descafeïnat' }, priceDelta: 0 },
     ],
   },
+  {
+    id: 'platter-remove',
+    name: { es: 'Quitar ingredientes', en: 'Remove ingredients', ca: 'Treure ingredients' },
+    type: 'remove',
+    required: false,
+    minSelections: 0,
+    maxSelections: 4,
+    options: [
+      { id: 'remove-platter-egg', name: { es: 'Huevo', en: 'Egg', ca: 'Ou' }, priceDelta: 0 },
+      { id: 'remove-platter-fries', name: { es: 'Patatas fritas', en: 'Fries', ca: 'Patates fregides' }, priceDelta: 0 },
+      { id: 'remove-platter-salad', name: { es: 'Ensalada', en: 'Salad', ca: 'Amanida' }, priceDelta: 0 },
+    ],
+  },
+  {
+    id: 'platter-extras',
+    name: { es: 'Extras de plato combinado', en: 'Platter extras', ca: 'Extres de plat combinat' },
+    type: 'multiple',
+    required: false,
+    minSelections: 0,
+    maxSelections: 3,
+    options: [
+      { id: 'platter-extra-egg', name: { es: 'Huevo extra', en: 'Extra egg', ca: 'Ou extra' }, priceDelta: 1.2 },
+      { id: 'platter-extra-fries', name: { es: 'Patatas extra', en: 'Extra fries', ca: 'Patates extra' }, priceDelta: 1.5 },
+      { id: 'platter-extra-sauce', name: { es: 'Salsa extra', en: 'Extra sauce', ca: 'Salsa extra' }, priceDelta: 0.8 },
+    ],
+  },
 ];
 
 const ALLERGENS = {
@@ -122,6 +149,13 @@ const ALLERGENS = {
   egg: { es: 'huevo', en: 'egg', ca: 'ou' },
   fish: { es: 'pescado', en: 'fish', ca: 'peix' },
 } as const satisfies Record<string, LocalizedText>;
+
+const PREPARATION_POLICIES = {
+  bar: { route: 'bar', requiresReadyBeforeServe: false },
+  cold: { route: 'cold_station', requiresReadyBeforeServe: true },
+  kitchen: { route: 'kitchen', requiresReadyBeforeServe: true },
+  dessert: { route: 'dessert_station', requiresReadyBeforeServe: true },
+} as const satisfies Record<string, ProductPreparationPolicy>;
 
 export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
   {
@@ -140,6 +174,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'main',
     type: 'simple',
     modifierGroupIds: ['burger-extras', 'burger-remove', 'burger-point'],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-2',
@@ -152,6 +187,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'starter',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-3',
@@ -163,6 +199,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'drinks',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.bar,
   },
   {
     id: 'product-4',
@@ -175,6 +212,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'dessert',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.dessert,
   },
   {
     id: 'product-5',
@@ -187,6 +225,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'main',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.cold,
   },
   {
     id: 'product-6',
@@ -198,6 +237,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'drinks',
     type: 'simple',
     modifierGroupIds: ['coffee-options'],
+    preparationPolicy: PREPARATION_POLICIES.bar,
   },
   {
     id: 'product-7',
@@ -210,6 +250,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'main',
     type: 'simple',
     modifierGroupIds: ['burger-extras', 'burger-remove', 'burger-point'],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-8',
@@ -222,6 +263,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'main',
     type: 'simple',
     modifierGroupIds: ['burger-extras', 'burger-remove', 'burger-point'],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-9',
@@ -233,6 +275,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'starter',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-10',
@@ -244,6 +287,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'drinks',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.bar,
   },
   {
     id: 'product-11',
@@ -255,6 +299,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'drinks',
     type: 'simple',
     modifierGroupIds: ['drink-size'],
+    preparationPolicy: PREPARATION_POLICIES.bar,
   },
   {
     id: 'product-12',
@@ -272,6 +317,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'main',
     type: 'simple',
     modifierGroupIds: ['burger-extras', 'burger-remove', 'burger-point'],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-13',
@@ -283,6 +329,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'starter',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
   },
   {
     id: 'product-14',
@@ -294,6 +341,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'drinks',
     type: 'simple',
     modifierGroupIds: ['drink-size'],
+    preparationPolicy: PREPARATION_POLICIES.bar,
   },
   {
     id: 'product-15',
@@ -306,6 +354,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'dessert',
     type: 'simple',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.dessert,
   },
   {
     id: 'product-16',
@@ -322,7 +371,80 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     course: 'main',
     type: 'combo',
     modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
     comboDefinitionId: 'combo-classic-burger-menu',
+  },
+  {
+    id: 'product-17',
+    name: { es: 'Plato combinado de lomo', en: 'Pork Loin Platter', ca: 'Plat combinat de llom' },
+    description: {
+      es: 'Plato combinado con lomo, huevo, patatas fritas y ensalada.',
+      en: 'Combined plate with pork loin, egg, fries, and salad.',
+      ca: 'Plat combinat amb llom, ou, patates fregides i amanida.',
+    },
+    categoryId: 'platters',
+    basePrice: 12.9,
+    price: 12.9,
+    available: true,
+    allergens: [ALLERGENS.egg],
+    course: 'main',
+    type: 'platter',
+    modifierGroupIds: ['platter-remove', 'platter-extras'],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
+    platterComponents: [
+      { id: 'platter-loin', name: 'Lomo', productId: 'product-17', quantity: 1, removable: false, replaceable: false },
+      { id: 'platter-egg', name: 'Huevo', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-fries', name: 'Patatas fritas', productId: 'product-13', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-salad', name: 'Ensalada', productId: 'product-5', quantity: 1, removable: true, replaceable: false },
+    ],
+  },
+  {
+    id: 'product-18',
+    name: { es: 'Plato combinado de pollo', en: 'Chicken Platter', ca: 'Plat combinat de pollastre' },
+    description: {
+      es: 'Plato combinado con pollo, huevo, patatas fritas y ensalada.',
+      en: 'Combined plate with chicken, egg, fries, and salad.',
+      ca: 'Plat combinat amb pollastre, ou, patates fregides i amanida.',
+    },
+    categoryId: 'platters',
+    basePrice: 12.5,
+    price: 12.5,
+    available: true,
+    allergens: [ALLERGENS.egg],
+    course: 'main',
+    type: 'platter',
+    modifierGroupIds: ['platter-remove', 'platter-extras'],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
+    platterComponents: [
+      { id: 'platter-chicken', name: 'Pollo', productId: 'product-18', quantity: 1, removable: false, replaceable: false },
+      { id: 'platter-chicken-egg', name: 'Huevo', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-chicken-fries', name: 'Patatas fritas', productId: 'product-13', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-chicken-salad', name: 'Ensalada', productId: 'product-5', quantity: 1, removable: true, replaceable: false },
+    ],
+  },
+  {
+    id: 'product-19',
+    name: { es: 'Plato combinado vegetal', en: 'Vegetable Platter', ca: 'Plat combinat vegetal' },
+    description: {
+      es: 'Plato combinado vegetal con huevo, patatas fritas, ensalada y verduras.',
+      en: 'Vegetable combined plate with egg, fries, salad, and vegetables.',
+      ca: 'Plat combinat vegetal amb ou, patates fregides, amanida i verdures.',
+    },
+    categoryId: 'platters',
+    basePrice: 11.9,
+    price: 11.9,
+    available: true,
+    allergens: [ALLERGENS.egg],
+    course: 'main',
+    type: 'platter',
+    modifierGroupIds: [],
+    preparationPolicy: PREPARATION_POLICIES.kitchen,
+    platterComponents: [
+      { id: 'platter-veggie-egg', name: 'Huevo', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-veggie-fries', name: 'Patatas fritas', productId: 'product-13', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-veggie-salad', name: 'Ensalada', productId: 'product-5', quantity: 1, removable: true, replaceable: false },
+      { id: 'platter-veggie-vegetables', name: 'Verduras', quantity: 1, removable: true, replaceable: false },
+    ],
   },
 ];
 
@@ -331,9 +453,9 @@ export const MOCK_COMBO_PRODUCT_DEFINITION_SOURCES: ComboProductDefinitionSource
     productId: 'product-16',
     pricingMode: 'base_plus_supplements',
     supplements: [
-      { productId: 'product-7', supplementPrice: 2 },
-      { productId: 'product-9', supplementPrice: 1 },
-      { productId: 'product-11', supplementPrice: 1.5 },
+      { slotId: 'combo-burger', productId: 'product-7', supplementPrice: 2 },
+      { slotId: 'combo-side', productId: 'product-9', supplementPrice: 1 },
+      { slotId: 'combo-drink', productId: 'product-11', supplementPrice: 1.5 },
     ],
     slots: [
       {

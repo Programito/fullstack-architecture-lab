@@ -66,7 +66,7 @@
         @for (product of filteredProducts(); track product.id) {
           <button
             type="button"
-            class="theme-panel grid gap-3 rounded-lg border p-4 text-left shadow-sm transition hover:border-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 md:grid-cols-[minmax(0,1fr)_auto]"
+            class="theme-panel grid cursor-pointer gap-3 rounded-lg border p-4 text-left shadow-sm transition hover:border-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 md:grid-cols-[minmax(0,1fr)_auto]"
             [class.border-cyan-500]="isSelected(product)"
             [class.opacity-65]="!product.available"
             (click)="selectProduct(product)"
@@ -76,7 +76,7 @@
                 <span class="theme-title truncate text-base font-semibold">{{ product.name }}</span>
                 <span class="theme-title shrink-0 text-base font-semibold sm:text-right">{{ product.basePrice | currency: 'EUR' }}</span>
               </span>
-              <span class="theme-muted mt-1 block text-sm">{{ categoryName(product) }} &middot; {{ 'restaurantPos.course.' + product.course | transloco }}</span>
+              <span class="theme-muted mt-1 block text-sm">{{ categoryName(product) }} &middot; {{ 'menu.course.' + product.course | transloco }}</span>
               @if (product.description) {
                 <span class="theme-muted mt-2 block text-sm">{{ product.description }}</span>
               }
@@ -89,6 +89,9 @@
                 }
                 @if (isCombo(product)) {
                   <app-badge variant="violet" size="sm">{{ 'menu.page.comboBadge' | transloco }}</app-badge>
+                }
+                @if (isPlatter(product)) {
+                  <app-badge variant="secondary" size="sm">{{ 'menu.page.platterBadge' | transloco }}</app-badge>
                 }
                 @if (!product.available) {
                   <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
@@ -114,11 +117,14 @@
               @if (isCombo(product)) {
                 <app-badge variant="violet" size="sm">{{ 'menu.page.comboBadge' | transloco }}</app-badge>
               }
+              @if (isPlatter(product)) {
+                <app-badge variant="secondary" size="sm">{{ 'menu.page.platterBadge' | transloco }}</app-badge>
+              }
               @if (!product.available) {
                 <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
               }
             </div>
-            <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ 'restaurantPos.course.' + product.course | transloco }}</p>
+            <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ 'menu.course.' + product.course | transloco }}</p>
             @if (product.description) {
               <p class="theme-muted text-sm">{{ product.description }}</p>
             }
@@ -155,7 +161,7 @@
                   </legend>
 
                   @for (option of group.options; track option.id) {
-                    <label class="theme-field flex min-h-10 items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                    <label class="theme-field flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
                       <span class="inline-flex items-center gap-2">
                         <input
                           [type]="group.type === 'single' ? 'radio' : 'checkbox'"

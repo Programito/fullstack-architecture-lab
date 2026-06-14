@@ -85,6 +85,43 @@ describe('menu business logic', () => {
     expect(pricing.calculateComboTotalPrice(combo(), comboDefinition(), selections)).toBe(16.5);
   });
 
+  it('applies combo supplements by slot and product together', () => {
+    const definition = {
+      ...comboDefinition(),
+      supplements: [
+        ...comboDefinition().supplements,
+        { slotId: 'combo-side', productId: 'product-7', supplementPrice: 9 },
+      ],
+    };
+
+    expect(pricing.calculateComboSlotSupplements(definition, [{ slotId: 'combo-burger', selectedProductIds: ['product-7'] }])).toBe(2);
+  });
+
+  it('creates stable combo signatures independent of slot order', () => {
+    const first = [
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+    ];
+    const second = [
+      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+    ];
+
+    expect(pricing.createComboConfigurationSignature(combo().id, first)).toBe(pricing.createComboConfigurationSignature(combo().id, second));
+    expect(pricing.createComboConfigurationSignature(combo().id, second)).not.toBe(
+      pricing.createComboConfigurationSignature(combo().id, [{ slotId: 'combo-burger', selectedProductIds: ['product-12'] }]),
+    );
+  });
+
+  it('validates combo required slots, allowed products, availability and max selections', () => {
+    expect(validation.validateCombo(comboDefinition(), [{ slotId: 'combo-burger', selectedProductIds: ['product-12'] }], MOCK_MENU_PRODUCTS).valid).toBe(false);
+    expect(validation.validateCombo(comboDefinition(), [{ slotId: 'combo-burger', selectedProductIds: ['product-1'] }], MOCK_MENU_PRODUCTS).valid).toBe(false);
+    expect(validation.validateCombo(comboDefinition(), [{ slotId: 'combo-side', selectedProductIds: ['product-4'] }], MOCK_MENU_PRODUCTS).valid).toBe(false);
+    expect(validation.validateCombo(comboDefinition(), [{ slotId: 'combo-burger', selectedProductIds: ['product-12', 'product-7'] }], MOCK_MENU_PRODUCTS).valid).toBe(false);
+  });
+
   it('defines required combo slots with min, max and default products in mock data', () => {
     expect(combo().type).toBe('combo');
     expect(combo().comboDefinitionId).toBe('combo-classic-burger-menu');

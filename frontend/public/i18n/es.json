@@ -182,11 +182,17 @@
       "allProductCategories": "Todas",
       "productAdded": "Añadido",
       "finishProductSearch": "Cerrar",
+      "productPickerSummary": "{{count}} productos añadidos · {{total}}",
       "addProductAction": "Añadir",
       "configureProductAction": "Configurar",
+      "configureComboAction": "Configurar menú",
       "comboComingSoonAction": "Próximamente",
       "configureProductActionLabel": "Configurar {{name}}",
+      "configureComboActionLabel": "Configurar menú {{name}}",
       "comboComingSoonActionLabel": "Configuración de menú próximamente para {{name}}",
+      "addComboToOrder": "Añadir menú",
+      "comboBasePrice": "Precio base",
+      "comboTotal": "Total menú",
       "productQuantityLabel": "Cantidad de {{name}}: {{count}}",
       "addFavoriteProduct": "Añadir {{name}} a favoritos",
       "removeFavoriteProduct": "Quitar {{name}} de favoritos",
@@ -199,6 +205,7 @@
       "noServicePointResults": "No hay mesas ni taburetes que coincidan con la búsqueda.",
       "noAllergens": "Sin alérgenos indicados",
       "customizable": "Personalizable",
+      "platter": "Plato combinado",
       "combo": "Menú",
       "soldOut": "Agotado",
       "sendKitchen": "Cocina",
@@ -216,6 +223,7 @@
       "lineNote": "Nota",
       "lineNoteActionLabel": "Nota para {{name}}",
       "kitchenNotePrefix": "Nota:",
+      "platterComponentsLabel": "Incluye:",
       "withoutModifier": "SIN {{name}}",
       "markProductReady": "Preparado",
       "markProductServed": "Servir",
@@ -277,6 +285,20 @@
         }
       }
     },
+    "preparationBoard": {
+      "title": "Preparación",
+      "description": "Mueve las líneas entre cocina, preparado y servido.",
+      "in_kitchen": "En cocina",
+      "ready": "Preparado",
+      "served": "Servido",
+      "emptyColumn": "No hay líneas en esta fase.",
+      "tableLabel": "Mesa {{number}}",
+      "markReady": "Marcar preparado",
+      "markServed": "Marcar servido",
+      "directStation": "Barra",
+      "notReadyWarning": "Este producto todavía no está marcado como preparado.",
+      "genericMoveError": "No se ha podido mover la línea."
+    },
     "tableStatus": {
       "free": "Libre",
       "occupied": "Ocupada",
@@ -293,7 +315,8 @@
       "preparing": "Preparándose",
       "ready": "Preparado",
       "picked_up": "Recogido",
-      "served": "Servido"
+      "served": "Servido",
+      "cancelled": "Cancelado"
     },
     "course": {
       "drinks": "Bebidas",
@@ -358,6 +381,13 @@
     }
   },
   "menu": {
+    "course": {
+      "drinks": "Bebidas",
+      "starter": "Entrante",
+      "main": "Principal",
+      "dessert": "Postre",
+      "other": "Otro"
+    },
     "page": {
       "eyebrow": "Catálogo operativo",
       "title": "Menú",
@@ -368,6 +398,7 @@
       "soldOut": "Agotado",
       "customizableBadge": "Personalizable",
       "comboBadge": "Combo",
+      "platterBadge": "Plato combinado",
       "searchLabel": "Buscar en el catálogo",
       "searchPlaceholder": "Buscar producto, categoría, alérgeno o modificador",
       "clearSearch": "Limpiar búsqueda de catálogo",
@@ -398,6 +429,13 @@
       "kitchenNote": "Nota de cocina",
       "kitchenNotePlaceholder": "Ejemplo: sin sal, poco hecho, salsa aparte...",
       "addFor": "Añadir por {{price}}"
+    },
+    "comboCustomizer": {
+      "title": "Configurar menú",
+      "description": "Elige hamburguesa, acompañamiento y bebida.",
+      "close": "Cerrar configuración de menú",
+      "noValidProducts": "No hay productos disponibles para este slot.",
+      "invalidSelection": "Completa los slots obligatorios para añadir el menú."
     }
   }
 }

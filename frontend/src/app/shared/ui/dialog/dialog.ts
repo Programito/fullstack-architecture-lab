@@ -26,6 +26,7 @@ export class Dialog {
   readonly cancelLabel = input('Cancelar');
   readonly cancelVariant = input<ButtonVariant>('neutral');
   readonly cancelFill = input<ButtonFill>('clear');
+  readonly footerSummary = input('');
   readonly confirmLabel = input('Guardar');
   readonly confirmVariant = input<ButtonVariant>('primary');
   readonly confirmFill = input<ButtonFill>('solid');

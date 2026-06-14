@@ -32,7 +32,7 @@ export class Button {
       'inline-flex items-center justify-center gap-2 border font-medium transition',
       `button--${this.appearance()}`,
       'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-      'disabled:pointer-events-none disabled:opacity-55',
+      'cursor-pointer disabled:cursor-not-allowed disabled:opacity-55',
       this.radiusClass(),
       this.sizeClasses[this.size()],
       this.expandClasses[this.expand()],

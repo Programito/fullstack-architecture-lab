@@ -18,113 +18,25 @@
 
         <dl class="theme-soft-panel grid grid-cols-3 gap-3 rounded-md border px-3 py-2 text-sm sm:min-w-80">
           <div>
-            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.kitchen.pending' | transloco }}</dt>
+            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.in_kitchen' | transloco }}</dt>
             <dd class="theme-title text-xl font-semibold">{{ pendingLineCount() }}</dd>
           </div>
           <div>
-            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.kitchen.preparing' | transloco }}</dt>
-            <dd class="theme-title text-xl font-semibold">{{ preparingLineCount() }}</dd>
+            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.ready' | transloco }}</dt>
+            <dd class="theme-title text-xl font-semibold">{{ readyLineCount() }}</dd>
           </div>
           <div>
-            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.kitchen.ready' | transloco }}</dt>
-            <dd class="theme-title text-xl font-semibold">{{ readyLineCount() }}</dd>
+            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.served' | transloco }}</dt>
+            <dd class="theme-title text-xl font-semibold">{{ servedLineCount() }}</dd>
           </div>
         </dl>
       </div>
     </section>
 
-    @if (store.kitchenTickets().length === 0) {
-      <section class="theme-panel rounded-lg border p-8 text-center shadow-sm">
-        <app-icon name="room_service" size="lg" />
-        <h2 class="theme-title mt-3 text-lg font-semibold">{{ 'restaurantPos.kitchen.emptyTitle' | transloco }}</h2>
-        <p class="theme-muted mx-auto mt-1 max-w-md text-sm">{{ 'restaurantPos.kitchen.emptyDescription' | transloco }}</p>
-      </section>
-    } @else {
-      <section class="grid gap-4 xl:grid-cols-3" [attr.aria-label]="'restaurantPos.kitchen.orders' | transloco">
-        @for (column of kitchenBoardColumns(); track column.status) {
-          <section class="theme-panel flex min-h-96 flex-col rounded-lg border p-3 shadow-sm" [attr.aria-labelledby]="'kitchen-column-' + column.status">
-            <header class="border-b pb-3">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <h2 class="theme-title text-lg font-semibold" [id]="'kitchen-column-' + column.status">{{ columnTitle(column.status) }}</h2>
-                  <p class="theme-muted mt-1 text-sm">{{ columnDescription(column.status) }}</p>
-                </div>
-                <span class="theme-soft-panel rounded-md border px-2.5 py-1 text-sm font-semibold">{{ columnLineCount(column) }}</span>
-              </div>
-            </header>
-
-            @if (column.tickets.length === 0) {
-              <p class="theme-muted flex min-h-40 items-center justify-center text-center text-sm">{{ columnEmptyLabel(column.status) }}</p>
-            } @else {
-              <div class="mt-3 grid gap-3">
-                @for (ticket of column.tickets; track ticket.table.id) {
-                  <article class="rounded-lg border bg-[var(--ui-surface)] p-3 shadow-sm">
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <h3 class="theme-title text-base font-semibold">{{ ticketTitle(ticket) }}</h3>
-                        <p class="theme-muted mt-1 text-xs">
-                          {{ 'restaurantPos.common.pax' | transloco: { count: ticket.table.capacity } }} · {{ ticketElapsedLabel(ticket) }}
-                        </p>
-                      </div>
-                      <a class="theme-nav-link rounded-md border px-2.5 py-1.5 text-xs font-medium" [routerLink]="['/restaurant-pos/service']">
-                        {{ 'restaurantPos.kitchen.openTable' | transloco }}
-                      </a>
-                    </div>
-
-                    <ul class="mt-3 grid gap-2">
-                      @for (line of ticket.lines; track line.id) {
-                        <li class="rounded-md border p-3" [ngClass]="lineCardClass(line)">
-                          <div class="flex gap-2">
-                            <div class="min-w-0 flex-1">
-                              <p class="font-semibold" [ngClass]="{ 'line-through decoration-2': isReady(line) }">
-                                {{ line.quantity }} x {{ line.productName }}
-                              </p>
-                              <p class="mt-1 text-xs opacity-80">
-                                {{ 'restaurantPos.course.' + line.course | transloco }} · {{ lineStatusLabel(line) }} · {{ lineElapsedLabel(line) }}
-                              </p>
-                              @if (line.selectedModifiers.length) {
-                                <p class="mt-2 rounded-md border px-2 py-1 text-xs opacity-90">{{ modifierLabel(line) }}</p>
-                              }
-                              @if (line.kitchenNote) {
-                                <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-sm text-amber-900">{{ line.kitchenNote }}</p>
-                              }
-                            </div>
-
-                            <button
-                              type="button"
-                              class="inline-flex size-8 shrink-0 items-center justify-center rounded-md border text-sm font-semibold transition hover:bg-[var(--ui-surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-ring)] disabled:cursor-not-allowed disabled:opacity-40"
-                              [attr.aria-label]="moveBackAriaLabel(line)"
-                              [disabled]="!canMoveBack(line)"
-                              (click)="moveBack(ticket.table.id, line.id)"
-                            >
-                              X
-                            </button>
-                          </div>
-
-                          <app-button
-                            class="mt-3 block w-full"
-                            variant="secondary"
-                            fill="solid"
-                            expand="block"
-                            size="lg"
-                            [ariaLabel]="primaryActionAriaLabel(line)"
-                            (pressed)="handlePrimaryAction(ticket, line)"
-                          >
-                            <span class="inline-flex w-full items-center justify-center gap-2">
-                              <app-icon [name]="isReady(line) ? 'check_circle' : 'check'" size="sm" />
-                              {{ primaryActionLabel(line) }}
-                            </span>
-                          </app-button>
-                        </li>
-                      }
-                    </ul>
-                  </article>
-                }
-              </div>
-            }
-          </section>
-        }
-      </section>
-    }
+    <app-preparation-board
+      [columns]="store.preparationBoardColumns()"
+      [warning]="preparationWarning()"
+      (lineMoved)="movePreparationLine($event)"
+    />
   </div>
 </main>

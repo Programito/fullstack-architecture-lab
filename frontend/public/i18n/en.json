@@ -182,11 +182,17 @@
       "allProductCategories": "All categories",
       "productAdded": "Added",
       "finishProductSearch": "Close",
+      "productPickerSummary": "{{count}} products added · {{total}}",
       "addProductAction": "Add",
       "configureProductAction": "Configure",
+      "configureComboAction": "Configure menu",
       "comboComingSoonAction": "Coming soon",
       "configureProductActionLabel": "Configure {{name}}",
+      "configureComboActionLabel": "Configure menu {{name}}",
       "comboComingSoonActionLabel": "Menu configuration coming soon for {{name}}",
+      "addComboToOrder": "Add menu",
+      "comboBasePrice": "Base price",
+      "comboTotal": "Menu total",
       "productQuantityLabel": "{{name}} quantity: {{count}}",
       "addFavoriteProduct": "Add {{name}} to favorites",
       "removeFavoriteProduct": "Remove {{name}} from favorites",
@@ -199,6 +205,7 @@
       "noServicePointResults": "No tables or stools match the search.",
       "noAllergens": "No allergens listed",
       "customizable": "Customizable",
+      "platter": "Platter",
       "combo": "Menu",
       "soldOut": "Sold out",
       "sendKitchen": "Kitchen",
@@ -216,6 +223,7 @@
       "lineNote": "Note",
       "lineNoteActionLabel": "Note for {{name}}",
       "kitchenNotePrefix": "Note:",
+      "platterComponentsLabel": "Includes:",
       "withoutModifier": "NO {{name}}",
       "markProductReady": "Ready",
       "markProductServed": "Serve",
@@ -277,6 +285,20 @@
         }
       }
     },
+    "preparationBoard": {
+      "title": "Preparation",
+      "description": "Move lines between kitchen, ready, and served.",
+      "in_kitchen": "In kitchen",
+      "ready": "Ready",
+      "served": "Served",
+      "emptyColumn": "No lines in this stage.",
+      "tableLabel": "Table {{number}}",
+      "markReady": "Mark ready",
+      "markServed": "Mark served",
+      "directStation": "Bar",
+      "notReadyWarning": "This product is not marked as ready yet.",
+      "genericMoveError": "The line could not be moved."
+    },
     "tableStatus": {
       "free": "Free",
       "occupied": "Occupied",
@@ -293,7 +315,8 @@
       "preparing": "Preparing",
       "ready": "Ready",
       "picked_up": "Picked up",
-      "served": "Served"
+      "served": "Served",
+      "cancelled": "Cancelled"
     },
     "course": {
       "drinks": "Drinks",
@@ -358,6 +381,13 @@
     }
   },
   "menu": {
+    "course": {
+      "drinks": "Drinks",
+      "starter": "Starter",
+      "main": "Main",
+      "dessert": "Dessert",
+      "other": "Other"
+    },
     "page": {
       "eyebrow": "Operational catalog",
       "title": "Menu",
@@ -368,6 +398,7 @@
       "soldOut": "Sold out",
       "customizableBadge": "Customizable",
       "comboBadge": "Combo",
+      "platterBadge": "Platter",
       "searchLabel": "Search catalog",
       "searchPlaceholder": "Search product, category, allergen, or modifier",
       "clearSearch": "Clear catalog search",
@@ -398,6 +429,13 @@
       "kitchenNote": "Kitchen note",
       "kitchenNotePlaceholder": "Example: no salt, little done, sauce aside...",
       "addFor": "Add for {{price}}"
+    },
+    "comboCustomizer": {
+      "title": "Configure menu",
+      "description": "Choose burger, side, and drink.",
+      "close": "Close menu configuration",
+      "noValidProducts": "No products are available for this slot.",
+      "invalidSelection": "Complete the required slots to add the menu."
     }
   }
 }

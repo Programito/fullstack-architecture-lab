@@ -182,11 +182,17 @@
       "allProductCategories": "Totes",
       "productAdded": "Afegit",
       "finishProductSearch": "Tancar",
+      "productPickerSummary": "{{count}} productes afegits · {{total}}",
       "addProductAction": "Afegir",
       "configureProductAction": "Configurar",
+      "configureComboAction": "Configurar menú",
       "comboComingSoonAction": "Properament",
       "configureProductActionLabel": "Configurar {{name}}",
+      "configureComboActionLabel": "Configurar menú {{name}}",
       "comboComingSoonActionLabel": "Configuració de menú properament per a {{name}}",
+      "addComboToOrder": "Afegir menú",
+      "comboBasePrice": "Preu base",
+      "comboTotal": "Total menú",
       "productQuantityLabel": "Quantitat de {{name}}: {{count}}",
       "addFavoriteProduct": "Afegir {{name}} a favorits",
       "removeFavoriteProduct": "Treure {{name}} de favorits",
@@ -199,6 +205,7 @@
       "noServicePointResults": "No hi ha taules ni tamborets que coincideixin amb la cerca.",
       "noAllergens": "Sense al·lergògens indicats",
       "customizable": "Personalitzable",
+      "platter": "Plat combinat",
       "combo": "Menú",
       "soldOut": "Esgotat",
       "sendKitchen": "Cuina",
@@ -216,6 +223,7 @@
       "lineNote": "Nota",
       "lineNoteActionLabel": "Nota per a {{name}}",
       "kitchenNotePrefix": "Nota:",
+      "platterComponentsLabel": "Inclou:",
       "withoutModifier": "SENSE {{name}}",
       "markProductReady": "Preparat",
       "markProductServed": "Servir",
@@ -277,6 +285,20 @@
         }
       }
     },
+    "preparationBoard": {
+      "title": "Preparació",
+      "description": "Mou les línies entre cuina, preparat i servit.",
+      "in_kitchen": "A cuina",
+      "ready": "Preparat",
+      "served": "Servit",
+      "emptyColumn": "No hi ha línies en aquesta fase.",
+      "tableLabel": "Taula {{number}}",
+      "markReady": "Marcar preparat",
+      "markServed": "Marcar servit",
+      "directStation": "Barra",
+      "notReadyWarning": "Aquest producte encara no està marcat com a preparat.",
+      "genericMoveError": "No s'ha pogut moure la línia."
+    },
     "tableStatus": {
       "free": "Lliure",
       "occupied": "Ocupada",
@@ -293,7 +315,8 @@
       "preparing": "Preparant-se",
       "ready": "Preparat",
       "picked_up": "Recollit",
-      "served": "Servit"
+      "served": "Servit",
+      "cancelled": "Cancel·lat"
     },
     "course": {
       "drinks": "Begudes",
@@ -358,6 +381,13 @@
     }
   },
   "menu": {
+    "course": {
+      "drinks": "Begudes",
+      "starter": "Entrant",
+      "main": "Principal",
+      "dessert": "Postres",
+      "other": "Altres"
+    },
     "page": {
       "eyebrow": "Catàleg operatiu",
       "title": "Menú",
@@ -368,6 +398,7 @@
       "soldOut": "Esgotat",
       "customizableBadge": "Personalitzable",
       "comboBadge": "Combo",
+      "platterBadge": "Plat combinat",
       "searchLabel": "Buscar al catàleg",
       "searchPlaceholder": "Buscar producte, categoria, al·lergen o modificador",
       "clearSearch": "Netejar cerca del catàleg",
@@ -398,6 +429,13 @@
       "kitchenNote": "Nota de cuina",
       "kitchenNotePlaceholder": "Exemple: sense sal, poc fet, salsa a part...",
       "addFor": "Afegir per {{price}}"
+    },
+    "comboCustomizer": {
+      "title": "Configurar menú",
+      "description": "Tria hamburguesa, acompanyament i beguda.",
+      "close": "Tancar configuració de menú",
+      "noValidProducts": "No hi ha productes disponibles per a aquest slot.",
+      "invalidSelection": "Completa els slots obligatoris per afegir el menú."
     }
   }
 }

@@ -36,18 +36,26 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
   };
 
-  it('renders a compact service floor and empty selected-table panel', async () => {
-    await renderServicePage();
+  it('renders a compact service floor and empty selected-table panel without the preparation board', async () => {
+    const { container } = await renderServicePage();
 
     expect(screen.getByRole('heading', { name: 'Servicio de sala' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Plano de servicio' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Selecciona una mesa' })).toBeTruthy();
+    expect(screen.getByLabelText('Panel de mesa seleccionada')).toBeTruthy();
     expect(screen.getByText('0/5')).toBeTruthy();
     expect(screen.getByText('Pagada')).toBeTruthy();
     expect(screen.queryByText('Añadir rápido')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Preparación' })).toBeNull();
     expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Cocina/i }).getAttribute('href')).toBe('/restaurant-pos/kitchen');
     expect(screen.getByLabelText('M1 mesa, Libre')).toBeTruthy();
     expect(screen.queryByRole('toolbar', { name: 'Acciones del elemento del plano' })).toBeNull();
+
+    const tablePanelHost = container.querySelector('app-service-table-panel');
+    expect(tablePanelHost?.className).toContain('w-full');
+    expect(tablePanelHost?.className).toContain('xl:w-[22rem]');
+    expect(tablePanelHost?.className).not.toMatch(/\babsolute\b|\bfixed\b/);
   });
 
   it('opens the selected table panel from the floor plan', async () => {
@@ -153,11 +161,83 @@ describe('RestaurantPosServicePage', () => {
       }),
     );
     expect(line?.selectedModifiers.map((modifier) => modifier.optionId)).toContain('extra-bacon');
-    expect(screen.getByText(/Bacon/)).toBeTruthy();
-    expect(screen.getByText(/Nota: Sin prisa/)).toBeTruthy();
+    const tablePanel = screen.getByLabelText('Panel de mesa seleccionada');
+    expect(within(tablePanel).getByText(/Bacon/)).toBeTruthy();
+    expect(within(tablePanel).getByText(/Nota: Sin prisa/)).toBeTruthy();
   });
 
-  it('shows combos in product search but keeps them disabled until slot selection exists', async () => {
+  it('opens the product customizer for platter products with modifiers', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const searchDialog = getProductDialog();
+    fireEvent.input(within(searchDialog).getByRole('searchbox', { name: /Buscar producto/i }), {
+      target: { value: 'lomo' },
+    });
+    fixture.detectChanges();
+
+    expect(within(searchDialog).getByText('Plato combinado')).toBeTruthy();
+    fireEvent.click(within(searchDialog).getByRole('button', { name: 'Configurar Plato combinado de lomo' }));
+    fixture.detectChanges();
+
+    const customizer = screen.getByRole('dialog', { name: /Plato combinado de lomo/i });
+    fireEvent.click(within(customizer).getByLabelText(/Huevo extra/i));
+    fireEvent.click(within(customizer).getByRole('button', { name: /A.adir por/i }));
+    fixture.detectChanges();
+
+    const line = store.selectedOrder()?.lines.find((currentLine) => currentLine.productName === 'Plato combinado de lomo');
+    expect(line).toEqual(
+      expect.objectContaining({
+        productId: 'product-17',
+        unitPrice: 14.1,
+        platterComponents: [
+          expect.objectContaining({ name: 'Lomo' }),
+          expect.objectContaining({ name: 'Huevo' }),
+          expect.objectContaining({ name: 'Patatas fritas' }),
+          expect.objectContaining({ name: 'Ensalada' }),
+        ],
+      }),
+    );
+    expect(line?.selectedModifiers.map((modifier) => modifier.optionId)).toContain('platter-extra-egg');
+    const tablePanel = screen.getByLabelText('Panel de mesa seleccionada');
+    expect(within(tablePanel).getByText(/Incluye:/)).toBeTruthy();
+    expect(within(tablePanel).getByText(/lomo, huevo, patatas fritas, ensalada/)).toBeTruthy();
+  });
+
+  it('adds platter products without modifiers directly from product search', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const searchDialog = getProductDialog();
+    fireEvent.input(within(searchDialog).getByRole('searchbox', { name: /Buscar producto/i }), {
+      target: { value: 'vegetal' },
+    });
+    fixture.detectChanges();
+
+    const addButton = within(searchDialog).getByRole('button', { name: /A.adir una unidad de Plato combinado vegetal/ });
+    expect(addButton.textContent?.trim()).toMatch(/A.adir/);
+    fireEvent.click(addButton);
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('dialog', { name: /Plato combinado vegetal/i })).toBeNull();
+    expect(store.selectedOrder()?.lines.find((currentLine) => currentLine.productId === 'product-19')).toEqual(
+      expect.objectContaining({
+        productName: 'Plato combinado vegetal',
+        platterComponents: expect.arrayContaining([expect.objectContaining({ name: 'Ensalada' })]),
+      }),
+    );
+    expect(screen.getByText('1 x Plato combinado vegetal')).toBeTruthy();
+  });
+
+  it('opens combo customizer from product search and adds the configured menu', async () => {
     const { fixture } = await renderServicePage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
@@ -166,16 +246,35 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     const dialog = getProductDialog();
-    const comboAdd = within(dialog).getByRole('button', { name: 'Configuración de menú próximamente para Menu Classic Burger' });
+    const comboAdd = within(dialog).getByRole('button', { name: 'Configurar menú Menu Classic Burger' });
 
     expect(within(dialog).getByText('Menu Classic Burger')).toBeTruthy();
     expect(within(dialog).getByText('Menú')).toBeTruthy();
-    expect(comboAdd.hasAttribute('disabled')).toBe(true);
+    expect(comboAdd.hasAttribute('disabled')).toBe(false);
 
     fireEvent.click(comboAdd);
     fixture.detectChanges();
 
-    expect(store.selectedOrder()?.lines.some((line) => line.productId === 'product-16')).toBe(false);
+    const comboDialog = screen.getByRole('dialog', { name: 'Menu Classic Burger' });
+    expect((within(comboDialog).getByRole('radio', { name: /Hamburguesa clásica/i }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(within(comboDialog).getByRole('button', { name: 'Añadir menú' }));
+    fixture.detectChanges();
+
+    const line = store.selectedOrder()?.lines.find((currentLine) => currentLine.productId === 'product-16');
+    expect(line).toEqual(
+      expect.objectContaining({
+        productName: 'Menu Classic Burger',
+        unitPrice: 13.5,
+        selectedComboSlots: expect.arrayContaining([
+          expect.objectContaining({ slotName: 'Hamburguesa' }),
+          expect.objectContaining({ slotName: 'Acompanamiento' }),
+          expect.objectContaining({ slotName: 'Bebida' }),
+        ]),
+      }),
+    );
+    const tablePanel = screen.getByLabelText('Panel de mesa seleccionada');
+    expect(within(tablePanel).getByText('1 x Menu Classic Burger')).toBeTruthy();
+    expect(within(tablePanel).getByText(/Hamburguesa clásica/)).toBeTruthy();
   });
 
   it('filters the product search by favorites and lets favorites be updated from the dialog', async () => {
@@ -274,16 +373,12 @@ describe('RestaurantPosServicePage', () => {
     expect(store.selectedTable()?.status).toBe('waiting_kitchen');
     expect(screen.getAllByText('En cocina').length).toBeGreaterThan(0);
 
+    expect(screen.queryByRole('region', { name: 'Preparación' })).toBeNull();
     fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Hamburguesa craft' }), { target: { value: 'Sin cebolla' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar Hamburguesa craft como preparado' }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
     fixture.detectChanges();
 
-    expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ note: 'Sin cebolla', status: 'ready' }));
-    expect(screen.getAllByText('Preparado').length).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar Hamburguesa craft como servido' }));
-    fixture.detectChanges();
-
+    expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ note: 'Sin cebolla', status: 'served' }));
     expect(store.selectedTable()?.status).toBe('served');
     expect(screen.getAllByText('Servido').length).toBeGreaterThan(0);
 

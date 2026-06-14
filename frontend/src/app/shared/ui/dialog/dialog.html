@@ -35,21 +35,27 @@
 
       @if (showActions()) {
         <footer class="dialog__footer">
-          @if (showCancel()) {
-            <app-button [variant]="cancelVariant()" [fill]="cancelFill()" (pressed)="cancel()">
-              {{ cancelLabel() }}
-            </app-button>
+          @if (footerSummary()) {
+            <p class="dialog__footer-summary">{{ footerSummary() }}</p>
           }
 
-          <app-button
-            [variant]="confirmVariant()"
-            [fill]="confirmFill()"
-            [disabled]="confirmDisabled()"
-            [loading]="confirmLoading()"
-            (pressed)="confirm()"
-          >
-            {{ confirmLabel() }}
-          </app-button>
+          <div class="dialog__footer-actions">
+            @if (showCancel()) {
+              <app-button [variant]="cancelVariant()" [fill]="cancelFill()" (pressed)="cancel()">
+                {{ cancelLabel() }}
+              </app-button>
+            }
+
+            <app-button
+              [variant]="confirmVariant()"
+              [fill]="confirmFill()"
+              [disabled]="confirmDisabled()"
+              [loading]="confirmLoading()"
+              (pressed)="confirm()"
+            >
+              {{ confirmLabel() }}
+            </app-button>
+          </div>
         </footer>
       }
     </section>

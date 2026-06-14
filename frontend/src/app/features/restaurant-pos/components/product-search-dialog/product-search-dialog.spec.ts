@@ -4,6 +4,10 @@ import type { Product } from '../../models/restaurant-pos.models';
 import { ProductSearchDialog } from './product-search-dialog';
 
 describe('ProductSearchDialog', () => {
+  const kitchenPolicy = { route: 'kitchen', requiresReadyBeforeServe: true } as const;
+  const barPolicy = { route: 'bar', requiresReadyBeforeServe: false } as const;
+  const dessertPolicy = { route: 'dessert_station', requiresReadyBeforeServe: true } as const;
+
   const products: Product[] = [
     {
       id: 'burger',
@@ -16,6 +20,7 @@ describe('ProductSearchDialog', () => {
       course: 'main',
       type: 'simple',
       modifierGroupIds: ['burger-extras'],
+      preparationPolicy: kitchenPolicy,
     },
     {
       id: 'lemonade',
@@ -28,6 +33,7 @@ describe('ProductSearchDialog', () => {
       course: 'drinks',
       type: 'simple',
       modifierGroupIds: [],
+      preparationPolicy: barPolicy,
     },
     {
       id: 'combo',
@@ -40,6 +46,7 @@ describe('ProductSearchDialog', () => {
       course: 'main',
       type: 'combo',
       modifierGroupIds: [],
+      preparationPolicy: kitchenPolicy,
       comboDefinitionId: 'combo-classic-burger-menu',
     },
     {
@@ -53,6 +60,41 @@ describe('ProductSearchDialog', () => {
       course: 'dessert',
       type: 'simple',
       modifierGroupIds: [],
+      preparationPolicy: dessertPolicy,
+    },
+    {
+      id: 'platter-loin',
+      name: 'Plato combinado de lomo',
+      categoryId: 'platters',
+      category: 'Platos combinados',
+      basePrice: 12.9,
+      price: 12.9,
+      available: true,
+      course: 'main',
+      type: 'platter',
+      modifierGroupIds: ['platter-remove', 'platter-extras'],
+      preparationPolicy: kitchenPolicy,
+      platterComponents: [
+        { id: 'loin', name: 'Lomo', quantity: 1, removable: false, replaceable: false },
+        { id: 'egg', name: 'Huevo', quantity: 1, removable: true, replaceable: false },
+      ],
+    },
+    {
+      id: 'platter-veggie',
+      name: 'Plato combinado vegetal',
+      categoryId: 'platters',
+      category: 'Platos combinados',
+      basePrice: 11.9,
+      price: 11.9,
+      available: true,
+      course: 'main',
+      type: 'platter',
+      modifierGroupIds: [],
+      preparationPolicy: kitchenPolicy,
+      platterComponents: [
+        { id: 'egg', name: 'Huevo', quantity: 1, removable: true, replaceable: false },
+        { id: 'salad', name: 'Ensalada', quantity: 1, removable: true, replaceable: false },
+      ],
     },
   ];
 
@@ -81,7 +123,7 @@ describe('ProductSearchDialog', () => {
         ],
         favoriteProductIds: ['burger'],
         lastAddedProductId: 'lemonade',
-        productQuantities: { burger: 2 },
+        productQuantities: { burger: 2, combo: 1 },
       },
     });
     fixture.componentInstance.productViewChanged.subscribe(productViewChanged);
@@ -98,7 +140,7 @@ describe('ProductSearchDialog', () => {
     const favoriteButton = screen.getByRole('button', { name: 'Quitar Hamburguesa craft de favoritos' });
     const regularButton = screen.getAllByRole('button').find((button) => button.getAttribute('aria-pressed') === 'false');
     const burgerDecrease = within(burgerRow).getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' });
-    const comboAction = within(comboRow).getByRole('button', { name: 'Configuración de menú próximamente para Menu Classic Burger' });
+    const comboAction = within(comboRow).getByRole('button', { name: 'Configurar menú Menu Classic Burger' });
     const soldOutAction = within(soldOutRow).getByRole('button', { name: 'Añadir una unidad de Coulant de chocolate' });
 
     expect(favoriteButton.getAttribute('aria-pressed')).toBe('true');
@@ -108,15 +150,17 @@ describe('ProductSearchDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Añadir productos' })).toBeTruthy();
     expect(screen.getByText('Busca, filtra y añade productos al pedido.')).toBeTruthy();
     expect(screen.getByText('Hamburguesa craft')).toBeTruthy();
-    expect(screen.getByText('Personalizable')).toBeTruthy();
+    expect(within(burgerRow).getByText('Personalizable')).toBeTruthy();
     expect(screen.getByText('Menú')).toBeTruthy();
     expect(screen.getByText('Agotado')).toBeTruthy();
     expect(screen.queryByText('restaurantPos.service.combo')).toBeNull();
     expect(screen.queryByText('restaurantPos.service.addProductAction')).toBeNull();
     expect(screen.queryByText('restaurantPos.service.configureProductAction')).toBeNull();
+    expect(screen.queryByText('restaurantPos.service.productPickerSummary')).toBeNull();
     expect(screen.queryByText('Craft Burger')).toBeNull();
     expect(screen.queryByText('Finalizar')).toBeNull();
     expect(screen.getByRole('button', { name: 'Cerrar' })).toBeTruthy();
+    expect(screen.getByText(/3 productos/).textContent).toMatch(/38,50/);
 
     expect(screen.getByLabelText('Cantidad de Hamburguesa craft: 2')).toBeTruthy();
     expect(within(lemonadeRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }).textContent?.trim()).toBe('Añadir');
@@ -125,9 +169,17 @@ describe('ProductSearchDialog', () => {
     expect(within(burgerRow).getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' })).toBeTruthy();
     expect(within(burgerRow).getByRole('button', { name: 'Añadir una unidad de Hamburguesa craft' })).toBeTruthy();
     expect(burgerDecrease.hasAttribute('disabled')).toBe(false);
-    expect(comboAction.hasAttribute('disabled')).toBe(true);
-    expect(comboAction.textContent?.trim()).toBe('Próximamente');
+    expect(comboAction.hasAttribute('disabled')).toBe(false);
+    expect(comboAction.textContent?.trim()).toBe('Configurar menú');
+    expect(within(comboRow).queryByLabelText('Cantidad de Menu Classic Burger: 1')).toBeNull();
     expect(soldOutAction.hasAttribute('disabled')).toBe(true);
+    expect(soldOutAction.className).toContain('disabled:cursor-not-allowed');
+    expect(favoriteButton.className).toContain('cursor-pointer');
+    expect(comboAction.className).toContain('cursor-pointer');
+    expect(screen.getByRole('radio', { name: 'Favoritos' }).className).toContain('cursor-pointer');
+    expect(screen.getByRole('combobox', { name: 'Categoría' }).className).toContain('cursor-pointer');
+    expect(burgerRow.className).toContain('min-h-36');
+    expect(burgerRow.className).toContain('pb-5');
     expect(burgerRow.querySelector('[data-testid="product-search-row-actions"]')).toBeTruthy();
 
     expect(screen.getByRole('radio', { name: 'Todos' }).getAttribute('aria-checked')).toBe('true');
@@ -143,6 +195,9 @@ describe('ProductSearchDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
     expect(productIncremented).toHaveBeenCalledWith('lemonade');
+
+    fireEvent.click(soldOutAction);
+    expect(productIncremented).not.toHaveBeenCalledWith('sold-out');
 
     fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' }));
     expect(productDecremented).toHaveBeenCalledWith('burger');
@@ -183,5 +238,41 @@ describe('ProductSearchDialog', () => {
 
     fireEvent.click(configureButton);
     expect(productIncremented).toHaveBeenCalledWith('burger');
+  });
+
+  it('renders platter badges and keeps action labels based on modifiers', async () => {
+    const i18n = provideI18nTesting();
+    const productIncremented = vi.fn();
+
+    const { fixture } = await render(ProductSearchDialog, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        open: true,
+        query: '',
+        products,
+        productView: 'all',
+        productCategoryFilter: 'all',
+        productCategoryOptions: [{ label: 'Todas', value: 'all' }],
+        favoriteProductIds: [],
+        lastAddedProductId: null,
+        productQuantities: {},
+      },
+    });
+    fixture.componentInstance.productIncremented.subscribe(productIncremented);
+
+    const loinRow = screen.getByTestId('product-search-row-platter-loin');
+    const veggieRow = screen.getByTestId('product-search-row-platter-veggie');
+
+    expect(within(loinRow).getByText('Plato combinado')).toBeTruthy();
+    expect(within(veggieRow).getByText('Plato combinado')).toBeTruthy();
+    expect(within(loinRow).getByRole('button', { name: 'Configurar Plato combinado de lomo' }).textContent?.trim()).toBe('Configurar');
+    expect(within(veggieRow).getByRole('button', { name: /A.adir una unidad de Plato combinado vegetal/ }).textContent?.trim()).toMatch(/A.adir/);
+
+    fireEvent.click(within(loinRow).getByRole('button', { name: 'Configurar Plato combinado de lomo' }));
+    fireEvent.click(within(veggieRow).getByRole('button', { name: /A.adir una unidad de Plato combinado vegetal/ }));
+
+    expect(productIncremented).toHaveBeenCalledWith('platter-loin');
+    expect(productIncremented).toHaveBeenCalledWith('platter-veggie');
   });
 });

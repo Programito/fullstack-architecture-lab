@@ -9,8 +9,13 @@ import type {
   OrderCourseGroup,
   OrderCourse,
   OrderLine,
+  OrderLineProductSnapshot,
   OrdersByTable,
   PaymentMethod,
+  PreparationBoardColumn,
+  PreparationBoardColumnId,
+  PreparationFlow,
+  PreparationMoveResult,
   Product,
   PosMode,
   RestaurantTable,
@@ -20,6 +25,7 @@ import type {
   TableStatus,
   TableShape,
 } from '../models/restaurant-pos.models';
+import type { ComboProductDefinition, ComboSlotSelection } from '../../menu/models/menu.models';
 import { MenuPricingService } from '../../menu/services/menu-pricing.service';
 import { MenuValidationService } from '../../menu/services/menu-validation.service';
 import { MenuMockService } from '../../menu/services/menu-mock.service';
@@ -42,6 +48,8 @@ const DEFAULT_ELEMENT_LABELS: Record<EditableFloorElementType, string> = {
 };
 const COURSE_SERVICE_ORDER: OrderCourse[] = ['drinks', 'starter', 'main', 'dessert', 'other'];
 const KITCHEN_BOARD_STATUSES: KitchenBoardStatus[] = ['sent_to_kitchen', 'preparing', 'ready'];
+const PREPARATION_BOARD_COLUMNS: PreparationBoardColumnId[] = ['in_kitchen', 'ready', 'served'];
+const NOT_READY_WARNING_KEY = 'restaurantPos.preparationBoard.notReadyWarning';
 
 @Injectable({
   providedIn: 'root',
@@ -136,6 +144,12 @@ export class RestaurantPosStore {
         .filter((ticket) => ticket.lines.length > 0),
     })),
   );
+  readonly preparationBoardColumns = computed<PreparationBoardColumn[]>(() =>
+    PREPARATION_BOARD_COLUMNS.map((id) => ({
+      id,
+      cards: this.createPreparationBoardCards().filter((card) => this.getPreparationColumnId(card.line.status) === id),
+    })),
+  );
   readonly salesToday = computed(() => this.roundCurrency(this._restaurantTables().reduce((total, table) => total + table.total, 0)));
   readonly averageTicket = computed(() => {
     const orders = Object.values(this._ordersByTable()).filter((order) => order.total > 0);
@@ -187,18 +201,85 @@ export class RestaurantPosStore {
     const configurationSignature = this.menuPricing.createConfigurationSignature(product.id, selectedModifierOptionIds, kitchenNote);
     const lineId = this.createOrderLineId(configurationSignature);
     const normalizedKitchenNote = kitchenNote.trim();
+    const productSnapshot = this.createProductSnapshot(product);
     const nextLines = this.addProductLine(order.lines, {
       id: lineId,
-      productId: product.id,
-      productName: product.name,
+      productSnapshot,
+      productId: productSnapshot.productId,
+      productName: productSnapshot.productName,
       quantity: 1,
-      basePrice: product.basePrice,
+      basePrice: productSnapshot.basePrice,
       selectedModifiers,
+      ...(product.type === 'platter' && product.platterComponents?.length ? { platterComponents: structuredClone(product.platterComponents) } : {}),
       ...(normalizedKitchenNote ? { kitchenNote: normalizedKitchenNote, note: normalizedKitchenNote } : {}),
       unitPrice,
       subtotal: unitPrice,
       configurationSignature,
-      course: product.course,
+      course: productSnapshot.course,
+      status: 'pending',
+    });
+    const total = this.calculateOrderTotal(nextLines);
+
+    this.setOrder(tableId, {
+      ...order,
+      lines: nextLines,
+      total,
+    });
+    this.updateTable(tableId, {
+      status: 'occupied',
+      total,
+      occupiedAt: table?.occupiedAt ?? now,
+      serviceStartedAt: table?.serviceStartedAt ?? now,
+      cleaningStartedAt: undefined,
+    });
+    this.clearError();
+  }
+
+  addConfiguredComboToSelectedTable(comboProductId: string, slotSelections: ComboSlotSelection[]): void {
+    const tableId = this._selectedTableId();
+
+    if (!tableId) {
+      this.setError(SELECT_TABLE_ERROR);
+      return;
+    }
+
+    const comboProduct = this.products().find((product) => product.id === comboProductId);
+    const comboDefinition = comboProduct ? this.getComboDefinition(comboProduct) : null;
+
+    if (!comboProduct?.available || comboProduct.type !== 'combo' || !comboDefinition) {
+      this.setError(PRODUCT_UNAVAILABLE_ERROR);
+      return;
+    }
+
+    const normalizedSelections = this.normalizeComboSelections(slotSelections);
+    const validation = this.menuValidation.validateCombo(comboDefinition, normalizedSelections, this.products());
+
+    if (!validation.valid) {
+      this.setError(PRODUCT_UNAVAILABLE_ERROR);
+      return;
+    }
+
+    const order = this.ensureOrder(tableId);
+    const table = this.getTable(tableId);
+    const now = this.nowIso();
+    const unitPrice = this.menuPricing.calculateComboTotalPrice(comboProduct, comboDefinition, normalizedSelections);
+    const configurationSignature = this.menuPricing.createComboConfigurationSignature(comboProduct.id, normalizedSelections);
+    const lineId = this.createOrderLineId(configurationSignature);
+    const selectedComboSlots = this.buildSelectedComboSlotsSnapshot(comboDefinition, normalizedSelections);
+    const productSnapshot = this.createProductSnapshot(comboProduct, this.deriveComboPreparationPolicy(comboProduct, selectedComboSlots));
+    const nextLines = this.addProductLine(order.lines, {
+      id: lineId,
+      productSnapshot,
+      productId: productSnapshot.productId,
+      productName: productSnapshot.productName,
+      quantity: 1,
+      basePrice: productSnapshot.basePrice,
+      selectedModifiers: [],
+      selectedComboSlots,
+      unitPrice,
+      subtotal: unitPrice,
+      configurationSignature,
+      course: productSnapshot.course,
       status: 'pending',
     });
     const total = this.calculateOrderTotal(nextLines);
@@ -225,6 +306,11 @@ export class RestaurantPosStore {
 
     if (!existingLine) {
       this.addProductToSelectedTable(lineIdOrProductId);
+      return;
+    }
+
+    if (existingLine.selectedComboSlots?.length) {
+      this.addConfiguredComboToSelectedTable(existingLine.productId, this.comboSelectionsFromOrderLine(existingLine));
       return;
     }
 
@@ -390,6 +476,46 @@ export class RestaurantPosStore {
         pickedUpAt: line.pickedUpAt ?? now,
       };
     });
+  }
+
+  movePreparationLine(tableId: string, lineIdOrProductId: string, targetColumn: PreparationBoardColumnId): PreparationMoveResult {
+    const order = this._ordersByTable()[tableId];
+    const line = order ? this.findOrderLine(order, lineIdOrProductId) : null;
+
+    if (!line) {
+      return { moved: false, reason: 'missing_line' };
+    }
+
+    if (targetColumn === 'ready') {
+      this.markOrderLineReady(tableId, line.id);
+      return { moved: true };
+    }
+
+    if (targetColumn === 'served') {
+      if (this.lineRequiresReadyBeforeServed(line) && line.status !== 'ready' && line.status !== 'picked_up') {
+        return { moved: false, reason: 'requires_ready_before_served', messageKey: NOT_READY_WARNING_KEY };
+      }
+
+      this.markOrderLineServed(tableId, line.id);
+      return { moved: true };
+    }
+
+    if (targetColumn === 'in_kitchen') {
+      this.updateOrderLine(tableId, line.id, (currentLine) =>
+        currentLine.status === 'served'
+          ? currentLine
+          : {
+              ...currentLine,
+              status: 'preparing',
+              readyAt: undefined,
+              pickedUpAt: undefined,
+              servedAt: undefined,
+            },
+      );
+      return { moved: true };
+    }
+
+    return { moved: false, reason: 'unsupported_target' };
   }
 
   markSelectedOrderLineServed(lineIdOrProductId: string): void {
@@ -819,6 +945,69 @@ export class RestaurantPosStore {
     return line.status === 'sent_to_kitchen' || line.status === 'preparing' || line.status === 'ready';
   }
 
+  private createPreparationBoardCards(): PreparationBoardColumn['cards'] {
+    return Object.values(this._ordersByTable())
+      .filter((order) => order.lines.length > 0 && order.status !== 'paid')
+      .flatMap((order) => {
+        const table = this._restaurantTables().find((currentTable) => currentTable.id === order.tableId);
+
+        if (!table) {
+          return [];
+        }
+
+        return order.lines
+          .filter((line) => line.status !== 'cancelled')
+          .map((line) => {
+            const preparationFlow = this.getPreparationFlow(line);
+
+            return {
+              tableId: order.tableId,
+              tableNumber: table.number,
+              line,
+              preparationFlow,
+              requiresReadyBeforeServed: preparationFlow === 'kitchen',
+              ...(preparationFlow === 'kitchen' ? { station: 'Cocina' } : {}),
+            };
+          });
+      });
+  }
+
+  private getPreparationColumnId(status: OrderLine['status']): PreparationBoardColumnId {
+    if (status === 'ready' || status === 'picked_up') {
+      return 'ready';
+    }
+
+    if (status === 'served') {
+      return 'served';
+    }
+
+    return 'in_kitchen';
+  }
+
+  private getPreparationFlow(line: OrderLine): PreparationFlow {
+    return this.lineRequiresReadyBeforeServed(line) ? 'kitchen' : 'direct';
+  }
+
+  private lineRequiresReadyBeforeServed(line: OrderLine): boolean {
+    return line.productSnapshot.preparationPolicy.requiresReadyBeforeServe;
+  }
+
+  private markOrderLineServed(tableId: string, lineIdOrProductId: string): void {
+    this.updateOrderLine(tableId, lineIdOrProductId, (line) => {
+      const now = this.nowIso();
+      return {
+        ...line,
+        status: 'served',
+        sentToKitchenAt: line.sentToKitchenAt ?? now,
+        preparingAt: line.preparingAt ?? now,
+        readyAt: line.readyAt ?? now,
+        pickedUpAt: line.pickedUpAt,
+        servedAt: line.servedAt ?? now,
+      };
+    });
+    this.syncTableStatusAfterLineUpdate(tableId);
+  }
+
   private getServicePhase(lines: OrderLine[]): ServiceTableInfo['servicePhase'] {
     if (lines.length === 0) {
       return { course: null, status: 'no_order' };
@@ -964,6 +1153,86 @@ export class RestaurantPosStore {
     );
   }
 
+  private getComboDefinition(comboProduct: Product): ComboProductDefinition | null {
+    return this.menu.comboProductDefinitions().find((definition) => definition.productId === comboProduct.id) ?? null;
+  }
+
+  private normalizeComboSelections(slotSelections: ComboSlotSelection[]): ComboSlotSelection[] {
+    return slotSelections
+      .map((selection) => ({
+        slotId: selection.slotId,
+        selectedProductIds: [...new Set(selection.selectedProductIds)].sort(),
+      }))
+      .sort((first, second) => first.slotId.localeCompare(second.slotId));
+  }
+
+  private buildSelectedComboSlotsSnapshot(comboDefinition: ComboProductDefinition, slotSelections: ComboSlotSelection[]): NonNullable<OrderLine['selectedComboSlots']> {
+    const productsById = new Map(this.products().map((product) => [product.id, product]));
+    const supplementsBySlotProduct = new Map(comboDefinition.supplements.map((supplement) => [this.comboSlotProductKey(supplement.slotId, supplement.productId), supplement.supplementPrice]));
+
+    return comboDefinition.slots
+      .map((slot) => {
+        const selection = slotSelections.find((currentSelection) => currentSelection.slotId === slot.id);
+        const selectedProducts = (selection?.selectedProductIds ?? [])
+          .map((productId) => {
+            const product = productsById.get(productId);
+
+            return product
+              ? {
+                  productId: product.id,
+                  productName: product.name,
+                  productType: product.type,
+                  course: product.course,
+                  preparationPolicy: { ...product.preparationPolicy },
+                  supplementPrice: supplementsBySlotProduct.get(this.comboSlotProductKey(slot.id, product.id)) ?? 0,
+                }
+              : null;
+          })
+          .filter((product): product is NonNullable<typeof product> => product !== null);
+
+        return {
+          slotId: slot.id,
+          slotName: slot.name,
+          selectedProducts,
+        };
+      })
+      .filter((slot) => slot.selectedProducts.length > 0);
+  }
+
+  private createProductSnapshot(product: Product, preparationPolicy = product.preparationPolicy): OrderLineProductSnapshot {
+    return {
+      productId: product.id,
+      productName: product.name,
+      productType: product.type,
+      basePrice: product.basePrice,
+      course: product.course,
+      preparationPolicy: { ...preparationPolicy },
+    };
+  }
+
+  private deriveComboPreparationPolicy(comboProduct: Product, selectedComboSlots: NonNullable<OrderLine['selectedComboSlots']>): OrderLineProductSnapshot['preparationPolicy'] {
+    const requiresReadyBeforeServe = selectedComboSlots.some((slot) =>
+      slot.selectedProducts.some((product) => product.preparationPolicy.requiresReadyBeforeServe),
+    );
+
+    if (requiresReadyBeforeServe) {
+      return { route: 'kitchen', requiresReadyBeforeServe: true };
+    }
+
+    return { ...comboProduct.preparationPolicy, requiresReadyBeforeServe: false };
+  }
+
+  private comboSlotProductKey(slotId: string, productId: string): string {
+    return `${slotId}:${productId}`;
+  }
+
+  private comboSelectionsFromOrderLine(line: OrderLine): ComboSlotSelection[] {
+    return (line.selectedComboSlots ?? []).map((slot) => ({
+      slotId: slot.slotId,
+      selectedProductIds: slot.selectedProducts.map((product) => product.productId),
+    }));
+  }
+
   private getDefaultModifierOptionIds(product: Product): string[] {
     return this.menuPricing
       .getModifierGroupsForProduct(product)
@@ -991,6 +1260,10 @@ export class RestaurantPosStore {
       return;
     }
 
+    this.syncTableStatusAfterLineUpdate(tableId);
+  }
+
+  private syncTableStatusAfterLineUpdate(tableId: string): void {
     const order = this.ensureOrder(tableId);
 
     if (order.lines.length > 0 && order.lines.every((line) => line.status === 'served')) {
@@ -1102,23 +1375,6 @@ export class RestaurantPosStore {
 
   private roundCurrency(value: number): number {
     return Math.round(value * 100) / 100;
-  }
-
-  private getProductCourse(category: Product['category']): OrderCourse {
-    switch ((category ?? 'other').toLowerCase()) {
-      case 'drinks':
-      case 'coffee':
-        return 'drinks';
-      case 'tapas':
-      case 'salads':
-        return 'starter';
-      case 'burgers':
-        return 'main';
-      case 'desserts':
-        return 'dessert';
-      default:
-        return 'other';
-    }
   }
 
   private nowIso(): string {

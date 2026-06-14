@@ -6,6 +6,7 @@
   showActions
   [showCancel]="false"
   [confirmLabel]="text('restaurantPos.service.finishProductSearch')"
+  [footerSummary]="productPickerSummary()"
   size="lg"
   (closed)="closed.emit()"
   (confirmed)="finished.emit()"
@@ -41,84 +42,69 @@
       />
     </div>
 
-    <div data-testid="product-search-results" class="grid h-[24rem] content-start gap-3 overflow-y-auto pr-1">
-      @for (product of products(); track product.id) {
+    <div data-testid="product-search-results" class="grid content-start gap-3 pr-1">
+      @for (item of productPickerItems(); track item.id) {
         <div
-          [class]="productRowClass(product.id)"
-          [attr.data-testid]="'product-search-row-' + product.id"
+          [class]="item.rowClass"
+          [attr.data-testid]="'product-search-row-' + item.id"
         >
           <div class="grid min-w-0 gap-3 text-left">
             <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_2rem_auto] items-start gap-2">
-              <span class="theme-title block min-w-0 truncate font-semibold leading-5">{{ product.name }}</span>
+              <span class="theme-title block min-w-0 truncate font-semibold leading-5">{{ item.name }}</span>
               <button
                 type="button"
-                class="group grid h-8 w-8 transform-gpu place-items-center rounded-full border border-transparent text-[var(--ui-muted-fg)] transition-[background-color,border-color,color,transform] duration-150 ease-out hover:border-cyan-500/30 hover:bg-[var(--ui-surface)] hover:text-cyan-700 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 aria-pressed:border-amber-300 aria-pressed:bg-amber-50 aria-pressed:text-amber-600 dark:hover:text-cyan-200 dark:aria-pressed:border-amber-900 dark:aria-pressed:bg-amber-950/25 dark:aria-pressed:text-amber-300"
-                [attr.aria-label]="favoriteAriaLabel(product)"
-                [attr.aria-pressed]="isFavorite(product.id)"
-                (click)="favoriteToggled.emit(product.id)"
+                class="group grid h-8 w-8 transform-gpu cursor-pointer place-items-center rounded-full border border-transparent text-[var(--ui-muted-fg)] transition-[background-color,border-color,color,transform] duration-150 ease-out hover:border-cyan-500/30 hover:bg-[var(--ui-surface)] hover:text-cyan-700 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 aria-pressed:border-amber-300 aria-pressed:bg-amber-50 aria-pressed:text-amber-600 dark:hover:text-cyan-200 dark:aria-pressed:border-amber-900 dark:aria-pressed:bg-amber-950/25 dark:aria-pressed:text-amber-300"
+                [attr.aria-label]="item.favoriteAriaLabel"
+                [attr.aria-pressed]="item.isFavorite"
+                (click)="favoriteToggled.emit(item.id)"
               >
                 <span class="inline-block text-base leading-none transition-transform duration-150 ease-out group-active:scale-90" aria-hidden="true">
-                  @if (isFavorite(product.id)) {
+                  @if (item.isFavorite) {
                     &#9733;
                   } @else {
                     &#9734;
                   }
                 </span>
               </button>
-              <span class="theme-title shrink-0 pt-0.5 text-right text-sm font-semibold">{{ formatCurrency(productPrice(product)) }}</span>
+              <span class="theme-title shrink-0 pt-0.5 text-right text-sm font-semibold">{{ item.priceLabel }}</span>
             </div>
 
             <span class="theme-muted block min-w-0 truncate text-xs leading-5">
-              {{ productCategoryLabel(product) }} &middot; {{ productAllergenLabel(product) }}
+              {{ item.categoryLabel }} &middot; {{ item.allergenLabel }}
             </span>
 
             <div class="flex min-h-8 flex-wrap items-center justify-between gap-2 pb-1">
-              <span class="flex min-w-0 flex-wrap gap-1.5">
-                @if (isCustomizable(product)) {
-                  <span class="rounded-full border border-cyan-200 px-2.5 py-0.5 text-xs font-semibold text-cyan-700 dark:border-cyan-900 dark:text-cyan-200">
-                    {{ text('restaurantPos.service.customizable') }}
-                  </span>
-                }
-                @if (isCombo(product)) {
-                  <span class="rounded-full border border-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-700 dark:border-violet-900 dark:text-violet-200">
-                    {{ text('restaurantPos.service.combo') }}
-                  </span>
-                }
-                @if (!product.available) {
-                  <span class="rounded-full border border-red-200 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:border-red-900 dark:text-red-300">
-                    {{ text('restaurantPos.service.soldOut') }}
-                  </span>
-                }
-                @if (wasRecentlyAdded(product.id)) {
-                  <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200" aria-live="polite">
-                    {{ text('restaurantPos.service.productAdded') }}
+              <span class="flex min-w-0 flex-wrap gap-1.5 pr-2">
+                @for (badge of item.badges; track badge.id) {
+                  <span [class]="badge.className" [attr.aria-live]="badge.id === 'recentlyAdded' ? 'polite' : null">
+                    {{ badge.label }}
                   </span>
                 }
               </span>
 
               <div data-testid="product-search-row-actions" class="ml-auto flex shrink-0 items-center justify-end gap-2">
-                @if (shouldShowQuantityControls(product)) {
+                @if (item.showQuantityControls) {
                   <div class="grid grid-cols-[2rem_2.25rem_2rem] items-center rounded-md border bg-[var(--ui-bg)]">
                     <button
                       type="button"
-                      class="grid h-8 place-items-center rounded-l-md transition hover:bg-[var(--ui-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
-                      [attr.aria-label]="text('restaurantPos.service.decreaseProductQuantityActionLabel', { name: product.name })"
-                      (click)="productDecremented.emit(product.id)"
+                      class="grid h-8 cursor-pointer place-items-center rounded-l-md transition hover:bg-[var(--ui-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      [attr.aria-label]="item.decreaseAriaLabel"
+                      (click)="productDecremented.emit(item.id)"
                     >
                       <app-icon name="remove" size="sm" />
                     </button>
                     <span
                       class="text-center text-sm font-semibold"
-                      [attr.aria-label]="text('restaurantPos.service.productQuantityLabel', { name: product.name, count: productQuantity(product.id) })"
+                      [attr.aria-label]="item.quantityLabel"
                     >
-                      {{ productQuantity(product.id) }}
+                      {{ item.quantity }}
                     </span>
                     <button
                       type="button"
-                      class="grid h-8 place-items-center rounded-r-md transition hover:bg-[var(--ui-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
-                      [attr.aria-label]="text('restaurantPos.service.increaseProductQuantityActionLabel', { name: product.name })"
-                      [disabled]="!canIncrementProduct(product)"
-                      (click)="productIncremented.emit(product.id)"
+                      class="grid h-8 cursor-pointer place-items-center rounded-r-md transition hover:bg-[var(--ui-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      [attr.aria-label]="item.increaseAriaLabel"
+                      [disabled]="!item.canIncrement"
+                      (click)="item.canIncrement && productIncremented.emit(item.id)"
                     >
                       <app-icon name="add" size="sm" />
                     </button>
@@ -126,12 +112,12 @@
                 } @else {
                   <button
                     type="button"
-                    class="inline-flex h-8 min-w-24 items-center justify-center rounded-md border border-cyan-500/50 bg-cyan-500/10 px-3 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:border-[var(--ui-border)] disabled:bg-[var(--ui-surface)] disabled:text-[var(--ui-muted-fg)] dark:text-cyan-200"
-                    [attr.aria-label]="productActionAriaLabel(product)"
-                    [disabled]="!canUsePrimaryAction(product)"
-                    (click)="productIncremented.emit(product.id)"
+                    class="inline-flex h-8 min-w-24 cursor-pointer items-center justify-center rounded-md border border-cyan-500/50 bg-cyan-500/10 px-3 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:border-[var(--ui-border)] disabled:bg-[var(--ui-surface)] disabled:text-[var(--ui-muted-fg)] dark:text-cyan-200"
+                    [attr.aria-label]="item.actionAriaLabel"
+                    [disabled]="item.disabled"
+                    (click)="!item.disabled && productIncremented.emit(item.id)"
                   >
-                    {{ productActionLabel(product) }}
+                    {{ item.actionLabel }}
                   </button>
                 }
               </div>

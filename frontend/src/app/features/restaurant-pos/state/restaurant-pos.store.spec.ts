@@ -1,4 +1,5 @@
 ﻿import { TestBed } from '@angular/core/testing';
+import { TranslocoService } from '@jsverse/transloco';
 import { RestaurantPosStore } from './restaurant-pos.store';
 
 describe('RestaurantPosStore', () => {
@@ -137,6 +138,14 @@ describe('RestaurantPosStore', () => {
         id: expect.any(String),
         productId: 'product-1',
         productName: 'Craft Burger',
+        productSnapshot: expect.objectContaining({
+          productId: 'product-1',
+          productName: 'Craft Burger',
+          productType: 'simple',
+          basePrice: 12.5,
+          course: 'main',
+          preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+        }),
         quantity: 1,
         basePrice: 12.5,
         selectedModifiers: expect.arrayContaining([expect.objectContaining({ optionId: 'point-medium' })]),
@@ -152,6 +161,19 @@ describe('RestaurantPosStore', () => {
     expect(table?.status).toBe('occupied');
     expect(table?.occupiedAt).toBeTruthy();
     expect(table?.serviceStartedAt).toBeTruthy();
+  });
+
+  it('keeps order line product snapshots stable when catalog text changes', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+
+    TestBed.inject(TranslocoService).setActiveLang('es');
+
+    const [line] = store.ordersByTable()['table-1'].lines;
+
+    expect(store.products().find((product) => product.id === 'product-1')?.name).toBe('Hamburguesa craft');
+    expect(line.productName).toBe('Craft Burger');
+    expect(line.productSnapshot.productName).toBe('Craft Burger');
   });
 
   it('occupies the selected table and records service timestamps', () => {
@@ -188,6 +210,12 @@ describe('RestaurantPosStore', () => {
     expect(line).toEqual(
       expect.objectContaining({
         productName: 'Craft Burger',
+        productSnapshot: expect.objectContaining({
+          productId: 'product-1',
+          productName: 'Craft Burger',
+          productType: 'simple',
+          preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+        }),
         quantity: 2,
         basePrice: 12.5,
         unitPrice: 14,
@@ -211,6 +239,116 @@ describe('RestaurantPosStore', () => {
     expect(store.ordersByTable()['table-1'].lines).toHaveLength(3);
     expect(store.ordersByTable()['table-1'].lines.map((line) => line.configurationSignature)).toHaveLength(3);
     expect(new Set(store.ordersByTable()['table-1'].lines.map((line) => line.configurationSignature)).size).toBe(3);
+  });
+
+  it('sets an error when adding a configured combo without a selected table', () => {
+    store.addConfiguredComboToSelectedTable('product-16', [
+      { slotId: 'combo-burger', selectedProductIds: ['product-12'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-13'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-14'] },
+    ]);
+
+    expect(store.errorMessage()).toBe('restaurantPos.errors.selectTableFirst');
+  });
+
+  it('adds configured combo snapshots and calculates supplements', () => {
+    store.selectTable('table-1');
+    store.addConfiguredComboToSelectedTable('product-16', [
+      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+    ]);
+
+    const [line] = store.ordersByTable()['table-1'].lines;
+
+    expect(line).toEqual(
+      expect.objectContaining({
+        productId: 'product-16',
+        productName: 'Classic Burger Menu',
+        productSnapshot: expect.objectContaining({
+          productId: 'product-16',
+          productName: 'Classic Burger Menu',
+          productType: 'combo',
+          preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+        }),
+        quantity: 1,
+        basePrice: 13.5,
+        unitPrice: 16.5,
+        subtotal: 16.5,
+        selectedModifiers: [],
+        selectedComboSlots: [
+          expect.objectContaining({
+            slotName: 'Burger',
+            selectedProducts: [expect.objectContaining({ productName: 'Truffle Burger', course: 'main', preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true }, supplementPrice: 2 })],
+          }),
+          expect.objectContaining({
+            slotName: 'Side',
+            selectedProducts: [expect.objectContaining({ productName: 'Patatas Bravas', course: 'starter', preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true }, supplementPrice: 1 })],
+          }),
+          expect.objectContaining({
+            slotName: 'Drink',
+            selectedProducts: [expect.objectContaining({ productName: 'Water', course: 'drinks', preparationPolicy: { route: 'bar', requiresReadyBeforeServe: false }, supplementPrice: 0 })],
+          }),
+        ],
+      }),
+    );
+    expect(store.ordersByTable()['table-1'].total).toBe(16.5);
+    expect(store.restaurantTables().find((table) => table.id === 'table-1')?.total).toBe(16.5);
+  });
+
+  it('keeps platter components as snapshot data in order lines', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-17');
+
+    const [line] = store.ordersByTable()['table-1'].lines;
+
+    expect(line).toEqual(
+      expect.objectContaining({
+        productId: 'product-17',
+        productName: 'Pork Loin Platter',
+        productSnapshot: expect.objectContaining({
+          productId: 'product-17',
+          productName: 'Pork Loin Platter',
+          productType: 'platter',
+          preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+        }),
+        quantity: 1,
+        basePrice: 12.9,
+        unitPrice: 12.9,
+        subtotal: 12.9,
+        selectedModifiers: [],
+        platterComponents: [
+          expect.objectContaining({ id: 'platter-loin', name: 'Lomo', removable: false, replaceable: false }),
+          expect.objectContaining({ id: 'platter-egg', name: 'Huevo', removable: true, replaceable: false }),
+          expect.objectContaining({ id: 'platter-fries', name: 'Patatas fritas', removable: true, replaceable: false }),
+          expect.objectContaining({ id: 'platter-salad', name: 'Ensalada', removable: true, replaceable: false }),
+        ],
+      }),
+    );
+    expect(line.selectedComboSlots).toBeUndefined();
+  });
+
+  it('merges identical combo configurations and separates different ones', () => {
+    store.selectTable('table-1');
+    const firstSelection = [
+      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+    ];
+    const secondSelection = [
+      { slotId: 'combo-burger', selectedProductIds: ['product-12'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+    ];
+
+    store.addConfiguredComboToSelectedTable('product-16', firstSelection);
+    store.addConfiguredComboToSelectedTable('product-16', [...firstSelection].reverse());
+    store.addConfiguredComboToSelectedTable('product-16', secondSelection);
+
+    expect(store.ordersByTable()['table-1'].lines).toHaveLength(2);
+    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ quantity: 2, subtotal: 33 }));
+    expect(store.ordersByTable()['table-1'].lines[1]).toEqual(expect.objectContaining({ quantity: 1, subtotal: 14.5 }));
+    expect(store.ordersByTable()['table-1'].total).toBe(47.5);
   });
 
   it('does not add customized products when validation fails', () => {
@@ -414,6 +552,112 @@ describe('RestaurantPosStore', () => {
       expect.objectContaining({
         table: expect.objectContaining({ id: 'table-1' }),
         lines: [expect.objectContaining({ productId: 'product-1' })],
+      }),
+    );
+  });
+
+  it('groups preparation board cards by status', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.addProductToSelectedTable('product-3');
+
+    const inKitchenColumn = store.preparationBoardColumns().find((column) => column.id === 'in_kitchen');
+
+    expect(inKitchenColumn?.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tableId: 'table-1',
+          tableNumber: 1,
+          line: expect.objectContaining({ productId: 'product-1' }),
+        }),
+        expect.objectContaining({
+          tableId: 'table-1',
+          tableNumber: 1,
+          line: expect.objectContaining({ productId: 'product-3' }),
+        }),
+      ]),
+    );
+  });
+
+  it('moves a kitchen preparation line to ready', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+
+    const result = store.movePreparationLine('table-1', 'product-1', 'ready');
+
+    expect(result).toEqual({ moved: true });
+    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ status: 'ready', readyAt: expect.any(String) }));
+    expect(store.preparationBoardColumns().find((column) => column.id === 'ready')?.cards).toEqual(
+      expect.arrayContaining([expect.objectContaining({ line: expect.objectContaining({ productId: 'product-1' }) })]),
+    );
+  });
+
+  it('moves a ready preparation line to served', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.movePreparationLine('table-1', 'product-1', 'ready');
+
+    const result = store.movePreparationLine('table-1', 'product-1', 'served');
+
+    expect(result).toEqual({ moved: true });
+    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ status: 'served', servedAt: expect.any(String) }));
+  });
+
+  it('rejects serving kitchen products before they are ready', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+
+    const result = store.movePreparationLine('table-1', 'product-1', 'served');
+
+    expect(result).toEqual({
+      moved: false,
+      reason: 'requires_ready_before_served',
+      messageKey: 'restaurantPos.preparationBoard.notReadyWarning',
+    });
+    expect(store.ordersByTable()['table-1'].lines[0].productSnapshot.preparationPolicy).toEqual({ route: 'kitchen', requiresReadyBeforeServe: true });
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('pending');
+  });
+
+  it('allows direct drink products to be served directly', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-3');
+
+    const result = store.movePreparationLine('table-1', 'product-3', 'served');
+
+    expect(result).toEqual({ moved: true });
+    expect(store.ordersByTable()['table-1'].lines[0].productSnapshot.preparationPolicy).toEqual({ route: 'bar', requiresReadyBeforeServe: false });
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('served');
+  });
+
+  it('requires combo products with kitchen slot selections to be ready before served', () => {
+    store.selectTable('table-1');
+    store.addConfiguredComboToSelectedTable('product-16', [
+      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
+      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
+      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
+    ]);
+
+    const result = store.movePreparationLine('table-1', 'product-16', 'served');
+
+    expect(result.moved).toBe(false);
+    expect(result.reason).toBe('requires_ready_before_served');
+    expect(store.ordersByTable()['table-1'].lines[0].productSnapshot.preparationPolicy).toEqual({ route: 'kitchen', requiresReadyBeforeServe: true });
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('pending');
+  });
+
+  it('requires platter products to be ready before served', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-19');
+
+    const result = store.movePreparationLine('table-1', 'product-19', 'served');
+
+    expect(result.moved).toBe(false);
+    expect(result.reason).toBe('requires_ready_before_served');
+    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(
+      expect.objectContaining({
+        status: 'pending',
+        productSnapshot: expect.objectContaining({ preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true } }),
+        platterComponents: expect.arrayContaining([expect.objectContaining({ name: 'Ensalada' })]),
       }),
     );
   });

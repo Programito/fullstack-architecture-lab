@@ -76,6 +76,7 @@ export class Select {
   protected readonly classes = computed(() =>
     [
       'select-field__select',
+      'cursor-pointer disabled:cursor-not-allowed',
       `select-field__select--${this.size()}`,
       `select-field__select--${this.fill()}`,
       `select-field__select--${this.variant()}`,

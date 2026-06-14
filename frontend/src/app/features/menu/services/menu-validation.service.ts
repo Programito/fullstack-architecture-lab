@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import type { Product } from '../models/menu.models';
+import type { ComboProductDefinition, ComboSlotSelection, Product } from '../models/menu.models';
 import { MenuPricingService } from './menu-pricing.service';
 
 export interface ValidationResult {
@@ -46,5 +46,42 @@ export class MenuValidationService {
 
     return { valid: errors.length === 0, errors };
   }
-}
 
+  validateCombo(comboDefinition: ComboProductDefinition, slotSelections: ComboSlotSelection[], products: readonly Product[]): ValidationResult {
+    const errors: string[] = [];
+    const productsById = new Map(products.map((product) => [product.id, product]));
+    const selectionsBySlot = new Map(slotSelections.map((selection) => [selection.slotId, [...new Set(selection.selectedProductIds)]]));
+
+    for (const selection of slotSelections) {
+      if (!comboDefinition.slots.some((slot) => slot.id === selection.slotId)) {
+        errors.push(`Selected slot ${selection.slotId} does not belong to combo.`);
+      }
+    }
+
+    for (const slot of comboDefinition.slots) {
+      const selectedProductIds = selectionsBySlot.get(slot.id) ?? [];
+
+      if (slot.required && selectedProductIds.length < slot.minSelections) {
+        errors.push(`${slot.name} requires at least ${slot.minSelections} selection.`);
+      }
+
+      if (selectedProductIds.length > slot.maxSelections) {
+        errors.push(`${slot.name} allows at most ${slot.maxSelections} selections.`);
+      }
+
+      for (const productId of selectedProductIds) {
+        const product = productsById.get(productId);
+
+        if (!slot.allowedProductIds.includes(productId)) {
+          errors.push(`${productId} is not allowed in ${slot.name}.`);
+        }
+
+        if (!product?.available) {
+          errors.push(`${product?.name ?? productId} is unavailable.`);
+        }
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+}

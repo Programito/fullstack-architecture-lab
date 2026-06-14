@@ -7,6 +7,7 @@ import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import type { Product } from '../../models/restaurant-pos.models';
+import { toProductPickerItem } from './product-picker-item.mapper';
 
 export type ProductSearchView = 'all' | 'favorites';
 
@@ -50,13 +51,18 @@ export class ProductSearchDialog {
     'restaurantPos.service.productAdded': 'Añadido',
     'restaurantPos.service.customizable': 'Personalizable',
     'restaurantPos.service.combo': 'Menú',
+    'restaurantPos.service.platter': 'Plato combinado',
     'restaurantPos.service.soldOut': 'Agotado',
     'restaurantPos.service.finishProductSearch': 'Cerrar',
+    'restaurantPos.service.productPickerSummary': '{{count}} productos añadidos · {{total}}',
     'restaurantPos.service.addProductAction': 'Añadir',
     'restaurantPos.service.configureProductAction': 'Configurar',
-    'restaurantPos.service.comboComingSoonAction': 'Próximamente',
+    'restaurantPos.service.configureComboAction': 'Configurar menú',
     'restaurantPos.service.configureProductActionLabel': 'Configurar {{name}}',
-    'restaurantPos.service.comboComingSoonActionLabel': 'Configuración de menú próximamente para {{name}}',
+    'restaurantPos.service.configureComboActionLabel': 'Configurar menú {{name}}',
+    'restaurantPos.service.addComboToOrder': 'Añadir menú',
+    'restaurantPos.service.comboBasePrice': 'Precio base',
+    'restaurantPos.service.comboTotal': 'Total menú',
     'restaurantPos.service.productQuantityLabel': 'Cantidad de {{name}}: {{count}}',
     'restaurantPos.service.addFavoriteProduct': 'Añadir {{name}} a favoritos',
     'restaurantPos.service.removeFavoriteProduct': 'Quitar {{name}} de favoritos',
@@ -71,6 +77,41 @@ export class ProductSearchDialog {
     { label: this.translate('restaurantPos.service.allProducts'), value: 'all' },
     { label: this.translate('restaurantPos.service.favoriteProducts'), value: 'favorites' },
   ]);
+  protected readonly productPickerSummary = computed(() => {
+    const productById = new Map(this.products().map((product) => [product.id, product]));
+    let count = 0;
+    let total = 0;
+
+    for (const [productId, quantity] of Object.entries(this.productQuantities())) {
+      if (quantity <= 0) {
+        continue;
+      }
+
+      count += quantity;
+      const product = productById.get(productId);
+      total += (product ? this.productPrice(product) : 0) * quantity;
+    }
+
+    if (count === 0) {
+      return '';
+    }
+
+    return this.translate('restaurantPos.service.productPickerSummary', {
+      count,
+      total: this.formatCurrency(total),
+    });
+  });
+  protected readonly productPickerItems = computed(() =>
+    this.products().map((product) =>
+      toProductPickerItem(product, {
+        favoriteProductIds: this.favoriteProductIds(),
+        lastAddedProductId: this.lastAddedProductId(),
+        productQuantities: this.productQuantities(),
+        formatCurrency: (value) => this.formatCurrency(value),
+        translate: (key, params) => this.translate(key, params),
+      }),
+    ),
+  );
 
   protected text(key: string, params?: Record<string, unknown>): string {
     return this.translate(key, params);
@@ -80,91 +121,8 @@ export class ProductSearchDialog {
     return new Intl.NumberFormat(this.activeLang(), { style: 'currency', currency: 'EUR' }).format(value);
   }
 
-  protected productAllergenLabel(product: Product): string {
-    return product.allergens?.length ? product.allergens.join(', ') : this.translate('restaurantPos.service.noAllergens');
-  }
-
   protected productPrice(product: Product): number {
     return product.basePrice ?? product.price ?? 0;
-  }
-
-  protected productCategoryLabel(product: Product): string {
-    return product.category ?? product.categoryId;
-  }
-
-  protected isCustomizable(product: Product): boolean {
-    return product.modifierGroupIds.length > 0;
-  }
-
-  protected isCombo(product: Product): boolean {
-    return product.type === 'combo';
-  }
-
-  protected productActionLabel(product: Product): string {
-    if (this.isCombo(product)) {
-      return this.translate('restaurantPos.service.comboComingSoonAction');
-    }
-
-    if (this.isCustomizable(product)) {
-      return this.translate('restaurantPos.service.configureProductAction');
-    }
-
-    return this.translate('restaurantPos.service.addProductAction');
-  }
-
-  protected productActionAriaLabel(product: Product): string {
-    if (this.isCombo(product)) {
-      return this.translate('restaurantPos.service.comboComingSoonActionLabel', { name: product.name });
-    }
-
-    if (this.isCustomizable(product)) {
-      return this.translate('restaurantPos.service.configureProductActionLabel', { name: product.name });
-    }
-
-    return this.translate('restaurantPos.service.increaseProductQuantityActionLabel', { name: product.name });
-  }
-
-  protected shouldShowQuantityControls(product: Product): boolean {
-    return this.productQuantity(product.id) > 0;
-  }
-
-  protected canUsePrimaryAction(product: Product): boolean {
-    return product.available && !this.isCombo(product);
-  }
-
-  protected canIncrementProduct(product: Product): boolean {
-    return product.available && !this.isCombo(product);
-  }
-
-  protected isFavorite(productId: string): boolean {
-    return this.favoriteProductIds().includes(productId);
-  }
-
-  protected wasRecentlyAdded(productId: string): boolean {
-    return this.lastAddedProductId() === productId;
-  }
-
-  protected productQuantity(productId: string): number {
-    return this.productQuantities()[productId] ?? 0;
-  }
-
-  protected productRowClass(productId: string): string {
-    const selectedClass =
-      this.productQuantity(productId) > 0 || this.wasRecentlyAdded(productId)
-        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20'
-        : '';
-
-    return [
-      'theme-field grid min-h-32 grid-cols-1 items-start gap-3 rounded-lg border p-4 text-sm transition hover:border-cyan-500/60',
-      selectedClass,
-      this.products().find((product) => product.id === productId)?.available === false ? 'opacity-60' : '',
-    ].join(' ');
-  }
-
-  protected favoriteAriaLabel(product: Product): string {
-    return this.translate(this.isFavorite(product.id) ? 'restaurantPos.service.removeFavoriteProduct' : 'restaurantPos.service.addFavoriteProduct', {
-      name: product.name,
-    });
   }
 
   protected changeProductView(value: string): void {

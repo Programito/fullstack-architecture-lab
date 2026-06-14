@@ -13,41 +13,53 @@
           [kitchenQueue]="store.kitchenQueue()"
           [salesToday]="formatCurrency(store.salesToday())"
         />
+        <a
+          class="theme-nav-link inline-flex h-10 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-ring)]"
+          routerLink="/restaurant-pos/kitchen"
+        >
+          <app-icon name="restaurant" size="sm" />
+          {{ 'restaurantPos.common.kitchen' | transloco }}
+        </a>
       </div>
     </div>
   </header>
 
-  <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
-    <section class="theme-panel rounded-lg border p-4 shadow-sm">
-      <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.service.floorTitle' | transloco }}</h2>
-          <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.service.floorDescription' | transloco }}</p>
-        </div>
-
-        <div class="flex flex-col items-start gap-2 md:items-end">
-          <div class="theme-soft-panel flex flex-wrap gap-2 rounded-md border px-3 py-2 text-xs font-medium">
-            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>{{ 'restaurantPos.tableStatus.free' | transloco }}</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{{ 'restaurantPos.tableStatus.waiting_kitchen' | transloco }}</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span>{{ 'restaurantPos.tableStatus.payment_pending' | transloco }}</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-cyan-600"></span>{{ 'restaurantPos.tableStatus.paid' | transloco }}</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>{{ 'restaurantPos.tableStatus.cleaning' | transloco }}</span>
+  <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
+    <div class="grid min-w-0 gap-4">
+      <section class="theme-panel min-w-0 rounded-lg border p-4 shadow-sm">
+        <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.service.floorTitle' | transloco }}</h2>
+            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.service.floorDescription' | transloco }}</p>
           </div>
-          <app-button variant="neutral" fill="outline" size="sm" (pressed)="openServicePointSearch()">
-            <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
-          </app-button>
-          @if (lastSelectedServicePoint()) {
-            <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
-            </app-button>
-          }
-        </div>
-      </div>
 
-      <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
-    </section>
+          <div class="flex flex-col items-start gap-2 md:items-end">
+            <div class="theme-soft-panel flex flex-wrap gap-2 rounded-md border px-3 py-2 text-xs font-medium">
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>{{ 'restaurantPos.tableStatus.free' | transloco }}</span>
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{{ 'restaurantPos.tableStatus.waiting_kitchen' | transloco }}</span>
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span>{{ 'restaurantPos.tableStatus.payment_pending' | transloco }}</span>
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-cyan-600"></span>{{ 'restaurantPos.tableStatus.paid' | transloco }}</span>
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>{{ 'restaurantPos.tableStatus.cleaning' | transloco }}</span>
+            </div>
+            <app-button variant="neutral" fill="outline" size="sm" (pressed)="openServicePointSearch()">
+              <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
+            </app-button>
+            @if (lastSelectedServicePoint()) {
+              <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
+                <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
+              </app-button>
+            }
+          </div>
+        </div>
+
+        <div class="min-w-0 overflow-x-auto">
+          <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
+        </div>
+      </section>
+    </div>
 
     <app-service-table-panel
+      class="w-full xl:w-[22rem]"
       [serviceInfo]="store.selectedServiceInfo()"
       [title]="selectedTableTitle()"
       [errorMessage]="store.errorMessage()"
@@ -109,6 +121,16 @@
   [modifierGroups]="customizingModifierGroups()"
   (closed)="closeProductCustomizer()"
   (confirmed)="confirmProductCustomization($event)"
+/>
+
+<app-combo-customizer-dialog
+  [open]="comboCustomizerOpen()"
+  [comboProduct]="customizingComboProduct()"
+  [comboDefinition]="customizingComboDefinition()"
+  [products]="store.products()"
+  (closed)="closeComboCustomizer()"
+  (cancelled)="closeComboCustomizer()"
+  (confirmed)="confirmComboCustomization($event)"
 />
 
 <app-payment-gateway-dialog

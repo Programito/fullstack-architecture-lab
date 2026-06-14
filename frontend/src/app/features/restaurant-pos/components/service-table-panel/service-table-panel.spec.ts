@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import type { OrderCourseGroup, RestaurantTable, ServiceTableInfo, TableOrder } from '../../models/restaurant-pos.models';
+import type { OrderCourse, OrderCourseGroup, OrderLineProductSnapshot, RestaurantTable, ServiceTableInfo, TableOrder } from '../../models/restaurant-pos.models';
 import { ServiceTablePanel } from './service-table-panel';
 
 describe('ServiceTablePanel', () => {
@@ -24,6 +24,24 @@ describe('ServiceTablePanel', () => {
     serviceStartedAt: '2026-06-10T12:05:00.000Z',
   };
 
+  const productSnapshot = (
+    productId: string,
+    productName: string,
+    basePrice: number,
+    course: OrderCourse,
+    requiresReadyBeforeServe = true,
+  ): OrderLineProductSnapshot => ({
+    productId,
+    productName,
+    productType: 'simple',
+    basePrice,
+    course,
+    preparationPolicy: {
+      route: requiresReadyBeforeServe ? 'kitchen' : 'bar',
+      requiresReadyBeforeServe,
+    },
+  });
+
   const order: TableOrder = {
     tableId: 'table-1',
     status: 'open',
@@ -32,6 +50,7 @@ describe('ServiceTablePanel', () => {
     lines: [
       {
         id: 'line-burger',
+        productSnapshot: productSnapshot('burger', 'Craft Burger', 12.5, 'main'),
         productId: 'burger',
         productName: 'Craft Burger',
         quantity: 1,
@@ -129,6 +148,7 @@ describe('ServiceTablePanel', () => {
       lines: [
         {
           id: 'line-water',
+          productSnapshot: productSnapshot('water', 'Agua', 2, 'drinks', false),
           productId: 'water',
           productName: 'Agua',
           quantity: 1,
@@ -167,10 +187,144 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
   });
 
-  it('emits granular line actions for kitchen readiness, serving, removal, and notes', async () => {
+  it('renders combo slot selections with supplements', async () => {
     const i18n = provideI18nTesting();
-    const markProductReady = vi.fn();
-    const markProductServed = vi.fn();
+    const comboOrder: TableOrder = {
+      ...order,
+      total: 16.5,
+      lines: [
+        {
+          id: 'line-combo',
+          productSnapshot: {
+            ...productSnapshot('product-16', 'Classic Burger Menu', 13.5, 'main'),
+            productType: 'combo',
+          },
+          productId: 'product-16',
+          productName: 'Classic Burger Menu',
+          quantity: 1,
+          basePrice: 13.5,
+          selectedModifiers: [],
+          selectedComboSlots: [
+            {
+              slotId: 'combo-burger',
+              slotName: 'Burger',
+              selectedProducts: [
+                {
+                  productId: 'product-7',
+                  productName: 'Truffle Burger',
+                  productType: 'simple',
+                  course: 'main',
+                  preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+                  supplementPrice: 2,
+                },
+              ],
+            },
+            {
+              slotId: 'combo-side',
+              slotName: 'Side',
+              selectedProducts: [
+                {
+                  productId: 'product-9',
+                  productName: 'Patatas Bravas',
+                  productType: 'simple',
+                  course: 'starter',
+                  preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+                  supplementPrice: 1,
+                },
+              ],
+            },
+            {
+              slotId: 'combo-drink',
+              slotName: 'Drink',
+              selectedProducts: [
+                {
+                  productId: 'product-10',
+                  productName: 'Water',
+                  productType: 'simple',
+                  course: 'drinks',
+                  preparationPolicy: { route: 'bar', requiresReadyBeforeServe: false },
+                  supplementPrice: 0,
+                },
+              ],
+            },
+          ],
+          unitPrice: 16.5,
+          subtotal: 16.5,
+          configurationSignature: 'combo:product-16',
+          course: 'main',
+          status: 'pending',
+        },
+      ],
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, comboOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByText('1 x Classic Burger Menu')).toBeTruthy();
+    expect(screen.getByText(/Burger:/)).toBeTruthy();
+    expect(screen.getByText(/Truffle Burger \+2,00/)).toBeTruthy();
+    expect(screen.getByText(/Side:/)).toBeTruthy();
+    expect(screen.getByText(/Patatas Bravas \+1,00/)).toBeTruthy();
+    expect(screen.getByText(/Drink:/)).toBeTruthy();
+    expect(screen.getByText(/Water/)).toBeTruthy();
+  });
+
+  it('renders platter included components on order lines', async () => {
+    const i18n = provideI18nTesting();
+    const platterOrder: TableOrder = {
+      ...order,
+      total: 12.9,
+      lines: [
+        {
+          id: 'line-platter',
+          productSnapshot: {
+            ...productSnapshot('product-17', 'Plato combinado de lomo', 12.9, 'main'),
+            productType: 'platter',
+          },
+          productId: 'product-17',
+          productName: 'Plato combinado de lomo',
+          quantity: 1,
+          basePrice: 12.9,
+          selectedModifiers: [],
+          platterComponents: [
+            { id: 'platter-loin', name: 'Lomo', quantity: 1, removable: false, replaceable: false },
+            { id: 'platter-egg', name: 'Huevo', quantity: 1, removable: true, replaceable: false },
+            { id: 'platter-fries', name: 'Patatas', quantity: 1, removable: true, replaceable: false },
+            { id: 'platter-salad', name: 'Ensalada', quantity: 1, removable: true, replaceable: false },
+          ],
+          unitPrice: 12.9,
+          subtotal: 12.9,
+          configurationSignature: 'product-17::',
+          course: 'main',
+          status: 'pending',
+        },
+      ],
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, platterOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByText('1 x Plato combinado de lomo')).toBeTruthy();
+    expect(screen.getByText(/Incluye:/)).toBeTruthy();
+    expect(screen.getByText(/lomo, huevo, patatas, ensalada/)).toBeTruthy();
+  });
+
+  it('keeps line preparation compact while preserving removal and notes', async () => {
+    const i18n = provideI18nTesting();
     const removeProduct = vi.fn();
     const updateProductNote = vi.fn();
     const kitchenOrder: TableOrder = {
@@ -197,23 +351,21 @@ describe('ServiceTablePanel', () => {
         errorMessage: null,
       },
     });
-    fixture.componentInstance.markProductReady.subscribe(markProductReady);
-    fixture.componentInstance.markProductServed.subscribe(markProductServed);
     fixture.componentInstance.removeProduct.subscribe(removeProduct);
     fixture.componentInstance.updateProductNote.subscribe(updateProductNote);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar Craft Burger como preparado' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar Craft Burger como servido' }));
+    expect(screen.getByText('En cocina')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Marcar Craft Burger como preparado' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Marcar Craft Burger como servido' })).toBeNull();
+
     fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Craft Burger' }), { target: { value: 'Muy hecho' } });
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
 
-    expect(markProductReady).toHaveBeenCalledWith('line-burger');
-    expect(markProductServed).toHaveBeenCalledWith('line-burger');
     expect(updateProductNote).toHaveBeenCalledWith({ lineId: 'line-burger', note: 'Muy hecho' });
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
   });
 
-  it('allows picked up kitchen lines to be served from the dining room', async () => {
+  it('shows picked up line status without preparation controls', async () => {
     const i18n = provideI18nTesting();
     const pickedUpOrder: TableOrder = {
       ...order,
@@ -240,8 +392,8 @@ describe('ServiceTablePanel', () => {
     });
 
     expect(screen.getByText('Recogido')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Marcar Craft Burger como servido' }).hasAttribute('disabled')).toBe(false);
-    expect(screen.getByRole('button', { name: 'Marcar Craft Burger como preparado' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Marcar Craft Burger como servido' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Marcar Craft Burger como preparado' })).toBeNull();
   });
 
   it('disables closing actions until the table can be closed and confirms before freeing it', async () => {

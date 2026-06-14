@@ -1,11 +1,14 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { KEY_VALUE_STORAGE } from '../../../../shared/utils/storage/key-value-storage';
+import { ComboCustomizerDialog, type ComboCustomizationConfirmed } from '../../../menu/components/combo-customizer-dialog/combo-customizer-dialog';
 import { ProductCustomizerDialog, type ProductCustomizationConfirmed } from '../../../menu/components/product-customizer-dialog/product-customizer-dialog';
+import { MenuMockService } from '../../../menu/services/menu-mock.service';
 import { MenuPricingService } from '../../../menu/services/menu-pricing.service';
 import { FloorPlan, type FloorPlanFocusRequest } from '../../components/floor-plan/floor-plan';
 import { PaymentGatewayDialog } from '../../components/payment-gateway-dialog/payment-gateway-dialog';
@@ -32,11 +35,13 @@ const isServicePointStatusFilter = (value: string): value is ServicePointStatusF
   selector: 'app-restaurant-pos-service-page',
   imports: [
     Button,
+    ComboCustomizerDialog,
     FloorPlan,
     Icon,
     PaymentGatewayDialog,
     ProductCustomizerDialog,
     ProductSearchDialog,
+    RouterLink,
     ServicePointSearchDialog,
     ServiceSummary,
     ServiceTablePanel,
@@ -48,6 +53,7 @@ export class RestaurantPosServicePage {
   protected readonly store = inject(RestaurantPosStore);
   private readonly transloco = inject(TranslocoService);
   private readonly storage = inject(KEY_VALUE_STORAGE);
+  private readonly menu = inject(MenuMockService);
   private readonly menuPricing = inject(MenuPricingService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly productSearchOpen = signal(false);
@@ -58,6 +64,8 @@ export class RestaurantPosServicePage {
   protected readonly lastAddedProductId = signal<string | null>(null);
   protected readonly productCustomizerOpen = signal(false);
   protected readonly customizingProductId = signal<string | null>(null);
+  protected readonly comboCustomizerOpen = signal(false);
+  protected readonly customizingComboProductId = signal<string | null>(null);
   protected readonly servicePointSearchOpen = signal(false);
   protected readonly servicePointSearchQuery = signal('');
   protected readonly servicePointStatusFilter = signal<ServicePointStatusFilter>('all');
@@ -102,6 +110,14 @@ export class RestaurantPosServicePage {
   protected readonly customizingModifierGroups = computed(() => {
     const product = this.customizingProduct();
     return product ? this.menuPricing.getModifierGroupsForProduct(product) : [];
+  });
+  protected readonly customizingComboProduct = computed(() => {
+    const productId = this.customizingComboProductId();
+    return productId ? (this.store.products().find((product) => product.id === productId) ?? null) : null;
+  });
+  protected readonly customizingComboDefinition = computed(() => {
+    const product = this.customizingComboProduct();
+    return product ? (this.menu.comboProductDefinitions().find((definition) => definition.productId === product.id) ?? null) : null;
   });
   protected readonly filteredServicePoints = computed(() => {
     const query = this.normalizeSearch(this.servicePointSearchQuery());
@@ -163,6 +179,7 @@ export class RestaurantPosServicePage {
   protected closeProductSearch(): void {
     this.productSearchOpen.set(false);
     this.closeProductCustomizer();
+    this.closeComboCustomizer();
     this.productSearchQuery.set('');
     this.productCategoryFilter.set('all');
     this.lastAddedProductId.set(null);
@@ -258,6 +275,13 @@ export class RestaurantPosServicePage {
     const product = this.store.products().find((currentProduct) => currentProduct.id === productId);
 
     if (product?.type === 'combo') {
+      if (!this.store.selectedTableId()) {
+        this.store.addProductToSelectedTable(productId);
+        return;
+      }
+
+      this.customizingComboProductId.set(productId);
+      this.comboCustomizerOpen.set(true);
       return;
     }
 
@@ -281,6 +305,11 @@ export class RestaurantPosServicePage {
     this.customizingProductId.set(null);
   }
 
+  protected closeComboCustomizer(): void {
+    this.comboCustomizerOpen.set(false);
+    this.customizingComboProductId.set(null);
+  }
+
   protected confirmProductCustomization(customization: ProductCustomizationConfirmed): void {
     this.store.addCustomizedProductToSelectedTable(
       customization.productId,
@@ -289,6 +318,12 @@ export class RestaurantPosServicePage {
     );
     this.lastAddedProductId.set(customization.productId);
     this.closeProductCustomizer();
+  }
+
+  protected confirmComboCustomization(customization: ComboCustomizationConfirmed): void {
+    this.store.addConfiguredComboToSelectedTable(customization.comboProductId, customization.slotSelections);
+    this.lastAddedProductId.set(customization.comboProductId);
+    this.closeComboCustomizer();
   }
 
   protected sendToKitchen(): void {

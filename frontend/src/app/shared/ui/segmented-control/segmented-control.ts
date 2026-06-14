@@ -49,9 +49,10 @@ export class SegmentedControl {
   });
 
   protected optionClasses(option: SegmentedControlOption): string {
-    return ['segmented-control__item', option.value === this.selectedValue() ? 'segmented-control__item--active' : ''].join(
-      ' ',
-    );
+    return [
+      'segmented-control__item cursor-pointer disabled:cursor-not-allowed',
+      option.value === this.selectedValue() ? 'segmented-control__item--active' : '',
+    ].join(' ');
   }
 
   protected select(option: SegmentedControlOption): void {

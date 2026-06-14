@@ -253,6 +253,26 @@ export class ServiceTablePanel {
     return line.selectedModifiers.length > 0;
   }
 
+  protected hasPlatterComponents(line: OrderLine): boolean {
+    return (line.platterComponents?.length ?? 0) > 0;
+  }
+
+  protected platterComponentsLabel(line: OrderLine): string {
+    return line.platterComponents?.map((component) => component.name.toLocaleLowerCase(this.activeLang())).join(', ') ?? '';
+  }
+
+  protected hasComboSlots(line: OrderLine): boolean {
+    return (line.selectedComboSlots?.length ?? 0) > 0;
+  }
+
+  protected comboSlotLabel(slot: NonNullable<OrderLine['selectedComboSlots']>[number]): string {
+    return slot.selectedProducts.map((product) => this.comboSlotProductLabel(product)).join(', ');
+  }
+
+  private comboSlotProductLabel(product: NonNullable<OrderLine['selectedComboSlots']>[number]['selectedProducts'][number]): string {
+    return product.supplementPrice > 0 ? `${product.productName} +${this.formatCurrency(product.supplementPrice)}` : product.productName;
+  }
+
   protected updateLineNote(lineId: string, event: Event): void {
     this.updateProductNote.emit({ lineId, note: (event.target as HTMLTextAreaElement).value });
   }

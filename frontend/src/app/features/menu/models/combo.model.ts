@@ -16,6 +16,7 @@ export interface ComboSlotSelection {
 export type ComboPricingMode = 'fixed' | 'base_plus_supplements';
 
 export interface ProductSupplement {
+  slotId: string;
   productId: string;
   supplementPrice: number;
 }

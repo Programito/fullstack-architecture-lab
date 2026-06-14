@@ -64,6 +64,26 @@ describe('Dialog', () => {
     expect(screen.getByRole('button', { name: 'Guardar' }).className).toContain('bg-red-600');
   });
 
+  it('keeps header and footer outside the scrollable body', async () => {
+    await render(
+      '<app-dialog open showActions title="Confirmar" footerSummary="3 productos añadidos · 18,00 €"><div style="height: 2000px">Contenido largo</div></app-dialog>',
+      {
+        imports: [Dialog],
+      },
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar' });
+    const header = dialog.querySelector('.dialog__header');
+    const body = dialog.querySelector('.dialog__body');
+    const footer = dialog.querySelector('.dialog__footer');
+
+    expect(header?.parentElement).toBe(dialog);
+    expect(body?.parentElement).toBe(dialog);
+    expect(footer?.parentElement).toBe(dialog);
+    expect(body?.className).toContain('dialog__body');
+    expect(screen.getByText('3 productos añadidos · 18,00 €')).toBeTruthy();
+  });
+
   it('supports hiding cancel action', async () => {
     await render('<app-dialog open showActions title="Confirmar" [showCancel]="false">Contenido</app-dialog>', {
       imports: [Dialog],

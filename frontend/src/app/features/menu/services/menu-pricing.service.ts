@@ -44,17 +44,32 @@ export class MenuPricingService {
   }
 
   calculateComboSlotSupplements(comboDefinition: ComboProductDefinition, slotSelections: ComboSlotSelection[]): number {
-    const selectedProductIds = new Set(slotSelections.flatMap((selection) => selection.selectedProductIds));
+    const selectedSlotProducts = new Set(
+      slotSelections.flatMap((selection) => selection.selectedProductIds.map((productId) => this.comboSlotProductKey(selection.slotId, productId))),
+    );
 
     return this.roundCurrency(
       comboDefinition.supplements
-        .filter((supplement) => selectedProductIds.has(supplement.productId))
+        .filter((supplement) => selectedSlotProducts.has(this.comboSlotProductKey(supplement.slotId, supplement.productId)))
         .reduce((total, supplement) => total + supplement.supplementPrice, 0),
     );
   }
 
   calculateComboTotalPrice(comboProduct: Product, comboDefinition: ComboProductDefinition, slotSelections: ComboSlotSelection[]): number {
     return this.roundCurrency(this.calculateComboBasePrice(comboProduct) + this.calculateComboSlotSupplements(comboDefinition, slotSelections));
+  }
+
+  createComboConfigurationSignature(productId: string, slotSelections: ComboSlotSelection[]): string {
+    const slots = slotSelections
+      .map((selection) => ({
+        slotId: selection.slotId,
+        selectedProductIds: [...new Set(selection.selectedProductIds)].sort(),
+      }))
+      .sort((first, second) => first.slotId.localeCompare(second.slotId))
+      .map((selection) => `slot:${selection.slotId}=${selection.selectedProductIds.join(',')}`)
+      .join('|');
+
+    return `combo:${productId}|${slots}`;
   }
 
   createConfigurationSignature(productId: string, selectedModifierOptionIds: string[] = [], kitchenNote = ''): string {
@@ -65,5 +80,9 @@ export class MenuPricingService {
 
   private roundCurrency(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private comboSlotProductKey(slotId: string, productId: string): string {
+    return `${slotId}:${productId}`;
   }
 }

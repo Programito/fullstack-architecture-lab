@@ -67,12 +67,16 @@ describe('MenuPage', () => {
   it('shows selected product details and updates preview price from modifiers', async () => {
     const { fixture } = await renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    const productCard = screen.getByRole('button', { name: /Hamburguesa craft/i });
+    expect(productCard.className).toContain('cursor-pointer');
+
+    fireEvent.click(productCard);
     fixture.detectChanges();
 
     const details = screen.getByRole('complementary');
     expect(within(details).getByText('Punto de la carne')).toBeTruthy();
     expect(within(details).getByText('Queso')).toBeTruthy();
+    expect(within(details).getByLabelText(/Queso/i).closest('label')?.className).toContain('cursor-pointer');
 
     fireEvent.click(within(details).getByLabelText(/Queso/i));
     fixture.detectChanges();

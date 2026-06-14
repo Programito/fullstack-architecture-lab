@@ -49,4 +49,27 @@ export interface KitchenBoardColumn {
   tickets: KitchenOrderTicket[];
 }
 
+export type PreparationBoardColumnId = 'in_kitchen' | 'ready' | 'served';
+export type PreparationFlow = 'direct' | 'kitchen';
+
+export interface PreparationBoardCard {
+  tableId: string;
+  tableNumber: number;
+  line: OrderLine;
+  preparationFlow: PreparationFlow;
+  requiresReadyBeforeServed: boolean;
+  station?: string;
+}
+
+export interface PreparationBoardColumn {
+  id: PreparationBoardColumnId;
+  cards: PreparationBoardCard[];
+}
+
+export interface PreparationMoveResult {
+  moved: boolean;
+  reason?: 'requires_ready_before_served' | 'missing_line' | 'unsupported_target';
+  messageKey?: string;
+}
+
 export type PosMode = 'operation' | 'edit_layout';

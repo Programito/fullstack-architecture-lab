@@ -121,6 +121,10 @@ export class MenuPage {
     return product.type === 'combo';
   }
 
+  protected isPlatter(product: Product): boolean {
+    return product.type === 'platter';
+  }
+
   protected isSimple(product: Product): boolean {
     return product.type === 'simple' && !this.isCustomizable(product);
   }
