@@ -59,7 +59,7 @@
     </div>
 
     <app-service-table-panel
-      class="w-full xl:w-[22rem]"
+      class="w-full self-start xl:w-[22rem]"
       [serviceInfo]="store.selectedServiceInfo()"
       [title]="selectedTableTitle()"
       [errorMessage]="store.errorMessage()"
@@ -85,21 +85,24 @@
   [open]="productSearchOpen()"
   [query]="productSearchQuery()"
   [products]="filteredProducts()"
-  [productView]="productSearchView()"
-  [productCategoryFilter]="productCategoryFilter()"
-  [productCategoryOptions]="productCategoryOptions()"
+  [allProducts]="availableProducts()"
+  [activeSection]="activeProductSection()"
   [favoriteProductIds]="favoriteProductIds()"
+  [bestSellerProductIds]="bestSellerProductIds"
   [lastAddedProductId]="lastAddedProductId()"
   [productQuantities]="productQuantities()"
+  [configuredLines]="configuredProductLines()"
   (closed)="closeProductSearch()"
   (finished)="closeProductSearch()"
   (queryChanged)="updateProductSearch($event)"
   (searched)="submitProductSearch($event)"
-  (productViewChanged)="setProductSearchView($event)"
-  (productCategoryFilterChanged)="setProductCategoryFilter($event)"
+  (sectionChanged)="setActiveProductSection($event)"
   (favoriteToggled)="toggleFavoriteProduct($event)"
-  (productIncremented)="addProduct($event)"
+  (productConfigured)="addProduct($event)"
+  (productIncremented)="addOrRepeatProduct($event)"
   (productDecremented)="decreaseProductQuantity($event)"
+  (configuredLineIncremented)="increaseConfiguredLine($event)"
+  (configuredLineDecremented)="decreaseConfiguredLine($event)"
 />
 
 <app-service-point-search-dialog

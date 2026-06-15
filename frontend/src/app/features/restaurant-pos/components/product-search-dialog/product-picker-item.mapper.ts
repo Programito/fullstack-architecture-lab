@@ -8,9 +8,24 @@ export type ProductPickerBadge = {
   className: string;
 };
 
+export type ProductPickerConfiguredLineInput = {
+  lineId: string;
+  productId: string;
+  quantity: number;
+  summary: string;
+};
+
+export type ProductPickerConfiguredLine = ProductPickerConfiguredLineInput & {
+  quantityLabel: string;
+  increaseAriaLabel: string;
+  decreaseAriaLabel: string;
+};
+
 export type ProductPickerItem = {
   id: string;
   name: string;
+  visualIcon: string;
+  visualClass: string;
   priceLabel: string;
   categoryLabel: string;
   allergenLabel: string;
@@ -20,6 +35,15 @@ export type ProductPickerItem = {
   disabled: boolean;
   quantity: number;
   showQuantityControls: boolean;
+  configuredLines: readonly ProductPickerConfiguredLine[];
+  configuredLineCount: number;
+  hasSingleConfiguredLine: boolean;
+  hasMultipleConfiguredLines: boolean;
+  orderedSummaryLabel: string;
+  newOptionLabel: string;
+  newOptionAriaLabel: string;
+  viewOptionsLabel: string;
+  hideOptionsLabel: string;
   isFavorite: boolean;
   recentlyAdded: boolean;
   favoriteAriaLabel: string;
@@ -34,12 +58,13 @@ export type ProductPickerItemContext = {
   favoriteProductIds: readonly string[];
   lastAddedProductId: string | null;
   productQuantities: Readonly<Record<string, number>>;
+  configuredLines: readonly ProductPickerConfiguredLineInput[];
   formatCurrency: (value: number) => string;
   translate: (key: string, params?: Record<string, unknown>) => string;
 };
 
 const BASE_ROW_CLASS =
-  'theme-field grid min-h-36 grid-cols-1 items-start gap-4 rounded-lg border px-4 pb-5 pt-4 text-sm transition hover:border-cyan-500/60';
+  'theme-field grid min-h-28 grid-cols-1 items-start gap-3 rounded-lg border px-3 py-3 text-sm transition hover:border-cyan-500/60 sm:grid-cols-[3rem_minmax(0,1fr)] sm:px-4';
 
 const BADGE_CLASSES: Record<ProductPickerBadgeTone, string> = {
   customizable: 'rounded-full border border-cyan-200 px-2.5 py-0.5 text-xs font-semibold text-cyan-700 dark:border-cyan-900 dark:text-cyan-200',
@@ -54,25 +79,39 @@ const BADGE_CLASSES: Record<ProductPickerBadgeTone, string> = {
 export function toProductPickerItem(product: Product, context: ProductPickerItemContext): ProductPickerItem {
   const quantity = context.productQuantities[product.id] ?? 0;
   const isCombo = product.type === 'combo';
+  const isPlatter = product.type === 'platter';
   const isCustomizable = product.modifierGroupIds.length > 0;
   const disabled = !product.available;
   const recentlyAdded = context.lastAddedProductId === product.id;
   const isFavorite = context.favoriteProductIds.includes(product.id);
   const nameParams = { name: product.name };
   const countParams = { name: product.name, count: quantity };
+  const configuredLines = productConfiguredLines(product, context);
+  const configuredLineCount = configuredLines.length;
 
   return {
     id: product.id,
     name: product.name,
+    visualIcon: productVisualIcon(product),
+    visualClass: productVisualClass(product),
     priceLabel: context.formatCurrency(product.basePrice ?? product.price ?? 0),
     categoryLabel: product.category ?? product.categoryId,
     allergenLabel: product.allergens?.length ? product.allergens.join(', ') : context.translate('restaurantPos.service.noAllergens'),
     badges: productPickerBadges(product, { isCombo, isCustomizable, recentlyAdded }, context.translate),
-    actionLabel: productActionLabel({ isCombo, isCustomizable }, context.translate),
-    actionAriaLabel: productActionAriaLabel(product, { isCombo, isCustomizable }, context.translate),
+    actionLabel: productActionLabel({ isCombo, isPlatter, isCustomizable }, context.translate),
+    actionAriaLabel: productActionAriaLabel(product, { isCombo, isPlatter, isCustomizable }, context.translate),
     disabled,
     quantity,
-    showQuantityControls: !isCombo && quantity > 0,
+    showQuantityControls: !isCombo && !configuredLineCount && quantity > 0,
+    configuredLines,
+    configuredLineCount,
+    hasSingleConfiguredLine: configuredLineCount === 1,
+    hasMultipleConfiguredLines: configuredLineCount > 1,
+    orderedSummaryLabel: context.translate('restaurantPos.service.productOptionsSummary', { count: quantity, options: configuredLineCount }),
+    newOptionLabel: context.translate('restaurantPos.service.newProductOptionAction'),
+    newOptionAriaLabel: context.translate('restaurantPos.service.newProductOptionActionLabel', nameParams),
+    viewOptionsLabel: context.translate('restaurantPos.service.viewProductOptionsAction'),
+    hideOptionsLabel: context.translate('restaurantPos.service.hideProductOptionsAction'),
     isFavorite,
     recentlyAdded,
     favoriteAriaLabel: context.translate(
@@ -89,6 +128,73 @@ export function toProductPickerItem(product: Product, context: ProductPickerItem
       disabled ? 'opacity-60' : '',
     ].join(' '),
   };
+}
+
+function productConfiguredLines(product: Product, context: ProductPickerItemContext): ProductPickerConfiguredLine[] {
+  return context.configuredLines
+    .filter((line) => line.productId === product.id)
+    .map((line) => ({
+      ...line,
+      quantityLabel: context.translate('restaurantPos.service.productLineQuantityLabel', {
+        name: product.name,
+        summary: line.summary,
+        count: line.quantity,
+      }),
+      increaseAriaLabel: context.translate('restaurantPos.service.increaseProductLineQuantityActionLabel', {
+        name: product.name,
+        summary: line.summary,
+      }),
+      decreaseAriaLabel: context.translate('restaurantPos.service.decreaseProductLineQuantityActionLabel', {
+        name: product.name,
+        summary: line.summary,
+      }),
+    }));
+}
+
+function productVisualIcon(product: Product): string {
+  if (product.type === 'combo') {
+    return 'restaurant_menu';
+  }
+
+  if (product.type === 'platter') {
+    return 'room_service';
+  }
+
+  switch (product.course) {
+    case 'drinks':
+      return 'local_drink';
+    case 'dessert':
+      return 'bakery_dining';
+    case 'starter':
+      return 'tapas';
+    case 'main':
+      return 'lunch_dining';
+    default:
+      return 'restaurant';
+  }
+}
+
+function productVisualClass(product: Product): string {
+  const baseClass = 'grid h-11 w-11 shrink-0 place-items-center rounded-full border';
+
+  if (product.type === 'combo') {
+    return `${baseClass} border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-200`;
+  }
+
+  if (product.type === 'platter') {
+    return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200`;
+  }
+
+  switch (product.course) {
+    case 'drinks':
+      return `${baseClass} border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200`;
+    case 'dessert':
+      return `${baseClass} border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200`;
+    case 'starter':
+      return `${baseClass} border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200`;
+    default:
+      return `${baseClass} border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-200`;
+  }
 }
 
 function productPickerBadges(
@@ -130,11 +236,15 @@ function productPickerBadge(id: ProductPickerBadgeTone, label: string): ProductP
 }
 
 function productActionLabel(
-  state: { isCombo: boolean; isCustomizable: boolean },
+  state: { isCombo: boolean; isPlatter: boolean; isCustomizable: boolean },
   translate: ProductPickerItemContext['translate'],
 ): string {
   if (state.isCombo) {
     return translate('restaurantPos.service.configureComboAction');
+  }
+
+  if (state.isPlatter && state.isCustomizable) {
+    return translate('restaurantPos.service.configurePlatterAction');
   }
 
   if (state.isCustomizable) {
@@ -146,11 +256,15 @@ function productActionLabel(
 
 function productActionAriaLabel(
   product: Product,
-  state: { isCombo: boolean; isCustomizable: boolean },
+  state: { isCombo: boolean; isPlatter: boolean; isCustomizable: boolean },
   translate: ProductPickerItemContext['translate'],
 ): string {
   if (state.isCombo) {
     return translate('restaurantPos.service.configureComboActionLabel', { name: product.name });
+  }
+
+  if (state.isPlatter && state.isCustomizable) {
+    return translate('restaurantPos.service.configurePlatterActionLabel', { name: product.name });
   }
 
   if (state.isCustomizable) {

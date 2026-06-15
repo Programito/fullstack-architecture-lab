@@ -42,6 +42,7 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByRole('heading', { name: 'Servicio de sala' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Plano de servicio' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Selecciona una mesa' })).toBeTruthy();
+    expect(screen.getByText('Selecciona una mesa para empezar.')).toBeTruthy();
     expect(screen.getByLabelText('Panel de mesa seleccionada')).toBeTruthy();
     expect(screen.getByText('0/5')).toBeTruthy();
     expect(screen.getByText('Pagada')).toBeTruthy();
@@ -54,6 +55,7 @@ describe('RestaurantPosServicePage', () => {
 
     const tablePanelHost = container.querySelector('app-service-table-panel');
     expect(tablePanelHost?.className).toContain('w-full');
+    expect(tablePanelHost?.className).toContain('self-start');
     expect(tablePanelHost?.className).toContain('xl:w-[22rem]');
     expect(tablePanelHost?.className).not.toMatch(/\babsolute\b|\bfixed\b/);
   });
@@ -181,7 +183,7 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     expect(within(searchDialog).getByText('Plato combinado')).toBeTruthy();
-    fireEvent.click(within(searchDialog).getByRole('button', { name: 'Configurar Plato combinado de lomo' }));
+    fireEvent.click(within(searchDialog).getByRole('button', { name: 'Configurar plato Plato combinado de lomo' }));
     fixture.detectChanges();
 
     const customizer = screen.getByRole('dialog', { name: /Plato combinado de lomo/i });
@@ -206,6 +208,15 @@ describe('RestaurantPosServicePage', () => {
     const tablePanel = screen.getByLabelText('Panel de mesa seleccionada');
     expect(within(tablePanel).getByText(/Incluye:/)).toBeTruthy();
     expect(within(tablePanel).getByText(/lomo, huevo, patatas fritas, ensalada/)).toBeTruthy();
+
+    fireEvent.click(within(searchDialog).getByRole('button', { name: /Añadir una unidad de Plato combinado de lomo con Huevo extra/ }));
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('dialog', { name: /Plato combinado de lomo/i })).toBeNull();
+    expect(store.selectedOrder()?.lines.find((currentLine) => currentLine.productName === 'Plato combinado de lomo')).toEqual(
+      expect.objectContaining({ quantity: 2 }),
+    );
+    expect(within(searchDialog).getByLabelText(/Cantidad de Plato combinado de lomo .*: 2/)).toBeTruthy();
   });
 
   it('adds platter products without modifiers directly from product search', async () => {
@@ -275,6 +286,28 @@ describe('RestaurantPosServicePage', () => {
     const tablePanel = screen.getByLabelText('Panel de mesa seleccionada');
     expect(within(tablePanel).getByText('1 x Menu Classic Burger')).toBeTruthy();
     expect(within(tablePanel).getByText(/Hamburguesa clásica/)).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Añadir una unidad de Menu Classic Burger con/i }));
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('dialog', { name: 'Menu Classic Burger' })).toBeNull();
+    expect(store.selectedOrder()?.lines.find((currentLine) => currentLine.productId === 'product-16')).toEqual(expect.objectContaining({ quantity: 2 }));
+    expect(within(dialog).getByLabelText(/Cantidad de Menu Classic Burger .*: 2/i)).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Crear otra opción de Menu Classic Burger' }));
+    fixture.detectChanges();
+
+    const secondComboDialog = screen.getByRole('dialog', { name: 'Menu Classic Burger' });
+    fireEvent.click(within(secondComboDialog).getByRole('radio', { name: /Agua/i }));
+    fireEvent.click(within(secondComboDialog).getByRole('button', { name: 'Añadir menú' }));
+    fixture.detectChanges();
+
+    expect(store.selectedOrder()?.lines.filter((currentLine) => currentLine.productId === 'product-16')).toHaveLength(2);
+    expect(within(dialog).getByText('3 en pedido · 2 opciones')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ver opciones' }));
+    fixture.detectChanges();
+    expect(within(dialog).getByText(/2 x .*Coca-Cola/)).toBeTruthy();
+    expect(within(dialog).getByText(/1 x .*Agua/)).toBeTruthy();
   });
 
   it('filters the product search by favorites and lets favorites be updated from the dialog', async () => {
@@ -285,7 +318,7 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     const dialog = getProductDialog();
-    fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Favoritos' }));
     fixture.detectChanges();
 
     expect(within(dialog).getByText('Hamburguesa craft')).toBeTruthy();
@@ -297,11 +330,11 @@ describe('RestaurantPosServicePage', () => {
 
     expect(within(dialog).queryByText('Hamburguesa craft')).toBeNull();
 
-    fireEvent.click(within(dialog).getByRole('radio', { name: 'Todos' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Todos' }));
     fixture.detectChanges();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir Croquetas de jamón ibérico a favoritos' }));
     fixture.detectChanges();
-    fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Favoritos' }));
     fixture.detectChanges();
 
     expect(within(dialog).getByText('Croquetas de jamón ibérico')).toBeTruthy();
@@ -318,13 +351,13 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     const dialog = getProductDialog();
-    fireEvent.click(within(dialog).getByRole('radio', { name: 'Favoritos' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Favoritos' }));
     fixture.detectChanges();
 
     expect(within(dialog).getByText('Croquetas de jamón ibérico')).toBeTruthy();
     expect(within(dialog).queryByText('Hamburguesa craft')).toBeNull();
 
-    fireEvent.click(within(dialog).getByRole('radio', { name: 'Todos' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Todos' }));
     fixture.detectChanges();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir Hamburguesa craft a favoritos' }));
     fixture.detectChanges();
@@ -332,17 +365,19 @@ describe('RestaurantPosServicePage', () => {
     expect(storage.getItem('restaurant-pos.favorite-products')).toBe(JSON.stringify(['product-2', 'product-1']));
   });
 
-  it('filters the product search by service course from the category selector', async () => {
+  it('filters the product search by service section chip', async () => {
     const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
     fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
     fixture.detectChanges();
 
     const dialog = getProductDialog();
-    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Categoría' }), { target: { value: 'drinks' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Bebidas' }));
     fixture.detectChanges();
 
+    expect(within(dialog).getByRole('button', { name: 'Todos' }).textContent).toContain(String(store.products().filter((product) => product.available).length));
     expect(within(dialog).getByText('Limonada con gas')).toBeTruthy();
     expect(within(dialog).getByText('Café solo')).toBeTruthy();
     expect(within(dialog).queryByText('Hamburguesa craft')).toBeNull();

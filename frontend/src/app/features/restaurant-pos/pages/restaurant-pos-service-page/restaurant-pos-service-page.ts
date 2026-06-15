@@ -12,22 +12,20 @@ import { MenuMockService } from '../../../menu/services/menu-mock.service';
 import { MenuPricingService } from '../../../menu/services/menu-pricing.service';
 import { FloorPlan, type FloorPlanFocusRequest } from '../../components/floor-plan/floor-plan';
 import { PaymentGatewayDialog } from '../../components/payment-gateway-dialog/payment-gateway-dialog';
-import { ProductSearchDialog, type ProductSearchView } from '../../components/product-search-dialog/product-search-dialog';
+import type { ProductPickerConfiguredLineInput } from '../../components/product-search-dialog/product-picker-item.mapper';
+import { ProductSearchDialog, type ProductPickerSection } from '../../components/product-search-dialog/product-search-dialog';
 import { ServicePointSearchDialog } from '../../components/service-point-search-dialog/service-point-search-dialog';
 import { ServiceSummary } from '../../components/service-summary/service-summary';
 import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
-import type { FloorElement, OrderCourse, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
+import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
-const PRODUCT_CATEGORY_FILTER_ORDER = ['starter', 'main', 'dessert', 'drinks', 'other'] as const satisfies readonly OrderCourse[];
 const SERVICE_POINT_STATUS_FILTER_ORDER = ['free', 'occupied', 'waiting_kitchen', 'served', 'payment_pending', 'paid', 'cleaning', 'reserved'] as const satisfies readonly TableStatus[];
 const FAVORITE_PRODUCTS_STORAGE_KEY = 'restaurant-pos.favorite-products';
 const DEFAULT_FAVORITE_PRODUCT_IDS = ['product-1', 'product-3'] as const;
-type ProductCategoryFilter = (typeof PRODUCT_CATEGORY_FILTER_ORDER)[number] | 'all';
+const BEST_SELLER_PRODUCT_IDS = ['product-1', 'product-2', 'product-3', 'product-16'] as const;
 type ServicePointStatusFilter = (typeof SERVICE_POINT_STATUS_FILTER_ORDER)[number] | 'all';
 
-const isProductCategoryFilter = (value: string): value is ProductCategoryFilter =>
-  value === 'all' || PRODUCT_CATEGORY_FILTER_ORDER.includes(value as (typeof PRODUCT_CATEGORY_FILTER_ORDER)[number]);
 const isServicePointStatusFilter = (value: string): value is ServicePointStatusFilter =>
   value === 'all' || SERVICE_POINT_STATUS_FILTER_ORDER.includes(value as (typeof SERVICE_POINT_STATUS_FILTER_ORDER)[number]);
 
@@ -58,8 +56,8 @@ export class RestaurantPosServicePage {
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly productSearchOpen = signal(false);
   protected readonly productSearchQuery = signal('');
-  protected readonly productSearchView = signal<ProductSearchView>('all');
-  protected readonly productCategoryFilter = signal<ProductCategoryFilter>('all');
+  protected readonly activeProductSection = signal<ProductPickerSection>('all');
+  protected readonly bestSellerProductIds = BEST_SELLER_PRODUCT_IDS;
   protected readonly favoriteProductIds = signal<readonly string[]>(this.loadFavoriteProductIds());
   protected readonly lastAddedProductId = signal<string | null>(null);
   protected readonly productCustomizerOpen = signal(false);
@@ -74,34 +72,32 @@ export class RestaurantPosServicePage {
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
 
+  protected readonly availableProducts = computed(() => this.store.products().filter((product) => product.available));
   protected readonly filteredProducts = computed(() => {
     const query = this.normalizeSearch(this.productSearchQuery());
-    const categoryFilter = this.productCategoryFilter();
-    const favoriteProductIds = new Set(this.favoriteProductIds());
-    const products = this.store
-      .products()
-      .filter((product) => product.available)
-      .filter((product) => this.productSearchView() === 'all' || favoriteProductIds.has(product.id))
-      .filter((product) => categoryFilter === 'all' || product.course === categoryFilter);
+    const products = this.availableProducts();
 
-    if (!query) {
-      return products;
+    if (query) {
+      return products.filter((product) => this.productSearchText(product).includes(query));
     }
 
-    return products.filter((product) => this.productSearchText(product).includes(query));
+    return products.filter((product) => this.productMatchesSection(product, this.activeProductSection()));
   });
-  protected readonly productCategoryOptions = computed<SelectOption[]>(() => [
-    { label: this.translate('restaurantPos.service.allProductCategories'), value: 'all' },
-    ...PRODUCT_CATEGORY_FILTER_ORDER.map((category) => ({
-      label: this.translate(`restaurantPos.course.${category}`),
-      value: category,
-    })),
-  ]);
   protected readonly productQuantities = computed<Record<string, number>>(() =>
     (this.store.selectedOrder()?.lines ?? []).reduce<Record<string, number>>((quantities, line) => {
       quantities[line.productId] = (quantities[line.productId] ?? 0) + line.quantity;
       return quantities;
     }, {}),
+  );
+  protected readonly configuredProductLines = computed<readonly ProductPickerConfiguredLineInput[]>(() =>
+    (this.store.selectedOrder()?.lines ?? [])
+      .filter((line) => this.isConfigurableOrderLine(line))
+      .map((line) => ({
+        lineId: line.id,
+        productId: line.productId,
+        quantity: line.quantity,
+        summary: this.orderLineOptionSummary(line),
+      })),
   );
   protected readonly customizingProduct = computed(() => {
     const productId = this.customizingProductId();
@@ -181,7 +177,7 @@ export class RestaurantPosServicePage {
     this.closeProductCustomizer();
     this.closeComboCustomizer();
     this.productSearchQuery.set('');
-    this.productCategoryFilter.set('all');
+    this.activeProductSection.set('all');
     this.lastAddedProductId.set(null);
   }
 
@@ -251,16 +247,9 @@ export class RestaurantPosServicePage {
     }
   }
 
-  protected setProductSearchView(view: ProductSearchView): void {
-    this.productSearchView.set(view);
+  protected setActiveProductSection(section: ProductPickerSection): void {
+    this.activeProductSection.set(section);
     this.lastAddedProductId.set(null);
-  }
-
-  protected setProductCategoryFilter(category: string): void {
-    if (isProductCategoryFilter(category)) {
-      this.productCategoryFilter.set(category);
-      this.lastAddedProductId.set(null);
-    }
   }
 
   protected toggleFavoriteProduct(productId: string): void {
@@ -298,6 +287,28 @@ export class RestaurantPosServicePage {
 
     this.store.addProductToSelectedTable(productId);
     this.lastAddedProductId.set(productId);
+  }
+
+  protected addOrRepeatProduct(productId: string): void {
+    const product = this.store.products().find((currentProduct) => currentProduct.id === productId);
+
+    if (product?.type !== 'combo' && (this.productQuantities()[productId] ?? 0) > 0) {
+      this.store.increaseSelectedOrderLine(productId);
+      this.lastAddedProductId.set(productId);
+      return;
+    }
+
+    this.addProduct(productId);
+  }
+
+  protected increaseConfiguredLine(lineId: string): void {
+    const line = this.store.selectedOrder()?.lines.find((currentLine) => currentLine.id === lineId);
+    this.store.increaseSelectedOrderLine(lineId);
+    this.lastAddedProductId.set(line?.productId ?? null);
+  }
+
+  protected decreaseConfiguredLine(lineId: string): void {
+    this.store.decreaseSelectedOrderLine(lineId);
   }
 
   protected closeProductCustomizer(): void {
@@ -448,7 +459,58 @@ export class RestaurantPosServicePage {
   }
 
   private productSearchText(product: Product): string {
-    return this.normalizeSearch([product.name, product.category, product.categoryId, ...(product.allergens ?? [])].filter(Boolean).join(' '));
+    return this.normalizeSearch(
+      [
+        product.name,
+        product.category,
+        product.categoryId,
+        product.type,
+        product.type === 'combo' ? this.translate('restaurantPos.service.combo') : null,
+        product.type === 'platter' ? this.translate('restaurantPos.service.platter') : null,
+        product.modifierGroupIds.length ? this.translate('restaurantPos.service.customizable') : null,
+        ...(product.allergens ?? []),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
+  }
+
+  private productMatchesSection(product: Product, section: ProductPickerSection): boolean {
+    switch (section) {
+      case 'favorites':
+        return this.favoriteProductIds().includes(product.id);
+      case 'best_sellers':
+        return BEST_SELLER_PRODUCT_IDS.includes(product.id as (typeof BEST_SELLER_PRODUCT_IDS)[number]);
+      case 'drinks':
+        return product.course === 'drinks';
+      case 'food':
+        return (product.course === 'starter' || product.course === 'main') && product.type !== 'combo' && product.type !== 'platter';
+      case 'combos':
+        return product.type === 'combo';
+      case 'platters':
+        return product.type === 'platter';
+      case 'desserts':
+        return product.course === 'dessert';
+      default:
+        return true;
+    }
+  }
+
+  private isConfigurableOrderLine(line: OrderLine): boolean {
+    const product = this.store.products().find((currentProduct) => currentProduct.id === line.productId);
+
+    return line.productSnapshot.productType === 'combo' || (product?.modifierGroupIds.length ?? 0) > 0;
+  }
+
+  private orderLineOptionSummary(line: OrderLine): string {
+    const comboProducts = (line.selectedComboSlots ?? []).flatMap((slot) => slot.selectedProducts.map((product) => product.productName));
+    const modifiers = line.selectedModifiers.map((modifier) =>
+      modifier.type === 'remove' ? this.translate('restaurantPos.service.withoutModifier', { name: modifier.name }) : modifier.name,
+    );
+    const note = line.kitchenNote ? this.translate('restaurantPos.service.noteSummary', { note: line.kitchenNote }) : null;
+    const summaryParts = [...comboProducts, ...modifiers, note].filter((part): part is string => !!part);
+
+    return summaryParts.length ? summaryParts.join(' · ') : this.translate('restaurantPos.service.defaultProductOption');
   }
 
   private servicePointSearchText(element: FloorElement, table: RestaurantTable | null): string {

@@ -98,181 +98,179 @@ describe('ProductSearchDialog', () => {
     },
   ];
 
-  it('renders POS product actions, badges and favorites without zero steppers', async () => {
+  const renderDialog = async (inputs: Record<string, unknown> = {}) => {
     const i18n = provideI18nTesting();
-    const productViewChanged = vi.fn();
-    const productCategoryFilterChanged = vi.fn();
-    const favoriteToggled = vi.fn();
-    const productIncremented = vi.fn();
-    const productDecremented = vi.fn();
-    const finished = vi.fn();
 
-    const { fixture } = await render(ProductSearchDialog, {
+    return render(ProductSearchDialog, {
       imports: [...i18n.imports],
       providers: [...i18n.providers],
       inputs: {
         open: true,
         query: '',
         products,
-        productView: 'all',
-        productCategoryFilter: 'all',
-        productCategoryOptions: [
-          { label: 'Todas', value: 'all' },
-          { label: 'Principal', value: 'main' },
-          { label: 'Bebidas', value: 'drinks' },
-        ],
+        activeSection: 'all',
         favoriteProductIds: ['burger'],
+        bestSellerProductIds: ['burger', 'combo'],
         lastAddedProductId: 'lemonade',
         productQuantities: { burger: 2, combo: 1 },
+        ...inputs,
       },
     });
-    fixture.componentInstance.productViewChanged.subscribe(productViewChanged);
-    fixture.componentInstance.productCategoryFilterChanged.subscribe(productCategoryFilterChanged);
+  };
+
+  const section = (name: string) => screen.getByRole('region', { name });
+
+  it('renders section chips, grouped products and polished POS card actions', async () => {
+    const { fixture } = await renderDialog();
+    const sectionChanged = vi.fn();
+    const favoriteToggled = vi.fn();
+    const productConfigured = vi.fn();
+    const productIncremented = vi.fn();
+    const productDecremented = vi.fn();
+    const finished = vi.fn();
+    fixture.componentInstance.sectionChanged.subscribe(sectionChanged);
     fixture.componentInstance.favoriteToggled.subscribe(favoriteToggled);
+    fixture.componentInstance.productConfigured.subscribe(productConfigured);
     fixture.componentInstance.productIncremented.subscribe(productIncremented);
     fixture.componentInstance.productDecremented.subscribe(productDecremented);
     fixture.componentInstance.finished.subscribe(finished);
 
-    const burgerRow = screen.getByTestId('product-search-row-burger');
-    const lemonadeRow = screen.getByTestId('product-search-row-lemonade');
-    const comboRow = screen.getByTestId('product-search-row-combo');
-    const soldOutRow = screen.getByTestId('product-search-row-sold-out');
-    const favoriteButton = screen.getByRole('button', { name: 'Quitar Hamburguesa craft de favoritos' });
-    const regularButton = screen.getAllByRole('button').find((button) => button.getAttribute('aria-pressed') === 'false');
-    const burgerDecrease = within(burgerRow).getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' });
-    const comboAction = within(comboRow).getByRole('button', { name: 'Configurar menú Menu Classic Burger' });
-    const soldOutAction = within(soldOutRow).getByRole('button', { name: 'Añadir una unidad de Coulant de chocolate' });
+    for (const chip of ['Todos', 'Favoritos', 'Más vendidos', 'Bebidas', 'Comida', 'Menús', 'Platos combinados', 'Postres']) {
+      expect(screen.getByRole('button', { name: chip })).toBeTruthy();
+    }
 
-    expect(favoriteButton.getAttribute('aria-pressed')).toBe('true');
-    expect(favoriteButton.textContent?.trim()).toBe('\u2605');
-    expect(regularButton?.getAttribute('aria-pressed')).toBe('false');
-    expect(regularButton?.textContent?.trim()).toBe('\u2606');
-    expect(screen.getByRole('dialog', { name: 'Añadir productos' })).toBeTruthy();
-    expect(screen.getByText('Busca, filtra y añade productos al pedido.')).toBeTruthy();
-    expect(screen.getByText('Hamburguesa craft')).toBeTruthy();
-    expect(within(burgerRow).getByText('Personalizable')).toBeTruthy();
-    expect(screen.getByText('Menú')).toBeTruthy();
-    expect(screen.getByText('Agotado')).toBeTruthy();
-    expect(screen.queryByText('restaurantPos.service.combo')).toBeNull();
-    expect(screen.queryByText('restaurantPos.service.addProductAction')).toBeNull();
-    expect(screen.queryByText('restaurantPos.service.configureProductAction')).toBeNull();
-    expect(screen.queryByText('restaurantPos.service.productPickerSummary')).toBeNull();
-    expect(screen.queryByText('Craft Burger')).toBeNull();
+    expect(section('Favoritos')).toBeTruthy();
+    expect(section('Más vendidos')).toBeTruthy();
+    expect(section('Bebidas')).toBeTruthy();
+    expect(section('Platos combinados')).toBeTruthy();
+    expect(section('Postres')).toBeTruthy();
+    expect(within(section('Favoritos')).getByText('Hamburguesa craft')).toBeTruthy();
+    expect(within(section('Más vendidos')).getByText('Menu Classic Burger')).toBeTruthy();
+    expect(within(section('Bebidas')).getByText('Limonada con gas')).toBeTruthy();
+    expect(within(section('Postres')).getByText('Coulant de chocolate')).toBeTruthy();
+    expect(screen.queryByText(/restaurantPos\.service/)).toBeNull();
     expect(screen.queryByText('Finalizar')).toBeNull();
     expect(screen.getByRole('button', { name: 'Cerrar' })).toBeTruthy();
     expect(screen.getByText(/3 productos/).textContent).toMatch(/38,50/);
+    expect(screen.getByTestId('product-search-layout').className).toContain('h-[min(33rem,calc(100vh-11rem))]');
+    expect(screen.getByTestId('product-search-results').className).toContain('overflow-y-auto');
 
-    expect(screen.getByLabelText('Cantidad de Hamburguesa craft: 2')).toBeTruthy();
-    expect(within(lemonadeRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }).textContent?.trim()).toBe('Añadir');
+    const chips = screen.getByTestId('product-section-chips');
+    expect(chips.className).toContain('flex-wrap');
+    expect(chips.className).not.toContain('min-w-max');
+    expect(chips.parentElement?.className).not.toContain('overflow-x-auto');
+
+    const activeChip = screen.getByRole('button', { name: 'Todos' });
+    expect(activeChip.className).toContain('text-[var(--ui-primary)]');
+    expect(activeChip.className).toContain('hover:text-[var(--ui-primary)]');
+    expect(activeChip.className).not.toContain('text-white');
+
+    const burgerRow = screen.getAllByTestId('product-search-row-burger')[0];
+    const lemonadeRow = screen.getByTestId('product-search-row-lemonade');
+    const comboRow = screen.getAllByTestId('product-search-row-combo')[0];
+    const platterRow = screen.getAllByTestId('product-search-row-platter-loin')[0];
+    const soldOutRow = screen.getByTestId('product-search-row-sold-out');
+    const lemonadeAvatar = screen.getByTestId('product-search-avatar-lemonade');
+    const comboAvatar = screen.getAllByTestId('product-search-avatar-combo')[0];
+
+    expect(within(burgerRow).getByText('Personalizable')).toBeTruthy();
+    expect(within(comboRow).getByText('Menú')).toBeTruthy();
+    expect(within(platterRow).getByText('Plato combinado')).toBeTruthy();
+    expect(within(soldOutRow).getByText('Agotado')).toBeTruthy();
+    expect(within(burgerRow).getByLabelText('Cantidad de Hamburguesa craft: 2')).toBeTruthy();
     expect(within(lemonadeRow).queryByLabelText('Cantidad de Limonada con gas: 0')).toBeNull();
-    expect(within(lemonadeRow).queryByRole('button', { name: 'Quitar una unidad de Limonada con gas' })).toBeNull();
-    expect(within(burgerRow).getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' })).toBeTruthy();
-    expect(within(burgerRow).getByRole('button', { name: 'Añadir una unidad de Hamburguesa craft' })).toBeTruthy();
-    expect(burgerDecrease.hasAttribute('disabled')).toBe(false);
-    expect(comboAction.hasAttribute('disabled')).toBe(false);
-    expect(comboAction.textContent?.trim()).toBe('Configurar menú');
-    expect(within(comboRow).queryByLabelText('Cantidad de Menu Classic Burger: 1')).toBeNull();
-    expect(soldOutAction.hasAttribute('disabled')).toBe(true);
-    expect(soldOutAction.className).toContain('disabled:cursor-not-allowed');
-    expect(favoriteButton.className).toContain('cursor-pointer');
-    expect(comboAction.className).toContain('cursor-pointer');
-    expect(screen.getByRole('radio', { name: 'Favoritos' }).className).toContain('cursor-pointer');
-    expect(screen.getByRole('combobox', { name: 'Categoría' }).className).toContain('cursor-pointer');
-    expect(burgerRow.className).toContain('min-h-36');
-    expect(burgerRow.className).toContain('pb-5');
-    expect(burgerRow.querySelector('[data-testid="product-search-row-actions"]')).toBeTruthy();
+    expect(within(lemonadeRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }).textContent?.trim()).toBe('Añadir');
+    expect(within(comboRow).getByRole('button', { name: 'Configurar menú Menu Classic Burger' }).textContent?.trim()).toBe('Configurar menú');
+    expect(within(platterRow).getByRole('button', { name: 'Configurar plato Plato combinado de lomo' }).textContent?.trim()).toBe('Configurar plato');
+    expect(within(soldOutRow).getByRole('button', { name: 'Añadir una unidad de Coulant de chocolate' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Favoritos' }).className).toContain('cursor-pointer');
+    expect(within(soldOutRow).getByRole('button', { name: 'Añadir una unidad de Coulant de chocolate' }).className).toContain('disabled:cursor-not-allowed');
+    expect(lemonadeAvatar.className).toContain('rounded-full');
+    expect(within(lemonadeAvatar).getByText('local_drink')).toBeTruthy();
+    expect(within(comboAvatar).getByText('restaurant_menu')).toBeTruthy();
 
-    expect(screen.getByRole('radio', { name: 'Todos' }).getAttribute('aria-checked')).toBe('true');
-    fireEvent.click(screen.getByRole('radio', { name: 'Favoritos' }));
-
-    expect(productViewChanged).toHaveBeenCalledWith('favorites');
-
-    fireEvent.change(screen.getByRole('combobox', { name: 'Categoría' }), { target: { value: 'drinks' } });
-    expect(productCategoryFilterChanged).toHaveBeenCalledWith('drinks');
+    fireEvent.click(screen.getByRole('button', { name: 'Favoritos' }));
+    expect(sectionChanged).toHaveBeenCalledWith('favorites');
 
     fireEvent.click(screen.getByRole('button', { name: 'Quitar Hamburguesa craft de favoritos' }));
     expect(favoriteToggled).toHaveBeenCalledWith('burger');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
-    expect(productIncremented).toHaveBeenCalledWith('lemonade');
+    fireEvent.click(within(lemonadeRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
+    expect(productConfigured).toHaveBeenCalledWith('lemonade');
 
-    fireEvent.click(soldOutAction);
-    expect(productIncremented).not.toHaveBeenCalledWith('sold-out');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' }));
+    fireEvent.click(within(burgerRow).getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' }));
     expect(productDecremented).toHaveBeenCalledWith('burger');
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
     expect(finished).toHaveBeenCalledOnce();
   });
 
-  it('shows configure as the primary action for customizable products with no quantity', async () => {
-    const i18n = provideI18nTesting();
-    const productIncremented = vi.fn();
+  it('switches to flat search results and searches by type labels', async () => {
+    await renderDialog({ query: 'plato combinado' });
 
-    const { fixture } = await render(ProductSearchDialog, {
-      imports: [...i18n.imports],
-      providers: [...i18n.providers],
-      inputs: {
-        open: true,
-        query: '',
-        products,
-        productView: 'all',
-        productCategoryFilter: 'all',
-        productCategoryOptions: [{ label: 'Todas', value: 'all' }],
-        favoriteProductIds: [],
-        lastAddedProductId: null,
-        productQuantities: {},
-      },
-    });
-    fixture.componentInstance.productIncremented.subscribe(productIncremented);
-
-    const burgerRow = screen.getByTestId('product-search-row-burger');
-    const configureButton = within(burgerRow).getByRole('button', { name: 'Configurar Hamburguesa craft' });
-    const customizableBadge = within(burgerRow).getByText('Personalizable');
-    const actionSlot = burgerRow.querySelector('[data-testid="product-search-row-actions"]');
-
-    expect(configureButton.textContent?.trim()).toBe('Configurar');
-    expect(within(burgerRow).queryByLabelText('Cantidad de Hamburguesa craft: 0')).toBeNull();
-    expect(customizableBadge.parentElement?.parentElement).toBe(actionSlot?.parentElement);
-
-    fireEvent.click(configureButton);
-    expect(productIncremented).toHaveBeenCalledWith('burger');
+    expect(section('Resultados')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Bebidas' })).toBeNull();
+    expect(within(section('Resultados')).getByText('Plato combinado de lomo')).toBeTruthy();
+    expect(within(section('Resultados')).getByText('Plato combinado vegetal')).toBeTruthy();
+    expect(within(section('Resultados')).queryByText('Limonada con gas')).toBeNull();
   });
 
-  it('renders platter badges and keeps action labels based on modifiers', async () => {
-    const i18n = provideI18nTesting();
-    const productIncremented = vi.fn();
-
-    const { fixture } = await render(ProductSearchDialog, {
-      imports: [...i18n.imports],
-      providers: [...i18n.providers],
-      inputs: {
-        open: true,
-        query: '',
-        products,
-        productView: 'all',
-        productCategoryFilter: 'all',
-        productCategoryOptions: [{ label: 'Todas', value: 'all' }],
-        favoriteProductIds: [],
-        lastAddedProductId: null,
-        productQuantities: {},
-      },
+  it('shows a single filtered section when the route passes section products', async () => {
+    await renderDialog({
+      activeSection: 'combos',
+      products: products.filter((product) => product.type === 'combo'),
+      allProducts: products,
+      productQuantities: {},
     });
-    fixture.componentInstance.productIncremented.subscribe(productIncremented);
 
-    const loinRow = screen.getByTestId('product-search-row-platter-loin');
-    const veggieRow = screen.getByTestId('product-search-row-platter-veggie');
+    expect(section('Menús')).toBeTruthy();
+    expect(within(section('Menús')).getByText('Menu Classic Burger')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Bebidas' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Todos' }).textContent).toContain(String(products.length));
+    expect(screen.getByRole('button', { name: 'Menús' }).textContent).toContain('1');
+  });
 
-    expect(within(loinRow).getByText('Plato combinado')).toBeTruthy();
-    expect(within(veggieRow).getByText('Plato combinado')).toBeTruthy();
-    expect(within(loinRow).getByRole('button', { name: 'Configurar Plato combinado de lomo' }).textContent?.trim()).toBe('Configurar');
-    expect(within(veggieRow).getByRole('button', { name: /A.adir una unidad de Plato combinado vegetal/ }).textContent?.trim()).toMatch(/A.adir/);
+  it('shows configured options and lets each option be incremented independently', async () => {
+    const { fixture } = await renderDialog({
+      activeSection: 'combos',
+      products: products.filter((product) => product.type === 'combo'),
+      productQuantities: { combo: 3 },
+      configuredLines: [
+        { lineId: 'line-combo-classic', productId: 'combo', quantity: 2, summary: 'Hamburguesa craft · Patatas bravas · Agua' },
+        { lineId: 'line-combo-beer', productId: 'combo', quantity: 1, summary: 'Hamburguesa craft · Ensalada · Cerveza' },
+      ],
+    });
+    const productConfigured = vi.fn();
+    const configuredLineIncremented = vi.fn();
+    const configuredLineDecremented = vi.fn();
+    fixture.componentInstance.productConfigured.subscribe(productConfigured);
+    fixture.componentInstance.configuredLineIncremented.subscribe(configuredLineIncremented);
+    fixture.componentInstance.configuredLineDecremented.subscribe(configuredLineDecremented);
 
-    fireEvent.click(within(loinRow).getByRole('button', { name: 'Configurar Plato combinado de lomo' }));
-    fireEvent.click(within(veggieRow).getByRole('button', { name: /A.adir una unidad de Plato combinado vegetal/ }));
+    const comboRow = screen.getByTestId('product-search-row-combo');
+    const comboActions = within(comboRow).getByTestId('product-search-row-actions');
+    expect(within(comboRow).getByText('3 en pedido · 2 opciones')).toBeTruthy();
+    expect(comboActions.className).toContain('w-full');
+    expect(comboActions.className).toContain('min-w-0');
+    expect(comboActions.className).toContain('max-w-full');
+    expect(comboActions.className).toContain('flex-wrap');
+    expect(comboActions.className).not.toContain('shrink-0');
+    expect(within(comboRow).queryByText(/Hamburguesa craft · Patatas bravas · Agua/)).toBeNull();
 
-    expect(productIncremented).toHaveBeenCalledWith('platter-loin');
-    expect(productIncremented).toHaveBeenCalledWith('platter-veggie');
+    fireEvent.click(within(comboRow).getByRole('button', { name: 'Ver opciones' }));
+
+    expect(within(comboRow).getByTestId('product-search-options-panel').className).toContain('max-w-full');
+    expect(within(comboRow).getByTestId('product-search-options-panel').className).toContain('overflow-hidden');
+    expect(within(comboRow).getByText('2 x Hamburguesa craft · Patatas bravas · Agua')).toBeTruthy();
+    expect(within(comboRow).getByText('1 x Hamburguesa craft · Ensalada · Cerveza')).toBeTruthy();
+
+    fireEvent.click(within(comboRow).getByRole('button', { name: 'Añadir una unidad de Menu Classic Burger con Hamburguesa craft · Patatas bravas · Agua' }));
+    expect(configuredLineIncremented).toHaveBeenCalledWith('line-combo-classic');
+
+    fireEvent.click(within(comboRow).getByRole('button', { name: 'Quitar una unidad de Menu Classic Burger con Hamburguesa craft · Ensalada · Cerveza' }));
+    expect(configuredLineDecremented).toHaveBeenCalledWith('line-combo-beer');
+
+    fireEvent.click(within(comboRow).getByRole('button', { name: 'Crear otra opción de Menu Classic Burger' }));
+    expect(productConfigured).toHaveBeenCalledWith('combo');
   });
 });

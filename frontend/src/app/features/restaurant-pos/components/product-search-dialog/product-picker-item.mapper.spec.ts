@@ -8,24 +8,27 @@ describe('toProductPickerItem', () => {
     favoriteProductIds: ['burger'],
     lastAddedProductId: 'lemonade',
     productQuantities: { burger: 2, combo: 1 },
-    formatCurrency: (value) => `${value.toFixed(2)} €`,
+    configuredLines: [],
+    formatCurrency: (value) => `${value.toFixed(2)} EUR`,
     translate: (key, params) => {
       const values: Record<string, string> = {
-        'restaurantPos.service.noAllergens': 'Sin alérgenos indicados',
+        'restaurantPos.service.noAllergens': 'Sin alergenos indicados',
         'restaurantPos.service.customizable': 'Personalizable',
-        'restaurantPos.service.combo': 'Menú',
+        'restaurantPos.service.combo': 'Menu',
         'restaurantPos.service.platter': 'Plato combinado',
         'restaurantPos.service.soldOut': 'Agotado',
-        'restaurantPos.service.productAdded': 'Añadido',
-        'restaurantPos.service.addProductAction': 'Añadir',
+        'restaurantPos.service.productAdded': 'Anadido',
+        'restaurantPos.service.addProductAction': 'Anadir',
         'restaurantPos.service.configureProductAction': 'Configurar',
-        'restaurantPos.service.configureComboAction': 'Configurar menú',
+        'restaurantPos.service.configureComboAction': 'Configurar menu',
+        'restaurantPos.service.configurePlatterAction': 'Configurar plato',
         'restaurantPos.service.configureProductActionLabel': `Configurar ${String(params?.['name'] ?? '')}`,
-        'restaurantPos.service.configureComboActionLabel': `Configurar menú ${String(params?.['name'] ?? '')}`,
-        'restaurantPos.service.increaseProductQuantityActionLabel': `Añadir una unidad de ${String(params?.['name'] ?? '')}`,
+        'restaurantPos.service.configureComboActionLabel': `Configurar menu ${String(params?.['name'] ?? '')}`,
+        'restaurantPos.service.configurePlatterActionLabel': `Configurar plato ${String(params?.['name'] ?? '')}`,
+        'restaurantPos.service.increaseProductQuantityActionLabel': `Anadir una unidad de ${String(params?.['name'] ?? '')}`,
         'restaurantPos.service.decreaseProductQuantityActionLabel': `Quitar una unidad de ${String(params?.['name'] ?? '')}`,
         'restaurantPos.service.productQuantityLabel': `Cantidad de ${String(params?.['name'] ?? '')}: ${String(params?.['count'] ?? '')}`,
-        'restaurantPos.service.addFavoriteProduct': `Añadir ${String(params?.['name'] ?? '')} a favoritos`,
+        'restaurantPos.service.addFavoriteProduct': `Anadir ${String(params?.['name'] ?? '')} a favoritos`,
         'restaurantPos.service.removeFavoriteProduct': `Quitar ${String(params?.['name'] ?? '')} de favoritos`,
       };
 
@@ -54,18 +57,21 @@ describe('toProductPickerItem', () => {
     expect(item).toMatchObject({
       id: 'lemonade',
       name: 'Limonada con gas',
-      priceLabel: '4.50 €',
+      visualIcon: 'local_drink',
+      priceLabel: '4.50 EUR',
       categoryLabel: 'Bebidas',
-      allergenLabel: 'Sin alérgenos indicados',
-      actionLabel: 'Añadir',
-      actionAriaLabel: 'Añadir una unidad de Limonada con gas',
+      allergenLabel: 'Sin alergenos indicados',
+      actionLabel: 'Anadir',
+      actionAriaLabel: 'Anadir una unidad de Limonada con gas',
       disabled: false,
       quantity: 0,
       showQuantityControls: false,
       isFavorite: false,
       recentlyAdded: true,
     });
-    expect(item.badges.map((badge) => badge.label)).toEqual(['Añadido']);
+    expect(item.badges.map((badge) => badge.label)).toEqual(['Anadido']);
+    expect(item.visualClass).toContain('rounded-full');
+    expect(item.visualClass).toContain('text-sky-700');
   });
 
   it('maps customizable products to configure action and quantity controls when already added', () => {
@@ -84,20 +90,25 @@ describe('toProductPickerItem', () => {
   it('maps combo products to configure menu action and hides quantity controls', () => {
     const item = toProductPickerItem(product({ id: 'combo', name: 'Menu Classic Burger', type: 'combo' }), context);
 
-    expect(item.actionLabel).toBe('Configurar menú');
-    expect(item.actionAriaLabel).toBe('Configurar menú Menu Classic Burger');
+    expect(item.actionLabel).toBe('Configurar menu');
+    expect(item.actionAriaLabel).toBe('Configurar menu Menu Classic Burger');
+    expect(item.visualIcon).toBe('restaurant_menu');
+    expect(item.visualClass).toContain('text-violet-700');
     expect(item.quantity).toBe(1);
     expect(item.showQuantityControls).toBe(false);
-    expect(item.badges.map((badge) => badge.label)).toEqual(['Menú']);
+    expect(item.badges.map((badge) => badge.label)).toEqual(['Menu']);
   });
 
-  it('maps platters as add or configure depending on modifiers', () => {
+  it('maps platters as add or configure platter depending on modifiers', () => {
     const simplePlatter = toProductPickerItem(product({ type: 'platter' }), context);
     const customizablePlatter = toProductPickerItem(product({ type: 'platter', modifierGroupIds: ['platter-extras'] }), context);
 
-    expect(simplePlatter.actionLabel).toBe('Añadir');
-    expect(customizablePlatter.actionLabel).toBe('Configurar');
-    expect(simplePlatter.badges.map((badge) => badge.label)).toEqual(['Plato combinado', 'Añadido']);
+    expect(simplePlatter.actionLabel).toBe('Anadir');
+    expect(simplePlatter.visualIcon).toBe('room_service');
+    expect(simplePlatter.visualClass).toContain('text-emerald-700');
+    expect(customizablePlatter.actionLabel).toBe('Configurar plato');
+    expect(customizablePlatter.actionAriaLabel).toBe('Configurar plato Limonada con gas');
+    expect(simplePlatter.badges.map((badge) => badge.label)).toEqual(['Plato combinado', 'Anadido']);
   });
 
   it('marks unavailable products as disabled and sold out', () => {
