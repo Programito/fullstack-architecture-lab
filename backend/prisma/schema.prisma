@@ -26,6 +26,7 @@ model User {
   lastName     String
   passwordHash String
   enabled      Boolean    @default(true)
+  accountType  AccountType @default(regular)
   roles        UserRole[]
   sessions     AuthSession[]
   createdAt    DateTime   @default(now())
@@ -115,4 +116,11 @@ model OutboxEvent {
 enum TaskStatus {
   PENDING
   COMPLETED
+}
+
+enum AccountType {
+  regular
+  demo
+  system
+  test
 }

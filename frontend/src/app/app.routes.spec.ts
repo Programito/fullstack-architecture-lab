@@ -19,25 +19,31 @@ describe('app routes', () => {
     expect(restaurantPosRoute()?.loadComponent).toBeTypeOf('function');
   });
 
-  it('redirects the app root to the service route', () => {
+  it('redirects the app root to login', () => {
     const redirectRoute = routes.find((route) => route.path === '');
 
     expect(redirectRoute).toEqual(
       expect.objectContaining({
         pathMatch: 'full',
-        redirectTo: 'restaurant-pos/service',
+        redirectTo: 'login',
       }),
     );
   });
 
-  it('redirects unknown app routes to the service route', () => {
+  it('redirects unknown app routes to login', () => {
     const wildcardRoute = routes.find((route) => route.path === '**');
 
     expect(wildcardRoute).toEqual(
       expect.objectContaining({
-        redirectTo: 'restaurant-pos/service',
+        redirectTo: 'login',
       }),
     );
+  });
+
+  it('defines login, developer and user administration routes', () => {
+    expect(routes.find((route) => route.path === 'login')?.loadComponent).toBeTypeOf('function');
+    expect(routes.find((route) => route.path === 'developer')?.loadComponent).toBeTypeOf('function');
+    expect(routes.find((route) => route.path === 'admin/users')?.loadComponent).toBeTypeOf('function');
   });
 
   it('defines restaurant-pos section routes from the shared config', () => {

@@ -4,6 +4,7 @@ import { EVENT_BUS, type EventBus } from '../../../shared/events/event-bus.port'
 import { applicationError, type ApplicationError } from '../../../shared/errors/application-error';
 import { err, isErr, ok, type Result } from '../../../shared/result/result';
 import { User } from '../../domain/user.entity';
+import type { AccountType } from '../../domain/account-type';
 import { Email } from '../../domain/value-objects/email.vo';
 import { PASSWORD_HASHER, type PasswordHasher } from '../ports/password-hasher.port';
 import { ROLE_REPOSITORY, type RoleRepository } from '../ports/role-repository.port';
@@ -15,6 +16,7 @@ export type CreateUserCommand = {
   lastName: string;
   password: string;
   roleIds?: string[];
+  accountType?: AccountType;
 };
 
 @Injectable()
@@ -62,6 +64,7 @@ export class CreateUserUseCase {
       lastName,
       passwordHash,
       roleIds,
+      accountType: command.accountType ?? 'regular',
     });
 
     await this.users.save(user);

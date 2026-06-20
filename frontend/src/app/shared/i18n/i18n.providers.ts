@@ -1,4 +1,3 @@
-import { provideHttpClient } from '@angular/common/http';
 import { EnvironmentProviders, inject, isDevMode, provideAppInitializer } from '@angular/core';
 import { provideTransloco, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
@@ -10,7 +9,6 @@ export const loadInitialTranslations = (localeService: LocaleService, transloco:
   firstValueFrom(transloco.load(localeService.locale()));
 
 export const provideAppI18n = (): EnvironmentProviders[] => [
-  provideHttpClient(),
   ...provideTransloco({
     config: {
       availableLangs: [...SUPPORTED_LOCALES],

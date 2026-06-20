@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { DomainEvent } from '../../shared/events/domain-event';
+import type { AccountType } from './account-type';
 import { UserCreatedEvent } from './events/user-created.event';
 import { UserRolesAssignedEvent } from './events/user-roles-assigned.event';
 
@@ -11,6 +12,7 @@ export type UserSnapshot = {
   lastName: string;
   passwordHash: string;
   enabled: boolean;
+  accountType: AccountType;
   roleIds: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +24,7 @@ type CreateUserProps = {
   lastName: string;
   passwordHash: string;
   roleIds?: string[];
+  accountType?: AccountType;
 };
 
 export class User {
@@ -38,6 +41,7 @@ export class User {
       lastName: props.lastName.trim(),
       passwordHash: props.passwordHash,
       enabled: true,
+      accountType: props.accountType ?? 'regular',
       roleIds: uniqueIds(props.roleIds ?? []),
       createdAt: now,
       updatedAt: now,
@@ -80,6 +84,10 @@ export class User {
     return this.snapshot.enabled;
   }
 
+  get accountType(): AccountType {
+    return this.snapshot.accountType;
+  }
+
   get roleIds(): string[] {
     return [...this.snapshot.roleIds];
   }
@@ -103,6 +111,10 @@ export class User {
 
   setEnabled(enabled: boolean, now = new Date()): void {
     this.snapshot = { ...this.snapshot, enabled, updatedAt: now };
+  }
+
+  setAccountType(accountType: AccountType, now = new Date()): void {
+    this.snapshot = { ...this.snapshot, accountType, updatedAt: now };
   }
 
   pullDomainEvents(): DomainEvent[] {

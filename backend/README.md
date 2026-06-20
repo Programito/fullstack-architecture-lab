@@ -12,7 +12,10 @@ pnpm dev
 
 REST endpoints are versioned under `/api/v1`.
 
-Swagger documentation is available at `/docs`.
+Swagger, the static Storybook build and frontend architecture documentation are
+served under `/developer/*`. Every request requires a valid
+`developer_access_token` cookie issued only to an active user with the
+`developer` role.
 
 The app is currently wired to in-memory adapters for local development, so it can start without `DATABASE_URL` or PostgreSQL.
 
@@ -20,6 +23,7 @@ Local in-memory identity data is seeded by default:
 
 - `admin@example.com` / `admin1234` with role `admin`
 - additional demo users generated through the fake-data adapter
+- five portfolio accounts marked with `accountType=demo`
 
 The shared role catalog is used by both the in-memory adapter and Prisma:
 
@@ -29,7 +33,10 @@ The shared role catalog is used by both the in-memory adapter and Prisma:
 - `kitchen`: order preparation
 - `developer`: documentation, Storybook, architecture and technical demos
 
-Set `IDENTITY_MEMORY_SEED=false` to start with empty in-memory users and roles.
+Set `IDENTITY_MEMORY_SEED=false` to skip the fixed regular admin and generated users.
+Portfolio demo accounts remain seeded so environments can toggle access without
+deleting data. `DEMO_LOGIN_ENABLED=false` blocks their login, refresh and active
+sessions immediately.
 Use `IDENTITY_MEMORY_SEED_COUNT` to control generated users, `IDENTITY_MEMORY_SEED_RANDOM=true` for non-deterministic demo data, and `IDENTITY_MEMORY_SEED_VALUE` for a stable seed.
 
 To switch back to Prisma/PostgreSQL later, re-enable `PrismaModule` in `src/app.module.ts` and wire `TasksModule` to `PrismaTaskRepository` + `OutboxEventBus`.

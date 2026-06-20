@@ -15,6 +15,16 @@
         <div class="theme-panel flex items-center gap-1 rounded-lg border px-1 py-1 shadow-sm lg:hidden">
           <app-color-mode-menu appearance="minimal" size="sm" />
           <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
+          <button
+            class="grid h-9 w-9 place-items-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
+            type="button"
+            [attr.aria-label]="'restaurantPos.common.logout' | transloco"
+            [disabled]="loggingOut()"
+            [attr.aria-busy]="loggingOut()"
+            (click)="logout()"
+          >
+            <app-icon name="logout" size="sm" />
+          </button>
         </div>
       </div>
 
@@ -36,10 +46,30 @@
         }
       </nav>
 
+      @if (isAdmin()) {
+        <a
+          class="theme-nav-link inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium"
+          routerLink="/admin/users"
+        >
+          <app-icon name="manage_accounts" size="sm" />
+          <span>{{ 'userAdmin.navigation' | transloco }}</span>
+        </a>
+      }
+
       <div class="mt-auto hidden lg:block">
         <div class="theme-panel flex items-center justify-between gap-1 rounded-lg border px-1 py-1 shadow-sm">
           <app-color-mode-menu appearance="minimal" size="sm" />
           <app-language-select appearance="minimal" placement="top" size="sm" [showLabel]="false" [showHint]="false" />
+          <button
+            class="grid h-9 w-9 place-items-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
+            type="button"
+            [attr.aria-label]="'restaurantPos.common.logout' | transloco"
+            [disabled]="loggingOut()"
+            [attr.aria-busy]="loggingOut()"
+            (click)="logout()"
+          >
+            <app-icon name="logout" size="sm" />
+          </button>
         </div>
       </div>
     </div>

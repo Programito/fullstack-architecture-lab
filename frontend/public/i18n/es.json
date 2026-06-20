@@ -10,6 +10,98 @@
       "playwright": "Playwright"
     }
   },
+  "auth": {
+    "eyebrow": "Mesa, cocina y pedidos",
+    "title": "Explora MesaFlow",
+    "badge": "Restaurant POS",
+    "description": "Gestiona el servicio del restaurante con un acceso rápido para probar el producto o con tu cuenta habitual.",
+    "methodLabel": "Método de acceso",
+    "benefits": {
+      "floor": "Plano de mesas, pedidos y cobros",
+      "kitchen": "Cocina y preparación en tiempo real"
+    },
+    "demo": {
+      "tab": "Demo rápida",
+      "title": "Demo rápida",
+      "description": "Elige un perfil para recorrer MesaFlow sin introducir credenciales.",
+      "restaurantTitle": "Perfiles de restaurante",
+      "restaurantDescription": "Accede a operación, servicio y cocina con un clic.",
+      "technicalTitle": "Perfil técnico",
+      "technicalDescription": "Revisa documentación, Storybook y arquitectura.",
+      "action": "Entrar ahora",
+      "loading": "Abriendo..."
+    },
+    "credentials": {
+      "tab": "Usuario y contraseña",
+      "title": "Usuario y contraseña",
+      "description": "Accede con las credenciales de tu cuenta para continuar donde lo dejaste.",
+      "email": "Email",
+      "password": "Contraseña",
+      "submit": "Entrar",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "validation": {
+        "emailRequired": "Introduce tu email.",
+        "emailInvalid": "Introduce un email válido.",
+        "passwordRequired": "Introduce tu contraseña.",
+        "passwordMinLength": "La contraseña debe tener al menos 8 caracteres."
+      }
+    },
+    "roles": {
+      "admin": {
+        "label": "Admin",
+        "description": "Control completo del restaurante."
+      },
+      "manager": {
+        "label": "Encargado",
+        "description": "Turnos, descuentos, menú y caja."
+      },
+      "waiter": {
+        "label": "Camarero",
+        "description": "Mesas, pedidos y cobros."
+      },
+      "kitchen": {
+        "label": "Cocina",
+        "description": "Pedidos en cocina y preparados."
+      },
+      "developer": {
+        "label": "Developer",
+        "description": "Documentación, Storybook y arquitectura."
+      }
+    },
+    "errors": {
+      "invalidCredentials": "No se ha podido iniciar sesión. Revisa el email y la contraseña.",
+      "demoUnavailable": "No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos."
+    }
+  },
+  "developer": {
+    "eyebrow": "Espacio técnico",
+    "title": "Recursos para Developer",
+    "description": "Documentación técnica disponible únicamente para cuentas con rol Developer.",
+    "apiDocs": "Consulta los contratos y endpoints de la API.",
+    "storybook": "Explora los componentes, estados y patrones visuales.",
+    "architectureTitle": "Arquitectura",
+    "architecture": "Revisa las decisiones y flujos principales del frontend.",
+    "open": "Abrir recurso",
+    "logout": "Cerrar sesión"
+  },
+  "userAdmin": {
+    "navigation": "Usuarios",
+    "back": "Volver al TPV",
+    "eyebrow": "Administración",
+    "title": "Cuentas de usuario",
+    "description": "Consulta el tipo de cuenta y controla qué usuarios pueden iniciar sesión.",
+    "user": "Usuario",
+    "status": "Estado",
+    "accountType": "Tipo de cuenta",
+    "accountTypeFor": "Tipo de cuenta de {{name}}",
+    "enabled": "Activa",
+    "disabled": "Desactivada",
+    "loading": "Cargando usuarios...",
+    "empty": "No hay usuarios disponibles.",
+    "confirmRevocation": "El cambio puede cerrar las sesiones activas de este usuario.",
+    "types": { "regular": "Regular", "demo": "Demo", "system": "Sistema", "test": "Pruebas" }
+  },
   "languageSelect": {
     "label": "Idioma",
     "hint": "La preferencia se aplica a la interfaz.",
@@ -51,6 +143,7 @@
       "kitchen": "Cocina",
       "pos": "TPV restaurante",
       "navigation": "Navegación principal",
+      "logout": "Cerrar sesión",
       "cancel": "Cancelar",
       "saveChanges": "Guardar cambios",
       "columnsRows": "{{columns}} columnas x {{rows}} filas",

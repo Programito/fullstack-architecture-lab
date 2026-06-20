@@ -6,12 +6,14 @@ import { AssignUserRolesUseCase } from '../../application/use-cases/assign-user-
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
 import { ListUsersUseCase } from '../../application/use-cases/list-users.use-case';
 import { SetUserEnabledUseCase } from '../../application/use-cases/set-user-enabled.use-case';
+import { SetUserAccountTypeUseCase } from '../../application/use-cases/set-user-account-type.use-case';
 import { AuthGuard } from './auth.guard';
 import { RolesGuard, RequireRoles } from './roles.guard';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { SetEnabledDto } from './dto/set-enabled.dto';
+import { SetAccountTypeDto } from './dto/set-account-type.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -21,6 +23,7 @@ export class UsersController {
     private readonly listUsers: ListUsersUseCase,
     private readonly assignUserRoles: AssignUserRolesUseCase,
     private readonly setUserEnabled: SetUserEnabledUseCase,
+    private readonly setUserAccountType: SetUserAccountTypeUseCase,
   ) {}
 
   @Post()
@@ -60,5 +63,16 @@ export class UsersController {
   @ApiOkResponse({ type: UserResponseDto })
   async setEnabled(@Param('id') id: string, @Body() body: SetEnabledDto): Promise<UserResponseDto> {
     return UserResponseDto.fromDomain(unwrapResultOrThrow(await this.setUserEnabled.execute(id, body.enabled)));
+  }
+
+  @Patch(':id/account-type')
+  @Version('1')
+  @UseGuards(AuthGuard, RolesGuard)
+  @RequireRoles('admin')
+  @ApiOkResponse({ type: UserResponseDto })
+  async setAccountType(@Param('id') id: string, @Body() body: SetAccountTypeDto): Promise<UserResponseDto> {
+    return UserResponseDto.fromDomain(
+      unwrapResultOrThrow(await this.setUserAccountType.execute(id, body.accountType)),
+    );
   }
 }

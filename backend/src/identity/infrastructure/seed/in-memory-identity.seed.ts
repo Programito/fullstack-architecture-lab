@@ -12,6 +12,10 @@ import { ListRolesUseCase } from '../../application/use-cases/list-roles.use-cas
 import { PERMISSION_CATALOG } from '../../domain/permission-catalog';
 import type { Permission } from '../../domain/permission.entity';
 import { ROLE_CATALOG, type RoleName } from '../../domain/role-catalog';
+import {
+  DEMO_ACCOUNT_CATALOG,
+  DEMO_ACCOUNT_PASSWORD,
+} from '../../domain/demo-account-catalog';
 import { Permission as PermissionEntity } from '../../domain/permission.entity';
 import type { Role } from '../../domain/role.entity';
 
@@ -43,6 +47,20 @@ export class InMemoryIdentitySeed implements OnApplicationBootstrap {
 
     const permissionsByName = await this.seedPermissions();
     const rolesByName = await this.seedRoles(permissionsByName);
+
+    for (const account of DEMO_ACCOUNT_CATALOG) {
+      await this.seedUser(
+        {
+          email: account.email,
+          firstName: account.firstName,
+          lastName: account.lastName,
+          password: DEMO_ACCOUNT_PASSWORD,
+          roles: [account.role],
+          accountType: 'demo',
+        },
+        rolesByName,
+      );
+    }
 
     if (this.config.get<string>('IDENTITY_MEMORY_SEED') === 'false') {
       return;
@@ -112,6 +130,7 @@ export class InMemoryIdentitySeed implements OnApplicationBootstrap {
       lastName: user.lastName,
       password: user.password,
       roleIds,
+      accountType: user.accountType,
     });
 
     if (isErr(result) && result.error.code !== 'email_already_taken') {
@@ -148,4 +167,5 @@ type SeedUser = {
   lastName: string;
   password: string;
   roles: readonly RoleName[];
+  accountType?: 'regular' | 'demo';
 };

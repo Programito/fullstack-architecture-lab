@@ -105,7 +105,17 @@ describe('InMemoryIdentitySeed', () => {
     );
     expect(roleResult.value.map((role) => role.name).sort()).toEqual(ROLE_CATALOG.map((role) => role.name).sort());
     expect(roleResult.value.find((role) => role.name === 'waiter')?.permissionIds).toHaveLength(2);
-    expect(userResult.value.map((user) => user.email)).toEqual(['admin@example.com', 'demo1@example.com', 'demo2@example.com']);
+    expect(userResult.value.map((user) => user.email)).toEqual([
+      'admin@mesaflow.demo',
+      'manager@mesaflow.demo',
+      'waiter@mesaflow.demo',
+      'kitchen@mesaflow.demo',
+      'developer@mesaflow.demo',
+      'admin@example.com',
+      'demo1@example.com',
+      'demo2@example.com',
+    ]);
+    expect(userResult.value.filter((user) => user.accountType === 'demo')).toHaveLength(5);
     expect(userResult.value[0]?.roleIds).toHaveLength(1);
   });
 
@@ -129,6 +139,7 @@ describe('InMemoryIdentitySeed', () => {
     }
     expect(permissionResult.value).toHaveLength(PERMISSION_CATALOG.length);
     expect(roleResult.value).toHaveLength(ROLE_CATALOG.length);
-    expect(userResult.value).toHaveLength(0);
+    expect(userResult.value).toHaveLength(5);
+    expect(userResult.value.every((user) => user.accountType === 'demo')).toBe(true);
   });
 });

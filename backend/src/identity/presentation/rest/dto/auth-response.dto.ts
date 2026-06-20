@@ -19,6 +19,9 @@ export class AuthResponseDto {
   @ApiProperty({ type: [String], example: ['service', 'layout'] })
   permissions!: string[];
 
+  @ApiProperty({ type: [String], example: ['waiter'] })
+  roles!: string[];
+
   static fromResult(result: AuthResult): AuthResponseDto {
     return {
       accessToken: result.accessToken,
@@ -26,6 +29,7 @@ export class AuthResponseDto {
       expiresIn: result.accessExpiresIn,
       user: UserResponseDto.fromDomain(result.user),
       permissions: result.permissions,
+      roles: result.roles,
     };
   }
 }

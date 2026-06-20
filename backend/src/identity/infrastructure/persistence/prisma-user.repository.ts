@@ -23,6 +23,7 @@ export class PrismaUserRepository implements UserRepository {
           lastName: value.lastName,
           passwordHash: value.passwordHash,
           enabled: value.enabled,
+          accountType: value.accountType,
         },
         create: {
           id: value.id,
@@ -31,6 +32,7 @@ export class PrismaUserRepository implements UserRepository {
           lastName: value.lastName,
           passwordHash: value.passwordHash,
           enabled: value.enabled,
+          accountType: value.accountType,
           createdAt: value.createdAt,
           updatedAt: value.updatedAt,
         },
@@ -80,6 +82,7 @@ export class PrismaUserRepository implements UserRepository {
       lastName: record.lastName,
       passwordHash: record.passwordHash,
       enabled: record.enabled,
+      accountType: record.accountType,
       roleIds: record.roles?.map((role) => role.roleId) ?? [],
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

@@ -5,6 +5,84 @@ import { KEY_VALUE_STORAGE, MemoryKeyValueStorage } from '../utils/storage/key-v
 
 const TEST_TRANSLATIONS = {
   es: {
+    auth: {
+      eyebrow: 'Mesa, cocina y pedidos',
+      title: 'Explora MesaFlow',
+      badge: 'Restaurant POS',
+      description: 'Gestiona el servicio del restaurante con un acceso rápido para probar el producto o con tu cuenta habitual.',
+      methodLabel: 'Método de acceso',
+      benefits: {
+        floor: 'Plano de mesas, pedidos y cobros',
+        kitchen: 'Cocina y preparación en tiempo real',
+      },
+      demo: {
+        tab: 'Demo rápida',
+        title: 'Demo rápida',
+        description: 'Elige un perfil para recorrer MesaFlow sin introducir credenciales.',
+        restaurantTitle: 'Perfiles de restaurante',
+        restaurantDescription: 'Accede a operación, servicio y cocina con un clic.',
+        technicalTitle: 'Perfil técnico',
+        technicalDescription: 'Revisa documentación, Storybook y arquitectura.',
+        action: 'Entrar ahora',
+        loading: 'Abriendo...',
+      },
+      credentials: {
+        tab: 'Usuario y contraseña',
+        title: 'Usuario y contraseña',
+        description: 'Accede con las credenciales de tu cuenta para continuar donde lo dejaste.',
+        email: 'Email',
+        password: 'Contraseña',
+        submit: 'Entrar',
+        showPassword: 'Mostrar contraseña',
+        hidePassword: 'Ocultar contraseña',
+        validation: {
+          emailRequired: 'Introduce tu email.',
+          emailInvalid: 'Introduce un email válido.',
+          passwordRequired: 'Introduce tu contraseña.',
+          passwordMinLength: 'La contraseña debe tener al menos 8 caracteres.',
+        },
+      },
+      roles: {
+        admin: {
+          label: 'Admin',
+          description: 'Control completo del restaurante.',
+        },
+        manager: {
+          label: 'Encargado',
+          description: 'Turnos, descuentos, menú y caja.',
+        },
+        waiter: {
+          label: 'Camarero',
+          description: 'Mesas, pedidos y cobros.',
+        },
+        kitchen: {
+          label: 'Cocina',
+          description: 'Pedidos en cocina y preparados.',
+        },
+        developer: {
+          label: 'Developer',
+          description: 'Documentación, Storybook y arquitectura.',
+        },
+      },
+      errors: {
+        invalidCredentials: 'No se ha podido iniciar sesión. Revisa el email y la contraseña.',
+        demoUnavailable: 'No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos.',
+      },
+    },
+    developer: {
+      eyebrow: 'Espacio técnico',
+      title: 'Recursos para Developer',
+      description: 'Documentación técnica disponible únicamente para cuentas con rol Developer.',
+      apiDocs: 'Consulta los contratos y endpoints de la API.',
+      storybook: 'Explora los componentes, estados y patrones visuales.',
+      architectureTitle: 'Arquitectura',
+      architecture: 'Revisa las decisiones y los flujos principales del frontend.',
+      open: 'Abrir recurso',
+      logout: 'Cerrar sesión',
+    },
+    userAdmin: {
+      navigation: 'Usuarios',
+    },
     languageSelect: {
       label: 'Idioma',
       hint: 'La preferencia se aplica a la interfaz.',
@@ -33,6 +111,7 @@ const TEST_TRANSLATIONS = {
         kitchen: 'Cocina',
         pos: 'TPV restaurante',
         navigation: 'Navegación principal',
+        logout: 'Cerrar sesión',
         cancel: 'Cancelar',
         saveChanges: 'Guardar cambios',
         columnsRows: '{{columns}} columnas x {{rows}} filas',
@@ -483,6 +562,84 @@ const TEST_TRANSLATIONS = {
     },
   },
   en: {
+    auth: {
+      eyebrow: 'Tables, kitchen, and orders',
+      title: 'Explore MesaFlow',
+      badge: 'Restaurant POS',
+      description: 'Run restaurant service with quick product access for demos or sign in with your regular account.',
+      methodLabel: 'Sign-in method',
+      benefits: {
+        floor: 'Floor plan, ordering, and checkout',
+        kitchen: 'Kitchen and preparation in real time',
+      },
+      demo: {
+        tab: 'Quick demo',
+        title: 'Quick demo',
+        description: 'Choose a profile to explore MesaFlow without entering credentials.',
+        restaurantTitle: 'Restaurant profiles',
+        restaurantDescription: 'Open service, floor, and kitchen flows in one click.',
+        technicalTitle: 'Technical profile',
+        technicalDescription: 'Review documentation, Storybook, and architecture.',
+        action: 'Open now',
+        loading: 'Opening...',
+      },
+      credentials: {
+        tab: 'Product sign-in',
+        title: 'Product sign-in',
+        description: 'Use your account credentials to continue where you left off.',
+        email: 'Email',
+        password: 'Password',
+        submit: 'Sign in',
+        showPassword: 'Show password',
+        hidePassword: 'Hide password',
+        validation: {
+          emailRequired: 'Enter your email.',
+          emailInvalid: 'Enter a valid email.',
+          passwordRequired: 'Enter your password.',
+          passwordMinLength: 'Password must be at least 8 characters long.',
+        },
+      },
+      roles: {
+        admin: {
+          label: 'Admin',
+          description: 'Full restaurant control.',
+        },
+        manager: {
+          label: 'Manager',
+          description: 'Shifts, discounts, menu, and cash desk.',
+        },
+        waiter: {
+          label: 'Waiter',
+          description: 'Tables, orders, and payments.',
+        },
+        kitchen: {
+          label: 'Kitchen',
+          description: 'Kitchen and ready orders.',
+        },
+        developer: {
+          label: 'Developer',
+          description: 'Documentation, Storybook, and architecture.',
+        },
+      },
+      errors: {
+        invalidCredentials: 'Sign-in failed. Check your email and password.',
+        demoUnavailable: 'The demo could not be opened right now. Try again in a few minutes.',
+      },
+    },
+    developer: {
+      eyebrow: 'Technical space',
+      title: 'Developer resources',
+      description: 'Technical documentation available only to accounts with the Developer role.',
+      apiDocs: 'Review API contracts and endpoints.',
+      storybook: 'Explore components, states, and visual patterns.',
+      architectureTitle: 'Architecture',
+      architecture: 'Review the main frontend decisions and flows.',
+      open: 'Open resource',
+      logout: 'Sign out',
+    },
+    userAdmin: {
+      navigation: 'Users',
+    },
     languageSelect: {
       label: 'Language',
       hint: 'The preference applies to the interface.',
@@ -511,6 +668,7 @@ const TEST_TRANSLATIONS = {
         kitchen: 'Kitchen',
         pos: 'Restaurant POS',
         navigation: 'Primary navigation',
+        logout: 'Sign out',
         cancel: 'Cancel',
         saveChanges: 'Save changes',
         columnsRows: '{{columns}} columns x {{rows}} rows',
@@ -820,6 +978,84 @@ const TEST_TRANSLATIONS = {
     },
   },
   ca: {
+    auth: {
+      eyebrow: 'Taules, cuina i comandes',
+      title: 'Explora MesaFlow',
+      badge: 'Restaurant POS',
+      description: 'Gestiona el servei del restaurant amb un accés ràpid per provar el producte o amb el teu compte habitual.',
+      methodLabel: "Mètode d'accés",
+      benefits: {
+        floor: 'Plànol de taules, comandes i cobraments',
+        kitchen: 'Cuina i preparació en temps real',
+      },
+      demo: {
+        tab: 'Demo ràpida',
+        title: 'Demo ràpida',
+        description: 'Tria un perfil per recórrer MesaFlow sense introduir credencials.',
+        restaurantTitle: 'Perfils de restaurant',
+        restaurantDescription: 'Accedeix a operació, servei i cuina amb un clic.',
+        technicalTitle: 'Perfil tècnic',
+        technicalDescription: 'Revisa documentació, Storybook i arquitectura.',
+        action: 'Entrar ara',
+        loading: 'Obrint...',
+      },
+      credentials: {
+        tab: 'Usuari i contrasenya',
+        title: 'Usuari i contrasenya',
+        description: 'Accedeix amb les credencials del teu compte per continuar on ho vas deixar.',
+        email: 'Email',
+        password: 'Contrasenya',
+        submit: 'Entrar',
+        showPassword: 'Mostrar contrasenya',
+        hidePassword: 'Ocultar contrasenya',
+        validation: {
+          emailRequired: 'Introdueix el teu email.',
+          emailInvalid: 'Introdueix un email vàlid.',
+          passwordRequired: 'Introdueix la teva contrasenya.',
+          passwordMinLength: 'La contrasenya ha de tenir com a mínim 8 caràcters.',
+        },
+      },
+      roles: {
+        admin: {
+          label: 'Admin',
+          description: 'Control complet del restaurant.',
+        },
+        manager: {
+          label: 'Encarregat',
+          description: 'Torns, descomptes, menú i caixa.',
+        },
+        waiter: {
+          label: 'Cambrer',
+          description: 'Taules, comandes i cobraments.',
+        },
+        kitchen: {
+          label: 'Cuina',
+          description: 'Comandes a cuina i preparades.',
+        },
+        developer: {
+          label: 'Developer',
+          description: 'Documentació, Storybook i arquitectura.',
+        },
+      },
+      errors: {
+        invalidCredentials: "No s'ha pogut iniciar la sessió. Revisa l'email i la contrasenya.",
+        demoUnavailable: "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquí a uns minuts.",
+      },
+    },
+    developer: {
+      eyebrow: 'Espai tècnic',
+      title: 'Recursos per a Developer',
+      description: 'Documentació tècnica disponible només per a comptes amb rol Developer.',
+      apiDocs: "Consulta els contractes i endpoints de l'API.",
+      storybook: 'Explora els components, estats i patrons visuals.',
+      architectureTitle: 'Arquitectura',
+      architecture: 'Revisa les decisions i els fluxos principals del frontend.',
+      open: 'Obrir recurs',
+      logout: 'Tancar sessió',
+    },
+    userAdmin: {
+      navigation: 'Usuaris',
+    },
     languageSelect: {
       label: 'Idioma',
       hint: "La preferència s'aplica a la interfície.",
@@ -848,6 +1084,7 @@ const TEST_TRANSLATIONS = {
         kitchen: 'Cuina',
         pos: 'TPV restaurant',
         navigation: 'Navegació principal',
+        logout: 'Tancar sessió',
       },
       access: {
         eyebrow: 'Accés al TPV',

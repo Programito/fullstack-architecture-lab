@@ -322,6 +322,7 @@ describe('App e2e with in-memory identity seed', () => {
     process.env.IDENTITY_MEMORY_SEED_COUNT = '2';
     process.env.IDENTITY_MEMORY_SEED_RANDOM = 'false';
     process.env.IDENTITY_MEMORY_SEED_VALUE = '12345';
+    process.env.DEMO_LOGIN_ENABLED = 'true';
 
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
@@ -349,6 +350,7 @@ describe('App e2e with in-memory identity seed', () => {
   afterAll(async () => {
     await app?.close();
     process.env.IDENTITY_MEMORY_SEED = 'false';
+    process.env.DEMO_LOGIN_ENABLED = 'false';
   });
 
   it('returns seeded users and roles', async () => {
@@ -369,13 +371,31 @@ describe('App e2e with in-memory identity seed', () => {
       'service',
       'layout',
     ]);
-    expect(usersResponse.body).toHaveLength(3);
-    expect(usersResponse.body[0]).toMatchObject({
+    expect(usersResponse.body).toHaveLength(8);
+    expect(usersResponse.body.find((user: { email: string }) => user.email === 'admin@example.com')).toMatchObject({
       email: 'admin@example.com',
       firstName: 'Admin',
       lastName: 'User',
+      accountType: 'regular',
     });
     expect(usersResponse.body[0].password).toBeUndefined();
     expect(usersResponse.body[0].passwordHash).toBeUndefined();
+  });
+
+  it('logs in as a demo developer without exposing credentials and returns protected resources', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    expect(login.body.roles).toEqual(['developer']);
+    expect(login.body.user.accountType).toBe('demo');
+    expect(login.body.user.password).toBeUndefined();
+    expect(login.headers['set-cookie']?.join(';')).toContain('developer_access_token=');
+
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/developer-resources')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
   });
 });

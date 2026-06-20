@@ -27,6 +27,8 @@ class TestPasswordHasher implements PasswordHasher {
 }
 
 class TestConfig {
+  constructor(private readonly demoLoginEnabled = false) {}
+
   get<T>(key: string): T | undefined {
     const values: Record<string, string> = {
       JWT_ACCESS_SECRET: 'access-secret-with-more-than-thirty-two-characters',
@@ -34,6 +36,7 @@ class TestConfig {
       JWT_ACCESS_TTL_SECONDS: '900',
       JWT_REFRESH_TTL_SECONDS: '604800',
       JWT_REFRESH_ABSOLUTE_TTL_SECONDS: '2592000',
+      DEMO_LOGIN_ENABLED: String(this.demoLoginEnabled),
     };
     return values[key] as T | undefined;
   }
@@ -74,7 +77,8 @@ async function setup() {
     role: assignResult.value,
     user: userResult.value,
     tokens,
-    auth: new AuthService(users, roles, permissions, sessions, hasher, tokens),
+    hasher,
+    auth: new AuthService(users, roles, permissions, sessions, hasher, tokens, new TestConfig() as never),
   };
 }
 
@@ -137,5 +141,43 @@ describe('AuthService', () => {
     await expect(auth.refresh(login.refreshToken)).rejects.toThrow('Session is not valid');
     await setEnabled.execute(user.id, true);
     await expect(auth.refresh(login.refreshToken)).rejects.toThrow('Session is not valid');
+  });
+
+  it('blocks system and test accounts from interactive authentication', async () => {
+    const { auth, users, user } = await setup();
+    for (const accountType of ['system', 'test'] as const) {
+      user.setAccountType(accountType);
+      await users.save(user);
+      await expect(auth.login(user.email, 'supersecret')).rejects.toThrow('Invalid email or password');
+    }
+  });
+
+  it('blocks demo login and refresh as soon as demo access is disabled', async () => {
+    const { users, roles, permissions, sessions, hasher, tokens, user } = await setup();
+    user.setAccountType('demo');
+    await users.save(user);
+    const enabledAuth = new AuthService(
+      users,
+      roles,
+      permissions,
+      sessions,
+      hasher,
+      tokens,
+      new TestConfig(true) as never,
+    );
+    const login = await enabledAuth.login(user.email, 'supersecret');
+    const disabledAuth = new AuthService(
+      users,
+      roles,
+      permissions,
+      sessions,
+      hasher,
+      tokens,
+      new TestConfig(false) as never,
+    );
+
+    await expect(disabledAuth.login(user.email, 'supersecret')).rejects.toThrow('Invalid email or password');
+    await expect(disabledAuth.refresh(login.refreshToken)).rejects.toThrow('Session is not valid');
+    expect((await sessions.findByUserId(user.id))[0]?.enabled).toBe(false);
   });
 });

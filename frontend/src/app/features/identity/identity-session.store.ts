@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 
 import { KEY_VALUE_STORAGE } from '../../shared/utils/storage/key-value-storage';
 import type { PermissionName } from './models/permission.model';
+import type { AuthResponseDto } from './api/identity-api.models';
 
 const STORAGE_KEY = 'identity.session';
 
@@ -33,6 +34,19 @@ export class IdentitySessionStore {
 
   hasPermission(permission: PermissionName): boolean {
     return this.permissions().includes(permission);
+  }
+
+  hasRole(role: string): boolean {
+    return this.roles().includes(role);
+  }
+
+  setAuthResponse(response: AuthResponseDto): void {
+    this.setSession({
+      userId: response.user.id,
+      roles: response.roles,
+      permissions: response.permissions,
+      accessToken: response.accessToken,
+    });
   }
 
   setSession(session: IdentitySessionSnapshot): void {

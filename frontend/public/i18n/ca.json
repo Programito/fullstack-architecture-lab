@@ -10,6 +10,98 @@
       "playwright": "Playwright"
     }
   },
+  "auth": {
+    "eyebrow": "Taules, cuina i comandes",
+    "title": "Explora MesaFlow",
+    "badge": "Restaurant POS",
+    "description": "Gestiona el servei del restaurant amb un accés ràpid per provar el producte o amb el teu compte habitual.",
+    "methodLabel": "Mètode d'accés",
+    "benefits": {
+      "floor": "Plànol de taules, comandes i cobraments",
+      "kitchen": "Cuina i preparació en temps real"
+    },
+    "demo": {
+      "tab": "Demo ràpida",
+      "title": "Demo ràpida",
+      "description": "Tria un perfil per recórrer MesaFlow sense introduir credencials.",
+      "restaurantTitle": "Perfils de restaurant",
+      "restaurantDescription": "Accedeix a operació, servei i cuina amb un clic.",
+      "technicalTitle": "Perfil tècnic",
+      "technicalDescription": "Revisa documentació, Storybook i arquitectura.",
+      "action": "Entrar ara",
+      "loading": "Obrint..."
+    },
+    "credentials": {
+      "tab": "Usuari i contrasenya",
+      "title": "Usuari i contrasenya",
+      "description": "Accedeix amb les credencials del teu compte per continuar on ho vas deixar.",
+      "email": "Email",
+      "password": "Contrasenya",
+      "submit": "Entrar",
+      "showPassword": "Mostrar contrasenya",
+      "hidePassword": "Ocultar contrasenya",
+      "validation": {
+        "emailRequired": "Introdueix el teu email.",
+        "emailInvalid": "Introdueix un email vàlid.",
+        "passwordRequired": "Introdueix la teva contrasenya.",
+        "passwordMinLength": "La contrasenya ha de tenir com a mínim 8 caràcters."
+      }
+    },
+    "roles": {
+      "admin": {
+        "label": "Admin",
+        "description": "Control complet del restaurant."
+      },
+      "manager": {
+        "label": "Encarregat",
+        "description": "Torns, descomptes, menú i caixa."
+      },
+      "waiter": {
+        "label": "Cambrer",
+        "description": "Taules, comandes i cobraments."
+      },
+      "kitchen": {
+        "label": "Cuina",
+        "description": "Comandes a cuina i preparades."
+      },
+      "developer": {
+        "label": "Developer",
+        "description": "Documentació, Storybook i arquitectura."
+      }
+    },
+    "errors": {
+      "invalidCredentials": "No s'ha pogut iniciar la sessió. Revisa l'email i la contrasenya.",
+      "demoUnavailable": "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquí a uns minuts."
+    }
+  },
+  "developer": {
+    "eyebrow": "Espai tècnic",
+    "title": "Recursos per a Developer",
+    "description": "Documentació tècnica disponible només per a comptes amb rol Developer.",
+    "apiDocs": "Consulta els contractes i endpoints de l'API.",
+    "storybook": "Explora els components, estats i patrons visuals.",
+    "architectureTitle": "Arquitectura",
+    "architecture": "Revisa les decisions i els fluxos principals del frontend.",
+    "open": "Obrir recurs",
+    "logout": "Tancar sessió"
+  },
+  "userAdmin": {
+    "navigation": "Usuaris",
+    "back": "Tornar al TPV",
+    "eyebrow": "Administració",
+    "title": "Comptes d'usuari",
+    "description": "Consulta el tipus de compte i controla quins usuaris poden iniciar sessió.",
+    "user": "Usuari",
+    "status": "Estat",
+    "accountType": "Tipus de compte",
+    "accountTypeFor": "Tipus de compte de {{name}}",
+    "enabled": "Actiu",
+    "disabled": "Desactivat",
+    "loading": "Carregant usuaris...",
+    "empty": "No hi ha usuaris disponibles.",
+    "confirmRevocation": "El canvi pot tancar les sessions actives d'aquest usuari.",
+    "types": { "regular": "Regular", "demo": "Demo", "system": "Sistema", "test": "Proves" }
+  },
   "languageSelect": {
     "label": "Idioma",
     "hint": "La preferència s'aplica a la interfície.",
@@ -51,6 +143,7 @@
       "kitchen": "Cuina",
       "pos": "TPV restaurant",
       "navigation": "Navegació principal",
+      "logout": "Tancar sessió",
       "cancel": "Cancel·lar",
       "saveChanges": "Desar els canvis",
       "columnsRows": "{{columns}} columnes x {{rows}} files",

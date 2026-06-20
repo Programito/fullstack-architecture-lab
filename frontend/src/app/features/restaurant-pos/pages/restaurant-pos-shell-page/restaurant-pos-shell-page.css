@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+
+:host ::view-transition-old(root),
+:host ::view-transition-new(root) {
+  animation-duration: 180ms;
+}
+
+.theme-page,
+.theme-header,
+.theme-panel,
+nav,
+.theme-nav-link,
+.theme-title {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+:host(.restaurant-pos-shell-page--logging-out) .theme-page {
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+:host(.restaurant-pos-shell-page--logging-out) .theme-header {
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-page,
+  .theme-header,
+  .theme-panel,
+  nav,
+  .theme-nav-link,
+  .theme-title {
+    transition: none;
+  }
+
+  :host(.restaurant-pos-shell-page--logging-out) .theme-page,
+  :host(.restaurant-pos-shell-page--logging-out) .theme-header {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}

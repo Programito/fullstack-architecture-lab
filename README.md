@@ -64,10 +64,10 @@ La API estara disponible en:
 http://localhost:3000
 ```
 
-La documentacion interactiva de la API se consulta desde Swagger:
+La documentación interactiva de la API requiere una sesión con rol `developer`:
 
 ```txt
-http://localhost:3000/docs
+http://localhost:3000/developer/api-docs/
 ```
 
 ## Variables de entorno del backend

@@ -1,0 +1,41 @@
+<main class="developer-page">
+  <header class="developer-page__header">
+    <strong>MesaFlow · Developer</strong>
+    <div>
+      <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
+      <app-color-mode-menu />
+      <app-button variant="neutral" fill="outline" [loading]="loggingOut()" (pressed)="logout()">
+        {{ 'developer.logout' | transloco }}
+      </app-button>
+    </div>
+  </header>
+
+  <section class="developer-page__content" aria-labelledby="developer-title">
+    <p class="developer-page__eyebrow">{{ 'developer.eyebrow' | transloco }}</p>
+    <h1 id="developer-title">{{ 'developer.title' | transloco }}</h1>
+    <p>{{ 'developer.description' | transloco }}</p>
+
+    @if (resources(); as links) {
+      <div class="developer-page__grid">
+        <app-card variant="outlined">
+          <app-icon name="api" size="lg" />
+          <h2>API Docs</h2>
+          <p>{{ 'developer.apiDocs' | transloco }}</p>
+          <a [href]="links.apiDocsUrl">{{ 'developer.open' | transloco }}</a>
+        </app-card>
+        <app-card variant="outlined">
+          <app-icon name="widgets" size="lg" />
+          <h2>Storybook</h2>
+          <p>{{ 'developer.storybook' | transloco }}</p>
+          <a [href]="links.storybookUrl">{{ 'developer.open' | transloco }}</a>
+        </app-card>
+        <app-card variant="outlined">
+          <app-icon name="account_tree" size="lg" />
+          <h2>{{ 'developer.architectureTitle' | transloco }}</h2>
+          <p>{{ 'developer.architecture' | transloco }}</p>
+          <a [href]="links.architectureUrl">{{ 'developer.open' | transloco }}</a>
+        </app-card>
+      </div>
+    }
+  </section>
+</main>

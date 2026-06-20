@@ -14,6 +14,7 @@ import { USER_REPOSITORY } from './application/ports/user-repository.port';
 import { AssignRolePermissionsUseCase } from './application/use-cases/assign-role-permissions.use-case';
 import { AssignUserRolesUseCase } from './application/use-cases/assign-user-roles.use-case';
 import { AuthService } from './application/use-cases/auth.service';
+import { DeveloperAccessService } from './application/use-cases/developer-access.service';
 import { CreateRoleUseCase } from './application/use-cases/create-role.use-case';
 import { CreateUserUseCase } from './application/use-cases/create-user.use-case';
 import { ListPermissionsUseCase } from './application/use-cases/list-permissions.use-case';
@@ -22,6 +23,7 @@ import { ListUsersUseCase } from './application/use-cases/list-users.use-case';
 import { SetPermissionEnabledUseCase } from './application/use-cases/set-permission-enabled.use-case';
 import { SetRoleEnabledUseCase } from './application/use-cases/set-role-enabled.use-case';
 import { SetUserEnabledUseCase } from './application/use-cases/set-user-enabled.use-case';
+import { SetUserAccountTypeUseCase } from './application/use-cases/set-user-account-type.use-case';
 import { InMemoryAuthSessionRepository } from './infrastructure/persistence/in-memory-auth-session.repository';
 import { InMemoryPermissionRepository } from './infrastructure/persistence/in-memory-permission.repository';
 import { InMemoryRoleRepository } from './infrastructure/persistence/in-memory-role.repository';
@@ -47,6 +49,7 @@ import { UsersController } from './presentation/rest/users.controller';
   controllers: [UsersController, RolesController, PermissionsController, AuthController, SessionsController],
   providers: [
     AuthService,
+    DeveloperAccessService,
     AuthTokenService,
     AuthGuard,
     RolesGuard,
@@ -59,6 +62,7 @@ import { UsersController } from './presentation/rest/users.controller';
     ListPermissionsUseCase,
     AssignRolePermissionsUseCase,
     SetUserEnabledUseCase,
+    SetUserAccountTypeUseCase,
     SetRoleEnabledUseCase,
     SetPermissionEnabledUseCase,
     InMemoryUserRepository,
@@ -122,5 +126,6 @@ import { UsersController } from './presentation/rest/users.controller';
       useExisting: FakerFakeDataGenerator,
     },
   ],
+  exports: [DeveloperAccessService],
 })
 export class IdentityModule {}

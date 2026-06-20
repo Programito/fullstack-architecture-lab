@@ -1,0 +1,267 @@
+<main class="login-page">
+  <div class="login-page__backdrop" aria-hidden="true"></div>
+
+  <header class="login-page__toolbar">
+    <div class="login-page__brand-group">
+      <a class="login-page__brand" href="/login">MesaFlow</a>
+      <span class="login-page__badge">{{ 'auth.badge' | transloco }}</span>
+    </div>
+
+    <div class="login-page__preferences">
+      <app-language-select appearance="minimal" size="sm" [showLabel]="false" [showHint]="false" />
+      <app-color-mode-menu />
+    </div>
+  </header>
+
+  <section class="login-page__hero" aria-labelledby="login-title">
+    <app-card class="login-page__access-card" variant="elevated" padding="lg">
+      @if (demoLoginEnabled()) {
+        <app-tabs
+          [options]="tabs()"
+          [value]="activeTab()"
+          variant="pill"
+          [ariaLabel]="'auth.methodLabel' | transloco"
+          (valueChange)="selectTab($event)"
+        >
+          <div class="login-page__tab-panel" [attr.data-tab]="activeTab()">
+            @if (activeTab() === 'demo') {
+              <section class="login-page__panel" aria-labelledby="demo-heading">
+                <div class="login-page__panel-copy">
+                  <h2 id="demo-heading">{{ 'auth.demo.title' | transloco }}</h2>
+                  <p>{{ 'auth.demo.description' | transloco }}</p>
+                </div>
+
+                @if (restaurantRoles().length > 0) {
+                  <section class="login-page__role-section" aria-labelledby="restaurant-roles-heading">
+                    <div class="login-page__section-copy">
+                      <h3 id="restaurant-roles-heading">{{ 'auth.demo.restaurantTitle' | transloco }}</h3>
+                      <p>{{ 'auth.demo.restaurantDescription' | transloco }}</p>
+                    </div>
+
+                    <div class="login-page__roles-grid">
+                      @for (item of restaurantRoles(); track item.role) {
+                        <button
+                          class="login-page__role"
+                          type="button"
+                          [disabled]="loadingRole() !== null"
+                          [attr.aria-busy]="loadingRole() === item.role"
+                          (click)="loginDemo(item.role)"
+                        >
+                          <span class="login-page__role-avatar">
+                            <app-icon [name]="item.icon" size="lg" />
+                          </span>
+
+                          <span class="login-page__role-copy">
+                            <strong>{{ item.label }}</strong>
+                            <small>{{ item.description }}</small>
+                          </span>
+
+                          <span class="login-page__role-action">
+                            @if (loadingRole() === item.role) {
+                              <span class="login-page__role-spinner" aria-hidden="true"></span>
+                            } @else {
+                              <app-icon name="arrow_forward" />
+                            }
+                          </span>
+                        </button>
+                      }
+                    </div>
+                  </section>
+                }
+
+                @if (technicalRoles().length > 0) {
+                  <section class="login-page__role-section" aria-labelledby="technical-role-heading">
+                    <div class="login-page__section-copy">
+                      <h3 id="technical-role-heading">{{ 'auth.demo.technicalTitle' | transloco }}</h3>
+                      <p>{{ 'auth.demo.technicalDescription' | transloco }}</p>
+                    </div>
+
+                    @for (item of technicalRoles(); track item.role) {
+                      <button
+                        class="login-page__role login-page__role--wide"
+                        type="button"
+                        [disabled]="loadingRole() !== null"
+                        [attr.aria-busy]="loadingRole() === item.role"
+                        (click)="loginDemo(item.role)"
+                      >
+                        <span class="login-page__role-avatar">
+                          <app-icon [name]="item.icon" size="lg" />
+                        </span>
+
+                        <span class="login-page__role-copy">
+                          <strong>{{ item.label }}</strong>
+                          <small>{{ item.description }}</small>
+                        </span>
+
+                        <span class="login-page__role-action">
+                          @if (loadingRole() === item.role) {
+                            <span class="login-page__role-spinner" aria-hidden="true"></span>
+                          } @else {
+                            <app-icon name="arrow_forward" />
+                          }
+                        </span>
+                      </button>
+                    }
+                  </section>
+                }
+              </section>
+            } @else {
+              <form class="login-page__panel login-page__form" novalidate (submit)="submitCredentials($event)">
+                <div class="login-page__panel-copy">
+                  <h2>{{ 'auth.credentials.title' | transloco }}</h2>
+                  <p>{{ 'auth.credentials.description' | transloco }}</p>
+                </div>
+
+                <div class="login-page__field">
+                  <label class="login-page__label" for="login-email">{{ 'auth.credentials.email' | transloco }}</label>
+                  <input
+                    id="login-email"
+                    class="login-page__input"
+                    type="email"
+                    name="email"
+                    autocomplete="email"
+                    [value]="email()"
+                    [attr.aria-invalid]="emailError() ? true : null"
+                    [attr.aria-describedby]="emailError() ? 'login-email-error' : null"
+                    (input)="updateEmail($event)"
+                    (blur)="markEmailTouched()"
+                  />
+
+                  @if (emailError()) {
+                    <p id="login-email-error" class="login-page__field-error">{{ emailError() }}</p>
+                  }
+                </div>
+
+                <div class="login-page__field">
+                  <label class="login-page__label" for="login-password">{{ 'auth.credentials.password' | transloco }}</label>
+                  <div class="login-page__password-control">
+                    <input
+                      id="login-password"
+                      class="login-page__input login-page__input--password"
+                      [type]="passwordVisible() ? 'text' : 'password'"
+                      name="password"
+                      autocomplete="current-password"
+                      [value]="password()"
+                      [attr.aria-invalid]="passwordError() ? true : null"
+                      [attr.aria-describedby]="passwordError() ? 'login-password-error' : null"
+                      (input)="updatePassword($event)"
+                      (blur)="markPasswordTouched()"
+                    />
+
+                    <button
+                      class="login-page__password-toggle"
+                      type="button"
+                      [attr.aria-controls]="'login-password'"
+                      [attr.aria-label]="(passwordVisible() ? 'auth.credentials.hidePassword' : 'auth.credentials.showPassword') | transloco"
+                      [attr.aria-pressed]="passwordVisible()"
+                      (click)="togglePasswordVisibility()"
+                    >
+                      <app-icon [name]="passwordVisible() ? 'visibility_off' : 'visibility'" />
+                    </button>
+                  </div>
+
+                  @if (passwordError()) {
+                    <p id="login-password-error" class="login-page__field-error">{{ passwordError() }}</p>
+                  }
+                </div>
+
+                <app-button type="submit" expand="block" size="lg" [loading]="submitting()">
+                  {{ 'auth.credentials.submit' | transloco }}
+                </app-button>
+              </form>
+            }
+          </div>
+
+          @if (errorKey()) {
+            <p class="login-page__error" role="alert">{{ errorKey() | transloco }}</p>
+          }
+        </app-tabs>
+      } @else {
+        <form class="login-page__panel login-page__form" novalidate (submit)="submitCredentials($event)">
+          <div class="login-page__panel-copy">
+            <h2>{{ 'auth.credentials.title' | transloco }}</h2>
+            <p>{{ 'auth.credentials.description' | transloco }}</p>
+          </div>
+
+          <div class="login-page__field">
+            <label class="login-page__label" for="login-email">{{ 'auth.credentials.email' | transloco }}</label>
+            <input
+              id="login-email"
+              class="login-page__input"
+              type="email"
+              name="email"
+              autocomplete="email"
+              [value]="email()"
+              [attr.aria-invalid]="emailError() ? true : null"
+              [attr.aria-describedby]="emailError() ? 'login-email-error' : null"
+              (input)="updateEmail($event)"
+              (blur)="markEmailTouched()"
+            />
+
+            @if (emailError()) {
+              <p id="login-email-error" class="login-page__field-error">{{ emailError() }}</p>
+            }
+          </div>
+
+          <div class="login-page__field">
+            <label class="login-page__label" for="login-password">{{ 'auth.credentials.password' | transloco }}</label>
+            <div class="login-page__password-control">
+              <input
+                id="login-password"
+                class="login-page__input login-page__input--password"
+                [type]="passwordVisible() ? 'text' : 'password'"
+                name="password"
+                autocomplete="current-password"
+                [value]="password()"
+                [attr.aria-invalid]="passwordError() ? true : null"
+                [attr.aria-describedby]="passwordError() ? 'login-password-error' : null"
+                (input)="updatePassword($event)"
+                (blur)="markPasswordTouched()"
+              />
+
+              <button
+                class="login-page__password-toggle"
+                type="button"
+                [attr.aria-controls]="'login-password'"
+                [attr.aria-label]="(passwordVisible() ? 'auth.credentials.hidePassword' : 'auth.credentials.showPassword') | transloco"
+                [attr.aria-pressed]="passwordVisible()"
+                (click)="togglePasswordVisibility()"
+              >
+                <app-icon [name]="passwordVisible() ? 'visibility_off' : 'visibility'" />
+              </button>
+            </div>
+
+            @if (passwordError()) {
+              <p id="login-password-error" class="login-page__field-error">{{ passwordError() }}</p>
+            }
+          </div>
+
+          <app-button type="submit" expand="block" size="lg" [loading]="submitting()">
+            {{ 'auth.credentials.submit' | transloco }}
+          </app-button>
+
+          @if (errorKey()) {
+            <p class="login-page__error" role="alert">{{ errorKey() | transloco }}</p>
+          }
+        </form>
+      }
+    </app-card>
+
+    <div class="login-page__intro">
+      <p class="login-page__eyebrow">{{ 'auth.eyebrow' | transloco }}</p>
+      <h1 id="login-title">{{ 'auth.title' | transloco }}</h1>
+      <p class="login-page__description">{{ 'auth.description' | transloco }}</p>
+
+      <ul class="login-page__benefits">
+        <li>
+          <app-icon name="table_restaurant" />
+          <span>{{ 'auth.benefits.floor' | transloco }}</span>
+        </li>
+        <li>
+          <app-icon name="receipt_long" />
+          <span>{{ 'auth.benefits.kitchen' | transloco }}</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>

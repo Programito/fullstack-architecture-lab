@@ -9,6 +9,11 @@ import type { Permission } from '../models/permission.model';
 import type { CreateRoleInput, Role } from '../models/role.model';
 import type { CreateUserInput, User } from '../models/user.model';
 import type {
+  AccountType,
+  AuthPublicConfigDto,
+  AuthResponseDto,
+  DemoRoleName,
+  DeveloperResourcesDto,
   AuthMeResponseDto,
   PermissionResponseDto,
   RoleResponseDto,
@@ -40,6 +45,12 @@ export class IdentityApiService {
       .pipe(map(UserMapper.fromDto));
   }
 
+  setUserAccountType(userId: string, accountType: AccountType): Observable<User> {
+    return this.http
+      .patch<UserResponseDto>(`${this.usersUrl}/${userId}/account-type`, { accountType })
+      .pipe(map(UserMapper.fromDto));
+  }
+
   listRoles(): Observable<Role[]> {
     return this.http.get<RoleResponseDto[]>(this.rolesUrl).pipe(map((roles) => roles.map(RoleMapper.fromDto)));
   }
@@ -65,5 +76,37 @@ export class IdentityApiService {
 
   getCurrentIdentity(): Observable<AuthMeResponseDto> {
     return this.http.get<AuthMeResponseDto>(`${this.authUrl}/me`);
+  }
+
+  getAuthPublicConfig(): Observable<AuthPublicConfigDto> {
+    return this.http.get<AuthPublicConfigDto>(`${this.authUrl}/public-config`);
+  }
+
+  login(email: string, password: string): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(
+      `${this.authUrl}/login`,
+      { email, password },
+      { withCredentials: true },
+    );
+  }
+
+  demoLogin(role: DemoRoleName): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(
+      `${this.authUrl}/demo-login`,
+      { role },
+      { withCredentials: true },
+    );
+  }
+
+  refresh(): Observable<AuthResponseDto> {
+    return this.http.post<AuthResponseDto>(`${this.authUrl}/refresh`, {}, { withCredentials: true });
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.authUrl}/logout`, {}, { withCredentials: true });
+  }
+
+  getDeveloperResources(): Observable<DeveloperResourcesDto> {
+    return this.http.get<DeveloperResourcesDto>(`${this.authUrl}/developer-resources`);
   }
 }

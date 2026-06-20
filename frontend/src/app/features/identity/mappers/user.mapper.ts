@@ -9,6 +9,7 @@ export class UserMapper {
       firstName: dto.firstName,
       lastName: dto.lastName,
       enabled: dto.enabled,
+      accountType: dto.accountType,
       roleIds: [...dto.roles],
       createdAt: new Date(dto.createdAt),
       updatedAt: new Date(dto.updatedAt),

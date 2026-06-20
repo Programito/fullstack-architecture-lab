@@ -1,5 +1,8 @@
 import type { PermissionName } from '../models/permission.model';
 
+export type AccountType = 'regular' | 'demo' | 'system' | 'test';
+export type DemoRoleName = 'admin' | 'manager' | 'waiter' | 'kitchen' | 'developer';
+
 export interface RoleResponseDto {
   id: string;
   name: string;
@@ -8,6 +11,31 @@ export interface RoleResponseDto {
   permissions: PermissionName[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AuthResponseDto {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  user: UserResponseDto;
+  roles: string[];
+  permissions: PermissionName[];
+}
+
+export interface AuthPublicConfigDto {
+  demoLoginEnabled: boolean;
+  demoRoles: Array<{
+    role: DemoRoleName;
+    label: string;
+    description: string;
+    icon: string;
+  }>;
+}
+
+export interface DeveloperResourcesDto {
+  storybookUrl: string;
+  apiDocsUrl: string;
+  architectureUrl: string;
 }
 
 export interface PermissionResponseDto {
@@ -25,6 +53,7 @@ export interface UserResponseDto {
   firstName: string;
   lastName: string;
   enabled: boolean;
+  accountType: AccountType;
   roles: string[];
   createdAt: string;
   updatedAt: string;
