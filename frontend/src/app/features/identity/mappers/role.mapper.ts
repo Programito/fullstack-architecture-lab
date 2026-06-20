@@ -7,6 +7,8 @@ export class RoleMapper {
       id: dto.id,
       name: dto.name,
       description: dto.description,
+      enabled: dto.enabled,
+      permissions: [...dto.permissions],
       createdAt: new Date(dto.createdAt),
       updatedAt: new Date(dto.updatedAt),
     };

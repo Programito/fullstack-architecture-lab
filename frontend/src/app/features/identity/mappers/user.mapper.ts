@@ -1,8 +1,4 @@
-import type {
-  AssignUserRolesRequest,
-  CreateUserRequest,
-  UserResponseDto,
-} from '../api/identity-api.models';
+import type { AssignUserRolesRequest, CreateUserRequest, UserResponseDto } from '../api/identity-api.models';
 import type { CreateUserInput, User } from '../models/user.model';
 
 export class UserMapper {
@@ -10,7 +6,9 @@ export class UserMapper {
     return {
       id: dto.id,
       email: dto.email,
-      name: dto.name,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      enabled: dto.enabled,
       roleIds: [...dto.roles],
       createdAt: new Date(dto.createdAt),
       updatedAt: new Date(dto.updatedAt),
@@ -20,7 +18,8 @@ export class UserMapper {
   static toCreateRequest(input: CreateUserInput): CreateUserRequest {
     const request: CreateUserRequest = {
       email: input.email,
-      name: input.name,
+      firstName: input.firstName,
+      lastName: input.lastName,
       password: input.password,
     };
 

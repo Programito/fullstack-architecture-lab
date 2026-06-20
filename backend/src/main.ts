@@ -31,6 +31,7 @@ async function bootstrap() {
     .setTitle('Proyecto API')
     .setDescription('REST API v1 for the Proyecto backend.')
     .setVersion('1.0.0')
+    .addBearerAuth()
     .addServer('/api/v1', 'Version 1')
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);

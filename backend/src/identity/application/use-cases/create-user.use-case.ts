@@ -11,7 +11,8 @@ import { USER_REPOSITORY, type UserRepository } from '../ports/user-repository.p
 
 export type CreateUserCommand = {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   password: string;
   roleIds?: string[];
 };
@@ -31,9 +32,10 @@ export class CreateUserUseCase {
       return email;
     }
 
-    const name = command.name.trim();
-    if (name.length === 0) {
-      return err(applicationError('invalid_user_name', 'Name is required.'));
+    const firstName = command.firstName.trim();
+    const lastName = command.lastName.trim();
+    if (firstName.length === 0 || lastName.length === 0) {
+      return err(applicationError('invalid_user_name', 'First name and last name are required.'));
     }
 
     if (command.password.length < 8) {
@@ -56,7 +58,8 @@ export class CreateUserUseCase {
     const passwordHash = await this.passwordHasher.hash(command.password);
     const user = User.create({
       email: email.value.value,
-      name,
+      firstName,
+      lastName,
       passwordHash,
       roleIds,
     });

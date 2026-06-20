@@ -57,6 +57,11 @@
       "pax": "{{count}} pax",
       "capacity": "Capacitat: {{value}}"
     },
+    "access": {
+      "eyebrow": "Accés al TPV",
+      "title": "Sense mòduls disponibles",
+      "description": "El teu usuari no té permisos per accedir a les seccions operatives del TPV."
+    },
     "errors": {
       "selectTableFirst": "Selecciona una taula primer.",
       "productUnavailable": "El producte no està disponible.",

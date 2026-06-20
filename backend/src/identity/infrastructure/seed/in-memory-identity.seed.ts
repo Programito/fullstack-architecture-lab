@@ -3,20 +3,22 @@ import { ConfigService } from '@nestjs/config';
 
 import { FAKE_DATA_GENERATOR, type FakeDataGenerator } from '../../../shared/fake-data/fake-data-generator.port';
 import { isErr } from '../../../shared/result/result';
-import type { Role } from '../../domain/role.entity';
+import { PERMISSION_REPOSITORY, type PermissionRepository } from '../../application/ports/permission-repository.port';
+import { AssignRolePermissionsUseCase } from '../../application/use-cases/assign-role-permissions.use-case';
 import { CreateRoleUseCase } from '../../application/use-cases/create-role.use-case';
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
+import { ListPermissionsUseCase } from '../../application/use-cases/list-permissions.use-case';
 import { ListRolesUseCase } from '../../application/use-cases/list-roles.use-case';
-
-const MOCK_ROLES = [
-  { name: 'admin', description: 'Administrative access.' },
-  { name: 'manager', description: 'Team and workflow management.' },
-  { name: 'user', description: 'Standard application access.' },
-] as const;
+import { PERMISSION_CATALOG } from '../../domain/permission-catalog';
+import type { Permission } from '../../domain/permission.entity';
+import { ROLE_CATALOG, type RoleName } from '../../domain/role-catalog';
+import { Permission as PermissionEntity } from '../../domain/permission.entity';
+import type { Role } from '../../domain/role.entity';
 
 const ADMIN_USER = {
   email: 'admin@example.com',
-  name: 'Admin User',
+  firstName: 'Admin',
+  lastName: 'User',
   password: 'admin1234',
   roles: ['admin'],
 } as const;
@@ -25,18 +27,26 @@ const ADMIN_USER = {
 export class InMemoryIdentitySeed implements OnApplicationBootstrap {
   constructor(
     private readonly config: ConfigService,
+    @Inject(PERMISSION_REPOSITORY) private readonly permissions: PermissionRepository,
+    private readonly listPermissions: ListPermissionsUseCase,
     private readonly createRole: CreateRoleUseCase,
     private readonly listRoles: ListRolesUseCase,
+    private readonly assignRolePermissions: AssignRolePermissionsUseCase,
     private readonly createUser: CreateUserUseCase,
     @Inject(FAKE_DATA_GENERATOR) private readonly fakeData: FakeDataGenerator,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if (this.config.get<string>('IDENTITY_MEMORY_SEED') === 'false') {
+    if (this.config.get<string>('IDENTITY_PERSISTENCE') !== 'memory') {
       return;
     }
 
-    const rolesByName = await this.seedRoles();
+    const permissionsByName = await this.seedPermissions();
+    const rolesByName = await this.seedRoles(permissionsByName);
+
+    if (this.config.get<string>('IDENTITY_MEMORY_SEED') === 'false') {
+      return;
+    }
 
     await this.seedUser(ADMIN_USER, rolesByName);
 
@@ -45,8 +55,23 @@ export class InMemoryIdentitySeed implements OnApplicationBootstrap {
     }
   }
 
-  private async seedRoles(): Promise<Map<string, Role>> {
-    for (const role of MOCK_ROLES) {
+  private async seedPermissions(): Promise<Map<string, Permission>> {
+    for (const permission of PERMISSION_CATALOG) {
+      if (!(await this.permissions.findByName(permission.name))) {
+        await this.permissions.save(PermissionEntity.create(permission));
+      }
+    }
+
+    const permissions = await this.listPermissions.execute();
+    if (isErr(permissions)) {
+      throw new Error('Could not list seeded permissions.');
+    }
+
+    return new Map(permissions.value.map((permission) => [permission.name, permission]));
+  }
+
+  private async seedRoles(permissionsByName: Map<string, Permission>): Promise<Map<string, Role>> {
+    for (const role of ROLE_CATALOG) {
       const result = await this.createRole.execute(role);
 
       if (isErr(result) && result.error.code !== 'role_name_already_taken') {
@@ -59,14 +84,32 @@ export class InMemoryIdentitySeed implements OnApplicationBootstrap {
       throw new Error(`Could not list seeded roles: ${roles.error.message}`);
     }
 
-    return new Map(roles.value.map((role) => [role.name, role]));
+    for (const catalogRole of ROLE_CATALOG) {
+      const role = roles.value.find((candidate) => candidate.name === catalogRole.name);
+      if (!role) continue;
+      const permissionIds = catalogRole.permissionNames
+        .map((permissionName) => permissionsByName.get(permissionName)?.id)
+        .filter((permissionId): permissionId is string => Boolean(permissionId));
+      const assignResult = await this.assignRolePermissions.execute({ roleId: role.id, permissionIds });
+      if (isErr(assignResult)) {
+        throw new Error(`Could not assign permissions to role "${catalogRole.name}": ${assignResult.error.message}`);
+      }
+    }
+
+    const updatedRoles = await this.listRoles.execute();
+    if (isErr(updatedRoles)) {
+      throw new Error(`Could not list updated roles: ${updatedRoles.error.message}`);
+    }
+
+    return new Map(updatedRoles.value.map((role) => [role.name, role]));
   }
 
   private async seedUser(user: SeedUser, rolesByName: Map<string, Role>): Promise<void> {
     const roleIds = user.roles.map((roleName) => rolesByName.get(roleName)?.id).filter((roleId): roleId is string => Boolean(roleId));
     const result = await this.createUser.execute({
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       password: user.password,
       roleIds,
     });
@@ -77,14 +120,15 @@ export class InMemoryIdentitySeed implements OnApplicationBootstrap {
   }
 
   private createDemoUser(index: number): SeedUser {
-    const name = this.fakeData.personName();
-    const [firstName, ...lastNameParts] = name.split(' ');
+    const fullName = this.fakeData.personName();
+    const [firstName, ...lastNameParts] = fullName.split(' ');
     const lastName = lastNameParts.join(' ');
-    const roles = index % 3 === 0 ? ['manager', 'user'] : ['user'];
+    const roles: readonly RoleName[] = index % 3 === 0 ? ['manager', 'waiter'] : ['waiter'];
 
     return {
       email: this.fakeData.email(firstName, lastName),
-      name,
+      firstName,
+      lastName: lastName || 'User',
       password: this.fakeData.password(),
       roles,
     };
@@ -100,7 +144,8 @@ export class InMemoryIdentitySeed implements OnApplicationBootstrap {
 
 type SeedUser = {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   password: string;
-  roles: readonly string[];
+  roles: readonly RoleName[];
 };

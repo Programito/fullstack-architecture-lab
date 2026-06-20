@@ -1,13 +1,17 @@
-import { Body, Controller, Get, Param, Patch, Post, Version } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiConflictResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AssignUserRolesUseCase } from '../../application/use-cases/assign-user-roles.use-case';
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
 import { ListUsersUseCase } from '../../application/use-cases/list-users.use-case';
+import { SetUserEnabledUseCase } from '../../application/use-cases/set-user-enabled.use-case';
+import { AuthGuard } from './auth.guard';
+import { RolesGuard, RequireRoles } from './roles.guard';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { SetEnabledDto } from './dto/set-enabled.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -16,6 +20,7 @@ export class UsersController {
     private readonly createUser: CreateUserUseCase,
     private readonly listUsers: ListUsersUseCase,
     private readonly assignUserRoles: AssignUserRolesUseCase,
+    private readonly setUserEnabled: SetUserEnabledUseCase,
   ) {}
 
   @Post()
@@ -46,5 +51,14 @@ export class UsersController {
     const user = unwrapResultOrThrow(await this.assignUserRoles.execute({ userId: id, roleIds: body.roleIds }));
 
     return UserResponseDto.fromDomain(user);
+  }
+
+  @Patch(':id/enabled')
+  @Version('1')
+  @UseGuards(AuthGuard, RolesGuard)
+  @RequireRoles('admin')
+  @ApiOkResponse({ type: UserResponseDto })
+  async setEnabled(@Param('id') id: string, @Body() body: SetEnabledDto): Promise<UserResponseDto> {
+    return UserResponseDto.fromDomain(unwrapResultOrThrow(await this.setUserEnabled.execute(id, body.enabled)));
   }
 }

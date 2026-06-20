@@ -57,6 +57,11 @@
       "pax": "{{count}} pax",
       "capacity": "Capacity: {{value}}"
     },
+    "access": {
+      "eyebrow": "POS access",
+      "title": "No modules available",
+      "description": "Your user does not have permission to access the operational POS sections."
+    },
     "errors": {
       "selectTableFirst": "Select a table first.",
       "productUnavailable": "Product is unavailable.",

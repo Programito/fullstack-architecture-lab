@@ -9,8 +9,14 @@ export class UserResponseDto {
   @ApiProperty({ example: 'admin@example.com' })
   email!: string;
 
-  @ApiProperty({ example: 'Admin User' })
-  name!: string;
+  @ApiProperty({ example: 'Admin' })
+  firstName!: string;
+
+  @ApiProperty({ example: 'User' })
+  lastName!: string;
+
+  @ApiProperty({ example: true })
+  enabled!: boolean;
 
   @ApiProperty({ example: ['3a1f93a3-e312-4f89-8658-602516d28e2f'], type: [String] })
   roles!: string[];
@@ -25,7 +31,9 @@ export class UserResponseDto {
     return {
       id: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      enabled: user.enabled,
       roles: user.roleIds,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),

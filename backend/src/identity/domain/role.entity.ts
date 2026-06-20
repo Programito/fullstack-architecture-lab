@@ -7,6 +7,8 @@ export type RoleSnapshot = {
   id: string;
   name: string;
   description: string | null;
+  enabled: boolean;
+  permissionIds: string[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -14,6 +16,7 @@ export type RoleSnapshot = {
 type CreateRoleProps = {
   name: string;
   description?: string | null;
+  permissionIds?: string[];
 };
 
 export class Role {
@@ -27,6 +30,8 @@ export class Role {
       id: randomUUID(),
       name: normalizeRoleName(props.name),
       description: props.description?.trim() || null,
+      enabled: true,
+      permissionIds: uniqueIds(props.permissionIds ?? []),
       createdAt: now,
       updatedAt: now,
     });
@@ -37,7 +42,7 @@ export class Role {
   }
 
   static rehydrate(snapshot: RoleSnapshot): Role {
-    return new Role(snapshot);
+    return new Role({ ...snapshot, permissionIds: [...snapshot.permissionIds] });
   }
 
   get id(): string {
@@ -52,6 +57,14 @@ export class Role {
     return this.snapshot.description;
   }
 
+  get enabled(): boolean {
+    return this.snapshot.enabled;
+  }
+
+  get permissionIds(): string[] {
+    return [...this.snapshot.permissionIds];
+  }
+
   get createdAt(): Date {
     return this.snapshot.createdAt;
   }
@@ -64,8 +77,20 @@ export class Role {
     return this.domainEvents.splice(0);
   }
 
+  setEnabled(enabled: boolean, now = new Date()): void {
+    this.snapshot = { ...this.snapshot, enabled, updatedAt: now };
+  }
+
+  assignPermissions(permissionIds: string[], now = new Date()): void {
+    this.snapshot = {
+      ...this.snapshot,
+      permissionIds: uniqueIds(permissionIds),
+      updatedAt: now,
+    };
+  }
+
   toSnapshot(): RoleSnapshot {
-    return { ...this.snapshot };
+    return { ...this.snapshot, permissionIds: [...this.snapshot.permissionIds] };
   }
 
   private record(event: DomainEvent): void {
@@ -75,4 +100,8 @@ export class Role {
 
 export function normalizeRoleName(name: string): string {
   return name.trim().toLowerCase();
+}
+
+function uniqueIds(ids: string[]): string[] {
+  return [...new Set(ids)];
 }

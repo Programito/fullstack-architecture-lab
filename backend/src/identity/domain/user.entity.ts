@@ -7,8 +7,10 @@ import { UserRolesAssignedEvent } from './events/user-roles-assigned.event';
 export type UserSnapshot = {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   passwordHash: string;
+  enabled: boolean;
   roleIds: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -16,7 +18,8 @@ export type UserSnapshot = {
 
 type CreateUserProps = {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   passwordHash: string;
   roleIds?: string[];
 };
@@ -31,8 +34,10 @@ export class User {
     const user = new User({
       id: randomUUID(),
       email: props.email,
-      name: props.name.trim(),
+      firstName: props.firstName.trim(),
+      lastName: props.lastName.trim(),
       passwordHash: props.passwordHash,
+      enabled: true,
       roleIds: uniqueIds(props.roleIds ?? []),
       createdAt: now,
       updatedAt: now,
@@ -59,12 +64,20 @@ export class User {
     return this.snapshot.email;
   }
 
-  get name(): string {
-    return this.snapshot.name;
+  get firstName(): string {
+    return this.snapshot.firstName;
+  }
+
+  get lastName(): string {
+    return this.snapshot.lastName;
   }
 
   get passwordHash(): string {
     return this.snapshot.passwordHash;
+  }
+
+  get enabled(): boolean {
+    return this.snapshot.enabled;
   }
 
   get roleIds(): string[] {
@@ -86,6 +99,10 @@ export class User {
       updatedAt: now,
     };
     this.record(new UserRolesAssignedEvent({ userId: this.id, roleIds: this.roleIds }));
+  }
+
+  setEnabled(enabled: boolean, now = new Date()): void {
+    this.snapshot = { ...this.snapshot, enabled, updatedAt: now };
   }
 
   pullDomainEvents(): DomainEvent[] {

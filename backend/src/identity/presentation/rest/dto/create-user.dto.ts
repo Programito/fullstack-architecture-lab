@@ -7,11 +7,17 @@ export class CreateUserDto {
   @MinLength(1)
   email!: string;
 
-  @ApiProperty({ example: 'Admin User', minLength: 1, maxLength: 120 })
+  @ApiProperty({ example: 'Admin', minLength: 1, maxLength: 80 })
   @IsString()
   @MinLength(1)
-  @MaxLength(120)
-  name!: string;
+  @MaxLength(80)
+  firstName!: string;
+
+  @ApiProperty({ example: 'User', minLength: 1, maxLength: 80 })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  lastName!: string;
 
   @ApiProperty({ example: 'supersecret', minLength: 8 })
   @IsString()

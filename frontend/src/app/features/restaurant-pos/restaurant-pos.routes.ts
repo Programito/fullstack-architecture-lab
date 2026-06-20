@@ -1,4 +1,9 @@
-import type { Type } from '@angular/core';
+import { inject, type Type } from '@angular/core';
+import type { ActivatedRouteSnapshot, CanActivateFn, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { Router } from '@angular/router';
+
+import { IdentitySessionStore } from '../identity/identity-session.store';
+import type { PermissionName } from '../identity/models/permission.model';
 
 export type RestaurantPosSectionPath = 'service' | 'menu' | 'kitchen' | 'layout';
 
@@ -6,18 +11,22 @@ export type RestaurantPosSection = {
   path: RestaurantPosSectionPath;
   labelKey: string;
   icon: string;
+  requiredPermission: PermissionName;
   loadComponent: () => Promise<Type<unknown>>;
 };
 
 export const RESTAURANT_POS_BASE_PATH = 'restaurant-pos';
 export const RESTAURANT_POS_DEFAULT_SECTION: RestaurantPosSectionPath = 'service';
 export const RESTAURANT_POS_DEFAULT_URL = `${RESTAURANT_POS_BASE_PATH}/${RESTAURANT_POS_DEFAULT_SECTION}`;
+export const RESTAURANT_POS_ACCESS_PATH = 'access';
+export const RESTAURANT_POS_ACCESS_URL = `${RESTAURANT_POS_BASE_PATH}/${RESTAURANT_POS_ACCESS_PATH}`;
 
 export const RESTAURANT_POS_SECTIONS: readonly RestaurantPosSection[] = [
   {
     path: 'service',
     labelKey: 'restaurantPos.common.service',
     icon: 'room_service',
+    requiredPermission: 'service',
     loadComponent: () =>
       import('./pages/restaurant-pos-service-page/restaurant-pos-service-page').then((module) => module.RestaurantPosServicePage),
   },
@@ -25,12 +34,14 @@ export const RESTAURANT_POS_SECTIONS: readonly RestaurantPosSection[] = [
     path: 'menu',
     labelKey: 'restaurantPos.common.menu',
     icon: 'restaurant_menu',
+    requiredPermission: 'menu',
     loadComponent: () => import('../menu/pages/menu-page/menu-page').then((module) => module.MenuPage),
   },
   {
     path: 'kitchen',
     labelKey: 'restaurantPos.common.kitchen',
     icon: 'restaurant',
+    requiredPermission: 'kitchen',
     loadComponent: () =>
       import('./pages/restaurant-pos-kitchen-page/restaurant-pos-kitchen-page').then((module) => module.RestaurantPosKitchenPage),
   },
@@ -38,7 +49,28 @@ export const RESTAURANT_POS_SECTIONS: readonly RestaurantPosSection[] = [
     path: 'layout',
     labelKey: 'restaurantPos.common.layout',
     icon: 'dashboard_customize',
+    requiredPermission: 'layout',
     loadComponent: () =>
       import('./pages/restaurant-pos-layout-page/restaurant-pos-layout-page').then((module) => module.RestaurantPosLayoutPage),
   },
-];
+] as const;
+
+export function firstAllowedRestaurantPosUrl(permissions: readonly PermissionName[]): string {
+  const allowedSection = RESTAURANT_POS_SECTIONS.find((section) => permissions.includes(section.requiredPermission));
+  return allowedSection
+    ? `/${RESTAURANT_POS_BASE_PATH}/${allowedSection.path}`
+    : `/${RESTAURANT_POS_ACCESS_URL}`;
+}
+
+export const restaurantPosSectionGuard: CanActivateFn = (
+  route: ActivatedRouteSnapshot,
+  _state: RouterStateSnapshot,
+): boolean | UrlTree => {
+  const router = inject(Router);
+  const identity = inject(IdentitySessionStore);
+  const requiredPermission = route.data['requiredPermission'];
+  if (requiredPermission && typeof requiredPermission === 'string' && identity.hasPermission(requiredPermission as PermissionName)) {
+    return true;
+  }
+  return router.parseUrl(firstAllowedRestaurantPosUrl(identity.permissions()));
+};

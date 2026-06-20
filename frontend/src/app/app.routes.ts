@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
 import {
+  RESTAURANT_POS_ACCESS_PATH,
   RESTAURANT_POS_BASE_PATH,
   RESTAURANT_POS_DEFAULT_SECTION,
   RESTAURANT_POS_DEFAULT_URL,
   RESTAURANT_POS_SECTIONS,
+  restaurantPosSectionGuard,
 } from './features/restaurant-pos/restaurant-pos.routes';
 
 export const routes: Routes = [
@@ -14,7 +16,19 @@ export const routes: Routes = [
         (module) => module.RestaurantPosShellPage,
       ),
     children: [
-      ...RESTAURANT_POS_SECTIONS.map(({ path, loadComponent }) => ({ path, loadComponent })),
+      ...RESTAURANT_POS_SECTIONS.map(({ path, loadComponent, requiredPermission }) => ({
+        path,
+        loadComponent,
+        canActivate: [restaurantPosSectionGuard],
+        data: { requiredPermission },
+      })),
+      {
+        path: RESTAURANT_POS_ACCESS_PATH,
+        loadComponent: () =>
+          import('./features/restaurant-pos/pages/restaurant-pos-access-page').then(
+            (module) => module.RestaurantPosAccessPage,
+          ),
+      },
       {
         path: '',
         pathMatch: 'full',

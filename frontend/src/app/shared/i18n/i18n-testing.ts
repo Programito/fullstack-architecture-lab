@@ -39,6 +39,11 @@ const TEST_TRANSLATIONS = {
         pax: '{{count}} pax',
         capacity: 'Capacidad: {{value}}',
       },
+      access: {
+        eyebrow: 'Acceso al TPV',
+        title: 'Sin módulos disponibles',
+        description: 'Tu usuario no tiene permisos para acceder a las secciones operativas del TPV.',
+      },
       errors: {
         selectTableFirst: 'Selecciona una mesa primero.',
         productUnavailable: 'El producto no está disponible.',
@@ -512,6 +517,11 @@ const TEST_TRANSLATIONS = {
         pax: '{{count}} pax',
         capacity: 'Capacity: {{value}}',
       },
+      access: {
+        eyebrow: 'POS access',
+        title: 'No modules available',
+        description: 'Your user does not have permission to access the operational POS sections.',
+      },
       layout: {
         title: 'Restaurant layout',
         addElement: 'Add element',
@@ -838,6 +848,11 @@ const TEST_TRANSLATIONS = {
         kitchen: 'Cuina',
         pos: 'TPV restaurant',
         navigation: 'Navegació principal',
+      },
+      access: {
+        eyebrow: 'Accés al TPV',
+        title: 'Sense mòduls disponibles',
+        description: 'El teu usuari no té permisos per accedir a les seccions operatives del TPV.',
       },
       kitchen: {
         ticketElapsed: 'Temps màxim: {{time}}',

@@ -1,7 +1,9 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  enabled: boolean;
   roleIds: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -9,7 +11,8 @@ export interface User {
 
 export interface CreateUserInput {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   password: string;
   roleIds?: string[];
 }

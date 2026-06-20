@@ -7,6 +7,8 @@ describe('RoleMapper', () => {
       id: 'role-1',
       name: 'admin',
       description: 'Administrators',
+      enabled: true,
+      permissions: ['service', 'layout'],
       createdAt: '2026-05-30T16:00:00.000Z',
       updatedAt: '2026-05-30T17:00:00.000Z',
     };
@@ -17,6 +19,8 @@ describe('RoleMapper', () => {
       id: 'role-1',
       name: 'admin',
       description: 'Administrators',
+      enabled: true,
+      permissions: ['service', 'layout'],
       createdAt: new Date('2026-05-30T16:00:00.000Z'),
       updatedAt: new Date('2026-05-30T17:00:00.000Z'),
     });
@@ -29,6 +33,8 @@ describe('RoleMapper', () => {
       id: 'role-1',
       name: 'admin',
       description: null,
+      enabled: false,
+      permissions: [],
       createdAt: '2026-05-30T16:00:00.000Z',
       updatedAt: '2026-05-30T17:00:00.000Z',
     };

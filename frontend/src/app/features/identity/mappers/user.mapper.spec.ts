@@ -6,7 +6,9 @@ describe('UserMapper', () => {
     const dto: UserResponseDto = {
       id: 'user-1',
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
+      enabled: true,
       roles: ['role-1', 'role-2'],
       createdAt: '2026-05-30T16:00:00.000Z',
       updatedAt: '2026-05-30T17:00:00.000Z',
@@ -17,7 +19,9 @@ describe('UserMapper', () => {
     expect(user).toEqual({
       id: 'user-1',
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
+      enabled: true,
       roleIds: ['role-1', 'role-2'],
       createdAt: new Date('2026-05-30T16:00:00.000Z'),
       updatedAt: new Date('2026-05-30T17:00:00.000Z'),
@@ -30,7 +34,9 @@ describe('UserMapper', () => {
     const dto: UserResponseDto = {
       id: 'user-1',
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
+      enabled: true,
       roles: ['role-1'],
       createdAt: '2026-05-30T16:00:00.000Z',
       updatedAt: '2026-05-30T17:00:00.000Z',
@@ -47,7 +53,8 @@ describe('UserMapper', () => {
     const roleIds = ['role-1', 'role-2'];
     const request = UserMapper.toCreateRequest({
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
       password: 'supersecret',
       roleIds,
     });
@@ -56,7 +63,8 @@ describe('UserMapper', () => {
 
     expect(request).toEqual({
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
       password: 'supersecret',
       roleIds: ['role-1', 'role-2'],
     });
@@ -66,12 +74,14 @@ describe('UserMapper', () => {
     expect(
       UserMapper.toCreateRequest({
         email: 'admin@example.com',
-        name: 'Admin User',
+        firstName: 'Admin',
+        lastName: 'User',
         password: 'supersecret',
       }),
     ).toEqual({
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
       password: 'supersecret',
     });
   });

@@ -3,6 +3,7 @@ export type ApplicationErrorCode =
   | 'email_already_taken'
   | 'user_not_found'
   | 'role_not_found'
+  | 'permission_not_found'
   | 'role_name_already_taken'
   | 'invalid_password'
   | 'invalid_user_name'

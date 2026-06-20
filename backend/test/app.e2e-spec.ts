@@ -7,8 +7,10 @@ import { AppModule } from '../src/app.module';
 import { PASSWORD_HASHER, type PasswordHasher } from '../src/identity/application/ports/password-hasher.port';
 import { ROLE_REPOSITORY } from '../src/identity/application/ports/role-repository.port';
 import { USER_REPOSITORY } from '../src/identity/application/ports/user-repository.port';
+import { ROLE_CATALOG } from '../src/identity/domain/role-catalog';
 import { InMemoryRoleRepository } from '../src/identity/infrastructure/persistence/in-memory-role.repository';
 import { InMemoryUserRepository } from '../src/identity/infrastructure/persistence/in-memory-user.repository';
+import { InMemoryAuthSessionRepository } from '../src/identity/infrastructure/persistence/in-memory-auth-session.repository';
 import { EVENT_BUS } from '../src/shared/events/event-bus.port';
 import { InMemoryEventBus } from '../src/shared/events/in-memory-event-bus';
 import { TASK_REPOSITORY } from '../src/tasks/application/ports/task-repository.port';
@@ -30,10 +32,14 @@ describe('App e2e', () => {
   let userRepository: InMemoryUserRepository;
   let roleRepository: InMemoryRoleRepository;
   let eventBus: InMemoryEventBus;
+  let sessionRepository: InMemoryAuthSessionRepository;
 
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = 'http://localhost:4200';
+    process.env.IDENTITY_PERSISTENCE = 'memory';
     process.env.IDENTITY_MEMORY_SEED = 'false';
+    process.env.JWT_ACCESS_SECRET = 'test-access-secret-that-is-at-least-32-characters';
+    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-that-is-at-least-32-characters';
     taskRepository = new InMemoryTaskRepository();
     userRepository = new InMemoryUserRepository();
     roleRepository = new InMemoryRoleRepository();
@@ -68,6 +74,7 @@ describe('App e2e', () => {
       }),
     );
     await app.init();
+    sessionRepository = app.get(InMemoryAuthSessionRepository);
 
   }, 60_000);
 
@@ -76,6 +83,7 @@ describe('App e2e', () => {
     userRepository.clear();
     roleRepository.clear();
     eventBus.clear();
+    sessionRepository.clear();
   });
 
   afterAll(async () => {
@@ -126,14 +134,17 @@ describe('App e2e', () => {
       .post('/api/v1/users')
       .send({
         email: ' ADMIN@Example.COM ',
-        name: ' Admin User ',
+        firstName: ' Admin ',
+        lastName: ' User ',
         password: 'supersecret',
       })
       .expect(201);
 
     expect(createResponse.body).toMatchObject({
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
+      enabled: true,
       roles: [],
     });
     expect(createResponse.body.password).toBeUndefined();
@@ -145,7 +156,8 @@ describe('App e2e', () => {
     expect(listResponse.body[0]).toMatchObject({
       id: createResponse.body.id,
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
       roles: [],
     });
     expect(listResponse.body[0].password).toBeUndefined();
@@ -157,7 +169,8 @@ describe('App e2e', () => {
       .post('/api/v1/users')
       .send({
         email: 'admin@example.com',
-        name: 'Admin User',
+        firstName: 'Admin',
+        lastName: 'User',
         password: 'supersecret',
       })
       .expect(201);
@@ -166,7 +179,8 @@ describe('App e2e', () => {
       .post('/api/v1/users')
       .send({
         email: ' ADMIN@EXAMPLE.COM ',
-        name: 'Other Admin',
+        firstName: 'Other',
+        lastName: 'Admin',
         password: 'supersecret',
       })
       .expect(409);
@@ -175,31 +189,32 @@ describe('App e2e', () => {
   it('rejects invalid user payloads', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/users')
-      .send({ email: 'invalid-email', name: 'Admin User', password: 'supersecret' })
+      .send({ email: 'invalid-email', firstName: 'Admin', lastName: 'User', password: 'supersecret' })
       .expect(400);
 
     await request(app.getHttpServer())
       .post('/api/v1/users')
-      .send({ email: 'admin@example.com', name: 'Admin User', password: 'short' })
+      .send({ email: 'admin@example.com', firstName: 'Admin', lastName: 'User', password: 'short' })
       .expect(400);
   });
 
   it('creates roles and assigns them to users', async () => {
     const roleResponse = await request(app.getHttpServer())
       .post('/api/v1/roles')
-      .send({ name: ' Admin ', description: 'Administrative access.' })
+      .send({ name: ' Cashier ', description: 'Cash desk access.' })
       .expect(201);
 
     expect(roleResponse.body).toMatchObject({
-      name: 'admin',
-      description: 'Administrative access.',
+      name: 'cashier',
+      description: 'Cash desk access.',
     });
 
     const userResponse = await request(app.getHttpServer())
       .post('/api/v1/users')
       .send({
         email: 'admin@example.com',
-        name: 'Admin User',
+        firstName: 'Admin',
+        lastName: 'User',
         password: 'supersecret',
       })
       .expect(201);
@@ -218,6 +233,81 @@ describe('App e2e', () => {
     expect(rolesResponse.body).toHaveLength(1);
     expect(rolesResponse.body[0].id).toBe(roleResponse.body.id);
   });
+
+  it('lists permissions, assigns them to a role, includes them in auth/me and invalidates a disabled session immediately', async () => {
+    const role = await request(app.getHttpServer())
+      .post('/api/v1/roles')
+      .send({ name: 'admin' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .send({
+        email: 'admin@example.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        password: 'supersecret',
+        roleIds: [role.body.id],
+      })
+      .expect(201);
+
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'supersecret' })
+      .expect(200);
+    const firstCookie = login.headers['set-cookie']?.[0];
+    expect(firstCookie).toContain('refresh_token=');
+    expect(firstCookie).toContain('HttpOnly');
+    expect(login.body).toMatchObject({ tokenType: 'Bearer', expiresIn: 900 });
+
+    const permissions = await request(app.getHttpServer()).get('/api/v1/permissions').expect(200);
+    expect(permissions.body.map((permission: { name: string }) => permission.name).sort()).toEqual([
+      'kitchen',
+      'layout',
+      'menu',
+      'service',
+    ]);
+
+    const assignPermissions = await request(app.getHttpServer())
+      .patch(`/api/v1/roles/${role.body.id}/permissions`)
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({ permissionIds: permissions.body.map((permission: { id: string }) => permission.id) })
+      .expect(200);
+    expect(assignPermissions.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'service']);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200)
+      .expect({
+        userId: login.body.user.id,
+        roles: ['admin'],
+        permissions: ['service', 'menu', 'kitchen', 'layout'],
+      });
+
+    const refresh = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', firstCookie)
+      .expect(200);
+    expect(refresh.body.accessToken).not.toBe(login.body.accessToken);
+    expect(refresh.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'service']);
+
+    const sessions = await request(app.getHttpServer())
+      .get('/api/v1/sessions')
+      .set('Authorization', `Bearer ${refresh.body.accessToken}`)
+      .expect(200);
+    expect(sessions.body).toHaveLength(1);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/sessions/${sessions.body[0].id}/enabled`)
+      .set('Authorization', `Bearer ${refresh.body.accessToken}`)
+      .send({ enabled: false })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${refresh.body.accessToken}`)
+      .expect(401);
+  });
 });
 
 describe('App e2e with in-memory identity seed', () => {
@@ -225,7 +315,10 @@ describe('App e2e with in-memory identity seed', () => {
 
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = 'http://localhost:4200';
+    process.env.IDENTITY_PERSISTENCE = 'memory';
     process.env.IDENTITY_MEMORY_SEED = 'true';
+    process.env.JWT_ACCESS_SECRET = 'test-access-secret-that-is-at-least-32-characters';
+    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-that-is-at-least-32-characters';
     process.env.IDENTITY_MEMORY_SEED_COUNT = '2';
     process.env.IDENTITY_MEMORY_SEED_RANDOM = 'false';
     process.env.IDENTITY_MEMORY_SEED_VALUE = '12345';
@@ -259,14 +352,28 @@ describe('App e2e with in-memory identity seed', () => {
   });
 
   it('returns seeded users and roles', async () => {
+    const permissionsResponse = await request(app.getHttpServer()).get('/api/v1/permissions').expect(200);
     const rolesResponse = await request(app.getHttpServer()).get('/api/v1/roles').expect(200);
     const usersResponse = await request(app.getHttpServer()).get('/api/v1/users').expect(200);
 
-    expect(rolesResponse.body.map((role: { name: string }) => role.name)).toEqual(['admin', 'manager', 'user']);
+    expect(permissionsResponse.body.map((permission: { name: string }) => permission.name).sort()).toEqual([
+      'kitchen',
+      'layout',
+      'menu',
+      'service',
+    ]);
+    expect(rolesResponse.body.map((role: { name: string }) => role.name).sort()).toEqual(
+      ROLE_CATALOG.map((role) => role.name).sort(),
+    );
+    expect(rolesResponse.body.find((role: { name: string; permissions: string[] }) => role.name === 'waiter')?.permissions).toEqual([
+      'service',
+      'layout',
+    ]);
     expect(usersResponse.body).toHaveLength(3);
     expect(usersResponse.body[0]).toMatchObject({
       email: 'admin@example.com',
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
     });
     expect(usersResponse.body[0].password).toBeUndefined();
     expect(usersResponse.body[0].passwordHash).toBeUndefined();
