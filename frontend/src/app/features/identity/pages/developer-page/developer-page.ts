@@ -7,13 +7,14 @@ import { Card } from '../../../../shared/ui/card/card';
 import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
+import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import type { DeveloperResourcesDto } from '../../api/identity-api.models';
 import { IdentityApiService } from '../../api/identity-api.service';
 import { IdentitySessionStore } from '../../identity-session.store';
 
 @Component({
   selector: 'app-developer-page',
-  imports: [Button, Card, ColorModeMenu, Icon, LanguageSelect, TranslocoPipe],
+  imports: [Button, Card, ColorModeMenu, Icon, LanguageSelect, Spinner, TranslocoPipe],
   templateUrl: './developer-page.html',
   styleUrl: './developer-page.css',
   host: {
@@ -24,14 +25,18 @@ export class DeveloperPage {
   private readonly api = inject(IdentityApiService);
   private readonly identity = inject(IdentitySessionStore);
   private readonly router = inject(Router);
-  private readonly logoutTransitionMs = 180;
 
   protected readonly resources = signal<DeveloperResourcesDto | null>(null);
+  protected readonly loading = signal(true);
   protected readonly loggingOut = signal(false);
 
   constructor() {
     this.api.getDeveloperResources().subscribe({
-      next: (resources) => this.resources.set(resources),
+      next: (resources) => {
+        this.resources.set(resources);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
     });
   }
 
@@ -39,16 +44,11 @@ export class DeveloperPage {
     if (this.loggingOut()) return;
 
     this.loggingOut.set(true);
-    const startedAt = Date.now();
-    const finish = () => {
-      const remaining = Math.max(0, this.logoutTransitionMs - (Date.now() - startedAt));
-      window.setTimeout(() => this.finishLogout(), remaining);
-    };
-
     this.api.logout().subscribe({
-      next: () => finish(),
-      error: () => finish(),
+      next: () => undefined,
+      error: () => undefined,
     });
+    this.finishLogout();
   }
 
   private finishLogout(): void {

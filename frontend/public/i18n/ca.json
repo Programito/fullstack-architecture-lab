@@ -11,14 +11,15 @@
     }
   },
   "auth": {
-    "eyebrow": "Taules, cuina i comandes",
+    "eyebrow": "Sala, cuina i cobraments",
     "title": "Explora MesaFlow",
-    "badge": "Restaurant POS",
-    "description": "Gestiona el servei del restaurant amb un accés ràpid per provar el producte o amb el teu compte habitual.",
+    "badge": "Restaurant Suite",
+    "description": "Gestiona taules, comandes, cuina i cobraments des d'una experiència pensada per a restaurants.",
     "methodLabel": "Mètode d'accés",
     "benefits": {
       "floor": "Plànol de taules, comandes i cobraments",
-      "kitchen": "Cuina i preparació en temps real"
+      "kitchen": "Cuina i preparació en temps real",
+      "menu": "Carta, menús i plats combinats"
     },
     "demo": {
       "tab": "Demo ràpida",
@@ -78,6 +79,7 @@
     "eyebrow": "Espai tècnic",
     "title": "Recursos per a Developer",
     "description": "Documentació tècnica disponible només per a comptes amb rol Developer.",
+    "loading": "Carregant recursos...",
     "apiDocs": "Consulta els contractes i endpoints de l'API.",
     "storybook": "Explora els components, estats i patrons visuals.",
     "architectureTitle": "Arquitectura",

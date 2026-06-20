@@ -56,9 +56,65 @@
   margin-top: 2rem;
 }
 
-.developer-page__grid a {
+.developer-page__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 14rem;
+  margin-top: 2rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 72%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--ui-surface) 68%, transparent);
+}
+
+.developer-page__resource {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.developer-page__resource :where(.card) {
+  display: grid;
+  gap: 0.9rem;
+  height: 100%;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.developer-page__resource:hover :where(.card),
+.developer-page__resource:focus-visible :where(.card) {
+  border-color: color-mix(in srgb, var(--ui-primary) 46%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-surface) 84%, transparent);
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--ui-background) 72%, transparent);
+  transform: translateY(-3px);
+}
+
+.developer-page__resource:focus-visible {
+  outline: none;
+}
+
+.developer-page__resource:focus-visible :where(.card) {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--ui-primary) 22%, transparent),
+    0 16px 32px color-mix(in srgb, var(--ui-background) 72%, transparent);
+}
+
+.developer-page__resource-action {
+  width: fit-content;
   color: var(--ui-primary);
   font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.developer-page__resource:hover .developer-page__resource-action,
+.developer-page__resource:focus-visible .developer-page__resource-action {
+  color: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-violet));
 }
 
 :host(.developer-page--logging-out) .developer-page {
@@ -80,6 +136,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .developer-page {
+    transition: none;
+  }
+
+  .developer-page__resource :where(.card) {
     transition: none;
   }
 

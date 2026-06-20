@@ -11,14 +11,15 @@
     }
   },
   "auth": {
-    "eyebrow": "Tables, kitchen, and orders",
+    "eyebrow": "Dining room, kitchen, and payments",
     "title": "Explore MesaFlow",
-    "badge": "Restaurant POS",
-    "description": "Run restaurant service with quick product access for demos or sign in with your regular account.",
+    "badge": "Restaurant Suite",
+    "description": "Manage tables, orders, kitchen, and payments from an experience designed for restaurants.",
     "methodLabel": "Sign-in method",
     "benefits": {
       "floor": "Floor plan, ordering, and checkout",
-      "kitchen": "Kitchen and preparation in real time"
+      "kitchen": "Kitchen and preparation in real time",
+      "menu": "Menu, set menus, and combo platters"
     },
     "demo": {
       "tab": "Quick demo",
@@ -78,6 +79,7 @@
     "eyebrow": "Technical space",
     "title": "Developer resources",
     "description": "Technical documentation available only to accounts with the Developer role.",
+    "loading": "Loading resources...",
     "apiDocs": "Review API contracts and endpoints.",
     "storybook": "Explore components, states, and visual patterns.",
     "architectureTitle": "Architecture",

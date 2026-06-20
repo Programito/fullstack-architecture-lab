@@ -6,14 +6,15 @@ import { KEY_VALUE_STORAGE, MemoryKeyValueStorage } from '../utils/storage/key-v
 const TEST_TRANSLATIONS = {
   es: {
     auth: {
-      eyebrow: 'Mesa, cocina y pedidos',
+      eyebrow: 'Sala, cocina y cobros',
       title: 'Explora MesaFlow',
-      badge: 'Restaurant POS',
-      description: 'Gestiona el servicio del restaurante con un acceso rápido para probar el producto o con tu cuenta habitual.',
+      badge: 'Restaurant Suite',
+      description: 'Gestiona mesas, pedidos, cocina y cobros desde una experiencia pensada para restaurantes.',
       methodLabel: 'Método de acceso',
       benefits: {
         floor: 'Plano de mesas, pedidos y cobros',
         kitchen: 'Cocina y preparación en tiempo real',
+        menu: 'Carta, menús y platos combinados',
       },
       demo: {
         tab: 'Demo rápida',
@@ -73,6 +74,7 @@ const TEST_TRANSLATIONS = {
       eyebrow: 'Espacio técnico',
       title: 'Recursos para Developer',
       description: 'Documentación técnica disponible únicamente para cuentas con rol Developer.',
+      loading: 'Cargando recursos...',
       apiDocs: 'Consulta los contratos y endpoints de la API.',
       storybook: 'Explora los componentes, estados y patrones visuales.',
       architectureTitle: 'Arquitectura',
@@ -563,14 +565,15 @@ const TEST_TRANSLATIONS = {
   },
   en: {
     auth: {
-      eyebrow: 'Tables, kitchen, and orders',
+      eyebrow: 'Dining room, kitchen, and payments',
       title: 'Explore MesaFlow',
-      badge: 'Restaurant POS',
-      description: 'Run restaurant service with quick product access for demos or sign in with your regular account.',
+      badge: 'Restaurant Suite',
+      description: 'Manage tables, orders, kitchen, and payments from an experience designed for restaurants.',
       methodLabel: 'Sign-in method',
       benefits: {
         floor: 'Floor plan, ordering, and checkout',
         kitchen: 'Kitchen and preparation in real time',
+        menu: 'Menu, set menus, and combo platters',
       },
       demo: {
         tab: 'Quick demo',
@@ -630,6 +633,7 @@ const TEST_TRANSLATIONS = {
       eyebrow: 'Technical space',
       title: 'Developer resources',
       description: 'Technical documentation available only to accounts with the Developer role.',
+      loading: 'Loading resources...',
       apiDocs: 'Review API contracts and endpoints.',
       storybook: 'Explore components, states, and visual patterns.',
       architectureTitle: 'Architecture',
@@ -979,14 +983,15 @@ const TEST_TRANSLATIONS = {
   },
   ca: {
     auth: {
-      eyebrow: 'Taules, cuina i comandes',
+      eyebrow: 'Sala, cuina i cobraments',
       title: 'Explora MesaFlow',
-      badge: 'Restaurant POS',
-      description: 'Gestiona el servei del restaurant amb un accés ràpid per provar el producte o amb el teu compte habitual.',
+      badge: 'Restaurant Suite',
+      description: "Gestiona taules, comandes, cuina i cobraments des d'una experiència pensada per a restaurants.",
       methodLabel: "Mètode d'accés",
       benefits: {
         floor: 'Plànol de taules, comandes i cobraments',
         kitchen: 'Cuina i preparació en temps real',
+        menu: 'Carta, menús i plats combinats',
       },
       demo: {
         tab: 'Demo ràpida',
@@ -1046,6 +1051,7 @@ const TEST_TRANSLATIONS = {
       eyebrow: 'Espai tècnic',
       title: 'Recursos per a Developer',
       description: 'Documentació tècnica disponible només per a comptes amb rol Developer.',
+      loading: 'Carregant recursos...',
       apiDocs: "Consulta els contractes i endpoints de l'API.",
       storybook: 'Explora els components, estats i patrons visuals.',
       architectureTitle: 'Arquitectura',

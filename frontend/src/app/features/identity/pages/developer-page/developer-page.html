@@ -15,26 +15,41 @@
     <h1 id="developer-title">{{ 'developer.title' | transloco }}</h1>
     <p>{{ 'developer.description' | transloco }}</p>
 
-    @if (resources(); as links) {
+    @if (loading()) {
+      <div class="developer-page__loading" aria-live="polite">
+        <app-spinner
+          type="dots"
+          variant="violet"
+          appearance="minimal"
+          [text]="'developer.loading' | transloco"
+        />
+      </div>
+    } @else if (resources(); as links) {
       <div class="developer-page__grid">
-        <app-card variant="outlined">
-          <app-icon name="api" size="lg" />
-          <h2>API Docs</h2>
-          <p>{{ 'developer.apiDocs' | transloco }}</p>
-          <a [href]="links.apiDocsUrl">{{ 'developer.open' | transloco }}</a>
-        </app-card>
-        <app-card variant="outlined">
-          <app-icon name="widgets" size="lg" />
-          <h2>Storybook</h2>
-          <p>{{ 'developer.storybook' | transloco }}</p>
-          <a [href]="links.storybookUrl">{{ 'developer.open' | transloco }}</a>
-        </app-card>
-        <app-card variant="outlined">
-          <app-icon name="account_tree" size="lg" />
-          <h2>{{ 'developer.architectureTitle' | transloco }}</h2>
-          <p>{{ 'developer.architecture' | transloco }}</p>
-          <a [href]="links.architectureUrl">{{ 'developer.open' | transloco }}</a>
-        </app-card>
+        <a class="developer-page__resource" [href]="links.apiDocsUrl">
+          <app-card variant="outlined">
+            <app-icon name="api" size="lg" />
+            <h2>API Docs</h2>
+            <p>{{ 'developer.apiDocs' | transloco }}</p>
+            <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
+          </app-card>
+        </a>
+        <a class="developer-page__resource" [href]="links.storybookUrl">
+          <app-card variant="outlined">
+            <app-icon name="widgets" size="lg" />
+            <h2>Storybook</h2>
+            <p>{{ 'developer.storybook' | transloco }}</p>
+            <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
+          </app-card>
+        </a>
+        <a class="developer-page__resource" [href]="links.architectureUrl">
+          <app-card variant="outlined">
+            <app-icon name="account_tree" size="lg" />
+            <h2>{{ 'developer.architectureTitle' | transloco }}</h2>
+            <p>{{ 'developer.architecture' | transloco }}</p>
+            <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
+          </app-card>
+        </a>
       </div>
     }
   </section>

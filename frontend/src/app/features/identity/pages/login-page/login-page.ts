@@ -48,7 +48,7 @@ export class LoginPage {
     initialValue: this.transloco.getTranslation(this.transloco.getActiveLang()),
   });
 
-  protected readonly activeTab = signal<'demo' | 'credentials'>('credentials');
+  protected readonly activeTab = signal<'demo' | 'credentials'>('demo');
   protected readonly demoLoginEnabled = signal(false);
   protected readonly demoRoles = signal<Array<{ role: DemoRoleName; label: string; description: string; icon: string }>>([]);
   protected readonly email = signal('');

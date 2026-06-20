@@ -118,6 +118,20 @@ Usa Markdown con diagramas Mermaid al describir arquitectura, flujos, dependenci
 testing. Mantén los diagramas cerca de la explicación que apoyan y actualízalos cuando cambie la
 estructura documentada.
 
+## Skills Locales
+
+Las copias locales de skills frontend viven en:
+
+```txt
+frontend/.codex/skills/
+```
+
+Manténlas sincronizadas con las versiones compartidas en:
+
+```txt
+.codex/skills/
+```
+
 ## Comandos
 
 Ejecuta comandos desde `frontend/`:

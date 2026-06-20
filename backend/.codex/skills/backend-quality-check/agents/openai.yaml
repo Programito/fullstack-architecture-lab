@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Quality Check"
+  short_description: "Elegir y correr verificaciones finales de backend"
+  default_prompt: "Use $backend-quality-check to choose and run the right final verification commands for NestJS backend changes in this repository."

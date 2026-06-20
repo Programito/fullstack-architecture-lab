@@ -1,0 +1,4 @@
+interface:
+  display_name: "NestJS Backend Workflow"
+  short_description: "Workflow de cambios backend con NestJS y Vitest"
+  default_prompt: "Use $nestjs-backend-workflow to implement backend changes in this NestJS project with focused tests, modules, DTOs, guards, repositories, and controllers aligned with local architecture."

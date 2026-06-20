@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Quality Check"
+  short_description: "Choose final verification commands for Angular frontend changes."
+  default_prompt: "Plan and run the right final frontend quality checks."

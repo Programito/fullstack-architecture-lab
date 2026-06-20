@@ -1,0 +1,4 @@
+interface:
+  display_name: "Angular TDD Frontend"
+  short_description: "TDD moderno para frontend Angular"
+  default_prompt: "Use $angular-tdd-frontend to build Angular frontend changes with tests first, signals, accessible UI, and project documentation."

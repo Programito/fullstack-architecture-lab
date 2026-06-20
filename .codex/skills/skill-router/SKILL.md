@@ -14,8 +14,13 @@ skill, then add secondary skills only when they provide distinct procedural valu
 
 - Angular frontend, shared UI, Vitest, Testing Library, Playwright, Storybook, or frontend docs:
   use `angular-tdd-frontend`.
+- NestJS backend modules, controllers, DTOs, guards, use cases, repositories, or backend docs:
+  use `nestjs-backend-workflow`.
+- Prisma schema, migrations, seeds, or Prisma repository changes:
+  use `prisma-backend-data`.
 - New Angular shared UI component scaffolding: use `ui-component-scaffold`.
 - Final verification for Angular frontend work: use `frontend-quality-check`.
+- Final verification for backend work: use `backend-quality-check`.
 - Creating or updating Codex skills: use `skill-creator`.
 - Installing curated or repository skills: use `skill-installer`.
 - Creating or scaffolding Codex plugins: use `plugin-creator`.
@@ -27,6 +32,10 @@ skill, then add secondary skills only when they provide distinct procedural valu
 
 - Use `angular-tdd-frontend` plus `mermaid-docs-validator` for frontend documentation with Mermaid
   diagrams.
+- Use `nestjs-backend-workflow` plus `prisma-backend-data` when a backend feature change affects the
+  database model or Prisma repositories.
+- Use `backend-quality-check` after `nestjs-backend-workflow` or `prisma-backend-data` work to close
+  with the right tests and Prisma commands.
 - Use `ui-component-scaffold` plus `angular-tdd-frontend` when creating a new shared UI component.
 - Use `frontend-quality-check` after `angular-tdd-frontend` or `ui-component-scaffold` work to close
   with the right tests and builds.
@@ -38,9 +47,13 @@ skill, then add secondary skills only when they provide distinct procedural valu
 ## Priority Rules
 
 - For frontend implementation, use `angular-tdd-frontend` as the primary skill.
+- For backend implementation, use `nestjs-backend-workflow` as the primary skill.
+- For Prisma schema or seed work, use `prisma-backend-data` as primary and
+  `nestjs-backend-workflow` for project-wide backend workflow.
 - For a new shared UI component, use `ui-component-scaffold` as primary and `angular-tdd-frontend`
   for project-wide Angular workflow.
 - For final verification of frontend work, use `frontend-quality-check`.
+- For final verification of backend work, use `backend-quality-check`.
 - For Markdown or MDX docs with Mermaid diagrams, use `mermaid-docs-validator`.
 - For creating or editing skills themselves, use `skill-creator` even when the skill being edited is
   domain-specific.

@@ -83,11 +83,14 @@ describe('LoginPage', () => {
   it('renders the new product copy in Spanish and removes portfolio wording', async () => {
     await renderPage();
 
-    expect(screen.getByText('Mesa, cocina y pedidos')).toBeTruthy();
+    expect(screen.getByText('Sala, cocina y cobros')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Explora MesaFlow' })).toBeTruthy();
-    expect(screen.getByText('Gestiona el servicio del restaurante con un acceso rápido para probar el producto o con tu cuenta habitual.')).toBeTruthy();
+    expect(screen.getByText('Restaurant Suite')).toBeTruthy();
+    expect(screen.queryByText('Restaurant POS')).toBeNull();
+    expect(screen.getByText('Gestiona mesas, pedidos, cocina y cobros desde una experiencia pensada para restaurantes.')).toBeTruthy();
     expect(screen.getByText('Plano de mesas, pedidos y cobros')).toBeTruthy();
     expect(screen.getByText('Cocina y preparación en tiempo real')).toBeTruthy();
+    expect(screen.getByText('Carta, menús y platos combinados')).toBeTruthy();
     expect(screen.getByText('Elige un perfil para recorrer MesaFlow sin introducir credenciales.')).toBeTruthy();
     expect(screen.queryByText(/portfolio/i)).toBeNull();
   });
@@ -111,6 +114,7 @@ describe('LoginPage', () => {
     const technicalSection = screen.getByRole('region', { name: 'Perfil técnico' });
     expect(within(technicalSection).getByRole('button', { name: /Developer/ })).toBeTruthy();
     expect(screen.queryByText('Entrar ahora')).toBeNull();
+    expect(screen.queryByText('Recomendado')).toBeNull();
   });
 
   it('sends waiter and kitchen to demo-login and keeps only the selected role busy', async () => {
@@ -212,8 +216,9 @@ describe('LoginPage', () => {
   it('renders the updated copy in English', async () => {
     await renderPage({ locale: 'en' });
 
-    expect(screen.getByText('Tables, kitchen, and orders')).toBeTruthy();
+    expect(screen.getByText('Dining room, kitchen, and payments')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Explore MesaFlow' })).toBeTruthy();
+    expect(screen.getByText('Manage tables, orders, kitchen, and payments from an experience designed for restaurants.')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Quick demo' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Product sign-in' })).toBeTruthy();
     expect(screen.queryByText(/portfolio/i)).toBeNull();
