@@ -82,17 +82,20 @@ personalización. La cobertura debe proteger la frontera entre catálogo mutable
 Tests puros recomendados:
 
 - `MenuPricingService`: precio base, extras simples y múltiples, modificadores `remove` sin coste,
-  construcción de `selectedModifiers` y firmas iguales o distintas por modificadores y nota.
+  construcción de `selectedModifiers`, total de combos con suplementos y firmas iguales o distintas
+  por modificadores, nota o selección de slots.
 - `MenuValidationService`: producto no disponible, opción inválida, grupos requeridos, selección
-  única y máximos por grupo.
+  única, máximos por grupo, slots requeridos de combo, productos permitidos y disponibilidad.
 - Mocks de menú: mantener categorías, disponibilidad y grupos realistas para hamburguesas, bebidas
-  y café sin depender de backend.
+  café y combos sin depender de backend.
 
 Tests de integración con POS:
 
 - `RestaurantPosStore` debe cubrir producto simple, producto personalizado, merge por
   `configurationSignature`, separación por nota o modificadores distintos, rechazo de
   personalización inválida y totales con modificadores.
+- Los combos deben cubrir configuración por slots, suplementos, rechazo de selecciones inválidas,
+  snapshot `selectedComboSlots`, firma estable y merge de líneas equivalentes.
 - Las operaciones de servicio y cocina se prueban por `line.id` para soportar varias líneas del
   mismo producto con configuraciones distintas.
 - Las notas se verifican como `kitchenNote` en el snapshot, manteniendo compatibilidad con el campo
@@ -102,10 +105,13 @@ Tests UI principales:
 
 - `ProductCustomizerDialog` renderiza grupos, permite seleccionar opciones, recalcula el precio en
   vivo, captura nota de cocina y emite la confirmación.
+- `ComboCustomizerDialog` renderiza slots, marca la selección activa, bloquea productos no
+  disponibles, recalcula suplementos y emite la configuración confirmada.
 - `ProductSearchDialog` muestra precio, categoría, disponibilidad y badge de producto
-  personalizable.
-- `ServiceTablePanel` muestra extras, `SIN ...` y nota de cocina bajo cada línea.
-- La vista de cocina muestra modificadores y notas sin crear una nueva pantalla de cocina.
+  personalizable, combo o plato combinado según corresponda.
+- `ServiceTablePanel` muestra extras, `SIN ...`, nota de cocina y productos elegidos en combos bajo
+  cada línea.
+- La vista de cocina muestra modificadores, combos y notas sin crear una nueva pantalla de cocina.
 - La navegación del shell incluye `Menú` apuntando a `/restaurant-pos/menu`.
 
 ## Decisiones UX En Tests

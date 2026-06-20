@@ -14,6 +14,7 @@ describe('ProductSearchDialog', () => {
       name: 'Hamburguesa craft',
       categoryId: 'burgers-classic',
       category: 'Hamburguesas',
+      description: 'Carne de ternera con salsa de la casa.',
       basePrice: 12.5,
       price: 12.5,
       available: true,
@@ -139,6 +140,7 @@ describe('ProductSearchDialog', () => {
       expect(screen.getByRole('button', { name: chip })).toBeTruthy();
     }
 
+    expect(screen.getByRole('heading', { name: 'Añadir productos' })).toBeTruthy();
     expect(section('Favoritos')).toBeTruthy();
     expect(section('Más vendidos')).toBeTruthy();
     expect(section('Bebidas')).toBeTruthy();
@@ -174,6 +176,9 @@ describe('ProductSearchDialog', () => {
     const comboAvatar = screen.getAllByTestId('product-search-avatar-combo')[0];
 
     expect(within(burgerRow).getByText('Personalizable')).toBeTruthy();
+    expect(within(burgerRow).getByText('Favorito')).toBeTruthy();
+    expect(within(burgerRow).getByText('Más vendido')).toBeTruthy();
+    expect(within(burgerRow).getByText('Carne de ternera con salsa de la casa.')).toBeTruthy();
     expect(within(comboRow).getByText('Menú')).toBeTruthy();
     expect(within(platterRow).getByText('Plato combinado')).toBeTruthy();
     expect(within(soldOutRow).getByText('Agotado')).toBeTruthy();
@@ -208,11 +213,18 @@ describe('ProductSearchDialog', () => {
   it('switches to flat search results and searches by type labels', async () => {
     await renderDialog({ query: 'plato combinado' });
 
-    expect(section('Resultados')).toBeTruthy();
+    expect(section('Resultados para "plato combinado"')).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Bebidas' })).toBeNull();
-    expect(within(section('Resultados')).getByText('Plato combinado de lomo')).toBeTruthy();
-    expect(within(section('Resultados')).getByText('Plato combinado vegetal')).toBeTruthy();
-    expect(within(section('Resultados')).queryByText('Limonada con gas')).toBeNull();
+    expect(within(section('Resultados para "plato combinado"')).getByText('Plato combinado de lomo')).toBeTruthy();
+    expect(within(section('Resultados para "plato combinado"')).getByText('Plato combinado vegetal')).toBeTruthy();
+    expect(within(section('Resultados para "plato combinado"')).queryByText('Limonada con gas')).toBeNull();
+  });
+
+  it('matches search text without requiring accents', async () => {
+    await renderDialog({ query: 'menu' });
+
+    expect(within(section('Resultados para "menu"')).getByText('Menu Classic Burger')).toBeTruthy();
+    expect(within(section('Resultados para "menu"')).queryByText('Limonada con gas')).toBeNull();
   });
 
   it('shows a single filtered section when the route passes section products', async () => {

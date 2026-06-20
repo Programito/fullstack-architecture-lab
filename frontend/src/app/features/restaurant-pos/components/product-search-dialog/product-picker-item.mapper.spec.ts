@@ -6,6 +6,7 @@ describe('toProductPickerItem', () => {
 
   const context: ProductPickerItemContext = {
     favoriteProductIds: ['burger'],
+    bestSellerProductIds: ['burger', 'combo'],
     lastAddedProductId: 'lemonade',
     productQuantities: { burger: 2, combo: 1 },
     configuredLines: [],
@@ -17,6 +18,8 @@ describe('toProductPickerItem', () => {
         'restaurantPos.service.combo': 'Menu',
         'restaurantPos.service.platter': 'Plato combinado',
         'restaurantPos.service.soldOut': 'Agotado',
+        'restaurantPos.service.favoriteBadge': 'Favorito',
+        'restaurantPos.service.bestSellerBadge': 'Mas vendido',
         'restaurantPos.service.productAdded': 'Anadido',
         'restaurantPos.service.addProductAction': 'Anadir',
         'restaurantPos.service.configureProductAction': 'Configurar',
@@ -61,6 +64,7 @@ describe('toProductPickerItem', () => {
       priceLabel: '4.50 EUR',
       categoryLabel: 'Bebidas',
       allergenLabel: 'Sin alergenos indicados',
+      description: '',
       actionLabel: 'Anadir',
       actionAriaLabel: 'Anadir una unidad de Limonada con gas',
       disabled: false,
@@ -84,7 +88,7 @@ describe('toProductPickerItem', () => {
     expect(item.isFavorite).toBe(true);
     expect(item.favoriteAriaLabel).toBe('Quitar Hamburguesa craft de favoritos');
     expect(item.quantityLabel).toBe('Cantidad de Hamburguesa craft: 2');
-    expect(item.badges.map((badge) => badge.label)).toEqual(['Personalizable']);
+    expect(item.badges.map((badge) => badge.label)).toEqual(['Personalizable', 'Favorito', 'Mas vendido']);
   });
 
   it('maps combo products to configure menu action and hides quantity controls', () => {
@@ -96,7 +100,7 @@ describe('toProductPickerItem', () => {
     expect(item.visualClass).toContain('text-violet-700');
     expect(item.quantity).toBe(1);
     expect(item.showQuantityControls).toBe(false);
-    expect(item.badges.map((badge) => badge.label)).toEqual(['Menu']);
+    expect(item.badges.map((badge) => badge.label)).toEqual(['Menu', 'Mas vendido']);
   });
 
   it('maps platters as add or configure platter depending on modifiers', () => {

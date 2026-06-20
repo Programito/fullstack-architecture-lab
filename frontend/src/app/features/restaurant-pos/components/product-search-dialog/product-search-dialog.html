@@ -85,6 +85,9 @@
                     <span class="theme-muted block min-w-0 truncate text-xs leading-5">
                       {{ item.categoryLabel }} &middot; {{ item.allergenLabel }}
                     </span>
+                    @if (item.description) {
+                      <span class="theme-muted line-clamp-2 block text-xs leading-5">{{ item.description }}</span>
+                    }
 
                     <div class="grid min-h-8 gap-2">
                       <span class="flex min-w-0 flex-wrap gap-1.5 pr-2">

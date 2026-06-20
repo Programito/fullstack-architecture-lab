@@ -68,11 +68,14 @@ export class ProductSearchDialog {
     'restaurantPos.service.platterProducts': 'Platos combinados',
     'restaurantPos.service.dessertProducts': 'Postres',
     'restaurantPos.service.productSearchResults': 'Resultados',
+    'restaurantPos.service.productSearchResultsFor': 'Resultados para "{{query}}"',
     'restaurantPos.service.productAdded': 'Anadido',
     'restaurantPos.service.customizable': 'Personalizable',
     'restaurantPos.service.combo': 'Menu',
     'restaurantPos.service.platter': 'Plato combinado',
     'restaurantPos.service.soldOut': 'Agotado',
+    'restaurantPos.service.favoriteBadge': 'Favorito',
+    'restaurantPos.service.bestSellerBadge': 'Mas vendido',
     'restaurantPos.service.finishProductSearch': 'Cerrar',
     'restaurantPos.service.productPickerSummary': '{{count}} productos anadidos · {{total}}',
     'restaurantPos.service.addProductAction': 'Anadir',
@@ -142,6 +145,7 @@ export class ProductSearchDialog {
     this.products().map((product) =>
       toProductPickerItem(product, {
         favoriteProductIds: this.favoriteProductIds(),
+        bestSellerProductIds: this.bestSellerProductIds(),
         lastAddedProductId: this.lastAddedProductId(),
         productQuantities: this.productQuantities(),
         configuredLines: this.configuredLines(),
@@ -155,7 +159,13 @@ export class ProductSearchDialog {
     const query = this.normalizeSearch(this.query());
 
     if (query) {
-      return [{ id: 'search_results', label: this.translate('restaurantPos.service.productSearchResults'), items: this.filterItemsByQuery(items, query) }];
+      return [
+        {
+          id: 'search_results',
+          label: this.translate('restaurantPos.service.productSearchResultsFor', { query: this.query().trim() }),
+          items: this.filterItemsByQuery(items, query),
+        },
+      ];
     }
 
     const activeSection = this.activeSection();
@@ -289,10 +299,13 @@ export class ProductSearchDialog {
         product.name,
         product.category,
         product.categoryId,
+        product.course,
         product.type,
         product.type === 'combo' ? this.translate('restaurantPos.service.combo') : null,
         product.type === 'platter' ? this.translate('restaurantPos.service.platter') : null,
         product.modifierGroupIds.length ? this.translate('restaurantPos.service.customizable') : null,
+        product.course === 'drinks' ? this.translate('restaurantPos.service.drinkProducts') : null,
+        product.course === 'dessert' ? this.translate('restaurantPos.service.dessertProducts') : null,
         ...(product.allergens ?? []),
       ]
         .filter(Boolean)
@@ -301,7 +314,11 @@ export class ProductSearchDialog {
   }
 
   private normalizeSearch(value: string): string {
-    return value.trim().toLocaleLowerCase();
+    return value
+      .trim()
+      .toLocaleLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private translate(key: string, params?: Record<string, unknown>): string {

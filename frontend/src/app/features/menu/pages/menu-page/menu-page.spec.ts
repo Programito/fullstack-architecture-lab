@@ -12,11 +12,15 @@ describe('MenuPage', () => {
     });
   };
 
-  it('renders localized catalog products and filters by localized search text', async () => {
+  it('renders localized catalog products, tabs and filters by localized search text', async () => {
     const { fixture } = await renderPage();
 
     expect(screen.getByRole('heading', { name: 'Menú' })).toBeTruthy();
+    for (const tab of ['Productos', 'Categorías', 'Modificadores', 'Menús', 'Platos combinados', 'Disponibilidad']) {
+      expect(screen.getByRole('radio', { name: tab })).toBeTruthy();
+    }
     expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Cocina/).length).toBeGreaterThan(0);
     expect(screen.queryByText('Craft Burger')).toBeNull();
 
     fireEvent.input(screen.getByRole('searchbox', { name: 'Buscar en el catálogo' }), { target: { value: 'croquetas' } });
@@ -48,14 +52,14 @@ describe('MenuPage', () => {
     expect(screen.queryByText('No hay productos que coincidan con los filtros.')).toBeNull();
   });
 
-  it('lists combo products with a combo badge and keeps them out of the simple filter', async () => {
+  it('lists menu products with a menu badge and keeps them out of the simple filter', async () => {
     const { fixture } = await renderPage();
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Categoría' }), { target: { value: 'menus' } });
     fixture.detectChanges();
 
     expect(screen.getAllByText('Menu Classic Burger').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Combo').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Menú').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('radio', { name: 'Simples' }));
     fixture.detectChanges();
@@ -82,6 +86,36 @@ describe('MenuPage', () => {
     fixture.detectChanges();
 
     expect(within(details).getByText('€13.50')).toBeTruthy();
+  });
+
+  it('shows management tabs for categories, modifiers, menus, platters and availability', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Categorías' }));
+    fixture.detectChanges();
+    expect(screen.getByText('Hamburguesas')).toBeTruthy();
+    expect(screen.getAllByText(/Subcategorías/i).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+    expect(screen.getByText('Extras de hamburguesa')).toBeTruthy();
+    expect(screen.getAllByText(/opciones/).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
+    fixture.detectChanges();
+    expect(screen.getByText('Menu Classic Burger')).toBeTruthy();
+    expect(screen.getAllByText('Menú').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Platos combinados' }));
+    fixture.detectChanges();
+    expect(screen.getByText('Plato combinado de lomo')).toBeTruthy();
+    expect(screen.getAllByText('Plato combinado').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Disponibilidad' }));
+    fixture.detectChanges();
+    expect(screen.getByRole('heading', { name: 'Productos disponibles' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Productos agotados' })).toBeTruthy();
+    expect(screen.getByText('Coulant de chocolate')).toBeTruthy();
   });
 
   it('shows an empty state when filters have no results', async () => {

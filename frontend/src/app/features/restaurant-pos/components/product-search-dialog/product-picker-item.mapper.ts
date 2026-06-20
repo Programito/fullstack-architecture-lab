@@ -1,6 +1,6 @@
 import type { Product } from '../../models/restaurant-pos.models';
 
-export type ProductPickerBadgeTone = 'customizable' | 'combo' | 'platter' | 'soldOut' | 'recentlyAdded';
+export type ProductPickerBadgeTone = 'customizable' | 'combo' | 'platter' | 'soldOut' | 'favorite' | 'bestSeller' | 'recentlyAdded';
 
 export type ProductPickerBadge = {
   id: ProductPickerBadgeTone;
@@ -29,6 +29,7 @@ export type ProductPickerItem = {
   priceLabel: string;
   categoryLabel: string;
   allergenLabel: string;
+  description: string;
   badges: readonly ProductPickerBadge[];
   actionLabel: string;
   actionAriaLabel: string;
@@ -56,6 +57,7 @@ export type ProductPickerItem = {
 
 export type ProductPickerItemContext = {
   favoriteProductIds: readonly string[];
+  bestSellerProductIds: readonly string[];
   lastAddedProductId: string | null;
   productQuantities: Readonly<Record<string, number>>;
   configuredLines: readonly ProductPickerConfiguredLineInput[];
@@ -72,6 +74,8 @@ const BADGE_CLASSES: Record<ProductPickerBadgeTone, string> = {
   platter:
     'rounded-full border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:text-emerald-200',
   soldOut: 'rounded-full border border-red-200 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:border-red-900 dark:text-red-300',
+  favorite: 'rounded-full border border-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:text-amber-200',
+  bestSeller: 'rounded-full border border-sky-200 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:border-sky-900 dark:text-sky-200',
   recentlyAdded:
     'rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200',
 };
@@ -84,6 +88,7 @@ export function toProductPickerItem(product: Product, context: ProductPickerItem
   const disabled = !product.available;
   const recentlyAdded = context.lastAddedProductId === product.id;
   const isFavorite = context.favoriteProductIds.includes(product.id);
+  const isBestSeller = context.bestSellerProductIds.includes(product.id);
   const nameParams = { name: product.name };
   const countParams = { name: product.name, count: quantity };
   const configuredLines = productConfiguredLines(product, context);
@@ -97,7 +102,8 @@ export function toProductPickerItem(product: Product, context: ProductPickerItem
     priceLabel: context.formatCurrency(product.basePrice ?? product.price ?? 0),
     categoryLabel: product.category ?? product.categoryId,
     allergenLabel: product.allergens?.length ? product.allergens.join(', ') : context.translate('restaurantPos.service.noAllergens'),
-    badges: productPickerBadges(product, { isCombo, isCustomizable, recentlyAdded }, context.translate),
+    description: product.description ?? '',
+    badges: productPickerBadges(product, { isCombo, isCustomizable, isFavorite, isBestSeller, recentlyAdded }, context.translate),
     actionLabel: productActionLabel({ isCombo, isPlatter, isCustomizable }, context.translate),
     actionAriaLabel: productActionAriaLabel(product, { isCombo, isPlatter, isCustomizable }, context.translate),
     disabled,
@@ -199,7 +205,7 @@ function productVisualClass(product: Product): string {
 
 function productPickerBadges(
   product: Product,
-  state: { isCombo: boolean; isCustomizable: boolean; recentlyAdded: boolean },
+  state: { isCombo: boolean; isCustomizable: boolean; isFavorite: boolean; isBestSeller: boolean; recentlyAdded: boolean },
   translate: ProductPickerItemContext['translate'],
 ): ProductPickerBadge[] {
   const badges: ProductPickerBadge[] = [];
@@ -218,6 +224,14 @@ function productPickerBadges(
 
   if (!product.available) {
     badges.push(productPickerBadge('soldOut', translate('restaurantPos.service.soldOut')));
+  }
+
+  if (state.isFavorite) {
+    badges.push(productPickerBadge('favorite', translate('restaurantPos.service.favoriteBadge')));
+  }
+
+  if (state.isBestSeller) {
+    badges.push(productPickerBadge('bestSeller', translate('restaurantPos.service.bestSellerBadge')));
   }
 
   if (state.recentlyAdded) {

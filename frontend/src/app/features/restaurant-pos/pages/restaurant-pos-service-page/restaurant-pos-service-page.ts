@@ -464,10 +464,13 @@ export class RestaurantPosServicePage {
         product.name,
         product.category,
         product.categoryId,
+        product.course,
         product.type,
         product.type === 'combo' ? this.translate('restaurantPos.service.combo') : null,
         product.type === 'platter' ? this.translate('restaurantPos.service.platter') : null,
         product.modifierGroupIds.length ? this.translate('restaurantPos.service.customizable') : null,
+        product.course === 'drinks' ? this.translate('restaurantPos.service.drinkProducts') : null,
+        product.course === 'dessert' ? this.translate('restaurantPos.service.dessertProducts') : null,
         ...(product.allergens ?? []),
       ]
         .filter(Boolean)
@@ -529,7 +532,11 @@ export class RestaurantPosServicePage {
   }
 
   private normalizeSearch(value: string): string {
-    return value.trim().toLocaleLowerCase();
+    return value
+      .trim()
+      .toLocaleLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private translate(key: string, params?: Record<string, unknown>): string {

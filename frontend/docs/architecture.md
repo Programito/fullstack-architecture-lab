@@ -114,6 +114,7 @@ Estructura actual:
 
 ```txt
 features/menu/
+  components/combo-customizer-dialog/
   components/product-customizer-dialog/
   models/
     combo.model.ts
@@ -137,21 +138,29 @@ Reglas de frontera:
 - `MenuPricingService` resuelve grupos, construye modificadores seleccionados, calcula precios y
   crea `configurationSignature`.
 - `MenuValidationService` valida disponibilidad, opciones válidas, grupos requeridos, selección
-  única y máximos.
+  única, máximos y slots de combo.
 - `RestaurantPosStore` crea y conserva el snapshot de `OrderLine`; las pantallas no recalculan el
   precio de una línea ya creada.
-- Los modelos de combos existen solo como contrato futuro; no tienen UI ni lógica funcional en V1.
+- `ComboCustomizerDialog` configura slots de combo con selección por defecto, suplementos y rechazo
+  de productos no disponibles.
+- Las líneas de combo guardan `selectedComboSlots` como snapshot: slot, producto elegido, curso,
+  política de preparación y suplemento aplicado.
 
 ```mermaid
 flowchart LR
   MenuCatalog["MenuMockService<br/>Catalogo actual"] --> MenuPage["/restaurant-pos/menu<br/>Revision de catalogo"]
   MenuCatalog --> ProductSearch["ProductSearchDialog"]
   ProductSearch --> Customizer["ProductCustomizerDialog"]
+  ProductSearch --> ComboCustomizer["ComboCustomizerDialog"]
   Customizer --> Pricing["MenuPricingService<br/>precio + firma"]
   Customizer --> Validation["MenuValidationService<br/>reglas de seleccion"]
+  ComboCustomizer --> ComboPricing["MenuPricingService<br/>precio combo + firma"]
+  ComboCustomizer --> ComboValidation["MenuValidationService<br/>slots validos"]
   Pricing --> Store["RestaurantPosStore"]
   Validation --> Store
-  Store --> OrderLine["OrderLine snapshot<br/>nombre + precio + modificadores + nota"]
+  ComboPricing --> Store
+  ComboValidation --> Store
+  Store --> OrderLine["OrderLine snapshot<br/>producto + precio + seleccion"]
   OrderLine --> ServicePanel["ServiceTablePanel"]
   OrderLine --> Kitchen["Vista cocina"]
 ```
@@ -161,11 +170,15 @@ El flujo operativo queda así:
 1. La persona abre búsqueda de producto o revisa el catálogo en `Menú`.
 2. Un producto simple se añade directo con `addProductToSelectedTable(productId)`.
 3. Un producto con modificadores abre `ProductCustomizerDialog`.
-4. Confirmar usa `addCustomizedProductToSelectedTable(productId, selectedModifierOptionIds, kitchenNote?)`.
-5. La store mergea líneas con la misma `configurationSignature`; distintas notas o modificadores
+4. Un combo abre `ComboCustomizerDialog`, carga selecciones por defecto y permite cambiar productos
+   disponibles por slot.
+5. Confirmar un producto usa `addCustomizedProductToSelectedTable(productId, selectedModifierOptionIds, kitchenNote?)`.
+6. Confirmar un combo usa `addConfiguredComboToSelectedTable(comboProductId, slotSelections)`.
+7. La store mergea líneas con la misma `configurationSignature`; distintas notas, modificadores o
+   selecciones de combo
    generan líneas separadas.
-6. Servicio y cocina leen el snapshot de `OrderLine`, mostrando extras, `SIN ...` y nota de cocina
-   sin depender de cambios posteriores del catálogo.
+8. Servicio y cocina leen el snapshot de `OrderLine`, mostrando extras, `SIN ...`, nota de cocina o
+   slots de combo sin depender de cambios posteriores del catálogo.
 
 ## Documentación
 
