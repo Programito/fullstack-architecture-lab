@@ -168,6 +168,8 @@ model Restaurant {
   roleAssignments UserRoleAssignment[]
   restaurantProducts RestaurantProduct[]
   menus           RestaurantMenu[]
+  floors          RestaurantFloor[]
+  tables          RestaurantTable[]
   orders          Order[]
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
@@ -517,6 +519,59 @@ model Payment {
   @@map("payments")
 }
 
+model RestaurantFloor {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  name          String
+  rows          Int
+  columns       Int
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  elements      FloorElement[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([restaurantId, name])
+  @@map("restaurant_floors")
+}
+
+model RestaurantTable {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  tableNumber   Int
+  name          String?
+  capacity      Int
+  isActive      Boolean        @default(true)
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  floorElements FloorElement[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([restaurantId, tableNumber])
+  @@map("restaurant_tables")
+}
+
+model FloorElement {
+  id         String           @id @default(uuid())
+  floorId     String
+  type       FloorElementType
+  tableId     String?
+  label      String
+  x          Int
+  y          Int
+  width      Int
+  height     Int
+  shape      TableShape?
+  sortOrder  Int
+  floor      RestaurantFloor  @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  table      RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([floorId, label])
+  @@unique([floorId, sortOrder])
+  @@map("floor_elements")
+}
+
 enum TaskStatus {
   PENDING
   COMPLETED
@@ -604,4 +659,21 @@ enum PaymentStatus {
   completed
   failed
   refunded
+}
+
+enum FloorElementType {
+  table
+  bar
+  kitchen
+  bathroom
+  entrance
+  blocked
+  stool
+}
+
+enum TableShape {
+  round
+  square
+  rectangle
+  long
 }

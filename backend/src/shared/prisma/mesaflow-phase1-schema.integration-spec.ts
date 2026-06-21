@@ -32,6 +32,9 @@ describe('MesaFlow Phase 1 Prisma schema', () => {
     await prisma.payment.deleteMany();
     await prisma.orderLine.deleteMany();
     await prisma.order.deleteMany();
+    await prisma.floorElement.deleteMany();
+    await prisma.restaurantFloor.deleteMany();
+    await prisma.restaurantTable.deleteMany();
     await prisma.comboSlotOption.deleteMany();
     await prisma.comboSlot.deleteMany();
     await prisma.comboDefinition.deleteMany();
