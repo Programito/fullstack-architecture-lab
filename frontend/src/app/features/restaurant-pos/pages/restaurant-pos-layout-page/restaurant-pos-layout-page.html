@@ -59,6 +59,7 @@
 
       <app-floor-plan
         (editElement)="openEditElementModal($event)"
+        (elementMoved)="handleFloorElementMoved($event)"
         (resizeElement)="openResizeElementModal($event)"
         (selectedElementChange)="handleSelectedLayoutElementChange($event)"
       />

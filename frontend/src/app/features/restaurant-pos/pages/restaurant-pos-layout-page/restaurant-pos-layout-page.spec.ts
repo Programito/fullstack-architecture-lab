@@ -94,16 +94,98 @@ describe('RestaurantPosLayoutPage', () => {
   ) => {
     const i18n = provideI18nTesting(locale);
     const restaurantContext = options?.restaurantContext ?? createRestaurantContextMock();
+    let responseState = createDefaultFloorsResponse();
+    const defaultCreateFloorElement = vi.fn(
+      (restaurantId: string, _floorId: string, body: { type: string; label: string; x: number; y: number; width: number; height: number; tableId: string | null; shape: string | null; sortOrder: number }) => {
+        const nextTables = [...responseState.tables];
+        const nextElements = [...responseState.floors[0]!.elements];
+        let tableId = body.tableId;
+
+        if ((body.type === 'table' || body.type === 'stool') && !tableId) {
+          const nextTableNumber = Math.max(0, ...nextTables.map((table) => table.tableNumber)) + 1;
+          tableId = body.type === 'stool' ? `stool-${nextTableNumber}` : `table-${nextTableNumber}`;
+          nextTables.push({
+            id: tableId,
+            tableNumber: nextTableNumber,
+            name: `Mesa ${nextTableNumber}`,
+            capacity: body.type === 'stool' ? 1 : 4,
+            isActive: true,
+          });
+        }
+
+        nextElements.push({
+          id: `floor-element-${nextElements.length + 1}`,
+          type: body.type as RestaurantFloorsDto['floors'][number]['elements'][number]['type'],
+          label: body.label,
+          x: body.x,
+          y: body.y,
+          width: body.width,
+          height: body.height,
+          tableId,
+          shape: body.shape as RestaurantFloorsDto['floors'][number]['elements'][number]['shape'],
+          sortOrder: body.sortOrder,
+        });
+
+        responseState = {
+          restaurantId,
+          tables: nextTables,
+          floors: [{ ...responseState.floors[0]!, elements: nextElements }],
+        };
+
+        return of(responseState);
+      },
+    );
+    const defaultUpdateFloor = vi.fn((restaurantId: string, floorId: string, body: { name: string; rows: number; columns: number }) => {
+      responseState = {
+        restaurantId,
+        tables: responseState.tables,
+        floors: responseState.floors.map((floor) =>
+          floor.id === floorId ? { ...floor, name: body.name, rows: body.rows, columns: body.columns } : floor,
+        ),
+      };
+
+      return of(responseState);
+    });
+    const defaultReorderFloorElements = vi.fn(
+      (
+        restaurantId: string,
+        floorId: string,
+        body: {
+          elements: Array<{ id: string; x: number; y: number; width: number; height: number; sortOrder: number }>;
+        },
+      ) => {
+        const updates = new Map(body.elements.map((element) => [element.id, element]));
+        responseState = {
+          restaurantId,
+          tables: responseState.tables,
+          floors: responseState.floors.map((floor) =>
+            floor.id === floorId
+              ? {
+                  ...floor,
+                  elements: floor.elements
+                    .map((element) => {
+                      const update = updates.get(element.id);
+                      return update ? { ...element, ...update } : element;
+                    })
+                    .sort((left, right) => left.sortOrder - right.sortOrder),
+                }
+              : floor,
+          ),
+        };
+
+        return of(responseState);
+      },
+    );
     const api = {
       listRestaurants: vi.fn(() => of([])),
-      getRestaurantFloors: vi.fn(() => of(createDefaultFloorsResponse())),
-      createFloorElement: vi.fn(() => of(createDefaultFloorsResponse())),
-      updateFloor: vi.fn(() => of(createDefaultFloorsResponse())),
-      reorderFloorElements: vi.fn(() => of(createDefaultFloorsResponse())),
+      getRestaurantFloors: vi.fn(() => of(responseState)),
+      createFloorElement: defaultCreateFloorElement,
+      updateFloor: defaultUpdateFloor,
+      reorderFloorElements: defaultReorderFloorElements,
       ...(options?.apiOverrides ?? {}),
     };
 
-    return render(RestaurantPosLayoutPage, {
+    const view = await render(RestaurantPosLayoutPage, {
       imports: [...i18n.imports],
       providers: [
         ...i18n.providers,
@@ -111,6 +193,12 @@ describe('RestaurantPosLayoutPage', () => {
         { provide: RestaurantPosApiService, useValue: api },
       ],
     });
+
+    return {
+      ...view,
+      api,
+      restaurantContext,
+    };
   };
 
   it('loads the floor plan for the active restaurant', async () => {
@@ -140,6 +228,128 @@ describe('RestaurantPosLayoutPage', () => {
     expect(store.floorElements()[0]?.label).toBe('M11');
     expect(store.activeFloorId()).toBe('floor-main');
     expect(store.activeFloorName()).toBe('Sala principal');
+  });
+
+  it('posts a new element and refreshes the layout from the backend response', async () => {
+    const createFloorElement = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: [
+              ...createDefaultFloorsResponse().floors[0]!.elements,
+              { id: 'floor-element-api-99', type: 'blocked', label: 'Zona temporal', x: 10, y: 9, width: 2, height: 1, tableId: null, shape: null, sortOrder: 9 },
+            ],
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+
+    const { api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        createFloorElement,
+      } as Partial<RestaurantPosApiService>,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'blocked-area' } });
+    fireEvent.input(screen.getByLabelText('Etiqueta del elemento'), { target: { value: 'Zona temporal' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 11 fila 10' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Añadir elemento' })).getByRole('button', { name: /Añadir/i }));
+
+    expect(api.createFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      expect.objectContaining({
+        type: 'blocked',
+        label: 'Zona temporal',
+        x: 10,
+        y: 9,
+        width: 1,
+        height: 1,
+      }),
+    );
+    expect(screen.getByLabelText('Zona temporal elemento del plano')).toBeTruthy();
+  });
+
+  it('patches the floor dimensions and refreshes the layout', async () => {
+    const updateFloor = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 9,
+            columns: 10,
+            elements: createDefaultFloorsResponse().floors[0]!.elements,
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+
+    const { api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloor,
+      } as Partial<RestaurantPosApiService>,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño del plano' }));
+
+    expect(api.updateFloor).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      expect.objectContaining({ name: 'Sala principal', rows: 9, columns: 10 }),
+    );
+    expect(screen.getByText('10 columnas x 9 filas')).toBeTruthy();
+  });
+
+  it('persists a reordered element arrangement through the backend', async () => {
+    const reorderFloorElements = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: createDefaultFloorsResponse()
+              .floors[0]!
+              .elements.map((element) => (element.id === 'floor-element-1' ? { ...element, x: 2, y: 3 } : element)),
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+
+    const { fixture, api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        reorderFloorElements,
+      } as Partial<RestaurantPosApiService>,
+    });
+
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    store.moveFloorElement('floor-element-1', 2, 3);
+    (fixture.componentInstance as any).handleFloorElementMoved(store.floorElements()[0]!);
+
+    expect(api.reorderFloorElements).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      expect.objectContaining({
+        elements: expect.arrayContaining([expect.objectContaining({ id: 'floor-element-1', x: 2, y: 3 })]),
+      }),
+    );
+    expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(expect.objectContaining({ x: 2, y: 3 }));
   });
 
   it('shows a clean layout toolbar without technical grid controls on the page', async () => {

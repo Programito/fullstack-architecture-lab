@@ -891,6 +891,10 @@ export class RestaurantPosStore {
     return !this._floorElements().some((element) => element.id !== ignoredElementId && this.overlaps(element, input));
   }
 
+  nextFloorElementSortOrder(): number {
+    return this._floorElements().length + 1;
+  }
+
   private updateSelectedOrderStatus(
     orderStatus: TableOrder['status'],
     tableStatus: TableStatus,

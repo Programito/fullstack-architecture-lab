@@ -15,6 +15,7 @@ import { EVENT_BUS } from '../src/shared/events/event-bus.port';
 import { InMemoryEventBus } from '../src/shared/events/in-memory-event-bus';
 import { TASK_REPOSITORY } from '../src/tasks/application/ports/task-repository.port';
 import { InMemoryTaskRepository } from '../src/tasks/infrastructure/persistence/in-memory-task.repository';
+import { DemoRestaurantReadRepository } from '../src/restaurants/infrastructure/demo-restaurant-read.repository';
 
 class TestPasswordHasher implements PasswordHasher {
   async hash(plainPassword: string): Promise<string> {
@@ -33,6 +34,7 @@ describe('App e2e', () => {
   let roleRepository: InMemoryRoleRepository;
   let eventBus: InMemoryEventBus;
   let sessionRepository: InMemoryAuthSessionRepository;
+  let restaurantReadRepository: DemoRestaurantReadRepository;
 
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = 'http://localhost:4200';
@@ -75,6 +77,7 @@ describe('App e2e', () => {
     );
     await app.init();
     sessionRepository = app.get(InMemoryAuthSessionRepository);
+    restaurantReadRepository = app.get(DemoRestaurantReadRepository);
 
   }, 60_000);
 
@@ -84,6 +87,7 @@ describe('App e2e', () => {
     roleRepository.clear();
     eventBus.clear();
     sessionRepository.clear();
+    restaurantReadRepository.reset();
   });
 
   afterAll(async () => {
@@ -92,6 +96,286 @@ describe('App e2e', () => {
 
   it('returns health status from the versioned API', async () => {
     await request(app.getHttpServer()).get('/api/v1/health').expect(200).expect({ status: 'ok' });
+  });
+
+  it('lists demo restaurants and returns their menu, floors, and reservations through versioned read endpoints', async () => {
+    const restaurantsResponse = await request(app.getHttpServer()).get('/api/v1/restaurants').expect(200);
+
+    expect(restaurantsResponse.body).toEqual([
+      expect.objectContaining({
+        id: 'restaurant-mesaflow-centro',
+        name: 'MesaFlow Centro',
+        timezone: 'Europe/Madrid',
+        currency: 'EUR',
+      }),
+    ]);
+
+    const [restaurant] = restaurantsResponse.body;
+    const menuResponse = await request(app.getHttpServer()).get(`/api/v1/restaurants/${restaurant.id}/menu`).expect(200);
+    expect(menuResponse.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      name: 'Carta principal',
+    });
+    expect(menuResponse.body.sections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Bebidas',
+        }),
+        expect.objectContaining({
+          name: 'Principales',
+        }),
+      ]),
+    );
+
+    const floorsResponse = await request(app.getHttpServer()).get(`/api/v1/restaurants/${restaurant.id}/floors`).expect(200);
+    expect(floorsResponse.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      tables: expect.arrayContaining([
+        expect.objectContaining({
+          tableNumber: 1,
+          capacity: 2,
+        }),
+      ]),
+    });
+    expect(floorsResponse.body.floors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Sala principal',
+          rows: 12,
+          columns: 16,
+        }),
+      ]),
+    );
+
+    const reservationsResponse = await request(app.getHttpServer())
+      .get(`/api/v1/restaurants/${restaurant.id}/reservations`)
+      .expect(200);
+    expect(reservationsResponse.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          customerNameSnapshot: 'Laura Gomez',
+          partySize: 2,
+          status: 'confirmed',
+        }),
+      ]),
+    );
+  });
+
+  it('returns 404 for unknown restaurant read endpoints', async () => {
+    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/menu').expect(404);
+    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/floors').expect(404);
+    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/reservations').expect(404);
+  });
+
+  it('reorders floor elements within a restaurant floor matrix', async () => {
+    const response = await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .send({
+        elements: [
+          { id: 'floor-element-1', x: 2, y: 2, width: 2, height: 2, sortOrder: 2 },
+          { id: 'floor-element-2', x: 6, y: 2, width: 2, height: 2, sortOrder: 1 },
+        ],
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          elements: expect.arrayContaining([
+            expect.objectContaining({ id: 'floor-element-1', x: 2, y: 2 }),
+            expect.objectContaining({ id: 'floor-element-2', x: 6, y: 2 }),
+          ]),
+        }),
+      ]),
+    });
+
+    const floorsResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/floors')
+      .expect(200);
+    const updatedElements = floorsResponse.body.floors[0].elements;
+    expect(updatedElements.find((element: { id: string }) => element.id === 'floor-element-2')).toMatchObject({
+      sortOrder: 1,
+      x: 6,
+      y: 2,
+    });
+  });
+
+  it('returns 404 for missing floor reorder target and 400 for invalid payload', async () => {
+    await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing/elements/reorder')
+      .send({ elements: [] })
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .send({
+        elements: [{ id: 'floor-element-1', x: 0, y: 1, width: 0, height: 2, sortOrder: 1 }],
+      })
+      .expect(400);
+  });
+
+  it('updates floor metadata for the restaurant matrix', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main')
+      .send({
+        name: 'Sala principal renovada',
+        rows: 14,
+        columns: 18,
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          name: 'Sala principal renovada',
+          rows: 14,
+          columns: 18,
+        }),
+      ]),
+    });
+
+    const floorsResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/floors')
+      .expect(200);
+    expect(floorsResponse.body.floors[0]).toMatchObject({
+      id: 'floor-main',
+      name: 'Sala principal renovada',
+      rows: 14,
+      columns: 18,
+    });
+  });
+
+  it('returns 404 for missing floor metadata target and 400 for invalid floor dimensions', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing')
+      .send({ name: 'Nueva sala', rows: 10, columns: 10 })
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main')
+      .send({ name: '', rows: 0, columns: 0 })
+      .expect(400);
+  });
+
+  it('creates a new floor element inside the restaurant matrix', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .send({
+        type: 'blocked',
+        label: 'Zona temporal',
+        x: 10,
+        y: 9,
+        width: 2,
+        height: 1,
+        sortOrder: 8,
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          elements: expect.arrayContaining([
+            expect.objectContaining({
+              label: 'Zona temporal',
+              type: 'blocked',
+              x: 10,
+              y: 9,
+            }),
+          ]),
+        }),
+      ]),
+    });
+
+    const floorsResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/floors')
+      .expect(200);
+    expect(floorsResponse.body.floors[0].elements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Zona temporal',
+          type: 'blocked',
+          sortOrder: 8,
+        }),
+      ]),
+    );
+  });
+
+  it('creates a restaurant table when the new floor element is a table', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .send({
+        type: 'table',
+        label: 'M8',
+        x: 10,
+        y: 9,
+        width: 2,
+        height: 2,
+        shape: 'square',
+        sortOrder: 8,
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      tables: expect.arrayContaining([
+        expect.objectContaining({
+          tableNumber: 8,
+          name: 'M8',
+          capacity: 4,
+        }),
+      ]),
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          elements: expect.arrayContaining([
+            expect.objectContaining({
+              label: 'M8',
+              type: 'table',
+              tableId: 'table-8',
+              x: 10,
+              y: 9,
+              width: 2,
+              height: 2,
+              shape: 'square',
+            }),
+          ]),
+        }),
+      ]),
+    });
+  });
+
+  it('returns 404 for missing floor create target and 400 for invalid element payload', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing/elements')
+      .send({
+        type: 'blocked',
+        label: 'Zona temporal',
+        x: 10,
+        y: 9,
+        width: 2,
+        height: 1,
+        sortOrder: 8,
+      })
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .send({
+        type: 'blocked',
+        label: '',
+        x: 0,
+        y: 9,
+        width: 0,
+        height: 1,
+        sortOrder: 0,
+      })
+      .expect(400);
   });
 
   it('creates, lists and completes tasks through versioned REST endpoints', async () => {
