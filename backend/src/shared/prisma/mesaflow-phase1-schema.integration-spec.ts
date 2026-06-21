@@ -25,6 +25,9 @@ describe('MesaFlow Phase 1 Prisma schema', () => {
   }, 60_000);
 
   beforeEach(async () => {
+    await prisma.reservationTable.deleteMany();
+    await prisma.reservation.deleteMany();
+    await prisma.customer.deleteMany();
     await prisma.orderLineModifier.deleteMany();
     await prisma.orderLineComboSlot.deleteMany();
     await prisma.orderLinePlatterComponent.deleteMany();

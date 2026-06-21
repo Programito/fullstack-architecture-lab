@@ -146,6 +146,7 @@ model Organization {
   taxRates      TaxRate[]
   products      Product[]
   modifierGroups ModifierGroup[]
+  customers     Customer[]
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
 
@@ -171,6 +172,7 @@ model Restaurant {
   floors          RestaurantFloor[]
   tables          RestaurantTable[]
   orders          Order[]
+  reservations    Reservation[]
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
@@ -543,6 +545,7 @@ model RestaurantTable {
   isActive      Boolean        @default(true)
   restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   floorElements FloorElement[]
+  reservationTables ReservationTable[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -570,6 +573,53 @@ model FloorElement {
   @@unique([floorId, label])
   @@unique([floorId, sortOrder])
   @@map("floor_elements")
+}
+
+model Customer {
+  id             String        @id @default(uuid())
+  organizationId String
+  name           String
+  phone          String?
+  email          String?
+  notes          String?
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("customers")
+}
+
+model Reservation {
+  id                   String              @id @default(uuid())
+  restaurantId         String
+  customerId           String?
+  customerNameSnapshot String
+  customerPhoneSnapshot String?
+  partySize            Int
+  reservationAt        DateTime
+  durationMinutes      Int
+  status               ReservationStatus   @default(pending)
+  notes                String?
+  restaurant           Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer             Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  tables               ReservationTable[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([restaurantId, reservationAt, status])
+  @@map("reservations")
+}
+
+model ReservationTable {
+  reservationId  String
+  tableId        String
+  reservation    Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  table          RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@id([reservationId, tableId])
+  @@map("reservation_tables")
 }
 
 enum TaskStatus {
@@ -676,4 +726,12 @@ enum TableShape {
   square
   rectangle
   long
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  seated
+  cancelled
+  no_show
 }
