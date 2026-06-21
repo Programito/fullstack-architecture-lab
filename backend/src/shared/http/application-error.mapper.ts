@@ -18,11 +18,15 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_password':
     case 'invalid_user_name':
     case 'invalid_role_name':
+    case 'invalid_floor_element_layout':
+    case 'invalid_floor_layout':
       return new BadRequestException(error.message);
 
     case 'user_not_found':
     case 'role_not_found':
     case 'task_not_found':
+    case 'restaurant_not_found':
+    case 'floor_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':

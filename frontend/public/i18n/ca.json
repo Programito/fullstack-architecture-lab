@@ -223,6 +223,7 @@
         "size": "Mida: {{width}} x {{height}}",
         "addNamed": "Afegir {{label}}",
         "addElement": "Afegir element",
+        "editAction": "Editar",
         "saveChanges": "Desar els canvis"
       }
     },

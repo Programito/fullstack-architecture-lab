@@ -144,7 +144,7 @@ export class RestaurantPosLayoutPage {
   );
   protected readonly elementActionLabel = computed(() => {
     if (this.editingElementId()) {
-      return this.translate('restaurantPos.layout.elementDialog.saveChanges');
+      return this.translate('restaurantPos.layout.elementDialog.editAction');
     }
 
     const label = this.elementLabelInput().trim();
@@ -212,18 +212,49 @@ export class RestaurantPosLayoutPage {
 
   protected applyElementResize(): void {
     const elementId = this.resizingElementId();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const floorId = this.store.activeFloorId();
 
     if (!elementId) {
       return;
     }
 
+    const element = this.store.floorElements().find((candidate) => candidate.id === elementId);
+    if (!element) {
+      return;
+    }
+
     this.store.resizeFloorElement(elementId, this.resizeElementWidthInput(), this.resizeElementHeightInput());
 
-    const resizedElement = this.store.floorElements().find((element) => element.id === elementId);
-    if (resizedElement?.width === this.resizeElementWidthInput() && resizedElement.height === this.resizeElementHeightInput()) {
-      this.persistCurrentFloorArrangement();
-      this.closeResizeElementModal();
+    const resizedElement = this.store.floorElements().find((candidate) => candidate.id === elementId);
+    if (!resizedElement || resizedElement.width !== this.resizeElementWidthInput() || resizedElement.height !== this.resizeElementHeightInput()) {
+      return;
     }
+
+    if (!restaurant || !floorId) {
+      this.closeResizeElementModal();
+      return;
+    }
+
+    this.api
+      .updateFloorElement(restaurant.id, floorId, elementId, {
+        label: resizedElement.label,
+        x: resizedElement.x,
+        y: resizedElement.y,
+        width: this.resizeElementWidthInput(),
+        height: this.resizeElementHeightInput(),
+        shape: resizedElement.shape ?? null,
+        capacity: null,
+      })
+      .subscribe({
+        next: (floors) => {
+          this.applyFloorsResponse(floors);
+          this.closeResizeElementModal();
+        },
+        error: () => {
+          this.store.resizeFloorElement(elementId, element.width, element.height);
+        },
+      });
   }
 
   protected selectResizeSize(columns: number, rows: number): void {
@@ -364,9 +395,50 @@ export class RestaurantPosLayoutPage {
     }
 
     if (editingElementId) {
-      this.store.updateFloorElementDetails(editingElementId, placement);
+      const element = this.store.floorElements().find((candidate) => candidate.id === editingElementId);
+      if (!element) {
+        return;
+      }
+
+      const nextElement = {
+        ...element,
+        ...placement,
+      };
+
+      this.store.updateFloorElementDetails(editingElementId, nextElement);
       this.store.moveFloorElement(editingElementId, placement.x, placement.y);
       this.store.updateTableCapacityForElement(editingElementId, this.tableCapacityInput());
+
+      if (!restaurant || !floorId) {
+        this.closeAddElementModal();
+        return;
+      }
+
+      const updatedElement = this.store.floorElements().find((candidate) => candidate.id === editingElementId);
+      if (!updatedElement) {
+        return;
+      }
+
+      this.api
+        .updateFloorElement(restaurant.id, floorId, editingElementId, {
+          label: updatedElement.label,
+          x: updatedElement.x,
+          y: updatedElement.y,
+          width: updatedElement.width,
+          height: updatedElement.height,
+          shape: updatedElement.shape ?? null,
+          capacity: updatedElement.tableId ? this.tableCapacityInput() : null,
+        })
+        .subscribe({
+          next: (floors) => {
+            this.applyFloorsResponse(floors);
+            this.closeAddElementModal();
+          },
+          error: () => {
+            // Keep the dialog open so the user can retry the edit.
+          },
+        });
+      return;
     } else {
       if (restaurant && floorId) {
         this.api
@@ -381,8 +453,14 @@ export class RestaurantPosLayoutPage {
             shape: placement.shape ?? null,
             sortOrder: this.store.nextFloorElementSortOrder(),
           })
-          .subscribe((floors) => {
-            this.applyFloorsResponse(floors);
+          .subscribe({
+            next: (floors) => {
+              this.applyFloorsResponse(floors);
+              this.closeAddElementModal();
+            },
+            error: () => {
+              // Keep the dialog open so the user can retry or choose another position.
+            },
           });
       } else {
         this.store.addFloorElement(placement);
@@ -390,7 +468,9 @@ export class RestaurantPosLayoutPage {
         if (addedElement?.type === 'table') {
           this.store.updateTableCapacityForElement(addedElement.id, this.tableCapacityInput());
         }
+        this.closeAddElementModal();
       }
+      return;
     }
 
     this.closeAddElementModal();

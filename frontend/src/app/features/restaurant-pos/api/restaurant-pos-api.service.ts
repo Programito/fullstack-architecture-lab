@@ -8,6 +8,7 @@ import type {
   ReorderFloorElementsRequest,
   RestaurantFloorsDto,
   RestaurantSummaryDto,
+  UpdateFloorElementRequest,
   UpdateFloorRequest,
 } from './restaurant-pos-api.models';
 
@@ -37,6 +38,15 @@ export class RestaurantPosApiService {
 
   updateFloor(restaurantId: string, floorId: string, request: UpdateFloorRequest): Observable<RestaurantFloorsDto> {
     return this.http.patch<RestaurantFloorsDto>(`${this.restaurantsUrl}/${restaurantId}/floors/${floorId}`, request);
+  }
+
+  updateFloorElement(
+    restaurantId: string,
+    floorId: string,
+    elementId: string,
+    request: UpdateFloorElementRequest,
+  ): Observable<RestaurantFloorsDto> {
+    return this.http.patch<RestaurantFloorsDto>(`${this.restaurantsUrl}/${restaurantId}/floors/${floorId}/elements/${elementId}`, request);
   }
 
   reorderFloorElements(

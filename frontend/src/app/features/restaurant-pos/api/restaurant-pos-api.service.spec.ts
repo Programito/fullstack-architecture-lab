@@ -167,4 +167,34 @@ describe('RestaurantPosApiService', () => {
     request.flush({ restaurantId: 'restaurant-mesaflow-centro', tables: [], floors: [] });
     http.verify();
   });
+
+  it('patches one floor element', () => {
+    const { service, http } = setup();
+
+    service
+      .updateFloorElement('restaurant-mesaflow-centro', 'floor-main', 'floor-element-5', {
+        label: 'Bar',
+        x: 1,
+        y: 7,
+        width: 1,
+        height: 6,
+        shape: null,
+        capacity: null,
+      })
+      .subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-5');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      label: 'Bar',
+      x: 1,
+      y: 7,
+      width: 1,
+      height: 6,
+      shape: null,
+      capacity: null,
+    });
+    request.flush({ restaurantId: 'restaurant-mesaflow-centro', tables: [], floors: [] });
+    http.verify();
+  });
 });

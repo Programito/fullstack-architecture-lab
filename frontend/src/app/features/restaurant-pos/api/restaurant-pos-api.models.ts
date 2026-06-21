@@ -64,6 +64,16 @@ export type UpdateFloorRequest = {
   columns: number;
 };
 
+export type UpdateFloorElementRequest = {
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  shape: RestaurantElementShape | null;
+  capacity: number | null;
+};
+
 export type ReorderFloorElementsRequest = {
   elements: Array<{
     id: string;

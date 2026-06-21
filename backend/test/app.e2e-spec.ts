@@ -202,6 +202,25 @@ describe('App e2e', () => {
     });
   });
 
+  it('allows reordering a floor element to the first grid column using zero-based coordinates', async () => {
+    const response = await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .send({
+        elements: [{ id: 'floor-element-5', x: 0, y: 7, width: 3, height: 1, sortOrder: 5 }],
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          elements: expect.arrayContaining([expect.objectContaining({ id: 'floor-element-5', x: 0, y: 7 })]),
+        }),
+      ]),
+    });
+  });
+
   it('returns 404 for missing floor reorder target and 400 for invalid payload', async () => {
     await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing/elements/reorder')
@@ -211,7 +230,7 @@ describe('App e2e', () => {
     await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
       .send({
-        elements: [{ id: 'floor-element-1', x: 0, y: 1, width: 0, height: 2, sortOrder: 1 }],
+        elements: [{ id: 'floor-element-1', x: -1, y: 1, width: 0, height: 2, sortOrder: 1 }],
       })
       .expect(400);
   });
@@ -350,6 +369,79 @@ describe('App e2e', () => {
     });
   });
 
+  it('updates one floor element size through a dedicated endpoint', async () => {
+    const response = await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
+      .send({
+        label: 'Mesa terraza 1',
+        x: 1,
+        y: 1,
+        width: 3,
+        height: 2,
+        shape: 'square',
+        capacity: 6,
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      tables: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'table-1',
+          name: 'Mesa terraza 1',
+          capacity: 6,
+        }),
+      ]),
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          elements: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'floor-element-1',
+              label: 'Mesa terraza 1',
+              width: 3,
+              height: 2,
+              x: 1,
+              y: 1,
+            }),
+          ]),
+        }),
+      ]),
+    });
+  });
+
+  it('accepts a floor element anchored at the first grid column using frontend zero-based coordinates', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .send({
+        type: 'blocked',
+        label: 'Esquina',
+        x: 0,
+        y: 9,
+        width: 1,
+        height: 1,
+        sortOrder: 8,
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      restaurantId: 'restaurant-mesaflow-centro',
+      floors: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'floor-main',
+          elements: expect.arrayContaining([
+            expect.objectContaining({
+              label: 'Esquina',
+              type: 'blocked',
+              x: 0,
+              y: 9,
+            }),
+          ]),
+        }),
+      ]),
+    });
+  });
+
   it('returns 404 for missing floor create target and 400 for invalid element payload', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing/elements')
@@ -369,11 +461,38 @@ describe('App e2e', () => {
       .send({
         type: 'blocked',
         label: '',
-        x: 0,
+        x: -1,
         y: 9,
         width: 0,
         height: 1,
         sortOrder: 0,
+      })
+      .expect(400);
+  });
+
+  it('returns 404 for missing floor element update target and 400 for invalid element update payload', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/missing')
+      .send({
+        label: 'Bar',
+        x: 1,
+        y: 7,
+        width: 1,
+        height: 5,
+        shape: null,
+      })
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
+      .send({
+        label: '',
+        x: -1,
+        y: 1,
+        width: 0,
+        height: 6,
+        shape: null,
+        capacity: 0,
       })
       .expect(400);
   });

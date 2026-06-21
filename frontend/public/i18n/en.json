@@ -223,6 +223,7 @@
         "size": "Size: {{width}} x {{height}}",
         "addNamed": "Add {{label}}",
         "addElement": "Add element",
+        "editAction": "Edit",
         "saveChanges": "Save changes"
       }
     },

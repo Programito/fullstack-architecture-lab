@@ -1,6 +1,6 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
@@ -146,6 +146,57 @@ describe('RestaurantPosLayoutPage', () => {
 
       return of(responseState);
     });
+    const defaultUpdateFloorElement = vi.fn(
+      (
+        restaurantId: string,
+        floorId: string,
+        elementId: string,
+        body: {
+          label: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          shape: string | null;
+          capacity: number | null;
+        },
+      ) => {
+        responseState = {
+          restaurantId,
+          tables: responseState.tables.map((table) =>
+            table.id === responseState.floors[0]!.elements.find((element) => element.id === elementId)?.tableId
+              ? {
+                  ...table,
+                  name: body.label,
+                  capacity: body.capacity ?? table.capacity,
+                }
+              : table,
+          ),
+          floors: responseState.floors.map((floor) =>
+            floor.id === floorId
+              ? {
+                  ...floor,
+                  elements: floor.elements.map((element) =>
+                    element.id === elementId
+                      ? {
+                          ...element,
+                          label: body.label,
+                          x: body.x,
+                          y: body.y,
+                          width: body.width,
+                          height: body.height,
+                          shape: body.shape as RestaurantFloorsDto['floors'][number]['elements'][number]['shape'],
+                        }
+                      : element,
+                  ),
+                }
+              : floor,
+          ),
+        };
+
+        return of(responseState);
+      },
+    );
     const defaultReorderFloorElements = vi.fn(
       (
         restaurantId: string,
@@ -181,6 +232,7 @@ describe('RestaurantPosLayoutPage', () => {
       getRestaurantFloors: vi.fn(() => of(responseState)),
       createFloorElement: defaultCreateFloorElement,
       updateFloor: defaultUpdateFloor,
+      updateFloorElement: defaultUpdateFloorElement,
       reorderFloorElements: defaultReorderFloorElements,
       ...(options?.apiOverrides ?? {}),
     };
@@ -635,6 +687,24 @@ describe('RestaurantPosLayoutPage', () => {
     );
   });
 
+  it('keeps the add element dialog open when the backend create request fails', async () => {
+    const apiError = new Error('create failed');
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: {
+        createFloorElement: vi.fn(() => throwError(() => apiError)),
+      },
+    });
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const initialElementCount = store.floorElements().length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
+
+    expect(screen.getByRole('dialog', { name: 'Añadir elemento' })).toBeTruthy();
+    expect(store.floorElements().length).toBe(initialElementCount);
+  });
+
   it('adds an element with a custom occupied size', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
@@ -711,7 +781,28 @@ describe('RestaurantPosLayoutPage', () => {
   });
 
   it('applies a valid selected element resize', async () => {
-    const { fixture } = await renderLayoutPage();
+    const updateFloorElement = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: createDefaultFloorsResponse()
+              .floors[0]!
+              .elements.map((element) => (element.id === 'floor-element-1' ? { ...element, width: 3, height: 2 } : element)),
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+    const { fixture, api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloorElement,
+      } as Partial<RestaurantPosApiService>,
+    });
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
@@ -719,6 +810,12 @@ describe('RestaurantPosLayoutPage', () => {
     fireEvent.input(screen.getByLabelText('Ancho del elemento'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño' }));
 
+    expect(api.updateFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      'floor-element-1',
+      expect.objectContaining({ label: 'M1', x: 1, y: 1, width: 3, height: 2, shape: null }),
+    );
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(expect.objectContaining({ width: 3, height: 2 }));
   });
 
@@ -760,18 +857,61 @@ describe('RestaurantPosLayoutPage', () => {
     );
   });
 
-  it('saves layout-only changes from the edit modal', async () => {
-    const { fixture } = await renderLayoutPage();
+  it('persists element edits through the backend from the edit modal', async () => {
+    const updateFloorElement = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables.map((table) =>
+          table.id === 'table-1' ? { ...table, capacity: 6, name: 'Mesa terraza 1' } : table,
+        ),
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: createDefaultFloorsResponse()
+              .floors[0]!
+              .elements.map((element) =>
+                element.id === 'floor-element-1' ? { ...element, label: 'Mesa terraza 1', width: 3, height: 2 } : element,
+              ),
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+    const { fixture, api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloorElement,
+      } as Partial<RestaurantPosApiService>,
+    });
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
     fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
     fireEvent.click(screen.getByRole('button', { name: 'Editar M1' }));
+    expect(screen.getByRole('dialog', { name: 'Editar elemento' })).toBeTruthy();
     fireEvent.input(screen.getByLabelText('Etiqueta del elemento'), { target: { value: 'Terrace 1' } });
+    fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '3' } });
     fireEvent.input(screen.getByLabelText('Capacidad de mesa'), { target: { value: '6' } });
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Editar elemento' })).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 2 fila 2' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Editar elemento' })).getByRole('button', { name: 'Editar' }));
+
+    expect(api.updateFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      'floor-element-1',
+      expect.objectContaining({
+        label: 'Terrace 1',
+        x: 1,
+        y: 1,
+        width: 3,
+        height: 2,
+        shape: 'round',
+        capacity: 6,
+      }),
+    );
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
-      expect.objectContaining({ label: 'Terrace 1' }),
+      expect.objectContaining({ label: 'Mesa terraza 1', width: 3, height: 2 }),
     );
     expect(store.restaurantTables().find((table) => table.id === 'table-1')).toEqual(expect.objectContaining({ capacity: 6 }));
   });

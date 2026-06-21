@@ -205,6 +205,61 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
     return structuredClone(floors);
   }
 
+  async updateFloorElement(
+    restaurantId: string,
+    floorId: string,
+    elementId: string,
+    elementUpdate: {
+      label: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      shape: 'round' | 'square' | 'rectangle' | 'long' | null;
+      capacity: number | null;
+    },
+  ): Promise<RestaurantFloors | null> {
+    const floorsMap = new Map(this.floors);
+    const floors = floorsMap.get(restaurantId);
+    if (!floors) return null;
+
+    const floor = floors.floors.find((candidate) => candidate.id === floorId);
+    if (!floor) return null;
+
+    const existingElement = floor.elements.find((candidate) => candidate.id === elementId);
+    if (!existingElement) return null;
+
+    floor.elements = floor.elements.map((element) =>
+      element.id === elementId
+        ? {
+            ...element,
+            label: elementUpdate.label,
+            x: elementUpdate.x,
+            y: elementUpdate.y,
+            width: elementUpdate.width,
+            height: elementUpdate.height,
+            shape: elementUpdate.shape,
+          }
+        : element,
+    );
+
+    if (existingElement.tableId) {
+      floors.tables = floors.tables.map((table) =>
+        table.id === existingElement.tableId
+          ? {
+              ...table,
+              name: elementUpdate.label,
+              capacity: elementUpdate.capacity ?? table.capacity,
+            }
+          : table,
+      );
+    }
+
+    floorsMap.set(restaurantId, structuredClone(floors));
+    this.floors = [...floorsMap.entries()];
+    return structuredClone(floors);
+  }
+
   async createFloorElement(
     restaurantId: string,
     floorId: string,
