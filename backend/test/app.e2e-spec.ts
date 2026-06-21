@@ -369,6 +369,21 @@ describe('App e2e', () => {
     });
   });
 
+  it('rejects creating a floor element that overlaps another element', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .send({
+        type: 'blocked',
+        label: 'Zona solapada',
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 2,
+        sortOrder: 8,
+      })
+      .expect(400);
+  });
+
   it('updates one floor element size through a dedicated endpoint', async () => {
     const response = await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
@@ -408,6 +423,21 @@ describe('App e2e', () => {
         }),
       ]),
     });
+  });
+
+  it('rejects updating a floor element into an overlapping position', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
+      .send({
+        label: 'Mesa solapada',
+        x: 5,
+        y: 1,
+        width: 2,
+        height: 2,
+        shape: 'square',
+        capacity: 4,
+      })
+      .expect(400);
   });
 
   it('accepts a floor element anchored at the first grid column using frontend zero-based coordinates', async () => {
@@ -493,6 +523,18 @@ describe('App e2e', () => {
         height: 6,
         shape: null,
         capacity: 0,
+      })
+      .expect(400);
+  });
+
+  it('rejects reordering a floor element into an overlapping position', async () => {
+    await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .send({
+        elements: [
+          { id: 'floor-element-1', x: 5, y: 1, width: 2, height: 2, sortOrder: 1 },
+          { id: 'floor-element-2', x: 5, y: 1, width: 2, height: 2, sortOrder: 2 },
+        ],
       })
       .expect(400);
   });

@@ -7,6 +7,7 @@ import {
   type ApplicationError,
 } from '../../../shared/errors/application-error';
 import { err, ok, type Result } from '../../../shared/result/result';
+import { hasOverlappingFloorElements } from '../../domain/floor-layout.validation';
 import type { RestaurantFloors, FloorElementView } from '../../domain/restaurant-read.models';
 import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
 
@@ -57,6 +58,22 @@ export class UpdateFloorElementUseCase {
     }
 
     if (command.x + command.width > floor.columns || command.y + command.height > floor.rows) {
+      return err(invalidFloorElementLayout({ floorId: command.floorId, elementId: command.elementId }));
+    }
+
+    const nextLayout = floor.elements.map((element) =>
+      element.id === command.elementId
+        ? {
+            id: element.id,
+            x: command.x,
+            y: command.y,
+            width: command.width,
+            height: command.height,
+          }
+        : element,
+    );
+
+    if (hasOverlappingFloorElements(nextLayout)) {
       return err(invalidFloorElementLayout({ floorId: command.floorId, elementId: command.elementId }));
     }
 

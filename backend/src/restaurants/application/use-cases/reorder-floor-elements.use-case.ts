@@ -7,6 +7,7 @@ import {
   type ApplicationError,
 } from '../../../shared/errors/application-error';
 import { err, ok, type Result } from '../../../shared/result/result';
+import { hasOverlappingFloorElements } from '../../domain/floor-layout.validation';
 import type { RestaurantFloors } from '../../domain/restaurant-read.models';
 import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
 
@@ -47,6 +48,24 @@ export class ReorderFloorElementsUseCase {
       if (element.x + element.width - 1 > floor.columns || element.y + element.height > floor.rows) {
         return err(invalidFloorElementLayout({ elementId: element.id, floorId: floor.id }));
       }
+    }
+
+    const updatesById = new Map(command.elements.map((element) => [element.id, element]));
+    const nextLayout = floor.elements.map((element) => {
+      const update = updatesById.get(element.id);
+      return update
+        ? {
+            id: element.id,
+            x: update.x,
+            y: update.y,
+            width: update.width,
+            height: update.height,
+          }
+        : element;
+    });
+
+    if (hasOverlappingFloorElements(nextLayout)) {
+      return err(invalidFloorElementLayout({ floorId: floor.id }));
     }
 
     const updated = await this.restaurants.reorderFloorElements(
