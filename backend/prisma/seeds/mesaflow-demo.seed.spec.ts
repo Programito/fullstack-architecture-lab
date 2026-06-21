@@ -11,14 +11,19 @@ describe('seedMesaFlowDemo', () => {
     const productUpsert = vi
       .fn()
       .mockResolvedValueOnce({ id: 'product-coke' })
-      .mockResolvedValueOnce({ id: 'product-burger' })
-      .mockResolvedValueOnce({ id: 'product-croquetas' })
-      .mockResolvedValueOnce({ id: 'product-combo' })
-      .mockResolvedValueOnce({ id: 'product-platter' })
       .mockResolvedValueOnce({ id: 'product-water' })
       .mockResolvedValueOnce({ id: 'product-beer' })
+      .mockResolvedValueOnce({ id: 'product-wine' })
+      .mockResolvedValueOnce({ id: 'product-coffee' })
+      .mockResolvedValueOnce({ id: 'product-burger' })
+      .mockResolvedValueOnce({ id: 'product-croquetas' })
+      .mockResolvedValueOnce({ id: 'product-nachos' })
+      .mockResolvedValueOnce({ id: 'product-combo' })
+      .mockResolvedValueOnce({ id: 'product-sandwich' })
+      .mockResolvedValueOnce({ id: 'product-platter' })
       .mockResolvedValueOnce({ id: 'product-fries' })
-      .mockResolvedValueOnce({ id: 'product-salad' });
+      .mockResolvedValueOnce({ id: 'product-salad' })
+      .mockResolvedValueOnce({ id: 'product-cheesecake' });
     const restaurantProductUpsert = vi
       .fn()
       .mockImplementation(async ({ where }: { where: { restaurantId_productId: { productId: string } } }) => ({
@@ -28,16 +33,22 @@ describe('seedMesaFlowDemo', () => {
     const menuSectionUpsert = vi
       .fn()
       .mockResolvedValueOnce({ id: 'section-drinks' })
-      .mockResolvedValueOnce({ id: 'section-mains' });
+      .mockResolvedValueOnce({ id: 'section-starters' })
+      .mockResolvedValueOnce({ id: 'section-mains' })
+      .mockResolvedValueOnce({ id: 'section-desserts' });
     const menuItemUpsert = vi.fn().mockResolvedValue(undefined);
     const modifierGroupUpsert = vi
       .fn()
       .mockResolvedValueOnce({ id: 'group-extras' })
-      .mockResolvedValueOnce({ id: 'group-cooking' });
+      .mockResolvedValueOnce({ id: 'group-cooking' })
+      .mockResolvedValueOnce({ id: 'group-sauces' });
     const modifierOptionUpsert = vi.fn().mockResolvedValue(undefined);
     const restaurantProductModifierGroupUpsert = vi.fn().mockResolvedValue(undefined);
     const comboDefinitionUpsert = vi.fn().mockResolvedValue({ id: 'combo-definition' });
-    const comboSlotUpsert = vi.fn().mockResolvedValue({ id: 'combo-slot-drink' });
+    const comboSlotUpsert = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'combo-slot-drink' })
+      .mockResolvedValueOnce({ id: 'combo-slot-side' });
     const comboSlotOptionUpsert = vi.fn().mockResolvedValue(undefined);
     const platterDefinitionUpsert = vi.fn().mockResolvedValue({ id: 'platter-definition' });
     const platterComponentUpsert = vi.fn().mockResolvedValue(undefined);
@@ -73,14 +84,21 @@ describe('seedMesaFlowDemo', () => {
       }),
     );
     expect(taxRateUpsert).toHaveBeenCalledTimes(3);
-    expect(productUpsert).toHaveBeenCalledTimes(9);
-    expect(restaurantProductUpsert).toHaveBeenCalledTimes(9);
+    expect(productUpsert).toHaveBeenCalledTimes(14);
+    expect(restaurantProductUpsert).toHaveBeenCalledTimes(14);
     expect(menuItemUpsert).toHaveBeenCalled();
-    expect(restaurantProductModifierGroupUpsert).toHaveBeenCalled();
+    expect(restaurantProductModifierGroupUpsert).toHaveBeenCalledTimes(3);
     expect(comboSlotOptionUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           supplementPriceCents: 150,
+        }),
+      }),
+    );
+    expect(comboSlotOptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          supplementPriceCents: 50,
         }),
       }),
     );

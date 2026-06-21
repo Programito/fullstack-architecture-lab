@@ -83,6 +83,8 @@ export async function seedMesaFlowLayoutDemo(prisma: PrismaClient): Promise<void
     { type: 'stool', label: 'Stool 1', x: 1, y: 5, width: 1, height: 1, tableLabel: 'Taburete 1', shape: 'round', sortOrder: 8 },
     { type: 'stool', label: 'Stool 2', x: 2, y: 5, width: 1, height: 1, tableLabel: 'Taburete 2', shape: 'round', sortOrder: 9 },
     { type: 'stool', label: 'Stool 3', x: 3, y: 5, width: 1, height: 1, tableLabel: 'Taburete 3', shape: 'round', sortOrder: 10 },
+    { type: 'bathroom', label: 'Bathroom', x: 13, y: 0, width: 2, height: 2, tableLabel: null, shape: null, sortOrder: 11 },
+    { type: 'blocked', label: 'Blocked area', x: 10, y: 9, width: 3, height: 2, tableLabel: null, shape: null, sortOrder: 12 },
   ] as const) {
     await prisma.floorElement.upsert({
       where: {

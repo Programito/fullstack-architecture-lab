@@ -16,11 +16,15 @@ describe('seedMesaFlowReservationsDemo', () => {
     const customerUpsert = vi
       .fn()
       .mockResolvedValueOnce({ id: 'customer-laura', name: 'Laura Gomez', phone: '+34 600 111 222' })
-      .mockResolvedValueOnce({ id: 'customer-diego', name: 'Diego Martin', phone: '+34 600 333 444' });
+      .mockResolvedValueOnce({ id: 'customer-diego', name: 'Diego Martin', phone: '+34 600 333 444' })
+      .mockResolvedValueOnce({ id: 'customer-ana', name: 'Ana Ruiz', phone: '+34 600 555 666' })
+      .mockResolvedValueOnce({ id: 'customer-sergio', name: 'Sergio Lopez', phone: '+34 600 777 888' });
     const reservationUpsert = vi
       .fn()
       .mockResolvedValueOnce({ id: 'reservation-lunch' })
-      .mockResolvedValueOnce({ id: 'reservation-group' });
+      .mockResolvedValueOnce({ id: 'reservation-group' })
+      .mockResolvedValueOnce({ id: 'reservation-seated' })
+      .mockResolvedValueOnce({ id: 'reservation-no-show' });
     const reservationTableDeleteMany = vi.fn().mockResolvedValue(undefined);
     const reservationTableCreateMany = vi.fn().mockResolvedValue(undefined);
     const prisma = {
@@ -54,7 +58,23 @@ describe('seedMesaFlowReservationsDemo', () => {
         }),
       }),
     );
-    expect(reservationTableDeleteMany).toHaveBeenCalledTimes(2);
+    expect(reservationUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          customerNameSnapshot: 'Ana Ruiz',
+          status: 'seated',
+        }),
+      }),
+    );
+    expect(reservationUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          customerNameSnapshot: 'Sergio Lopez',
+          status: 'no_show',
+        }),
+      }),
+    );
+    expect(reservationTableDeleteMany).toHaveBeenCalledTimes(4);
     expect(reservationTableCreateMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
         expect.objectContaining({
@@ -71,6 +91,22 @@ describe('seedMesaFlowReservationsDemo', () => {
         }),
         expect.objectContaining({
           reservationId: 'reservation-group',
+          tableId: 'table-4',
+        }),
+      ]),
+    });
+    expect(reservationTableCreateMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          reservationId: 'reservation-seated',
+          tableId: 'table-2',
+        }),
+      ]),
+    });
+    expect(reservationTableCreateMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          reservationId: 'reservation-no-show',
           tableId: 'table-4',
         }),
       ]),

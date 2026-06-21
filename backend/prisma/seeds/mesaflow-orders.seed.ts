@@ -4,7 +4,9 @@ import { DEMO_ACCOUNT_CATALOG } from '../../src/identity/domain/demo-account-cat
 import { MESAFLOW_DEMO_ORGANIZATION_NAME, MESAFLOW_DEMO_RESTAURANT_NAME } from './mesaflow-demo.seed';
 
 const ORDER_SERVICE_ID = 'order-demo-service';
+const ORDER_BAR_ID = 'order-demo-bar';
 const ORDER_SERVED_ID = 'order-demo-served';
+const ORDER_GROUP_ID = 'order-demo-group';
 const ORDER_PAID_ID = 'order-demo-paid';
 
 export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void> {
@@ -43,7 +45,15 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
     where: {
       organizationId: organization.id,
       name: {
-        in: ['Hamburguesa craft', 'Menu Classic Burger', 'Plato combinado vegetal'],
+        in: [
+          'Hamburguesa craft',
+          'Menu Classic Burger',
+          'Plato combinado vegetal',
+          'Cerveza',
+          'Cafe solo',
+          'Tarta de queso',
+          'Nachos caseros',
+        ],
       },
     },
   });
@@ -65,9 +75,15 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
   const burgerProduct = requiredProduct(productByName, 'Hamburguesa craft');
   const comboProduct = requiredProduct(productByName, 'Menu Classic Burger');
   const platterProduct = requiredProduct(productByName, 'Plato combinado vegetal');
+  const nachosProduct = requiredProduct(productByName, 'Nachos caseros');
+  const dessertProduct = requiredProduct(productByName, 'Tarta de queso');
+  const coffeeProduct = requiredProduct(productByName, 'Cafe solo');
   const burgerSale = requiredSale(saleByProductId, burgerProduct.id, 'Hamburguesa craft');
   const comboSale = requiredSale(saleByProductId, comboProduct.id, 'Menu Classic Burger');
   const platterSale = requiredSale(saleByProductId, platterProduct.id, 'Plato combinado vegetal');
+  const nachosSale = requiredSale(saleByProductId, nachosProduct.id, 'Nachos caseros');
+  const dessertSale = requiredSale(saleByProductId, dessertProduct.id, 'Tarta de queso');
+  const coffeeSale = requiredSale(saleByProductId, coffeeProduct.id, 'Cafe solo');
   const beerSale = requiredNamedSale(saleByLabel, 'Cerveza');
 
   await upsertOrder(prisma, {
@@ -134,6 +150,55 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
   });
 
   await upsertOrder(prisma, {
+    id: ORDER_BAR_ID,
+    restaurantId: restaurant.id,
+    tableId: 'table-2',
+    status: 'open',
+    openedByUserId: waiterUser.id,
+    subtotalCents: 880,
+    discountTotalCents: 0,
+    totalCents: 880,
+    closedAt: null,
+  });
+  await replaceOrderLines(prisma, ORDER_BAR_ID, [
+    {
+      id: 'line-bar-beer-1',
+      restaurantProductId: beerSale.id,
+      productId: beerSale.productId,
+      productNameSnapshot: 'Cerveza',
+      productTypeSnapshot: 'simple',
+      basePriceCentsSnapshot: 350,
+      unitPriceCents: 350,
+      quantity: 2,
+      subtotalCents: 700,
+      status: 'served',
+      kitchenNote: null,
+      configurationSignature: 'bar::beer-double',
+    },
+    {
+      id: 'line-bar-coffee',
+      restaurantProductId: coffeeSale.id,
+      productId: coffeeProduct.id,
+      productNameSnapshot: 'Cafe solo',
+      productTypeSnapshot: 'simple',
+      basePriceCentsSnapshot: 180,
+      unitPriceCents: 180,
+      quantity: 1,
+      subtotalCents: 180,
+      status: 'served',
+      kitchenNote: null,
+      configurationSignature: 'bar::coffee',
+    },
+  ]);
+  await attachOrderArtifacts(prisma, ORDER_BAR_ID, {
+    modifiers: [],
+    comboSlots: [],
+    platterComponents: [],
+    discounts: [],
+    payments: [],
+  });
+
+  await upsertOrder(prisma, {
     id: ORDER_SERVED_ID,
     restaurantId: restaurant.id,
     tableId: 'table-7',
@@ -180,6 +245,69 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
       },
     ],
     discounts: [],
+    payments: [],
+  });
+
+  await upsertOrder(prisma, {
+    id: ORDER_GROUP_ID,
+    restaurantId: restaurant.id,
+    tableId: 'table-4',
+    status: 'pending_payment',
+    openedByUserId: waiterUser.id,
+    subtotalCents: 1930,
+    discountTotalCents: 100,
+    totalCents: 1830,
+    closedAt: null,
+  });
+  await replaceOrderLines(prisma, ORDER_GROUP_ID, [
+    {
+      id: 'line-group-nachos',
+      restaurantProductId: nachosSale.id,
+      productId: nachosProduct.id,
+      productNameSnapshot: 'Nachos caseros',
+      productTypeSnapshot: 'simple',
+      basePriceCentsSnapshot: 890,
+      unitPriceCents: 990,
+      quantity: 1,
+      subtotalCents: 990,
+      status: 'served',
+      kitchenNote: null,
+      configurationSignature: 'nachos::guacamole',
+    },
+    {
+      id: 'line-group-dessert',
+      restaurantProductId: dessertSale.id,
+      productId: dessertProduct.id,
+      productNameSnapshot: 'Tarta de queso',
+      productTypeSnapshot: 'simple',
+      basePriceCentsSnapshot: 520,
+      unitPriceCents: 470,
+      quantity: 2,
+      subtotalCents: 940,
+      status: 'served',
+      kitchenNote: null,
+      configurationSignature: 'dessert::group',
+    },
+  ]);
+  await attachOrderArtifacts(prisma, ORDER_GROUP_ID, {
+    modifiers: [
+      {
+        lineConfigurationSignature: 'nachos::guacamole',
+        groupNameSnapshot: 'Salsas',
+        optionNameSnapshot: 'Guacamole',
+        priceDeltaCents: 100,
+      },
+    ],
+    comboSlots: [],
+    platterComponents: [],
+    discounts: [
+      {
+        type: 'fixed_amount',
+        value: '100.00',
+        reason: 'Invitacion postre',
+        createdByUserId: managerUser.id,
+      },
+    ],
     payments: [],
   });
 

@@ -4,6 +4,8 @@ import { MESAFLOW_DEMO_ORGANIZATION_NAME, MESAFLOW_DEMO_RESTAURANT_NAME } from '
 
 const RESERVATION_LUNCH_ID = 'reservation-demo-lunch';
 const RESERVATION_GROUP_ID = 'reservation-demo-group';
+const RESERVATION_SEATED_ID = 'reservation-demo-seated';
+const RESERVATION_NOSHOW_ID = 'reservation-demo-no-show';
 
 export async function seedMesaFlowReservationsDemo(prisma: PrismaClient): Promise<void> {
   const organization = await prisma.organization.findUnique({
@@ -69,6 +71,46 @@ export async function seedMesaFlowReservationsDemo(prisma: PrismaClient): Promis
       notes: 'Reserva habitual para grupos.',
     },
   });
+  const ana = await prisma.customer.upsert({
+    where: {
+      organizationId_name: {
+        organizationId: organization.id,
+        name: 'Ana Ruiz',
+      },
+    },
+    update: {
+      phone: '+34 600 555 666',
+      email: 'ana.ruiz@example.com',
+      notes: 'Llega con carrito y necesita acceso comodo.',
+    },
+    create: {
+      organizationId: organization.id,
+      name: 'Ana Ruiz',
+      phone: '+34 600 555 666',
+      email: 'ana.ruiz@example.com',
+      notes: 'Llega con carrito y necesita acceso comodo.',
+    },
+  });
+  const sergio = await prisma.customer.upsert({
+    where: {
+      organizationId_name: {
+        organizationId: organization.id,
+        name: 'Sergio Lopez',
+      },
+    },
+    update: {
+      phone: '+34 600 777 888',
+      email: 'sergio.lopez@example.com',
+      notes: 'Suele avisar tarde si no viene.',
+    },
+    create: {
+      organizationId: organization.id,
+      name: 'Sergio Lopez',
+      phone: '+34 600 777 888',
+      email: 'sergio.lopez@example.com',
+      notes: 'Suele avisar tarde si no viene.',
+    },
+  });
 
   const lunchReservation = await prisma.reservation.upsert({
     where: { id: RESERVATION_LUNCH_ID },
@@ -123,6 +165,58 @@ export async function seedMesaFlowReservationsDemo(prisma: PrismaClient): Promis
       notes: 'Grupo de cena de empresa.',
     },
   });
+  const seatedReservation = await prisma.reservation.upsert({
+    where: { id: RESERVATION_SEATED_ID },
+    update: {
+      restaurantId: restaurant.id,
+      customerId: ana.id,
+      customerNameSnapshot: ana.name,
+      customerPhoneSnapshot: ana.phone,
+      partySize: 3,
+      reservationAt: new Date('2026-06-21T12:45:00.000Z'),
+      durationMinutes: 75,
+      status: 'seated',
+      notes: 'Ya sentados cerca de la entrada.',
+    },
+    create: {
+      id: RESERVATION_SEATED_ID,
+      restaurantId: restaurant.id,
+      customerId: ana.id,
+      customerNameSnapshot: ana.name,
+      customerPhoneSnapshot: ana.phone,
+      partySize: 3,
+      reservationAt: new Date('2026-06-21T12:45:00.000Z'),
+      durationMinutes: 75,
+      status: 'seated',
+      notes: 'Ya sentados cerca de la entrada.',
+    },
+  });
+  const noShowReservation = await prisma.reservation.upsert({
+    where: { id: RESERVATION_NOSHOW_ID },
+    update: {
+      restaurantId: restaurant.id,
+      customerId: sergio.id,
+      customerNameSnapshot: sergio.name,
+      customerPhoneSnapshot: sergio.phone,
+      partySize: 2,
+      reservationAt: new Date('2026-06-20T22:00:00.000Z'),
+      durationMinutes: 90,
+      status: 'no_show',
+      notes: 'No se presento y no aviso.',
+    },
+    create: {
+      id: RESERVATION_NOSHOW_ID,
+      restaurantId: restaurant.id,
+      customerId: sergio.id,
+      customerNameSnapshot: sergio.name,
+      customerPhoneSnapshot: sergio.phone,
+      partySize: 2,
+      reservationAt: new Date('2026-06-20T22:00:00.000Z'),
+      durationMinutes: 90,
+      status: 'no_show',
+      notes: 'No se presento y no aviso.',
+    },
+  });
 
   await prisma.reservationTable.deleteMany({ where: { reservationId: lunchReservation.id } });
   await prisma.reservationTable.createMany({
@@ -143,6 +237,26 @@ export async function seedMesaFlowReservationsDemo(prisma: PrismaClient): Promis
       },
       {
         reservationId: groupReservation.id,
+        tableId: requiredTableId(tableIdByNumber, 4),
+      },
+    ],
+  });
+
+  await prisma.reservationTable.deleteMany({ where: { reservationId: seatedReservation.id } });
+  await prisma.reservationTable.createMany({
+    data: [
+      {
+        reservationId: seatedReservation.id,
+        tableId: requiredTableId(tableIdByNumber, 2),
+      },
+    ],
+  });
+
+  await prisma.reservationTable.deleteMany({ where: { reservationId: noShowReservation.id } });
+  await prisma.reservationTable.createMany({
+    data: [
+      {
+        reservationId: noShowReservation.id,
         tableId: requiredTableId(tableIdByNumber, 4),
       },
     ],

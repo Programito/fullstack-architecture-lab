@@ -173,20 +173,36 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     update: { sortOrder: 1, isVisible: true },
     create: { menuId: menu.id, name: 'Bebidas', sortOrder: 1, isVisible: true },
   });
+  const startersSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Entrantes' } },
+    update: { sortOrder: 2, isVisible: true },
+    create: { menuId: menu.id, name: 'Entrantes', sortOrder: 2, isVisible: true },
+  });
   const mainsSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Principales' } },
-    update: { sortOrder: 2, isVisible: true },
-    create: { menuId: menu.id, name: 'Principales', sortOrder: 2, isVisible: true },
+    update: { sortOrder: 3, isVisible: true },
+    create: { menuId: menu.id, name: 'Principales', sortOrder: 3, isVisible: true },
+  });
+  const dessertsSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Postres' } },
+    update: { sortOrder: 4, isVisible: true },
+    create: { menuId: menu.id, name: 'Postres', sortOrder: 4, isVisible: true },
   });
 
   for (const item of [
     { sectionId: drinksSection.id, productName: 'Coca-Cola', sortOrder: 1 },
     { sectionId: drinksSection.id, productName: 'Agua mineral', sortOrder: 2 },
     { sectionId: drinksSection.id, productName: 'Cerveza', sortOrder: 3 },
+    { sectionId: drinksSection.id, productName: 'Vino tinto copa', sortOrder: 4 },
+    { sectionId: drinksSection.id, productName: 'Cafe solo', sortOrder: 5 },
+    { sectionId: startersSection.id, productName: 'Croquetas de jamon iberico', sortOrder: 1 },
+    { sectionId: startersSection.id, productName: 'Nachos caseros', sortOrder: 2 },
+    { sectionId: startersSection.id, productName: 'Ensalada', sortOrder: 3 },
     { sectionId: mainsSection.id, productName: 'Hamburguesa craft', sortOrder: 1 },
-    { sectionId: mainsSection.id, productName: 'Croquetas de jamon iberico', sortOrder: 2 },
+    { sectionId: mainsSection.id, productName: 'Sandwich club', sortOrder: 2 },
     { sectionId: mainsSection.id, productName: 'Menu Classic Burger', sortOrder: 3 },
     { sectionId: mainsSection.id, productName: 'Plato combinado vegetal', sortOrder: 4 },
+    { sectionId: dessertsSection.id, productName: 'Tarta de queso', sortOrder: 1 },
   ]) {
     const restaurantProductId = saleIdByProductName.get(item.productName);
     if (!restaurantProductId) throw new Error(`Missing restaurant product for "${item.productName}".`);
@@ -241,12 +257,32 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       isRequired: true,
     },
   });
+  const saucesGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Salsas' } },
+    update: {
+      selectionType: 'multiple',
+      minSelections: 0,
+      maxSelections: 2,
+      isRequired: false,
+    },
+    create: {
+      organizationId: organization.id,
+      name: 'Salsas',
+      selectionType: 'multiple',
+      minSelections: 0,
+      maxSelections: 2,
+      isRequired: false,
+    },
+  });
 
   for (const option of [
     { groupId: extrasGroup.id, name: 'Queso', priceDeltaCents: 100, sortOrder: 1 },
     { groupId: extrasGroup.id, name: 'Bacon', priceDeltaCents: 150, sortOrder: 2 },
+    { groupId: extrasGroup.id, name: 'Huevo', priceDeltaCents: 120, sortOrder: 3 },
     { groupId: cookingGroup.id, name: 'Al punto', priceDeltaCents: 0, sortOrder: 1 },
     { groupId: cookingGroup.id, name: 'Muy hecha', priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: saucesGroup.id, name: 'Guacamole', priceDeltaCents: 100, sortOrder: 1 },
+    { groupId: saucesGroup.id, name: 'Salsa cheddar', priceDeltaCents: 100, sortOrder: 2 },
   ]) {
     await prisma.modifierOption.upsert({
       where: {
@@ -300,6 +336,22 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       sortOrder: 2,
     },
   });
+  const nachosSaleId = saleIdByProductName.get('Nachos caseros');
+  if (!nachosSaleId) throw new Error('Missing nachos sale.');
+  await prisma.restaurantProductModifierGroup.upsert({
+    where: {
+      restaurantProductId_modifierGroupId: {
+        restaurantProductId: nachosSaleId,
+        modifierGroupId: saucesGroup.id,
+      },
+    },
+    update: { sortOrder: 1 },
+    create: {
+      restaurantProductId: nachosSaleId,
+      modifierGroupId: saucesGroup.id,
+      sortOrder: 1,
+    },
+  });
 
   const comboProductId = productIdByName.get('Menu Classic Burger');
   if (!comboProductId) throw new Error('Missing combo product.');
@@ -337,6 +389,28 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       sortOrder: 1,
     },
   });
+  const comboSideSlot = await prisma.comboSlot.upsert({
+    where: {
+      comboDefinitionId_name: {
+        comboDefinitionId: comboDefinition.id,
+        name: 'Acompanamiento',
+      },
+    },
+    update: {
+      minSelections: 1,
+      maxSelections: 1,
+      isRequired: true,
+      sortOrder: 2,
+    },
+    create: {
+      comboDefinitionId: comboDefinition.id,
+      name: 'Acompanamiento',
+      minSelections: 1,
+      maxSelections: 1,
+      isRequired: true,
+      sortOrder: 2,
+    },
+  });
 
   for (const option of [
     { productName: 'Agua mineral', supplementPriceCents: 0, sortOrder: 1, isDefault: true },
@@ -360,6 +434,37 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       },
       create: {
         comboSlotId: comboDrinkSlot.id,
+        restaurantProductId,
+        supplementPriceCents: option.supplementPriceCents,
+        isDefault: option.isDefault,
+        isAvailable: true,
+        sortOrder: option.sortOrder,
+      },
+    });
+  }
+  for (const option of [
+    { productName: 'Patatas fritas', supplementPriceCents: 0, sortOrder: 1, isDefault: true },
+    { productName: 'Ensalada', supplementPriceCents: 50, sortOrder: 2, isDefault: false },
+  ]) {
+    const restaurantProductId = saleIdByProductName.get(option.productName);
+    if (!restaurantProductId) {
+      throw new Error(`Missing combo side sale for "${option.productName}".`);
+    }
+    await prisma.comboSlotOption.upsert({
+      where: {
+        comboSlotId_restaurantProductId: {
+          comboSlotId: comboSideSlot.id,
+          restaurantProductId,
+        },
+      },
+      update: {
+        supplementPriceCents: option.supplementPriceCents,
+        isDefault: option.isDefault,
+        isAvailable: true,
+        sortOrder: option.sortOrder,
+      },
+      create: {
+        comboSlotId: comboSideSlot.id,
         restaurantProductId,
         supplementPriceCents: option.supplementPriceCents,
         isDefault: option.isDefault,
@@ -439,6 +544,20 @@ function demoProducts(): DemoProductDefinition[] {
       taxName: 'IVA General',
     },
     {
+      name: 'Vino tinto copa',
+      productType: 'simple',
+      defaultCourse: 'drinks',
+      defaultPreparationRoute: 'bar',
+      taxName: 'IVA General',
+    },
+    {
+      name: 'Cafe solo',
+      productType: 'simple',
+      defaultCourse: 'dessert',
+      defaultPreparationRoute: 'bar',
+      taxName: 'IVA Reducido',
+    },
+    {
       name: 'Hamburguesa craft',
       description: 'Hamburguesa premium con pan brioche.',
       productType: 'simple',
@@ -454,11 +573,26 @@ function demoProducts(): DemoProductDefinition[] {
       taxName: 'IVA Reducido',
     },
     {
+      name: 'Nachos caseros',
+      description: 'Totopos con cheddar y pico de gallo.',
+      productType: 'simple',
+      defaultCourse: 'starter',
+      defaultPreparationRoute: 'kitchen',
+      taxName: 'IVA Reducido',
+    },
+    {
       name: 'Menu Classic Burger',
       productType: 'combo',
       defaultCourse: 'main',
       defaultPreparationRoute: 'kitchen',
       taxName: 'IVA General',
+    },
+    {
+      name: 'Sandwich club',
+      productType: 'simple',
+      defaultCourse: 'main',
+      defaultPreparationRoute: 'kitchen',
+      taxName: 'IVA Reducido',
     },
     {
       name: 'Plato combinado vegetal',
@@ -481,6 +615,13 @@ function demoProducts(): DemoProductDefinition[] {
       defaultPreparationRoute: 'cold_station',
       taxName: 'IVA Reducido',
     },
+    {
+      name: 'Tarta de queso',
+      productType: 'simple',
+      defaultCourse: 'dessert',
+      defaultPreparationRoute: 'dessert_station',
+      taxName: 'IVA Reducido',
+    },
   ];
 }
 
@@ -496,12 +637,17 @@ function demoRestaurantProducts(): Array<{
     { productName: 'Coca-Cola', priceCents: 300, sortOrder: 1 },
     { productName: 'Agua mineral', priceCents: 250, sortOrder: 2 },
     { productName: 'Cerveza', priceCents: 350, sortOrder: 3 },
-    { productName: 'Hamburguesa craft', priceCents: 1250, sortOrder: 4 },
-    { productName: 'Croquetas de jamon iberico', priceCents: 980, sortOrder: 5 },
-    { productName: 'Menu Classic Burger', priceCents: 1390, sortOrder: 6 },
-    { productName: 'Plato combinado vegetal', priceCents: 1190, sortOrder: 7 },
-    { productName: 'Patatas fritas', priceCents: 400, sortOrder: 8 },
-    { productName: 'Ensalada', priceCents: 450, sortOrder: 9 },
+    { productName: 'Vino tinto copa', priceCents: 420, sortOrder: 4 },
+    { productName: 'Cafe solo', priceCents: 180, sortOrder: 5 },
+    { productName: 'Hamburguesa craft', priceCents: 1250, sortOrder: 6 },
+    { productName: 'Croquetas de jamon iberico', priceCents: 980, sortOrder: 7 },
+    { productName: 'Nachos caseros', priceCents: 890, sortOrder: 8 },
+    { productName: 'Menu Classic Burger', priceCents: 1390, sortOrder: 9 },
+    { productName: 'Sandwich club', priceCents: 1090, sortOrder: 10 },
+    { productName: 'Plato combinado vegetal', priceCents: 1190, sortOrder: 11 },
+    { productName: 'Patatas fritas', priceCents: 400, sortOrder: 12 },
+    { productName: 'Ensalada', priceCents: 450, sortOrder: 13 },
+    { productName: 'Tarta de queso', priceCents: 520, sortOrder: 14 },
   ];
 }
 
