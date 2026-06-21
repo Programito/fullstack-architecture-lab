@@ -1,16 +1,146 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
+import { of } from 'rxjs';
+import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS, MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosLayoutPage } from './restaurant-pos-layout-page';
 
 describe('RestaurantPosLayoutPage', () => {
-  const renderLayoutPage = async (locale = 'es') => {
+  const createDefaultFloorsResponse = (): RestaurantFloorsDto => ({
+    restaurantId: 'restaurant-mesaflow-centro',
+    tables: MOCK_RESTAURANT_TABLES.map((table) => ({
+      id: table.id,
+      tableNumber: table.number,
+      name: `Mesa ${table.number}`,
+      capacity: table.capacity,
+      isActive: true,
+    })),
+    floors: [
+      {
+        id: 'floor-main',
+        name: 'Sala principal',
+        rows: DEFAULT_GRID_ROWS,
+        columns: DEFAULT_GRID_COLUMNS,
+        elements: MOCK_FLOOR_ELEMENTS.map((element, index) => ({
+          id: element.id,
+          type: element.type,
+          label: element.label,
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height,
+          tableId: element.tableId ?? null,
+          shape: element.shape ?? null,
+          sortOrder: index + 1,
+        })),
+      },
+    ],
+  });
+
+  const createRestaurantContextMock = (restaurantCount: 'single' | 'multiple' | 'empty' = 'single') => {
+    const restaurants =
+      restaurantCount === 'single'
+        ? [
+            {
+              id: 'restaurant-mesaflow-centro',
+              name: 'MesaFlow Centro',
+              displayName: 'MesaFlow Centro',
+              timezone: 'Europe/Madrid',
+              currency: 'EUR',
+              isActive: true,
+            },
+          ]
+        : restaurantCount === 'multiple'
+          ? [
+              {
+                id: 'restaurant-mesaflow-centro',
+                name: 'MesaFlow Centro',
+                displayName: 'MesaFlow Centro',
+                timezone: 'Europe/Madrid',
+                currency: 'EUR',
+                isActive: true,
+              },
+              {
+                id: 'restaurant-mesaflow-norte',
+                name: 'MesaFlow Norte',
+                displayName: 'MesaFlow Norte',
+                timezone: 'Europe/Madrid',
+                currency: 'EUR',
+                isActive: true,
+              },
+            ]
+          : [];
+
+    return {
+      load: vi.fn(),
+      activeRestaurant: () => (restaurantCount === 'single' ? restaurants[0] : null),
+      isLoading: () => false,
+      loadError: () => null,
+      multipleRestaurants: () => restaurantCount === 'multiple',
+      hasNoRestaurants: () => restaurantCount === 'empty',
+      restaurants: () => restaurants,
+    };
+  };
+
+  const renderLayoutPage = async (
+    locale = 'es',
+    options?: {
+      restaurantContext?: ReturnType<typeof createRestaurantContextMock>;
+      apiOverrides?: Partial<RestaurantPosApiService>;
+    },
+  ) => {
     const i18n = provideI18nTesting(locale);
+    const restaurantContext = options?.restaurantContext ?? createRestaurantContextMock();
+    const api = {
+      listRestaurants: vi.fn(() => of([])),
+      getRestaurantFloors: vi.fn(() => of(createDefaultFloorsResponse())),
+      createFloorElement: vi.fn(() => of(createDefaultFloorsResponse())),
+      updateFloor: vi.fn(() => of(createDefaultFloorsResponse())),
+      reorderFloorElements: vi.fn(() => of(createDefaultFloorsResponse())),
+      ...(options?.apiOverrides ?? {}),
+    };
+
     return render(RestaurantPosLayoutPage, {
       imports: [...i18n.imports],
-      providers: [...i18n.providers],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantPosApiService, useValue: api },
+      ],
     });
   };
+
+  it('loads the floor plan for the active restaurant', async () => {
+    const floorsResponse: RestaurantFloorsDto = {
+      restaurantId: 'restaurant-mesaflow-centro',
+      tables: [{ id: 'table-api-1', tableNumber: 11, name: 'Mesa 11', capacity: 4, isActive: true }],
+      floors: [
+        {
+          id: 'floor-main',
+          name: 'Sala principal',
+          rows: 12,
+          columns: 16,
+          elements: [{ id: 'floor-element-api-1', type: 'table', label: 'M11', x: 4, y: 4, width: 2, height: 2, tableId: 'table-api-1', shape: 'square', sortOrder: 1 }],
+        },
+      ],
+    };
+
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: {
+        getRestaurantFloors: vi.fn(() => of(floorsResponse)),
+      } as Partial<RestaurantPosApiService>,
+    });
+
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    expect(store.gridRows()).toBe(12);
+    expect(store.gridColumns()).toBe(16);
+    expect(store.floorElements()[0]?.label).toBe('M11');
+    expect(store.activeFloorId()).toBe('floor-main');
+    expect(store.activeFloorName()).toBe('Sala principal');
+  });
 
   it('shows a clean layout toolbar without technical grid controls on the page', async () => {
     await renderLayoutPage();

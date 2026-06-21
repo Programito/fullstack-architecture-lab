@@ -1,12 +1,15 @@
 import { NgClass, NgStyle } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { FloorPlan } from '../../components/floor-plan/floor-plan';
 import { TableVisual } from '../../components/table-visual/table-visual';
+import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import type { AddFloorElementInput, FloorElement, FloorElementType, TableShape } from '../../models/restaurant-pos.models';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 type MatrixCell = {
@@ -49,6 +52,8 @@ const ELEMENT_PRESETS: ElementPreset[] = [
 })
 export class RestaurantPosLayoutPage {
   protected readonly store = inject(RestaurantPosStore);
+  private readonly api = inject(RestaurantPosApiService);
+  private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly resizeModalOpen = signal(false);
@@ -155,6 +160,22 @@ export class RestaurantPosLayoutPage {
       this.store.canPlaceElement(placement, this.editingElementId() ?? undefined)
     );
   });
+
+  constructor() {
+    this.restaurantContext.load();
+
+    effect(() => {
+      const restaurant = this.restaurantContext.activeRestaurant();
+
+      if (!restaurant) {
+        return;
+      }
+
+      this.api.getRestaurantFloors(restaurant.id).subscribe((floors) => {
+        this.applyFloorsResponse(floors);
+      });
+    });
+  }
 
   protected openResizeModal(): void {
     this.resizeRowsInput.set(this.store.gridRows());
@@ -449,6 +470,40 @@ export class RestaurantPosLayoutPage {
       height: this.elementHeightInput(),
       ...(preset.shape ? { shape: preset.shape } : {}),
     };
+  }
+
+  private applyFloorsResponse(floors: RestaurantFloorsDto): void {
+    const floor = floors.floors[0];
+
+    if (!floor) {
+      return;
+    }
+
+    this.store.hydrateLayout({
+      floorId: floor.id,
+      floorName: floor.name,
+      rows: floor.rows,
+      columns: floor.columns,
+      floorElements: floor.elements.map((element) => ({
+        id: element.id,
+        type: element.type,
+        label: element.label,
+        x: element.x,
+        y: element.y,
+        width: element.width,
+        height: element.height,
+        ...(element.tableId ? { tableId: element.tableId } : {}),
+        ...(element.shape ? { shape: element.shape } : {}),
+      })),
+      restaurantTables: floors.tables.map((table) => ({
+        id: table.id,
+        number: table.tableNumber,
+        capacity: table.capacity,
+        status: 'free',
+        total: 0,
+        openDuration: '0m',
+      })),
+    });
   }
 
   private normalizePlacementCell(cell: MatrixCell): MatrixCell {

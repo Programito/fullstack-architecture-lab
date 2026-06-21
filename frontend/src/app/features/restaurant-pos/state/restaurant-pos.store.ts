@@ -60,6 +60,8 @@ export class RestaurantPosStore {
   private readonly menuValidation = inject(MenuValidationService);
   private readonly _gridRows = signal(DEFAULT_GRID_ROWS);
   private readonly _gridColumns = signal(DEFAULT_GRID_COLUMNS);
+  private readonly _activeFloorId = signal<string | null>(null);
+  private readonly _activeFloorName = signal<string>('Sala principal');
   private readonly _floorElements = signal<FloorElement[]>(structuredClone(MOCK_FLOOR_ELEMENTS));
   private readonly _restaurantTables = signal<RestaurantTable[]>(structuredClone(MOCK_RESTAURANT_TABLES));
   private readonly _ordersByTable = signal<OrdersByTable>(structuredClone(MOCK_ORDERS_BY_TABLE));
@@ -69,6 +71,8 @@ export class RestaurantPosStore {
 
   readonly gridRows = this._gridRows.asReadonly();
   readonly gridColumns = this._gridColumns.asReadonly();
+  readonly activeFloorId = this._activeFloorId.asReadonly();
+  readonly activeFloorName = this._activeFloorName.asReadonly();
   readonly floorElements = this._floorElements.asReadonly();
   readonly restaurantTables = this._restaurantTables.asReadonly();
   readonly products = this.menu.products;
@@ -648,6 +652,23 @@ export class RestaurantPosStore {
 
     this._gridRows.set(rows);
     this._gridColumns.set(columns);
+    this.clearError();
+  }
+
+  hydrateLayout(input: {
+    floorId?: string | null;
+    floorName?: string;
+    rows: number;
+    columns: number;
+    floorElements: FloorElement[];
+    restaurantTables: RestaurantTable[];
+  }): void {
+    this._activeFloorId.set(input.floorId ?? null);
+    this._activeFloorName.set(input.floorName ?? 'Sala principal');
+    this._gridRows.set(input.rows);
+    this._gridColumns.set(input.columns);
+    this._floorElements.set(structuredClone(input.floorElements));
+    this._restaurantTables.set(structuredClone(input.restaurantTables));
     this.clearError();
   }
 
