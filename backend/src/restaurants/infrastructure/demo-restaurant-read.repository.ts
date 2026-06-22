@@ -9,6 +9,16 @@ import type {
   RestaurantReservation,
   RestaurantSummary,
 } from '../domain/restaurant-read.models';
+import { deriveServicePhase, getServiceDurationMinutes } from '../domain/service-phase';
+import type {
+  ServiceFloorView,
+  ServiceOrderLineStatus,
+  ServiceOrderStatus,
+  ServicePhaseCourse,
+  ServicePointDetailView,
+  ServicePointOrderView,
+  ServiceTableStatus,
+} from '../domain/service-floor.models';
 
 const DEMO_RESTAURANT_ID = 'restaurant-mesaflow-centro';
 
@@ -126,18 +136,197 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
   ],
 ]);
 
+type DemoOrderLine = {
+  id: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  subtotalCents: number;
+  status: ServiceOrderLineStatus;
+  course: Exclude<ServicePhaseCourse, 'mixed' | 'none'>;
+  kitchenNote: string | null;
+};
+
+type DemoOrder = {
+  id: string;
+  tableId: string;
+  status: ServiceOrderStatus;
+  openedAt: string;
+  updatedAt: string;
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+  currency: string;
+  lines: DemoOrderLine[];
+};
+
+type DemoTableServiceState = {
+  status: ServiceTableStatus;
+  occupiedAt: string | null;
+  serviceStartedAt: string | null;
+};
+
+const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
+  [
+    DEMO_RESTAURANT_ID,
+    [
+      {
+        id: 'order-demo-service',
+        tableId: 'table-3',
+        status: 'open',
+        openedAt: '2026-06-21T12:00:00.000Z',
+        updatedAt: '2026-06-21T12:25:00.000Z',
+        subtotalCents: 2940,
+        taxCents: 0,
+        totalCents: 2940,
+        currency: 'EUR',
+        lines: [
+          {
+            id: 'line-burger',
+            productName: 'Hamburguesa craft',
+            quantity: 1,
+            unitPriceCents: 1350,
+            subtotalCents: 1350,
+            status: 'preparing',
+            course: 'mains',
+            kitchenNote: 'Sin cebolla',
+          },
+          {
+            id: 'line-combo',
+            productName: 'Menu Classic Burger',
+            quantity: 1,
+            unitPriceCents: 1590,
+            subtotalCents: 1590,
+            status: 'pending',
+            course: 'drinks',
+            kitchenNote: null,
+          },
+        ],
+      },
+      {
+        id: 'order-demo-bar',
+        tableId: 'table-2',
+        status: 'payment_pending',
+        openedAt: '2026-06-21T11:40:00.000Z',
+        updatedAt: '2026-06-21T12:10:00.000Z',
+        subtotalCents: 880,
+        taxCents: 0,
+        totalCents: 880,
+        currency: 'EUR',
+        lines: [
+          {
+            id: 'line-bar-beer-1',
+            productName: 'Cerveza',
+            quantity: 2,
+            unitPriceCents: 350,
+            subtotalCents: 700,
+            status: 'served',
+            course: 'drinks',
+            kitchenNote: null,
+          },
+          {
+            id: 'line-bar-coffee',
+            productName: 'Cafe solo',
+            quantity: 1,
+            unitPriceCents: 180,
+            subtotalCents: 180,
+            status: 'served',
+            course: 'drinks',
+            kitchenNote: null,
+          },
+        ],
+      },
+      {
+        id: 'order-demo-group',
+        tableId: 'table-4',
+        status: 'payment_pending',
+        openedAt: '2026-06-21T11:15:00.000Z',
+        updatedAt: '2026-06-21T12:00:00.000Z',
+        subtotalCents: 1830,
+        taxCents: 0,
+        totalCents: 1830,
+        currency: 'EUR',
+        lines: [
+          {
+            id: 'line-group-nachos',
+            productName: 'Nachos caseros',
+            quantity: 1,
+            unitPriceCents: 990,
+            subtotalCents: 990,
+            status: 'served',
+            course: 'starters',
+            kitchenNote: null,
+          },
+          {
+            id: 'line-group-dessert',
+            productName: 'Tarta de queso',
+            quantity: 2,
+            unitPriceCents: 470,
+            subtotalCents: 940,
+            status: 'served',
+            course: 'desserts',
+            kitchenNote: null,
+          },
+        ],
+      },
+      {
+        id: 'order-demo-paid',
+        tableId: 'table-1',
+        status: 'paid',
+        openedAt: '2026-06-21T10:45:00.000Z',
+        updatedAt: '2026-06-21T11:30:00.000Z',
+        subtotalCents: 1190,
+        taxCents: 0,
+        totalCents: 1071,
+        currency: 'EUR',
+        lines: [
+          {
+            id: 'line-paid-burger',
+            productName: 'Hamburguesa craft',
+            quantity: 1,
+            unitPriceCents: 1190,
+            subtotalCents: 1190,
+            status: 'served',
+            course: 'mains',
+            kitchenNote: null,
+          },
+        ],
+      },
+    ],
+  ],
+]);
+
+const INITIAL_TABLE_SERVICE_STATE = new Map<string, Record<string, DemoTableServiceState>>([
+  [
+    DEMO_RESTAURANT_ID,
+    {
+      'table-1': { status: 'paid', occupiedAt: '2026-06-21T10:45:00.000Z', serviceStartedAt: '2026-06-21T10:45:00.000Z' },
+      'table-2': { status: 'payment_pending', occupiedAt: '2026-06-21T11:40:00.000Z', serviceStartedAt: '2026-06-21T11:40:00.000Z' },
+      'table-3': { status: 'waiting_kitchen', occupiedAt: '2026-06-21T12:00:00.000Z', serviceStartedAt: '2026-06-21T12:00:00.000Z' },
+      'table-4': { status: 'payment_pending', occupiedAt: '2026-06-21T11:15:00.000Z', serviceStartedAt: '2026-06-21T11:15:00.000Z' },
+      'stool-1': { status: 'free', occupiedAt: null, serviceStartedAt: null },
+      'stool-2': { status: 'reserved', occupiedAt: null, serviceStartedAt: null },
+      'stool-3': { status: 'free', occupiedAt: null, serviceStartedAt: null },
+    },
+  ],
+]);
+
 @Injectable()
 export class DemoRestaurantReadRepository implements RestaurantReadRepository {
   private restaurants = structuredClone(INITIAL_RESTAURANTS);
   private menus = structuredClone([...INITIAL_MENUS.entries()]) as Array<[string, RestaurantMenu]>;
   private floors = structuredClone([...INITIAL_FLOORS.entries()]) as Array<[string, RestaurantFloors]>;
   private reservations = structuredClone([...INITIAL_RESERVATIONS.entries()]) as Array<[string, RestaurantReservation[]]>;
+  private serviceOrders = structuredClone([...INITIAL_SERVICE_ORDERS.entries()]) as Array<[string, DemoOrder[]]>;
+  private tableStates = structuredClone([...INITIAL_TABLE_SERVICE_STATE.entries()]) as Array<[string, Record<string, DemoTableServiceState>]>;
 
   reset(): void {
     this.restaurants = structuredClone(INITIAL_RESTAURANTS);
     this.menus = structuredClone([...INITIAL_MENUS.entries()]) as Array<[string, RestaurantMenu]>;
     this.floors = structuredClone([...INITIAL_FLOORS.entries()]) as Array<[string, RestaurantFloors]>;
     this.reservations = structuredClone([...INITIAL_RESERVATIONS.entries()]) as Array<[string, RestaurantReservation[]]>;
+    this.serviceOrders = structuredClone([...INITIAL_SERVICE_ORDERS.entries()]) as Array<[string, DemoOrder[]]>;
+    this.tableStates = structuredClone([...INITIAL_TABLE_SERVICE_STATE.entries()]) as Array<[string, Record<string, DemoTableServiceState>]>;
   }
 
   async listRestaurants(): Promise<RestaurantSummary[]> {
@@ -157,6 +346,325 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
   async listReservationsByRestaurantId(restaurantId: string): Promise<RestaurantReservation[] | null> {
     const reservations = new Map(this.reservations).get(restaurantId);
     return reservations ? structuredClone(reservations) : null;
+  }
+
+  async findServiceFloorByRestaurantId(restaurantId: string): Promise<ServiceFloorView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors) return null;
+
+    const floor = floors.floors[0];
+    if (!floor) return null;
+
+    const servicePoints: ServiceFloorView['servicePoints'] = floors.tables
+      .map((table) => {
+        const floorElement = floor.elements.find((element) => element.tableId === table.id);
+        if (!floorElement) return null;
+
+        const tableState = this.getTableState(restaurantId, table.id);
+        const activeOrder = this.getActiveOrder(restaurantId, table.id);
+        const summary = this.createServiceSummary(activeOrder, table.capacity);
+
+        return {
+          table: {
+            id: table.id,
+            tableNumber: table.tableNumber,
+            name: table.name,
+            capacity: table.capacity,
+            status: tableState.status,
+            serviceStartedAt: tableState.serviceStartedAt,
+          },
+          summary,
+        };
+      })
+      .filter((servicePoint): servicePoint is ServiceFloorView['servicePoints'][number] => servicePoint !== null);
+
+    return {
+      restaurantId,
+      floor: {
+        id: floor.id,
+        name: floor.name,
+        rows: floor.rows,
+        columns: floor.columns,
+      },
+      elements: floor.elements.map((element) => ({
+        id: element.id,
+        type: element.type,
+        label: element.label,
+        x: element.x,
+        y: element.y,
+        width: element.width,
+        height: element.height,
+        shape: element.shape,
+        tableId: element.tableId,
+      })),
+      servicePoints,
+      totals: {
+        servicePointCount: servicePoints.length,
+        occupiedCount: servicePoints.filter((servicePoint) => this.isOccupiedStatus(servicePoint.table.status)).length,
+        openOrderCount: servicePoints.filter((servicePoint) => this.getActiveOrder(restaurantId, servicePoint.table.id) !== null).length,
+      },
+    };
+  }
+
+  async findServicePointByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors) return null;
+
+    const table = floors.tables.find((candidate) => candidate.id === tableId);
+    if (!table) return null;
+
+    const floor = floors.floors[0];
+    const floorElement = floor?.elements.find((element) => element.tableId === tableId) ?? null;
+    const tableState = this.getTableState(restaurantId, tableId);
+    const activeOrder = this.getActiveOrder(restaurantId, tableId);
+    const summary = this.createServiceSummary(activeOrder, table.capacity);
+
+    return {
+      table: {
+        id: table.id,
+        tableNumber: table.tableNumber,
+        name: table.name,
+        capacity: table.capacity,
+        status: tableState.status,
+        occupiedAt: tableState.occupiedAt,
+        serviceStartedAt: tableState.serviceStartedAt,
+      },
+      floorElement: floorElement
+        ? {
+            id: floorElement.id,
+            label: floorElement.label,
+            type: floorElement.type,
+            x: floorElement.x,
+            y: floorElement.y,
+            width: floorElement.width,
+            height: floorElement.height,
+            shape: floorElement.shape,
+          }
+        : null,
+      serviceInfo: {
+        ...summary,
+        durationMinutes: getServiceDurationMinutes(tableState.occupiedAt, tableState.serviceStartedAt, new Date('2026-06-21T12:34:00.000Z')),
+      },
+    };
+  }
+
+  async findServicePointOrderByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointOrderView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) return null;
+
+    const activeOrder = this.getActiveOrder(restaurantId, tableId);
+    if (!activeOrder) {
+      return { order: null, lines: [] };
+    }
+
+    return {
+      order: {
+        id: activeOrder.id,
+        tableId: activeOrder.tableId,
+        status: activeOrder.status,
+        openedAt: activeOrder.openedAt,
+        updatedAt: activeOrder.updatedAt,
+        subtotalCents: activeOrder.subtotalCents,
+        taxCents: activeOrder.taxCents,
+        totalCents: activeOrder.totalCents,
+        currency: activeOrder.currency,
+      },
+      lines: activeOrder.lines.map((line) => ({
+        id: line.id,
+        productName: line.productName,
+        quantity: line.quantity,
+        unitPriceCents: line.unitPriceCents,
+        subtotalCents: line.subtotalCents,
+        status: line.status,
+        course: line.course,
+        kitchenNote: line.kitchenNote,
+      })),
+    };
+  }
+
+  async occupyServicePoint(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) {
+      return null;
+    }
+
+    const nextTimestamp = new Date().toISOString();
+    const tableStatesMap = new Map(this.tableStates);
+    const restaurantTableStates = structuredClone(tableStatesMap.get(restaurantId) ?? {});
+    const currentTableState = restaurantTableStates[tableId] ?? {
+      status: 'free' as const,
+      occupiedAt: null,
+      serviceStartedAt: null,
+    };
+
+    restaurantTableStates[tableId] = {
+      status: 'occupied',
+      occupiedAt:
+        currentTableState.status === 'occupied' ||
+        currentTableState.status === 'waiting_kitchen' ||
+        currentTableState.status === 'served' ||
+        currentTableState.status === 'payment_pending'
+          ? currentTableState.occupiedAt ?? nextTimestamp
+          : nextTimestamp,
+      serviceStartedAt:
+        currentTableState.status === 'occupied' ||
+        currentTableState.status === 'waiting_kitchen' ||
+        currentTableState.status === 'served' ||
+        currentTableState.status === 'payment_pending'
+          ? currentTableState.serviceStartedAt ?? nextTimestamp
+          : nextTimestamp,
+    };
+
+    tableStatesMap.set(restaurantId, restaurantTableStates);
+    this.tableStates = [...tableStatesMap.entries()];
+
+    return this.findServicePointByRestaurantId(restaurantId, tableId);
+  }
+
+  async sendServicePointOrderToKitchen(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) {
+      return null;
+    }
+
+    const ordersMap = new Map(this.serviceOrders);
+    const restaurantOrders = structuredClone(ordersMap.get(restaurantId) ?? []);
+    const orderIndex = restaurantOrders.findIndex((order) => order.tableId === tableId && order.status !== 'paid');
+
+    if (orderIndex < 0) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    const currentOrder = restaurantOrders[orderIndex]!;
+    restaurantOrders[orderIndex] = {
+      ...currentOrder,
+      status: 'sent_to_kitchen',
+      updatedAt: now,
+      lines: currentOrder.lines.map((line) =>
+        line.status === 'pending'
+          ? {
+              ...line,
+              status: 'sent_to_kitchen',
+            }
+          : line,
+      ),
+    };
+
+    ordersMap.set(restaurantId, restaurantOrders);
+    this.serviceOrders = [...ordersMap.entries()];
+
+    const tableStatesMap = new Map(this.tableStates);
+    const restaurantTableStates = structuredClone(tableStatesMap.get(restaurantId) ?? {});
+    const currentTableState = restaurantTableStates[tableId] ?? {
+      status: 'free' as const,
+      occupiedAt: null,
+      serviceStartedAt: null,
+    };
+
+    restaurantTableStates[tableId] = {
+      status: 'waiting_kitchen',
+      occupiedAt: currentTableState.occupiedAt ?? now,
+      serviceStartedAt: currentTableState.serviceStartedAt ?? now,
+    };
+
+    tableStatesMap.set(restaurantId, restaurantTableStates);
+    this.tableStates = [...tableStatesMap.entries()];
+
+    return this.findServicePointByRestaurantId(restaurantId, tableId);
+  }
+
+  async markServicePointOrderServed(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) {
+      return null;
+    }
+
+    const ordersMap = new Map(this.serviceOrders);
+    const restaurantOrders = structuredClone(ordersMap.get(restaurantId) ?? []);
+    const orderIndex = restaurantOrders.findIndex((order) => order.tableId === tableId && order.status !== 'paid');
+
+    if (orderIndex < 0) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    const currentOrder = restaurantOrders[orderIndex]!;
+    restaurantOrders[orderIndex] = {
+      ...currentOrder,
+      status: 'served',
+      updatedAt: now,
+      lines: currentOrder.lines.map((line) =>
+        line.status === 'cancelled'
+          ? line
+          : {
+              ...line,
+              status: 'served',
+            }
+      ),
+    };
+
+    ordersMap.set(restaurantId, restaurantOrders);
+    this.serviceOrders = [...ordersMap.entries()];
+
+    const tableStatesMap = new Map(this.tableStates);
+    const restaurantTableStates = structuredClone(tableStatesMap.get(restaurantId) ?? {});
+    const currentTableState = restaurantTableStates[tableId] ?? {
+      status: 'free' as const,
+      occupiedAt: null,
+      serviceStartedAt: null,
+    };
+
+    restaurantTableStates[tableId] = {
+      status: 'served',
+      occupiedAt: currentTableState.occupiedAt ?? now,
+      serviceStartedAt: currentTableState.serviceStartedAt ?? now,
+    };
+
+    tableStatesMap.set(restaurantId, restaurantTableStates);
+    this.tableStates = [...tableStatesMap.entries()];
+
+    return this.findServicePointByRestaurantId(restaurantId, tableId);
+  }
+
+  async chargeServicePoint(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) {
+      return null;
+    }
+
+    const ordersMap = new Map(this.serviceOrders);
+    const restaurantOrders = structuredClone(ordersMap.get(restaurantId) ?? []);
+    const orderIndex = restaurantOrders.findIndex((order) => order.tableId === tableId && order.status !== 'paid');
+
+    if (orderIndex >= 0) {
+      restaurantOrders[orderIndex] = {
+        ...restaurantOrders[orderIndex]!,
+        status: 'paid',
+        updatedAt: new Date().toISOString(),
+      };
+      ordersMap.set(restaurantId, restaurantOrders);
+      this.serviceOrders = [...ordersMap.entries()];
+    }
+
+    const tableStatesMap = new Map(this.tableStates);
+    const restaurantTableStates = structuredClone(tableStatesMap.get(restaurantId) ?? {});
+    const currentTableState = restaurantTableStates[tableId] ?? {
+      status: 'free' as const,
+      occupiedAt: null,
+      serviceStartedAt: null,
+    };
+
+    restaurantTableStates[tableId] = {
+      status: 'paid',
+      occupiedAt: currentTableState.occupiedAt,
+      serviceStartedAt: currentTableState.serviceStartedAt,
+    };
+
+    tableStatesMap.set(restaurantId, restaurantTableStates);
+    this.tableStates = [...tableStatesMap.entries()];
+
+    return this.findServicePointByRestaurantId(restaurantId, tableId);
   }
 
   async reorderFloorElements(
@@ -305,5 +813,45 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
     floorsMap.set(restaurantId, structuredClone(floors));
     this.floors = [...floorsMap.entries()];
     return structuredClone(floors);
+  }
+
+  private getOrders(restaurantId: string): DemoOrder[] {
+    return structuredClone(new Map(this.serviceOrders).get(restaurantId) ?? []);
+  }
+
+  private getActiveOrder(restaurantId: string, tableId: string): DemoOrder | null {
+    return this.getOrders(restaurantId).find((order) => order.tableId === tableId && order.status !== 'paid') ?? null;
+  }
+
+  private getTableState(restaurantId: string, tableId: string): DemoTableServiceState {
+    const states = new Map(this.tableStates).get(restaurantId) ?? {};
+    return states[tableId] ?? { status: 'free', occupiedAt: null, serviceStartedAt: null };
+  }
+
+  private createServiceSummary(order: DemoOrder | null, guestCount: number): ServiceFloorView['servicePoints'][number]['summary'] {
+    if (!order) {
+      return {
+        lineCount: 0,
+        guestCount,
+        totalCents: 0,
+        currency: 'EUR',
+        servicePhase: {
+          course: 'none',
+          status: 'no_order',
+        },
+      };
+    }
+
+    return {
+      lineCount: order.lines.length,
+      guestCount,
+      totalCents: order.totalCents,
+      currency: order.currency,
+      servicePhase: deriveServicePhase(order.lines.map((line) => ({ status: line.status, course: line.course }))),
+    };
+  }
+
+  private isOccupiedStatus(status: ServiceTableStatus): boolean {
+    return status !== 'free' && status !== 'reserved';
   }
 }

@@ -4,6 +4,7 @@ import type {
   RestaurantReservation,
   RestaurantSummary,
 } from '../../domain/restaurant-read.models';
+import type { ServiceFloorView, ServicePointDetailView, ServicePointOrderView } from '../../domain/service-floor.models';
 
 export const RESTAURANT_READ_REPOSITORY = Symbol('RESTAURANT_READ_REPOSITORY');
 
@@ -12,6 +13,13 @@ export interface RestaurantReadRepository {
   findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null>;
   findFloorsByRestaurantId(restaurantId: string): Promise<RestaurantFloors | null>;
   listReservationsByRestaurantId(restaurantId: string): Promise<RestaurantReservation[] | null>;
+  findServiceFloorByRestaurantId(restaurantId: string): Promise<ServiceFloorView | null>;
+  findServicePointByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
+  findServicePointOrderByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointOrderView | null>;
+  occupyServicePoint(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
+  sendServicePointOrderToKitchen(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
+  markServicePointOrderServed(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
+  chargeServicePoint(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
   reorderFloorElements(
     restaurantId: string,
     floorId: string,

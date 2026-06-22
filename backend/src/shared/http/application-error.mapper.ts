@@ -20,12 +20,14 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_role_name':
     case 'invalid_floor_element_layout':
     case 'invalid_floor_layout':
+    case 'invalid_service_action':
       return new BadRequestException(error.message);
 
     case 'user_not_found':
     case 'role_not_found':
     case 'task_not_found':
     case 'restaurant_not_found':
+    case 'table_not_found':
     case 'floor_not_found':
       return new NotFoundException(error.message);
 

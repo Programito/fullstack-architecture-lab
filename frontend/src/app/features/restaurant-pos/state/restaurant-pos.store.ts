@@ -672,6 +672,42 @@ export class RestaurantPosStore {
     this.clearError();
   }
 
+  hydrateServiceFloor(input: {
+    floorId?: string | null;
+    floorName?: string;
+    rows: number;
+    columns: number;
+    floorElements: FloorElement[];
+    restaurantTables: RestaurantTable[];
+  }): void {
+    this.hydrateLayout(input);
+    this._ordersByTable.set(this.createOrdersByTable(input.restaurantTables));
+
+    const selectedTableId = this._selectedTableId();
+    if (selectedTableId && !input.restaurantTables.some((table) => table.id === selectedTableId)) {
+      this._selectedTableId.set(null);
+    }
+  }
+
+  hydrateServicePoint(input: { table: RestaurantTable; floorElement?: FloorElement | null }): void {
+    this._restaurantTables.update((tables) => this.replaceOrAppendTable(tables, input.table));
+
+    const floorElement = input.floorElement;
+    if (floorElement) {
+      this._floorElements.update((elements) => this.replaceOrAppendFloorElement(elements, floorElement));
+    }
+
+    this.clearError();
+  }
+
+  hydrateServicePointOrder(tableId: string, order: TableOrder | null): void {
+    this._ordersByTable.update((ordersByTable) => ({
+      ...ordersByTable,
+      [tableId]: structuredClone(order ?? this.createEmptyOrder(tableId)),
+    }));
+    this.clearError();
+  }
+
   removeRow(): void {
     const nextRows = this._gridRows() - 1;
 
@@ -1320,6 +1356,28 @@ export class RestaurantPosStore {
             }
           : table,
       ),
+    );
+  }
+
+  private replaceOrAppendTable(tables: RestaurantTable[], nextTable: RestaurantTable): RestaurantTable[] {
+    return tables.some((table) => table.id === nextTable.id)
+      ? tables.map((table) => (table.id === nextTable.id ? structuredClone(nextTable) : table))
+      : [...tables, structuredClone(nextTable)];
+  }
+
+  private replaceOrAppendFloorElement(elements: FloorElement[], nextElement: FloorElement): FloorElement[] {
+    return elements.some((element) => element.id === nextElement.id)
+      ? elements.map((element) => (element.id === nextElement.id ? structuredClone(nextElement) : element))
+      : [...elements, structuredClone(nextElement)];
+  }
+
+  private createOrdersByTable(tables: RestaurantTable[]): OrdersByTable {
+    return tables.reduce<OrdersByTable>(
+      (ordersByTable, table) => ({
+        ...ordersByTable,
+        [table.id]: this.createEmptyOrder(table.id),
+      }),
+      {},
     );
   }
 

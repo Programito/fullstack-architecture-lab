@@ -539,6 +539,246 @@ describe('App e2e', () => {
       .expect(400);
   });
 
+  it('returns the operational service floor for one restaurant', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        restaurantId: 'restaurant-mesaflow-centro',
+        floor: expect.objectContaining({
+          id: expect.any(String),
+          rows: expect.any(Number),
+          columns: expect.any(Number),
+        }),
+        elements: expect.any(Array),
+        servicePoints: expect.any(Array),
+        totals: expect.objectContaining({
+          servicePointCount: expect.any(Number),
+          occupiedCount: expect.any(Number),
+          openOrderCount: expect.any(Number),
+        }),
+      }),
+    );
+  });
+
+  it('returns one service point detail by table id', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1' }),
+        floorElement: expect.objectContaining({
+          id: expect.any(String),
+          label: expect.any(String),
+          type: expect.any(String),
+        }),
+        serviceInfo: expect.objectContaining({
+          lineCount: expect.any(Number),
+          totalCents: expect.any(Number),
+          currency: expect.any(String),
+          durationMinutes: expect.any(Number),
+        }),
+      }),
+    );
+  });
+
+  it('returns the active order detail for a service point', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/order')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        order: expect.objectContaining({
+          tableId: 'table-3',
+          status: expect.any(String),
+          totalCents: expect.any(Number),
+          currency: expect.any(String),
+        }),
+        lines: expect.any(Array),
+      }),
+    );
+  });
+
+  it('returns order null when the service point exists but has no open order', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/order')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      order: null,
+      lines: [],
+    });
+  });
+
+  it('occupies one free service point and returns the updated detail', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
+      .expect(201);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({
+          id: 'stool-1',
+          status: 'occupied',
+          occupiedAt: expect.any(String),
+          serviceStartedAt: expect.any(String),
+        }),
+        serviceInfo: expect.objectContaining({
+          lineCount: 0,
+          totalCents: 0,
+        }),
+      }),
+    );
+
+    const detailAfterOccupy = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1')
+      .expect(200);
+
+    expect(detailAfterOccupy.body.table).toEqual(
+      expect.objectContaining({
+        id: 'stool-1',
+        status: 'occupied',
+      }),
+    );
+  });
+
+  it('returns 404 when occupying a missing service point', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/missing/occupy')
+      .expect(404);
+  });
+
+  it('sends one service point order to kitchen and persists the updated statuses', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/send-to-kitchen')
+      .expect(201);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({
+          id: 'table-3',
+          status: 'waiting_kitchen',
+        }),
+      }),
+    );
+
+    const orderResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/order')
+      .expect(200);
+
+    expect(orderResponse.body.order).toEqual(
+      expect.objectContaining({
+        tableId: 'table-3',
+        status: 'sent_to_kitchen',
+      }),
+    );
+    expect(orderResponse.body.lines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'line-burger', status: 'preparing' }),
+        expect.objectContaining({ id: 'line-combo', status: 'sent_to_kitchen' }),
+      ]),
+    );
+  });
+
+  it('returns 400 when sending to kitchen without pending lines', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/send-to-kitchen')
+      .expect(400);
+  });
+
+  it('marks one service point order as served and persists the updated statuses', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/mark-served')
+      .expect(201);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({
+          id: 'table-3',
+          status: 'served',
+        }),
+      }),
+    );
+
+    const orderResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/order')
+      .expect(200);
+
+    expect(orderResponse.body.order).toEqual(
+      expect.objectContaining({
+        tableId: 'table-3',
+        status: 'served',
+      }),
+    );
+    expect(orderResponse.body.lines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'line-burger', status: 'served' }),
+        expect.objectContaining({ id: 'line-combo', status: 'served' }),
+      ]),
+    );
+  });
+
+  it('returns 400 when marking served without active lines', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/mark-served')
+      .expect(400);
+  });
+
+  it('charges one service point and persists the paid status', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2/charge')
+      .expect(201);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({
+          id: 'table-2',
+          status: 'paid',
+        }),
+      }),
+    );
+
+    const detailResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2')
+      .expect(200);
+    expect(detailResponse.body.table).toEqual(expect.objectContaining({ id: 'table-2', status: 'paid' }));
+
+    const orderResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2/order')
+      .expect(200);
+    expect(orderResponse.body).toEqual({
+      order: null,
+      lines: [],
+    });
+  });
+
+  it('returns 400 when charging a free service point', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/charge')
+      .expect(400);
+  });
+
+  it('returns 400 when charging an occupied service point without an amount', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/charge')
+      .expect(400);
+  });
+
+  it('returns 400 when charging an already paid service point', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1/charge')
+      .expect(400);
+  });
+
   it('creates, lists and completes tasks through versioned REST endpoints', async () => {
     const createResponse = await request(app.getHttpServer())
       .post('/api/v1/tasks')

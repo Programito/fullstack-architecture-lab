@@ -8,6 +8,9 @@ import type {
   ReorderFloorElementsRequest,
   RestaurantFloorsDto,
   RestaurantSummaryDto,
+  ServiceFloorDto,
+  ServicePointDetailDto,
+  ServicePointOrderDto,
   UpdateFloorElementRequest,
   UpdateFloorRequest,
 } from './restaurant-pos-api.models';
@@ -26,6 +29,34 @@ export class RestaurantPosApiService {
 
   getRestaurantFloors(restaurantId: string): Observable<RestaurantFloorsDto> {
     return this.http.get<RestaurantFloorsDto>(`${this.restaurantsUrl}/${restaurantId}/floors`);
+  }
+
+  getRestaurantServiceFloor(restaurantId: string): Observable<ServiceFloorDto> {
+    return this.http.get<ServiceFloorDto>(`${this.restaurantsUrl}/${restaurantId}/service-floor`);
+  }
+
+  getRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
+    return this.http.get<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}`);
+  }
+
+  getRestaurantServicePointOrder(restaurantId: string, tableId: string): Observable<ServicePointOrderDto> {
+    return this.http.get<ServicePointOrderDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/order`);
+  }
+
+  occupyRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/occupy`, {});
+  }
+
+  sendRestaurantServicePointToKitchen(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/send-to-kitchen`, {});
+  }
+
+  markRestaurantServicePointServed(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/mark-served`, {});
+  }
+
+  chargeRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/charge`, {});
   }
 
   createFloorElement(

@@ -2,10 +2,17 @@ import { Body, Controller, Get, Param, Patch, Post, Put, Version } from '@nestjs
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
+import { ChargeRestaurantServicePointUseCase } from '../../application/use-cases/charge-restaurant-service-point.use-case';
 import { GetRestaurantFloorsUseCase } from '../../application/use-cases/get-restaurant-floors.use-case';
 import { GetRestaurantMenuUseCase } from '../../application/use-cases/get-restaurant-menu.use-case';
+import { GetRestaurantServiceFloorUseCase } from '../../application/use-cases/get-restaurant-service-floor.use-case';
+import { GetRestaurantServicePointOrderUseCase } from '../../application/use-cases/get-restaurant-service-point-order.use-case';
+import { GetRestaurantServicePointUseCase } from '../../application/use-cases/get-restaurant-service-point.use-case';
 import { ListRestaurantReservationsUseCase } from '../../application/use-cases/list-restaurant-reservations.use-case';
 import { ListRestaurantsUseCase } from '../../application/use-cases/list-restaurants.use-case';
+import { MarkRestaurantServicePointOrderServedUseCase } from '../../application/use-cases/mark-restaurant-service-point-order-served.use-case';
+import { OccupyRestaurantServicePointUseCase } from '../../application/use-cases/occupy-restaurant-service-point.use-case';
+import { SendRestaurantServicePointOrderToKitchenUseCase } from '../../application/use-cases/send-restaurant-service-point-order-to-kitchen.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from '../../application/use-cases/update-floor-element.use-case';
@@ -17,6 +24,9 @@ import { UpdateRestaurantFloorDto } from './dto/update-restaurant-floor.dto';
 import { RestaurantFloorsResponseDto } from './dto/restaurant-floors-response.dto';
 import { RestaurantMenuResponseDto } from './dto/restaurant-menu-response.dto';
 import { RestaurantReservationResponseDto } from './dto/restaurant-reservation-response.dto';
+import { ServiceFloorResponseDto } from './dto/service-floor-response.dto';
+import { ServicePointDetailResponseDto } from './dto/service-point-detail-response.dto';
+import { ServicePointOrderResponseDto } from './dto/service-point-order-response.dto';
 import { RestaurantSummaryResponseDto } from './dto/restaurant-summary-response.dto';
 
 @ApiTags('restaurants')
@@ -26,6 +36,13 @@ export class RestaurantsController {
     private readonly listRestaurants: ListRestaurantsUseCase,
     private readonly getRestaurantMenu: GetRestaurantMenuUseCase,
     private readonly getRestaurantFloors: GetRestaurantFloorsUseCase,
+    private readonly getRestaurantServiceFloor: GetRestaurantServiceFloorUseCase,
+    private readonly getRestaurantServicePoint: GetRestaurantServicePointUseCase,
+    private readonly getRestaurantServicePointOrder: GetRestaurantServicePointOrderUseCase,
+    private readonly chargeRestaurantServicePoint: ChargeRestaurantServicePointUseCase,
+    private readonly occupyRestaurantServicePoint: OccupyRestaurantServicePointUseCase,
+    private readonly sendRestaurantServicePointOrderToKitchen: SendRestaurantServicePointOrderToKitchenUseCase,
+    private readonly markRestaurantServicePointOrderServed: MarkRestaurantServicePointOrderServedUseCase,
     private readonly listRestaurantReservations: ListRestaurantReservationsUseCase,
     private readonly createFloorElement: CreateFloorElementUseCase,
     private readonly reorderFloorElements: ReorderFloorElementsUseCase,
@@ -55,6 +72,73 @@ export class RestaurantsController {
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
   async floors(@Param('id') id: string): Promise<RestaurantFloorsResponseDto> {
     return RestaurantFloorsResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantFloors.execute(id)));
+  }
+
+  @Get(':id/service-floor')
+  @Version('1')
+  @ApiOkResponse({ type: ServiceFloorResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  async serviceFloor(@Param('id') id: string): Promise<ServiceFloorResponseDto> {
+    return ServiceFloorResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServiceFloor.execute(id)));
+  }
+
+  @Get(':id/service-points/:tableId')
+  @Version('1')
+  @ApiOkResponse({ type: ServicePointDetailResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async servicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
+    return ServicePointDetailResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServicePoint.execute(id, tableId)));
+  }
+
+  @Get(':id/service-points/:tableId/order')
+  @Version('1')
+  @ApiOkResponse({ type: ServicePointOrderResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async servicePointOrder(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointOrderResponseDto> {
+    return ServicePointOrderResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServicePointOrder.execute(id, tableId)));
+  }
+
+  @Post(':id/service-points/:tableId/occupy')
+  @Version('1')
+  @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async occupyServicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
+    return ServicePointDetailResponseDto.fromDomain(
+      unwrapResultOrThrow(await this.occupyRestaurantServicePoint.execute(id, tableId)),
+    );
+  }
+
+  @Post(':id/service-points/:tableId/send-to-kitchen')
+  @Version('1')
+  @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Service point has no pending lines to send.' })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async sendServicePointToKitchen(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
+    return ServicePointDetailResponseDto.fromDomain(
+      unwrapResultOrThrow(await this.sendRestaurantServicePointOrderToKitchen.execute(id, tableId)),
+    );
+  }
+
+  @Post(':id/service-points/:tableId/mark-served')
+  @Version('1')
+  @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Service point has no active lines to mark as served.' })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async markServicePointServed(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
+    return ServicePointDetailResponseDto.fromDomain(
+      unwrapResultOrThrow(await this.markRestaurantServicePointOrderServed.execute(id, tableId)),
+    );
+  }
+
+  @Post(':id/service-points/:tableId/charge')
+  @Version('1')
+  @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Service point cannot be charged in its current state.' })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async chargeServicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
+    return ServicePointDetailResponseDto.fromDomain(
+      unwrapResultOrThrow(await this.chargeRestaurantServicePoint.execute(id, tableId)),
+    );
   }
 
   @Post(':id/floors/:floorId/elements')

@@ -94,6 +94,325 @@ describe('RestaurantPosApiService', () => {
     http.verify();
   });
 
+  it('loads service floor data for one restaurant', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.getRestaurantServiceFloor('restaurant-mesaflow-centro').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      restaurantId: 'restaurant-mesaflow-centro',
+      floor: { id: 'floor-main', name: 'Sala principal', rows: 12, columns: 16 },
+      elements: [{ id: 'floor-element-1', type: 'table', label: 'M1', x: 1, y: 1, width: 2, height: 2, tableId: 'table-1', shape: 'square' }],
+      servicePoints: [
+        {
+          table: {
+            id: 'table-1',
+            tableNumber: 1,
+            name: 'Mesa 1',
+            capacity: 2,
+            status: 'free',
+            serviceStartedAt: null,
+          },
+          summary: {
+            lineCount: 0,
+            guestCount: 2,
+            totalCents: 0,
+            currency: 'EUR',
+            servicePhase: { course: 'none', status: 'no_order' },
+          },
+        },
+      ],
+      totals: {
+        servicePointCount: 1,
+        occupiedCount: 0,
+        openOrderCount: 0,
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        restaurantId: 'restaurant-mesaflow-centro',
+        floor: expect.objectContaining({ id: 'floor-main' }),
+        elements: expect.any(Array),
+        servicePoints: expect.any(Array),
+        totals: expect.objectContaining({ servicePointCount: 1 }),
+      }),
+    );
+    http.verify();
+  });
+
+  it('loads one service point detail', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.getRestaurantServicePoint('restaurant-mesaflow-centro', 'table-1').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      table: {
+        id: 'table-1',
+        tableNumber: 1,
+        name: 'Mesa 1',
+        capacity: 2,
+        status: 'free',
+        occupiedAt: null,
+        serviceStartedAt: null,
+      },
+      floorElement: {
+        id: 'floor-element-1',
+        label: 'M1',
+        type: 'table',
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 2,
+        shape: 'square',
+      },
+      serviceInfo: {
+        guestCount: 2,
+        lineCount: 0,
+        totalCents: 0,
+        currency: 'EUR',
+        servicePhase: { course: 'none', status: 'no_order' },
+        durationMinutes: 0,
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1' }),
+        serviceInfo: expect.objectContaining({ durationMinutes: 0 }),
+      }),
+    );
+    http.verify();
+  });
+
+  it('loads the active order for one service point', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.getRestaurantServicePointOrder('restaurant-mesaflow-centro', 'table-1').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1/order');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      order: null,
+      lines: [],
+    });
+
+    expect(result).toEqual({
+      order: null,
+      lines: [],
+    });
+    http.verify();
+  });
+
+  it('posts occupy for one service point', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.occupyRestaurantServicePoint('restaurant-mesaflow-centro', 'table-1').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1/occupy');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      table: {
+        id: 'table-1',
+        tableNumber: 1,
+        name: 'Mesa 1',
+        capacity: 2,
+        status: 'occupied',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: {
+        id: 'floor-element-1',
+        label: 'M1',
+        type: 'table',
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 2,
+        shape: 'square',
+      },
+      serviceInfo: {
+        guestCount: 2,
+        lineCount: 0,
+        totalCents: 0,
+        currency: 'EUR',
+        servicePhase: { course: 'none', status: 'no_order' },
+        durationMinutes: 0,
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-1', status: 'occupied' }),
+      }),
+    );
+    http.verify();
+  });
+
+  it('posts send to kitchen for one service point', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.sendRestaurantServicePointToKitchen('restaurant-mesaflow-centro', 'table-3').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/send-to-kitchen');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      table: {
+        id: 'table-3',
+        tableNumber: 3,
+        name: 'Mesa 3',
+        capacity: 6,
+        status: 'waiting_kitchen',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: {
+        id: 'floor-element-3',
+        label: 'M3',
+        type: 'table',
+        x: 9,
+        y: 1,
+        width: 2,
+        height: 2,
+        shape: 'rectangle',
+      },
+      serviceInfo: {
+        guestCount: 6,
+        lineCount: 2,
+        totalCents: 2940,
+        currency: 'EUR',
+        servicePhase: { course: 'mixed', status: 'pending' },
+        durationMinutes: 10,
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-3', status: 'waiting_kitchen' }),
+      }),
+    );
+    http.verify();
+  });
+
+  it('posts mark served for one service point', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.markRestaurantServicePointServed('restaurant-mesaflow-centro', 'table-3').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/mark-served');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      table: {
+        id: 'table-3',
+        tableNumber: 3,
+        name: 'Mesa 3',
+        capacity: 6,
+        status: 'served',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: {
+        id: 'floor-element-3',
+        label: 'M3',
+        type: 'table',
+        x: 9,
+        y: 1,
+        width: 2,
+        height: 2,
+        shape: 'rectangle',
+      },
+      serviceInfo: {
+        guestCount: 6,
+        lineCount: 2,
+        totalCents: 2940,
+        currency: 'EUR',
+        servicePhase: { course: 'none', status: 'served' },
+        durationMinutes: 22,
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-3', status: 'served' }),
+      }),
+    );
+    http.verify();
+  });
+
+  it('posts charge for one service point', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.chargeRestaurantServicePoint('restaurant-mesaflow-centro', 'table-2').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2/charge');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      table: {
+        id: 'table-2',
+        tableNumber: 2,
+        name: 'Mesa 2',
+        capacity: 4,
+        status: 'paid',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: {
+        id: 'floor-element-2',
+        label: 'M2',
+        type: 'table',
+        x: 5,
+        y: 1,
+        width: 2,
+        height: 2,
+        shape: 'rectangle',
+      },
+      serviceInfo: {
+        guestCount: 4,
+        lineCount: 0,
+        totalCents: 0,
+        currency: 'EUR',
+        servicePhase: { course: 'none', status: 'no_order' },
+        durationMinutes: 28,
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({ id: 'table-2', status: 'paid' }),
+      }),
+    );
+    http.verify();
+  });
+
   it('posts a new floor element', () => {
     const { service, http } = setup();
 

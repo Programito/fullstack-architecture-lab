@@ -1,9 +1,16 @@
 import { Module } from '@nestjs/common';
 
+import { ChargeRestaurantServicePointUseCase } from './application/use-cases/charge-restaurant-service-point.use-case';
 import { GetRestaurantFloorsUseCase } from './application/use-cases/get-restaurant-floors.use-case';
 import { GetRestaurantMenuUseCase } from './application/use-cases/get-restaurant-menu.use-case';
+import { GetRestaurantServiceFloorUseCase } from './application/use-cases/get-restaurant-service-floor.use-case';
+import { GetRestaurantServicePointOrderUseCase } from './application/use-cases/get-restaurant-service-point-order.use-case';
+import { GetRestaurantServicePointUseCase } from './application/use-cases/get-restaurant-service-point.use-case';
 import { ListRestaurantReservationsUseCase } from './application/use-cases/list-restaurant-reservations.use-case';
 import { ListRestaurantsUseCase } from './application/use-cases/list-restaurants.use-case';
+import { MarkRestaurantServicePointOrderServedUseCase } from './application/use-cases/mark-restaurant-service-point-order-served.use-case';
+import { OccupyRestaurantServicePointUseCase } from './application/use-cases/occupy-restaurant-service-point.use-case';
+import { SendRestaurantServicePointOrderToKitchenUseCase } from './application/use-cases/send-restaurant-service-point-order-to-kitchen.use-case';
 import { CreateFloorElementUseCase } from './application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from './application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from './application/use-cases/update-floor-element.use-case';
@@ -18,6 +25,13 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     ListRestaurantsUseCase,
     GetRestaurantMenuUseCase,
     GetRestaurantFloorsUseCase,
+    GetRestaurantServiceFloorUseCase,
+    GetRestaurantServicePointUseCase,
+    GetRestaurantServicePointOrderUseCase,
+    ChargeRestaurantServicePointUseCase,
+    OccupyRestaurantServicePointUseCase,
+    SendRestaurantServicePointOrderToKitchenUseCase,
+    MarkRestaurantServicePointOrderServedUseCase,
     ListRestaurantReservationsUseCase,
     CreateFloorElementUseCase,
     ReorderFloorElementsUseCase,

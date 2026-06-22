@@ -1,17 +1,405 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
+import { of } from 'rxjs';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
+import { MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 
 describe('RestaurantPosServicePage', () => {
-  const renderServicePage = async (storage?: KeyValueStorage) => {
-    const i18n = provideI18nTesting();
+  const createRestaurantPosApiMock = (): Pick<
+    RestaurantPosApiService,
+    'listRestaurants' | 'getRestaurantServiceFloor' | 'getRestaurantServicePoint' | 'getRestaurantServicePointOrder' | 'occupyRestaurantServicePoint' | 'sendRestaurantServicePointToKitchen' | 'markRestaurantServicePointServed' | 'chargeRestaurantServicePoint'
+  > => {
+    const tableStatuses = new Map<string, 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'paid'>([
+      ['table-1', 'free'],
+      ['table-2', 'free'],
+      ['table-3', 'free'],
+      ['table-4', 'free'],
+      ['stool-1', 'free'],
+      ['stool-2', 'free'],
+      ['stool-3', 'free'],
+    ]);
+    const serviceOrders = new Map<
+      string,
+      {
+        order: {
+          id: string;
+          tableId: string;
+          status: 'open' | 'sent_to_kitchen' | 'served';
+          openedAt: string;
+          updatedAt: string;
+          subtotalCents: number;
+          taxCents: number;
+          totalCents: number;
+          currency: string;
+        };
+        lines: Array<{
+          id: string;
+          productName: string;
+          quantity: number;
+          unitPriceCents: number;
+          subtotalCents: number;
+          status: 'pending' | 'sent_to_kitchen';
+          course: 'mains';
+          kitchenNote: null;
+        }>;
+      }
+    >([
+      [
+        'table-1',
+        {
+          order: {
+            id: 'order:table-1',
+            tableId: 'table-1',
+            status: 'open',
+            openedAt: '2026-06-22T10:00:00.000Z',
+            updatedAt: '2026-06-22T10:00:00.000Z',
+            subtotalCents: 0,
+            taxCents: 0,
+            totalCents: 0,
+            currency: 'EUR',
+          },
+          lines: [],
+        },
+      ],
+    ]);
 
-    return render(RestaurantPosServicePage, {
+    return ({
+    listRestaurants: vi.fn(() =>
+      of([
+        {
+          id: 'restaurant-mesaflow-centro',
+          name: 'MesaFlow Centro',
+          displayName: 'MesaFlow Centro',
+          timezone: 'Europe/Madrid',
+          currency: 'EUR',
+          isActive: true,
+        },
+      ]),
+    ),
+    getRestaurantServiceFloor: vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        floor: {
+          id: 'floor-main',
+          name: 'Sala principal',
+          rows: 20,
+          columns: 20,
+        },
+        elements: MOCK_FLOOR_ELEMENTS.map((element) => ({
+          id: element.id,
+          type: element.type,
+          label: element.label,
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height,
+          shape: element.shape ?? null,
+          tableId: element.tableId ?? null,
+        })),
+        servicePoints: MOCK_FLOOR_ELEMENTS.filter((element) => element.tableId).map((element) => {
+          const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === element.tableId)!;
+          return {
+            table: {
+              id: table.id,
+              tableNumber: table.number,
+              name: null,
+              capacity: table.capacity,
+              status: tableStatuses.get(table.id) ?? table.status,
+              serviceStartedAt: tableStatuses.get(table.id) === 'free' ? null : '2026-06-22T10:15:00.000Z',
+            },
+            summary: {
+              lineCount: serviceOrders.get(table.id)?.lines.length ?? 0,
+              guestCount: table.capacity,
+              totalCents: serviceOrders.get(table.id)?.order.totalCents ?? 0,
+              currency: 'EUR',
+              servicePhase: {
+                course: (serviceOrders.get(table.id)?.lines.length ?? 0) > 0 ? ('mains' as const) : ('none' as const),
+                status: (serviceOrders.get(table.id)?.lines.length ?? 0) > 0 ? ('pending' as const) : ('no_order' as const),
+              },
+            },
+          };
+        }),
+        totals: {
+          servicePointCount: 5,
+          occupiedCount: 0,
+          openOrderCount: 0,
+        },
+      }),
+    ),
+    getRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
+      const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
+
+      return of({
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: tableStatuses.get(table.id) ?? table.status,
+          occupiedAt: tableStatuses.get(table.id) === 'free' ? null : '2026-06-22T10:15:00.000Z',
+          serviceStartedAt: tableStatuses.get(table.id) === 'free' ? null : '2026-06-22T10:15:00.000Z',
+        },
+        floorElement: element
+          ? {
+              id: element.id,
+              label: element.label,
+              type: element.type,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              shape: element.shape ?? null,
+            }
+          : null,
+        serviceInfo: {
+          guestCount: table.capacity,
+          lineCount: serviceOrders.get(tableId)?.lines.length ?? 0,
+          totalCents: serviceOrders.get(tableId)?.order.totalCents ?? 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: (serviceOrders.get(tableId)?.lines.length ?? 0) > 0 ? ('mains' as const) : ('none' as const),
+            status: (serviceOrders.get(tableId)?.lines.length ?? 0) > 0 ? ('pending' as const) : ('no_order' as const),
+          },
+          durationMinutes: 0,
+        },
+      });
+    }),
+    getRestaurantServicePointOrder: vi.fn((_: string, tableId: string) =>
+      of(
+        serviceOrders.get(tableId) ?? {
+          order: {
+            id: `order:${tableId}`,
+            tableId,
+            status: 'open' as const,
+            openedAt: '2026-06-22T10:00:00.000Z',
+            updatedAt: '2026-06-22T10:00:00.000Z',
+            subtotalCents: 0,
+            taxCents: 0,
+            totalCents: 0,
+            currency: 'EUR',
+          },
+          lines: [],
+        },
+      ),
+    ),
+    occupyRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
+      tableStatuses.set(tableId, 'occupied');
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
+      const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
+
+      return of({
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: 'occupied' as const,
+          occupiedAt: '2026-06-22T10:15:00.000Z',
+          serviceStartedAt: '2026-06-22T10:15:00.000Z',
+        },
+        floorElement: element
+          ? {
+              id: element.id,
+              label: element.label,
+              type: element.type,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              shape: element.shape ?? null,
+            }
+          : null,
+        serviceInfo: {
+          guestCount: table.capacity,
+          lineCount: 0,
+          totalCents: 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: 'none' as const,
+            status: 'no_order' as const,
+          },
+          durationMinutes: 0,
+        },
+      });
+    }),
+    sendRestaurantServicePointToKitchen: vi.fn((_restaurantId: string, tableId: string) => {
+      tableStatuses.set(tableId, 'waiting_kitchen');
+      serviceOrders.set(tableId, {
+        order: {
+          id: `order:${tableId}`,
+          tableId,
+          status: 'sent_to_kitchen',
+          openedAt: '2026-06-22T10:00:00.000Z',
+          updatedAt: '2026-06-22T10:05:00.000Z',
+          subtotalCents: 1250,
+          taxCents: 0,
+          totalCents: 1250,
+          currency: 'EUR',
+        },
+        lines: [
+          {
+            id: 'line-table-1-burger',
+            productName: 'Hamburguesa craft',
+            quantity: 1,
+            unitPriceCents: 1250,
+            subtotalCents: 1250,
+            status: 'sent_to_kitchen',
+            course: 'mains',
+            kitchenNote: null,
+          },
+        ],
+      });
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
+      const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
+
+      return of({
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: 'waiting_kitchen' as const,
+          occupiedAt: '2026-06-22T10:15:00.000Z',
+          serviceStartedAt: '2026-06-22T10:15:00.000Z',
+        },
+        floorElement: element
+          ? {
+              id: element.id,
+              label: element.label,
+              type: element.type,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              shape: element.shape ?? null,
+            }
+          : null,
+        serviceInfo: {
+          guestCount: table.capacity,
+          lineCount: serviceOrders.get(tableId)?.lines.length ?? 0,
+          totalCents: serviceOrders.get(tableId)?.order.totalCents ?? 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: (serviceOrders.get(tableId)?.lines.length ?? 0) > 0 ? ('mains' as const) : ('none' as const),
+            status: (serviceOrders.get(tableId)?.lines.length ?? 0) > 0 ? ('pending' as const) : ('no_order' as const),
+          },
+          durationMinutes: 0,
+        },
+      });
+    }),
+    markRestaurantServicePointServed: vi.fn((_restaurantId: string, tableId: string) => {
+      tableStatuses.set(tableId, 'served');
+      const currentOrder = serviceOrders.get(tableId);
+      if (currentOrder) {
+        serviceOrders.set(tableId, {
+          order: {
+            ...currentOrder.order,
+            status: 'served',
+            updatedAt: '2026-06-22T10:12:00.000Z',
+          },
+          lines: currentOrder.lines.map((line) => ({
+            ...line,
+            status: 'sent_to_kitchen',
+          })),
+        });
+      }
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
+      const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
+
+      return of({
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: 'served' as const,
+          occupiedAt: '2026-06-22T10:15:00.000Z',
+          serviceStartedAt: '2026-06-22T10:15:00.000Z',
+        },
+        floorElement: element
+          ? {
+              id: element.id,
+              label: element.label,
+              type: element.type,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              shape: element.shape ?? null,
+            }
+          : null,
+        serviceInfo: {
+          guestCount: table.capacity,
+          lineCount: currentOrder?.lines.length ?? 0,
+          totalCents: currentOrder?.order.totalCents ?? 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: 'none' as const,
+            status: 'served' as const,
+          },
+          durationMinutes: 0,
+        },
+      });
+    }),
+    chargeRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
+      tableStatuses.set(tableId, 'paid');
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
+      const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
+
+      return of({
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: 'paid' as const,
+          occupiedAt: '2026-06-22T10:15:00.000Z',
+          serviceStartedAt: '2026-06-22T10:15:00.000Z',
+        },
+        floorElement: element
+          ? {
+              id: element.id,
+              label: element.label,
+              type: element.type,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              shape: element.shape ?? null,
+            }
+          : null,
+        serviceInfo: {
+          guestCount: table.capacity,
+          lineCount: 0,
+          totalCents: 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: 'none' as const,
+            status: 'no_order' as const,
+          },
+          durationMinutes: 0,
+        },
+      });
+    }),
+  });
+  };
+
+  const renderServicePage = async (storage?: KeyValueStorage, apiMock = createRestaurantPosApiMock()) => {
+    const i18n = provideI18nTesting();
+    const result = await render(RestaurantPosServicePage, {
       imports: [...i18n.imports],
-      providers: storage ? [...i18n.providers, { provide: KEY_VALUE_STORAGE, useValue: storage }] : [...i18n.providers],
+      providers: [
+        ...(storage ? [...i18n.providers, { provide: KEY_VALUE_STORAGE, useValue: storage }] : [...i18n.providers]),
+        { provide: RestaurantPosApiService, useValue: apiMock },
+      ],
     });
+
+    result.fixture.detectChanges();
+    return result;
   };
 
   const getProductDialog = () => screen.getByRole('dialog', { name: /Añadir productos/i });
@@ -68,6 +456,81 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByRole('heading', { name: 'Mesa 1' })).toBeTruthy();
     expect(screen.getByText('Sin iniciar')).toBeTruthy();
     expect(screen.getByText('Todavía no hay productos añadidos.')).toBeTruthy();
+  });
+
+  it('loads the service floor on init and fetches the selected service point from the backend', async () => {
+    const apiMock = createRestaurantPosApiMock();
+
+    await renderServicePage(undefined, apiMock);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+
+    expect(apiMock.listRestaurants).toHaveBeenCalledTimes(1);
+    expect(apiMock.getRestaurantServiceFloor).toHaveBeenCalledWith('restaurant-mesaflow-centro');
+    expect(apiMock.getRestaurantServicePoint).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(apiMock.getRestaurantServicePointOrder).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+  });
+
+  it('occupies the selected table through the backend endpoint', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(screen.getByRole('button', { name: /Iniciar servicio/i }));
+    fixture.detectChanges();
+
+    expect(apiMock.occupyRestaurantServicePoint).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'occupied' }));
+  });
+
+  it('sends the selected table order to kitchen through the backend endpoint', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
+
+    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'waiting_kitchen' }));
+  });
+
+  it('marks the selected table as served through the backend endpoint', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+
+    expect(apiMock.markRestaurantServicePointServed).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'served' }));
+  });
+
+  it('charges the selected table through the backend endpoint', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Efectivo/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
+    fixture.detectChanges();
+
+    expect(apiMock.chargeRestaurantServicePoint).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(store.selectedOrder()).toEqual(expect.objectContaining({ paymentMethod: 'cash', status: 'paid' }));
+    expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'paid' }));
   });
 
   it('opens a selected stool as a one-person service panel', async () => {
