@@ -21,6 +21,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_floor_element_layout':
     case 'invalid_floor_layout':
     case 'invalid_service_action':
+    case 'invalid_order_configuration':
       return new BadRequestException(error.message);
 
     case 'user_not_found':

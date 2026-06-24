@@ -1,7 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Version } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+
+type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
+import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
 import { ChargeRestaurantServicePointUseCase } from '../../application/use-cases/charge-restaurant-service-point.use-case';
 import { GetRestaurantFloorsUseCase } from '../../application/use-cases/get-restaurant-floors.use-case';
 import { GetRestaurantMenuUseCase } from '../../application/use-cases/get-restaurant-menu.use-case';
@@ -13,6 +16,7 @@ import { ListRestaurantsUseCase } from '../../application/use-cases/list-restaur
 import { MarkRestaurantServicePointOrderServedUseCase } from '../../application/use-cases/mark-restaurant-service-point-order-served.use-case';
 import { OccupyRestaurantServicePointUseCase } from '../../application/use-cases/occupy-restaurant-service-point.use-case';
 import { SendRestaurantServicePointOrderToKitchenUseCase } from '../../application/use-cases/send-restaurant-service-point-order-to-kitchen.use-case';
+import { OpenRestaurantOrderUseCase } from '../../application/use-cases/open-restaurant-order.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from '../../application/use-cases/update-floor-element.use-case';
@@ -28,6 +32,8 @@ import { ServiceFloorResponseDto } from './dto/service-floor-response.dto';
 import { ServicePointDetailResponseDto } from './dto/service-point-detail-response.dto';
 import { ServicePointOrderResponseDto } from './dto/service-point-order-response.dto';
 import { RestaurantSummaryResponseDto } from './dto/restaurant-summary-response.dto';
+import { OpenRestaurantOrderDto } from './dto/open-restaurant-order.dto';
+import { RestaurantOrderResponseDto } from './dto/restaurant-order-response.dto';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -35,6 +41,7 @@ export class RestaurantsController {
   constructor(
     private readonly listRestaurants: ListRestaurantsUseCase,
     private readonly getRestaurantMenu: GetRestaurantMenuUseCase,
+    private readonly openRestaurantOrder: OpenRestaurantOrderUseCase,
     private readonly getRestaurantFloors: GetRestaurantFloorsUseCase,
     private readonly getRestaurantServiceFloor: GetRestaurantServiceFloorUseCase,
     private readonly getRestaurantServicePoint: GetRestaurantServicePointUseCase,
@@ -96,6 +103,32 @@ export class RestaurantsController {
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
   async servicePointOrder(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointOrderResponseDto> {
     return ServicePointOrderResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServicePointOrder.execute(id, tableId)));
+  }
+
+  @Post(':id/service-points/:tableId/orders')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: RestaurantOrderResponseDto, description: 'Order opened (201) or existing active order returned (200).' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Table not found.' })
+  @ApiBadRequestResponse({ description: 'Invalid guest count.' })
+  async openOrder(
+    @Param('id') restaurantId: string,
+    @Param('tableId') tableId: string,
+    @Body() body: OpenRestaurantOrderDto,
+    @Req() request: AuthenticatedRequest,
+    @Res({ passthrough: true }) response: HttpResponse,
+  ): Promise<RestaurantOrderResponseDto> {
+    const result = unwrapResultOrThrow(
+      await this.openRestaurantOrder.execute({
+        restaurantId,
+        tableId,
+        openedByUserId: request.auth.userId,
+        guestCount: body.guestCount ?? 1,
+      }),
+    );
+    response.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
+    return RestaurantOrderResponseDto.fromDomain(result.order);
   }
 
   @Post(':id/service-points/:tableId/occupy')

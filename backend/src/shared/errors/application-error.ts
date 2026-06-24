@@ -14,7 +14,8 @@ export type ApplicationErrorCode =
   | 'floor_not_found'
   | 'invalid_floor_element_layout'
   | 'invalid_floor_layout'
-  | 'invalid_service_action';
+  | 'invalid_service_action'
+  | 'invalid_order_configuration';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
