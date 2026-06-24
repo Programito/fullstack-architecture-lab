@@ -487,6 +487,108 @@ describe('RestaurantPosApiService', () => {
     http.verify();
   });
 
+  it('posts open order for a service point', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.openRestaurantOrder('restaurant-1', 'table-1', 2).subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/service-points/table-1/orders');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ guestCount: 2 });
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 0, taxCents: 0, discountTotalCents: 0, totalCents: 0, paidCents: 0, balanceCents: 0, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null }, lines: [], payments: [] });
+
+    expect(result).toEqual(expect.objectContaining({ order: expect.objectContaining({ id: 'order-1', status: 'open' }) }));
+    http.verify();
+  });
+
+  it('gets a persistent order by ID', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.getRestaurantOrder('restaurant-1', 'order-1').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/orders/order-1');
+    expect(request.request.method).toBe('GET');
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 0, balanceCents: 1200, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null }, lines: [], payments: [] });
+
+    expect(result).toEqual(expect.objectContaining({ order: expect.objectContaining({ id: 'order-1' }) }));
+    http.verify();
+  });
+
+  it('posts a line to an order', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.addRestaurantOrderLine('restaurant-1', 'order-1', { restaurantProductId: 'rp-1', quantity: 1, kitchenNote: null, modifiers: [], comboSlots: [], platterComponents: [] }).subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/orders/order-1/lines');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ restaurantProductId: 'rp-1', quantity: 1, kitchenNote: null, modifiers: [], comboSlots: [], platterComponents: [] });
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 0, balanceCents: 1200, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null }, lines: [{ id: 'line-1', restaurantProductId: 'rp-1', productId: 'p-1', productName: 'Burger', productType: 'simple', course: 'main', preparationRoute: 'kitchen', basePriceCents: 1200, unitPriceCents: 1200, quantity: 1, subtotalCents: 1200, taxRateName: 'IVA', taxRatePercent: 21, taxCents: 208, status: 'pending', kitchenNote: null, cancellationReason: null, cancelledAt: null, configurationSignature: 'rp-1||', modifiers: [], comboSlots: [], platterComponents: [] }], payments: [] });
+
+    expect(result).toEqual(expect.objectContaining({ lines: expect.arrayContaining([expect.objectContaining({ id: 'line-1' })]) }));
+    http.verify();
+  });
+
+  it('patches a pending order line', () => {
+    const { service, http } = setup();
+
+    service.updateRestaurantOrderLine('restaurant-1', 'order-1', 'line-1', { quantity: 3 }).subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/orders/order-1/lines/line-1');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ quantity: 3 });
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 3600, taxCents: 624, discountTotalCents: 0, totalCents: 3600, paidCents: 0, balanceCents: 3600, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null }, lines: [], payments: [] });
+    http.verify();
+  });
+
+  it('deletes a pending order line', () => {
+    const { service, http } = setup();
+
+    service.deleteRestaurantOrderLine('restaurant-1', 'order-1', 'line-1').subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/orders/order-1/lines/line-1');
+    expect(request.request.method).toBe('DELETE');
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 0, taxCents: 0, discountTotalCents: 0, totalCents: 0, paidCents: 0, balanceCents: 0, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null }, lines: [], payments: [] });
+    http.verify();
+  });
+
+  it('posts cancel on a sent order line', () => {
+    const { service, http } = setup();
+
+    service.cancelRestaurantOrderLine('restaurant-1', 'order-1', 'line-1', 'Cliente cambió de opinión').subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/orders/order-1/lines/line-1/cancel');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ reason: 'Cliente cambió de opinión' });
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 0, taxCents: 0, discountTotalCents: 0, totalCents: 0, paidCents: 0, balanceCents: 0, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null }, lines: [], payments: [] });
+    http.verify();
+  });
+
+  it('posts a payment on an order', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.registerRestaurantOrderPayment('restaurant-1', 'order-1', 1200, 'card').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/orders/order-1/payments');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ amountCents: 1200, method: 'card' });
+    request.flush({ order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'paid', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 1200, balanceCents: 0, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:01:00.000Z', closedAt: '2026-06-24T10:01:00.000Z' }, lines: [], payments: [{ id: 'pay-1', method: 'card', amountCents: 1200, status: 'completed', paidAt: '2026-06-24T10:01:00.000Z' }] });
+
+    expect(result).toEqual(expect.objectContaining({ order: expect.objectContaining({ status: 'paid', balanceCents: 0 }) }));
+    http.verify();
+  });
+
   it('patches one floor element', () => {
     const { service, http } = setup();
 

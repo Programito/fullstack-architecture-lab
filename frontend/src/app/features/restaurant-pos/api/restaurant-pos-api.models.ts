@@ -159,6 +159,97 @@ export type ServicePointOrderDto = {
   }>;
 };
 
+// ── Persistent order DTOs ──────────────────────────────────────────────────────
+
+export type OrderStatusDto = 'open' | 'pending_payment' | 'paid' | 'cancelled';
+export type OrderLineStatusDto = 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+export type OrderPaymentMethodDto = 'cash' | 'card' | 'bizum' | 'other';
+export type OrderPaymentStatusDto = 'pending' | 'completed' | 'failed' | 'refunded';
+
+export type RestaurantOrderLineDto = {
+  id: string;
+  restaurantProductId: string | null;
+  productId: string | null;
+  productName: string;
+  productType: 'simple' | 'combo' | 'platter';
+  course: string;
+  preparationRoute: string;
+  basePriceCents: number;
+  unitPriceCents: number;
+  quantity: number;
+  subtotalCents: number;
+  taxRateName: string | null;
+  taxRatePercent: number | null;
+  taxCents: number;
+  status: OrderLineStatusDto;
+  kitchenNote: string | null;
+  cancellationReason: string | null;
+  cancelledAt: string | null;
+  configurationSignature: string;
+  modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
+  comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
+  platterComponents: Array<{ componentName: string; removed: boolean; replacementName: string | null; priceDeltaCents: number }>;
+};
+
+export type RestaurantOrderPaymentDto = {
+  id: string;
+  method: OrderPaymentMethodDto;
+  amountCents: number;
+  status: OrderPaymentStatusDto;
+  paidAt: string | null;
+};
+
+export type RestaurantOrderDto = {
+  order: {
+    id: string;
+    restaurantId: string;
+    tableId: string | null;
+    status: OrderStatusDto;
+    currency: string;
+    guestCount: number;
+    subtotalCents: number;
+    taxCents: number;
+    discountTotalCents: number;
+    totalCents: number;
+    paidCents: number;
+    balanceCents: number;
+    openedAt: string;
+    updatedAt: string;
+    closedAt: string | null;
+  };
+  lines: RestaurantOrderLineDto[];
+  payments: RestaurantOrderPaymentDto[];
+};
+
+export type OpenRestaurantOrderRequest = {
+  guestCount: number;
+};
+
+export type AddRestaurantOrderLineRequest = {
+  restaurantProductId: string;
+  quantity: number;
+  kitchenNote: string | null;
+  modifiers: Array<{ modifierGroupId: string; modifierOptionId: string; quantity: number }>;
+  comboSlots: Array<{ comboSlotId: string; restaurantProductId: string; quantity: number }>;
+  platterComponents: Array<{ platterComponentId: string; included: boolean }>;
+};
+
+export type UpdateRestaurantOrderLineRequest = {
+  quantity?: number;
+  kitchenNote?: string | null;
+};
+
+export type CancelRestaurantOrderLineRequest = {
+  reason: string;
+};
+
+export type RegisterRestaurantOrderPaymentRequest = {
+  amountCents: number;
+  method: OrderPaymentMethodDto;
+};
+
+// ── Floor element DTOs ────────────────────────────────────────────────────────
+
 export type CreateFloorElementRequest = {
   type: RestaurantElementType;
   label: string;

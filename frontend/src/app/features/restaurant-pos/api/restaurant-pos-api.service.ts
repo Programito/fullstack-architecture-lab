@@ -4,16 +4,22 @@ import type { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../../../core/api/api.config';
 import type {
+  AddRestaurantOrderLineRequest,
+  CancelRestaurantOrderLineRequest,
   CreateFloorElementRequest,
+  OpenRestaurantOrderRequest,
+  OrderPaymentMethodDto,
   ReorderFloorElementsRequest,
   RestaurantFloorsDto,
   RestaurantMenuDto,
+  RestaurantOrderDto,
   RestaurantSummaryDto,
   ServiceFloorDto,
   ServicePointDetailDto,
   ServicePointOrderDto,
   UpdateFloorElementRequest,
   UpdateFloorRequest,
+  UpdateRestaurantOrderLineRequest,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -62,6 +68,36 @@ export class RestaurantPosApiService {
 
   chargeRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
     return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/charge`, {});
+  }
+
+  openRestaurantOrder(restaurantId: string, tableId: string, guestCount: number): Observable<RestaurantOrderDto> {
+    const body: OpenRestaurantOrderRequest = { guestCount };
+    return this.http.post<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/orders`, body);
+  }
+
+  getRestaurantOrder(restaurantId: string, orderId: string): Observable<RestaurantOrderDto> {
+    return this.http.get<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}`);
+  }
+
+  addRestaurantOrderLine(restaurantId: string, orderId: string, body: AddRestaurantOrderLineRequest): Observable<RestaurantOrderDto> {
+    return this.http.post<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines`, body);
+  }
+
+  updateRestaurantOrderLine(restaurantId: string, orderId: string, lineId: string, body: UpdateRestaurantOrderLineRequest): Observable<RestaurantOrderDto> {
+    return this.http.patch<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines/${lineId}`, body);
+  }
+
+  deleteRestaurantOrderLine(restaurantId: string, orderId: string, lineId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines/${lineId}`);
+  }
+
+  cancelRestaurantOrderLine(restaurantId: string, orderId: string, lineId: string, reason: string): Observable<RestaurantOrderDto> {
+    const body: CancelRestaurantOrderLineRequest = { reason };
+    return this.http.post<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines/${lineId}/cancel`, body);
+  }
+
+  registerRestaurantOrderPayment(restaurantId: string, orderId: string, amountCents: number, method: OrderPaymentMethodDto): Observable<RestaurantOrderDto> {
+    return this.http.post<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/payments`, { amountCents, method });
   }
 
   createFloorElement(
