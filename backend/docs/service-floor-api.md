@@ -28,6 +28,7 @@ flowchart LR
   style T5 fill:#22c55e,color:#fff
   style T6 fill:#22c55e,color:#fff
   style T7 fill:#22c55e,color:#fff
+  style T8 fill:#22c55e,color:#fff
 ```
 
 ## Scope
@@ -48,10 +49,10 @@ Implementado:
 - `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — eliminar linea pendiente
 - `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel` — cancelar linea enviada
 
-Pendiente (Tasks 8-11):
-- `POST /api/v1/restaurants/:id/orders/:orderId/payments` (Task 8)
-- Refactorizacion de `charge` con pago real (Task 8)
-- Cobertura E2E backend con Supertest + Testcontainers (Task 9)
+Implementado (Task 8):
+- `POST /api/v1/restaurants/:id/orders/:orderId/payments` — registrar pago parcial o total
+
+Pendiente (Tasks 9-11):
 - Integracion Angular (Task 10)
 
 ## Domain Model
@@ -725,6 +726,35 @@ Devuelve el pedido completo con la linea en estado `cancelled`.
 
 ---
 
+### POST /api/v1/restaurants/:id/orders/:orderId/payments
+
+Registra un pago (parcial o total) sobre el pedido. Requiere autenticacion.
+
+**Path params**
+
+- `id`, `orderId`
+
+**Request body**
+
+```json
+{ "amountCents": 1200, "method": "card" }
+```
+
+`method` acepta: `cash`, `card`, `bizum`, `other`.
+
+**Response 201**
+
+Devuelve el pedido completo. Si el pago cubre el saldo pendiente, el pedido pasa a `paid` y `closedAt` queda registrado.
+
+**Errors**
+
+- `400` `amountCents` menor o igual a cero, o pago supera el saldo pendiente
+- `401` sin autenticacion
+- `404` pedido no encontrado
+- `409` el pedido ya esta `paid` o `cancelled`
+
+---
+
 ## Estado de lineas y pedido
 
 ```mermaid
@@ -866,7 +896,7 @@ flowchart LR
   J --> K["Mesa paid"]
 ```
 
-Lo que ya esta operativo hoy (Tasks 1-7):
+Lo que ya esta operativo hoy (Tasks 1-8):
 
 - lectura y gestion del plano de servicio
 - catalogo persistente con IDs reales para escritura
@@ -877,13 +907,13 @@ Lo que ya esta operativo hoy (Tasks 1-7):
 - cancelacion de lineas enviadas con motivo obligatorio
 - bloqueo de mutaciones tras pago completado
 - send-to-kitchen y mark-served usan el repositorio persistente cuando hay pedido activo; fallback a demo en ausencia de pedido
+- registro de pagos parciales y totales; orden pasa a `pending_payment` o `paid` segun saldo
 
-Lo que sigue pendiente (Tasks 8-11):
+Lo que sigue pendiente (Tasks 9-11):
 
-- registro de pagos parciales y cierre de pedido
-- refactorizacion de `charge` con pago real
-- cobertura E2E backend
-- integracion Angular
+- cobertura E2E backend con Testcontainers (requiere Docker)
+- integracion Angular con pedidos persistentes
+- documentacion final y quality check
 
 ## Error Model
 
