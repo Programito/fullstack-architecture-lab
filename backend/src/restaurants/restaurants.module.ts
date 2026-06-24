@@ -24,6 +24,7 @@ import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-resta
 import { UpdateRestaurantOrderLineUseCase } from './application/use-cases/update-restaurant-order-line.use-case';
 import { DeleteRestaurantOrderLineUseCase } from './application/use-cases/delete-restaurant-order-line.use-case';
 import { CancelRestaurantOrderLineUseCase } from './application/use-cases/cancel-restaurant-order-line.use-case';
+import { RegisterRestaurantOrderPaymentUseCase } from './application/use-cases/register-restaurant-order-payment.use-case';
 import { DemoRestaurantReadRepository } from './infrastructure/demo-restaurant-read.repository';
 import { PrismaRestaurantOrderCatalogRepository } from './infrastructure/persistence/prisma-restaurant-order-catalog.repository';
 import { PrismaRestaurantOrderRepository } from './infrastructure/persistence/prisma-restaurant-order.repository';
@@ -40,6 +41,7 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     UpdateRestaurantOrderLineUseCase,
     DeleteRestaurantOrderLineUseCase,
     CancelRestaurantOrderLineUseCase,
+    RegisterRestaurantOrderPaymentUseCase,
     GetRestaurantFloorsUseCase,
     GetRestaurantServiceFloorUseCase,
     GetRestaurantServicePointUseCase,

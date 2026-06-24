@@ -574,8 +574,57 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     return this.findById(restaurantId, order.id);
   }
 
-  registerPayment(_command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView> {
-    throw new Error('Not implemented yet — will be added in Task 8.');
+  async registerPayment(command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView> {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: command.orderId, restaurantId: command.restaurantId },
+        include: { payments: { where: { status: 'completed' } } },
+      });
+
+      if (!order) {
+        throw new ApplicationErrorException(
+          applicationError('order_not_found', `Order "${command.orderId}" not found.`, { orderId: command.orderId }),
+        );
+      }
+      if (order.status === 'paid' || order.status === 'cancelled') {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', `Cannot register a payment on a ${order.status} order.`, { status: order.status }),
+        );
+      }
+
+      const paidCents = order.payments.reduce((sum: number, p: { amountCents: number }) => sum + p.amountCents, 0);
+      const balanceCents = Math.max(0, order.totalCents - paidCents);
+
+      if (command.amountCents > balanceCents) {
+        throw new ApplicationErrorException(
+          applicationError('payment_exceeds_balance', 'Payment amount exceeds the remaining balance.', {
+            amountCents: command.amountCents,
+            balanceCents,
+          }),
+        );
+      }
+
+      const now = new Date();
+      await tx.payment.create({
+        data: {
+          orderId: command.orderId,
+          method: command.method,
+          amountCents: command.amountCents,
+          status: 'completed',
+          paidAt: now,
+        },
+      });
+
+      const newBalance = balanceCents - command.amountCents;
+      const newStatus: OrderStatus = newBalance === 0 ? 'paid' : 'pending_payment';
+      await tx.order.update({
+        where: { id: command.orderId },
+        data: { status: newStatus, closedAt: newBalance === 0 ? now : null },
+      });
+
+      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
+      return this.mapOrder(finalOrder as unknown as RawOrder);
+    });
   }
 
   private mapOrder(raw: RawOrder): RestaurantOrderView {

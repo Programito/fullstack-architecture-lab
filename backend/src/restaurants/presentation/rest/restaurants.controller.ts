@@ -21,6 +21,7 @@ import { AddRestaurantOrderLineUseCase } from '../../application/use-cases/add-r
 import { UpdateRestaurantOrderLineUseCase } from '../../application/use-cases/update-restaurant-order-line.use-case';
 import { DeleteRestaurantOrderLineUseCase } from '../../application/use-cases/delete-restaurant-order-line.use-case';
 import { CancelRestaurantOrderLineUseCase } from '../../application/use-cases/cancel-restaurant-order-line.use-case';
+import { RegisterRestaurantOrderPaymentUseCase } from '../../application/use-cases/register-restaurant-order-payment.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from '../../application/use-cases/update-floor-element.use-case';
@@ -40,6 +41,7 @@ import { OpenRestaurantOrderDto } from './dto/open-restaurant-order.dto';
 import { AddRestaurantOrderLineDto } from './dto/add-restaurant-order-line.dto';
 import { UpdateRestaurantOrderLineDto } from './dto/update-restaurant-order-line.dto';
 import { CancelRestaurantOrderLineDto } from './dto/cancel-restaurant-order-line.dto';
+import { RegisterRestaurantOrderPaymentDto } from './dto/register-restaurant-order-payment.dto';
 import { RestaurantOrderResponseDto } from './dto/restaurant-order-response.dto';
 
 @ApiTags('restaurants')
@@ -53,6 +55,7 @@ export class RestaurantsController {
     private readonly updateRestaurantOrderLine: UpdateRestaurantOrderLineUseCase,
     private readonly deleteRestaurantOrderLine: DeleteRestaurantOrderLineUseCase,
     private readonly cancelRestaurantOrderLine: CancelRestaurantOrderLineUseCase,
+    private readonly registerRestaurantOrderPayment: RegisterRestaurantOrderPaymentUseCase,
     private readonly getRestaurantFloors: GetRestaurantFloorsUseCase,
     private readonly getRestaurantServiceFloor: GetRestaurantServiceFloorUseCase,
     private readonly getRestaurantServicePoint: GetRestaurantServicePointUseCase,
@@ -235,6 +238,25 @@ export class RestaurantsController {
           lineId,
           reason: body.reason.trim(),
         }),
+      ),
+    );
+  }
+
+  @Post(':id/orders/:orderId/payments')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: RestaurantOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Order not found.' })
+  @ApiBadRequestResponse({ description: 'Invalid amount or payment would exceed balance.' })
+  async registerPayment(
+    @Param('id') restaurantId: string,
+    @Param('orderId') orderId: string,
+    @Body() body: RegisterRestaurantOrderPaymentDto,
+  ): Promise<RestaurantOrderResponseDto> {
+    return RestaurantOrderResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.registerRestaurantOrderPayment.execute({ restaurantId, orderId, amountCents: body.amountCents, method: body.method }),
       ),
     );
   }
