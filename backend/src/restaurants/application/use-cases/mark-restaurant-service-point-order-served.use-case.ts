@@ -9,10 +9,14 @@ import {
 import { err, ok, type Result } from '../../../shared/result/result';
 import type { ServicePointDetailView } from '../../domain/service-floor.models';
 import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
+import { RESTAURANT_ORDER_REPOSITORY, type RestaurantOrderRepository } from '../ports/restaurant-order-repository.port';
 
 @Injectable()
 export class MarkRestaurantServicePointOrderServedUseCase {
-  constructor(@Inject(RESTAURANT_READ_REPOSITORY) private readonly restaurants: RestaurantReadRepository) {}
+  constructor(
+    @Inject(RESTAURANT_READ_REPOSITORY) private readonly restaurants: RestaurantReadRepository,
+    @Inject(RESTAURANT_ORDER_REPOSITORY) private readonly orders: RestaurantOrderRepository,
+  ) {}
 
   async execute(restaurantId: string, tableId: string): Promise<Result<ServicePointDetailView, ApplicationError>> {
     const floors = await this.restaurants.findFloorsByRestaurantId(restaurantId);
@@ -25,11 +29,25 @@ export class MarkRestaurantServicePointOrderServedUseCase {
       return err(tableNotFound(tableId));
     }
 
-    const order = await this.restaurants.findServicePointOrderByRestaurantId(restaurantId, tableId);
-    if (!order?.order || order.lines.length === 0 || !order.lines.some((line) => line.status !== 'served' && line.status !== 'cancelled')) {
-      return err(invalidServiceAction({ restaurantId, tableId, action: 'mark_served' }));
+    const persistentOrder = await this.orders.findActiveByTable(restaurantId, tableId);
+
+    if (persistentOrder) {
+      const hasActiveLines = persistentOrder.lines.some(
+        (line) => line.status !== 'served' && line.status !== 'cancelled',
+      );
+      if (!hasActiveLines) {
+        return err(invalidServiceAction({ restaurantId, tableId, action: 'mark_served' }));
+      }
+      await this.orders.markActiveLinesServed(restaurantId, tableId);
+      const servicePoint = await this.restaurants.setServicePointStatus(restaurantId, tableId, 'occupied');
+      return servicePoint ? ok(servicePoint) : err(tableNotFound(tableId));
     }
 
+    // Demo fallback: no persistent order for this table
+    const demoOrder = await this.restaurants.findServicePointOrderByRestaurantId(restaurantId, tableId);
+    if (!demoOrder?.order || demoOrder.lines.length === 0 || !demoOrder.lines.some((line) => line.status !== 'served' && line.status !== 'cancelled')) {
+      return err(invalidServiceAction({ restaurantId, tableId, action: 'mark_served' }));
+    }
     const servicePoint = await this.restaurants.markServicePointOrderServed(restaurantId, tableId);
     return servicePoint ? ok(servicePoint) : err(tableNotFound(tableId));
   }

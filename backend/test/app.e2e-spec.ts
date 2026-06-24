@@ -16,6 +16,8 @@ import { InMemoryEventBus } from '../src/shared/events/in-memory-event-bus';
 import { TASK_REPOSITORY } from '../src/tasks/application/ports/task-repository.port';
 import { InMemoryTaskRepository } from '../src/tasks/infrastructure/persistence/in-memory-task.repository';
 import { DemoRestaurantReadRepository } from '../src/restaurants/infrastructure/demo-restaurant-read.repository';
+import { RESTAURANT_ORDER_REPOSITORY } from '../src/restaurants/application/ports/restaurant-order-repository.port';
+import type { RestaurantOrderRepository } from '../src/restaurants/application/ports/restaurant-order-repository.port';
 
 class TestPasswordHasher implements PasswordHasher {
   async hash(plainPassword: string): Promise<string> {
@@ -60,6 +62,20 @@ describe('App e2e', () => {
       .useValue(new TestPasswordHasher())
       .overrideProvider(EVENT_BUS)
       .useValue(eventBus)
+      .overrideProvider(RESTAURANT_ORDER_REPOSITORY)
+      .useValue({
+        tableExists: async () => false,
+        findActiveByTable: async () => null,
+        findById: async () => null,
+        open: () => Promise.reject(new Error('DB not available in E2E')),
+        addLine: () => Promise.reject(new Error('DB not available in E2E')),
+        updatePendingLine: () => Promise.reject(new Error('DB not available in E2E')),
+        deletePendingLine: () => Promise.reject(new Error('DB not available in E2E')),
+        cancelLine: () => Promise.reject(new Error('DB not available in E2E')),
+        sendPendingLinesToKitchen: async () => null,
+        markActiveLinesServed: async () => null,
+        registerPayment: () => Promise.reject(new Error('DB not available in E2E')),
+      } satisfies RestaurantOrderRepository)
       .compile();
 
     app = moduleFixture.createNestApplication();

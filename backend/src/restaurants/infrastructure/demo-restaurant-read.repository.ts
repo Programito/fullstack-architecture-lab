@@ -667,6 +667,29 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
     return this.findServicePointByRestaurantId(restaurantId, tableId);
   }
 
+  async setServicePointStatus(restaurantId: string, tableId: string, status: ServiceTableStatus): Promise<ServicePointDetailView | null> {
+    const floors = new Map(this.floors).get(restaurantId);
+    if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) {
+      return null;
+    }
+
+    const tableStatesMap = new Map(this.tableStates);
+    const restaurantTableStates = structuredClone(tableStatesMap.get(restaurantId) ?? {});
+    const currentTableState = restaurantTableStates[tableId] ?? { status: 'free' as const, occupiedAt: null, serviceStartedAt: null };
+    const now = new Date().toISOString();
+
+    restaurantTableStates[tableId] = {
+      status,
+      occupiedAt: currentTableState.occupiedAt ?? now,
+      serviceStartedAt: currentTableState.serviceStartedAt ?? now,
+    };
+
+    tableStatesMap.set(restaurantId, restaurantTableStates);
+    this.tableStates = [...tableStatesMap.entries()];
+
+    return this.findServicePointByRestaurantId(restaurantId, tableId);
+  }
+
   async reorderFloorElements(
     restaurantId: string,
     floorId: string,

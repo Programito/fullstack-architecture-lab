@@ -544,12 +544,34 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     });
   }
 
-  sendPendingLinesToKitchen(_restaurantId: string, _tableId: string): Promise<RestaurantOrderView | null> {
-    throw new Error('Not implemented yet — will be added in Task 7.');
+  async sendPendingLinesToKitchen(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null> {
+    const order = await this.prisma.order.findFirst({
+      where: { restaurantId, tableId, status: { in: ['open', 'pending_payment'] } },
+      select: { id: true },
+    });
+    if (!order) return null;
+
+    await this.prisma.orderLine.updateMany({
+      where: { orderId: order.id, status: 'pending' },
+      data: { status: 'preparing' },
+    });
+
+    return this.findById(restaurantId, order.id);
   }
 
-  markActiveLinesServed(_restaurantId: string, _tableId: string): Promise<RestaurantOrderView | null> {
-    throw new Error('Not implemented yet — will be added in Task 7.');
+  async markActiveLinesServed(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null> {
+    const order = await this.prisma.order.findFirst({
+      where: { restaurantId, tableId, status: { in: ['open', 'pending_payment'] } },
+      select: { id: true },
+    });
+    if (!order) return null;
+
+    await this.prisma.orderLine.updateMany({
+      where: { orderId: order.id, status: { in: ['preparing', 'ready'] } },
+      data: { status: 'served' },
+    });
+
+    return this.findById(restaurantId, order.id);
   }
 
   registerPayment(_command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView> {

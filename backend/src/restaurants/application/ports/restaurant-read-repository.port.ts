@@ -20,6 +20,7 @@ export interface RestaurantReadRepository {
   sendServicePointOrderToKitchen(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
   markServicePointOrderServed(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
   chargeServicePoint(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
+  setServicePointStatus(restaurantId: string, tableId: string, status: import('../../domain/service-floor.models').ServiceTableStatus): Promise<ServicePointDetailView | null>;
   reorderFloorElements(
     restaurantId: string,
     floorId: string,
