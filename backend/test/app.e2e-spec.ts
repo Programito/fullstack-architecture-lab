@@ -16,6 +16,8 @@ import { InMemoryEventBus } from '../src/shared/events/in-memory-event-bus';
 import { TASK_REPOSITORY } from '../src/tasks/application/ports/task-repository.port';
 import { InMemoryTaskRepository } from '../src/tasks/infrastructure/persistence/in-memory-task.repository';
 import { DemoRestaurantReadRepository } from '../src/restaurants/infrastructure/demo-restaurant-read.repository';
+import { RESTAURANT_ORDER_CATALOG_REPOSITORY } from '../src/restaurants/application/ports/restaurant-order-catalog-repository.port';
+import type { RestaurantOrderCatalogRepository } from '../src/restaurants/application/ports/restaurant-order-catalog-repository.port';
 import { RESTAURANT_ORDER_REPOSITORY } from '../src/restaurants/application/ports/restaurant-order-repository.port';
 import type { RestaurantOrderRepository } from '../src/restaurants/application/ports/restaurant-order-repository.port';
 
@@ -62,6 +64,21 @@ describe('App e2e', () => {
       .useValue(new TestPasswordHasher())
       .overrideProvider(EVENT_BUS)
       .useValue(eventBus)
+      .overrideProvider(RESTAURANT_ORDER_CATALOG_REPOSITORY)
+      .useValue({
+        findActiveMenu: async (restaurantId: string) => {
+          if (restaurantId !== 'restaurant-mesaflow-centro') return null;
+          return {
+            restaurantId: 'restaurant-mesaflow-centro',
+            name: 'Carta principal',
+            isActive: true,
+            sections: [
+              { id: 'section-drinks', name: 'Bebidas', sortOrder: 1, isVisible: true, items: [] },
+              { id: 'section-mains', name: 'Principales', sortOrder: 2, isVisible: true, items: [] },
+            ],
+          };
+        },
+      } satisfies RestaurantOrderCatalogRepository)
       .overrideProvider(RESTAURANT_ORDER_REPOSITORY)
       .useValue({
         tableExists: async () => false,
