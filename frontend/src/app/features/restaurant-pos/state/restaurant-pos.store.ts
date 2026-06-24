@@ -68,6 +68,7 @@ export class RestaurantPosStore {
   private readonly _selectedTableId = signal<string | null>(null);
   private readonly _mode = signal<PosMode>('operation');
   private readonly _errorMessage = signal<string | null>(null);
+  private readonly _backendProducts = signal<Product[] | null>(null);
 
   readonly gridRows = this._gridRows.asReadonly();
   readonly gridColumns = this._gridColumns.asReadonly();
@@ -75,7 +76,7 @@ export class RestaurantPosStore {
   readonly activeFloorName = this._activeFloorName.asReadonly();
   readonly floorElements = this._floorElements.asReadonly();
   readonly restaurantTables = this._restaurantTables.asReadonly();
-  readonly products = this.menu.products;
+  readonly products = computed(() => this._backendProducts() ?? this.menu.products());
   readonly ordersByTable = this._ordersByTable.asReadonly();
   readonly selectedTableId = this._selectedTableId.asReadonly();
   readonly mode = this._mode.asReadonly();
@@ -162,6 +163,10 @@ export class RestaurantPosStore {
 
   setMode(mode: PosMode): void {
     this._mode.set(mode);
+  }
+
+  hydrateProducts(products: Product[]): void {
+    this._backendProducts.set(products);
   }
 
   selectTable(tableId: string): void {

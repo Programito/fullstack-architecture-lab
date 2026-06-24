@@ -15,8 +15,10 @@ import { CreateFloorElementUseCase } from './application/use-cases/create-floor-
 import { ReorderFloorElementsUseCase } from './application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from './application/use-cases/update-floor-element.use-case';
 import { UpdateRestaurantFloorUseCase } from './application/use-cases/update-restaurant-floor.use-case';
+import { RESTAURANT_ORDER_CATALOG_REPOSITORY } from './application/ports/restaurant-order-catalog-repository.port';
 import { RESTAURANT_READ_REPOSITORY } from './application/ports/restaurant-read-repository.port';
 import { DemoRestaurantReadRepository } from './infrastructure/demo-restaurant-read.repository';
+import { PrismaRestaurantOrderCatalogRepository } from './infrastructure/persistence/prisma-restaurant-order-catalog.repository';
 import { RestaurantsController } from './presentation/rest/restaurants.controller';
 
 @Module({
@@ -38,9 +40,14 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     UpdateFloorElementUseCase,
     UpdateRestaurantFloorUseCase,
     DemoRestaurantReadRepository,
+    PrismaRestaurantOrderCatalogRepository,
     {
       provide: RESTAURANT_READ_REPOSITORY,
       useExisting: DemoRestaurantReadRepository,
+    },
+    {
+      provide: RESTAURANT_ORDER_CATALOG_REPOSITORY,
+      useExisting: PrismaRestaurantOrderCatalogRepository,
     },
   ],
 })

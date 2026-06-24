@@ -7,6 +7,7 @@ import type {
   CreateFloorElementRequest,
   ReorderFloorElementsRequest,
   RestaurantFloorsDto,
+  RestaurantMenuDto,
   RestaurantSummaryDto,
   ServiceFloorDto,
   ServicePointDetailDto,
@@ -25,6 +26,10 @@ export class RestaurantPosApiService {
 
   listRestaurants(): Observable<RestaurantSummaryDto[]> {
     return this.http.get<RestaurantSummaryDto[]>(this.restaurantsUrl);
+  }
+
+  getRestaurantMenu(restaurantId: string): Observable<RestaurantMenuDto> {
+    return this.http.get<RestaurantMenuDto>(`${this.restaurantsUrl}/${restaurantId}/menu`);
   }
 
   getRestaurantFloors(restaurantId: string): Observable<RestaurantFloorsDto> {

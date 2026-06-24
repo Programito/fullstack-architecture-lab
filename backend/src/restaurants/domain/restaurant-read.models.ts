@@ -7,13 +7,66 @@ export type RestaurantSummary = {
   isActive: boolean;
 };
 
+export type RestaurantMenuModifierOption = {
+  id: string;
+  name: string;
+  priceDeltaCents: number;
+  isAvailable: boolean;
+};
+
+export type RestaurantMenuModifierGroup = {
+  id: string;
+  name: string;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: RestaurantMenuModifierOption[];
+};
+
+export type RestaurantMenuComboSlotOption = {
+  id: string;
+  restaurantProductId: string;
+  name: string;
+  supplementPriceCents: number;
+  isAvailable: boolean;
+};
+
+export type RestaurantMenuComboSlot = {
+  id: string;
+  name: string;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: RestaurantMenuComboSlotOption[];
+};
+
+export type RestaurantMenuComboDefinition = {
+  id: string;
+  slots: RestaurantMenuComboSlot[];
+};
+
+export type RestaurantMenuPlatterComponent = {
+  id: string;
+  name: string;
+  removable: boolean;
+  replaceable: boolean;
+  sortOrder: number;
+};
+
 export type RestaurantMenuItem = {
   id: string;
+  restaurantProductId?: string;
+  productId?: string;
   name: string;
   productType: 'simple' | 'combo' | 'platter';
   priceCents: number;
   currency: string;
   isAvailable: boolean;
+  defaultCourse?: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+  preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  modifierGroups?: RestaurantMenuModifierGroup[];
+  comboDefinition?: RestaurantMenuComboDefinition | null;
+  platterComponents?: RestaurantMenuPlatterComponent[];
 };
 
 export type RestaurantMenuSection = {

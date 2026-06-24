@@ -197,3 +197,80 @@ export type ReorderFloorElementsRequest = {
     sortOrder: number;
   }>;
 };
+
+export type RestaurantMenuModifierOptionDto = {
+  id: string;
+  name: string;
+  priceDeltaCents: number;
+  isAvailable: boolean;
+};
+
+export type RestaurantMenuModifierGroupDto = {
+  id: string;
+  name: string;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: RestaurantMenuModifierOptionDto[];
+};
+
+export type RestaurantMenuComboSlotOptionDto = {
+  id: string;
+  restaurantProductId: string;
+  name: string;
+  supplementPriceCents: number;
+  isAvailable: boolean;
+};
+
+export type RestaurantMenuComboSlotDto = {
+  id: string;
+  name: string;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: RestaurantMenuComboSlotOptionDto[];
+};
+
+export type RestaurantMenuComboDefinitionDto = {
+  id: string;
+  slots: RestaurantMenuComboSlotDto[];
+};
+
+export type RestaurantMenuPlatterComponentDto = {
+  id: string;
+  name: string;
+  removable: boolean;
+  replaceable: boolean;
+  sortOrder: number;
+};
+
+export type RestaurantMenuItemDto = {
+  id: string;
+  restaurantProductId?: string;
+  productId?: string;
+  name: string;
+  productType: 'simple' | 'combo' | 'platter';
+  priceCents: number;
+  currency: string;
+  isAvailable: boolean;
+  defaultCourse?: string;
+  preparationRoute?: string;
+  modifierGroups: RestaurantMenuModifierGroupDto[];
+  comboDefinition: RestaurantMenuComboDefinitionDto | null;
+  platterComponents: RestaurantMenuPlatterComponentDto[];
+};
+
+export type RestaurantMenuSectionDto = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  isVisible: boolean;
+  items: RestaurantMenuItemDto[];
+};
+
+export type RestaurantMenuDto = {
+  restaurantId: string;
+  name: string;
+  isActive: boolean;
+  sections: RestaurantMenuSectionDto[];
+};
