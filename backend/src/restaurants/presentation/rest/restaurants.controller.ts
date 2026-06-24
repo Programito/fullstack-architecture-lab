@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 type HttpResponse = { status(code: number): HttpResponse };
@@ -18,6 +18,9 @@ import { OccupyRestaurantServicePointUseCase } from '../../application/use-cases
 import { SendRestaurantServicePointOrderToKitchenUseCase } from '../../application/use-cases/send-restaurant-service-point-order-to-kitchen.use-case';
 import { OpenRestaurantOrderUseCase } from '../../application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from '../../application/use-cases/add-restaurant-order-line.use-case';
+import { UpdateRestaurantOrderLineUseCase } from '../../application/use-cases/update-restaurant-order-line.use-case';
+import { DeleteRestaurantOrderLineUseCase } from '../../application/use-cases/delete-restaurant-order-line.use-case';
+import { CancelRestaurantOrderLineUseCase } from '../../application/use-cases/cancel-restaurant-order-line.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from '../../application/use-cases/update-floor-element.use-case';
@@ -35,6 +38,8 @@ import { ServicePointOrderResponseDto } from './dto/service-point-order-response
 import { RestaurantSummaryResponseDto } from './dto/restaurant-summary-response.dto';
 import { OpenRestaurantOrderDto } from './dto/open-restaurant-order.dto';
 import { AddRestaurantOrderLineDto } from './dto/add-restaurant-order-line.dto';
+import { UpdateRestaurantOrderLineDto } from './dto/update-restaurant-order-line.dto';
+import { CancelRestaurantOrderLineDto } from './dto/cancel-restaurant-order-line.dto';
 import { RestaurantOrderResponseDto } from './dto/restaurant-order-response.dto';
 
 @ApiTags('restaurants')
@@ -45,6 +50,9 @@ export class RestaurantsController {
     private readonly getRestaurantMenu: GetRestaurantMenuUseCase,
     private readonly openRestaurantOrder: OpenRestaurantOrderUseCase,
     private readonly addRestaurantOrderLine: AddRestaurantOrderLineUseCase,
+    private readonly updateRestaurantOrderLine: UpdateRestaurantOrderLineUseCase,
+    private readonly deleteRestaurantOrderLine: DeleteRestaurantOrderLineUseCase,
+    private readonly cancelRestaurantOrderLine: CancelRestaurantOrderLineUseCase,
     private readonly getRestaurantFloors: GetRestaurantFloorsUseCase,
     private readonly getRestaurantServiceFloor: GetRestaurantServiceFloorUseCase,
     private readonly getRestaurantServicePoint: GetRestaurantServicePointUseCase,
@@ -157,6 +165,75 @@ export class RestaurantsController {
           modifiers: body.modifiers ?? [],
           comboSlots: body.comboSlots ?? [],
           platterComponents: body.platterComponents ?? [],
+        }),
+      ),
+    );
+  }
+
+  @Patch(':id/orders/:orderId/lines/:lineId')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: RestaurantOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Order or line not found.' })
+  @ApiBadRequestResponse({ description: 'Invalid update configuration.' })
+  async updateOrderLine(
+    @Param('id') restaurantId: string,
+    @Param('orderId') orderId: string,
+    @Param('lineId') lineId: string,
+    @Body() body: UpdateRestaurantOrderLineDto,
+  ): Promise<RestaurantOrderResponseDto> {
+    return RestaurantOrderResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.updateRestaurantOrderLine.execute({
+          restaurantId,
+          orderId,
+          lineId,
+          quantity: body.quantity,
+          kitchenNote: body.kitchenNote,
+        }),
+      ),
+    );
+  }
+
+  @Delete(':id/orders/:orderId/lines/:lineId')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: RestaurantOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Order or line not found.' })
+  async deleteOrderLine(
+    @Param('id') restaurantId: string,
+    @Param('orderId') orderId: string,
+    @Param('lineId') lineId: string,
+  ): Promise<RestaurantOrderResponseDto> {
+    return RestaurantOrderResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.deleteRestaurantOrderLine.execute({ restaurantId, orderId, lineId }),
+      ),
+    );
+  }
+
+  @Post(':id/orders/:orderId/lines/:lineId/cancel')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: RestaurantOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Order or line not found.' })
+  @ApiBadRequestResponse({ description: 'Cancellation reason required.' })
+  async cancelOrderLine(
+    @Param('id') restaurantId: string,
+    @Param('orderId') orderId: string,
+    @Param('lineId') lineId: string,
+    @Body() body: CancelRestaurantOrderLineDto,
+  ): Promise<RestaurantOrderResponseDto> {
+    return RestaurantOrderResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.cancelRestaurantOrderLine.execute({
+          restaurantId,
+          orderId,
+          lineId,
+          reason: body.reason.trim(),
         }),
       ),
     );

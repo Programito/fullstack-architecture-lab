@@ -390,16 +390,158 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     });
   }
 
-  updatePendingLine(_command: UpdateOrderLineCommand): Promise<RestaurantOrderView> {
-    throw new Error('Not implemented yet — will be added in Task 6.');
+  async updatePendingLine(command: UpdateOrderLineCommand): Promise<RestaurantOrderView> {
+    return this.prisma.$transaction(async (tx) => {
+      // Load line to verify it exists and check its status
+      const line = await tx.orderLine.findFirst({
+        where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
+        select: { id: true, status: true, unitPriceCents: true, taxRatePercentSnapshot: true, order: { select: { discountTotalCents: true } } },
+      });
+
+      if (!line) {
+        throw new ApplicationErrorException(
+          applicationError('order_line_not_found', `Order line "${command.lineId}" not found.`, { lineId: command.lineId }),
+        );
+      }
+      if (line.status !== 'pending') {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', 'Only pending lines can be edited.', { status: line.status }),
+        );
+      }
+
+      // Check no completed payments exist
+      const completedPayment = await tx.payment.findFirst({
+        where: { orderId: command.orderId, status: 'completed' },
+        select: { id: true },
+      });
+      if (completedPayment) {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', 'Order cannot be modified after a completed payment.'),
+        );
+      }
+
+      // Build update data
+      const updateData: Record<string, unknown> = {};
+      if (command.kitchenNote !== undefined) updateData['kitchenNote'] = command.kitchenNote;
+      if (command.quantity !== undefined) {
+        const newSubtotal = line.unitPriceCents * command.quantity;
+        const taxRatePercent = line.taxRatePercentSnapshot
+          ? Number((line.taxRatePercentSnapshot as { toString(): string }).toString())
+          : 0;
+        updateData['quantity'] = command.quantity;
+        updateData['subtotalCents'] = newSubtotal;
+        updateData['taxCents'] = includedTaxCents(newSubtotal, taxRatePercent);
+      }
+
+      await tx.orderLine.update({ where: { id: command.lineId }, data: updateData });
+
+      // Recalculate order totals
+      const allLines = await tx.orderLine.findMany({
+        where: { orderId: command.orderId },
+        select: { subtotalCents: true, taxCents: true, status: true },
+      });
+      const { subtotalCents, taxCents, totalCents } = calculateOrderTotals(
+        allLines.map((l) => ({ subtotalCents: l.subtotalCents, taxCents: l.taxCents, status: l.status as OrderLineStatus })),
+        line.order.discountTotalCents,
+      );
+      await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
+
+      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
+      return this.mapOrder(finalOrder as unknown as RawOrder);
+    });
   }
 
-  deletePendingLine(_command: DeleteOrderLineCommand): Promise<RestaurantOrderView> {
-    throw new Error('Not implemented yet — will be added in Task 6.');
+  async deletePendingLine(command: DeleteOrderLineCommand): Promise<RestaurantOrderView> {
+    return this.prisma.$transaction(async (tx) => {
+      const line = await tx.orderLine.findFirst({
+        where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
+        select: { id: true, status: true, order: { select: { discountTotalCents: true } } },
+      });
+
+      if (!line) {
+        throw new ApplicationErrorException(
+          applicationError('order_line_not_found', `Order line "${command.lineId}" not found.`, { lineId: command.lineId }),
+        );
+      }
+      if (line.status !== 'pending') {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', 'Only pending lines can be deleted.', { status: line.status }),
+        );
+      }
+
+      const completedPayment = await tx.payment.findFirst({
+        where: { orderId: command.orderId, status: 'completed' },
+        select: { id: true },
+      });
+      if (completedPayment) {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', 'Order cannot be modified after a completed payment.'),
+        );
+      }
+
+      await tx.orderLine.delete({ where: { id: command.lineId } });
+
+      const remainingLines = await tx.orderLine.findMany({
+        where: { orderId: command.orderId },
+        select: { subtotalCents: true, taxCents: true, status: true },
+      });
+      const { subtotalCents, taxCents, totalCents } = calculateOrderTotals(
+        remainingLines.map((l) => ({ subtotalCents: l.subtotalCents, taxCents: l.taxCents, status: l.status as OrderLineStatus })),
+        line.order.discountTotalCents,
+      );
+      await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
+
+      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
+      return this.mapOrder(finalOrder as unknown as RawOrder);
+    });
   }
 
-  cancelLine(_command: CancelOrderLineCommand): Promise<RestaurantOrderView> {
-    throw new Error('Not implemented yet — will be added in Task 6.');
+  async cancelLine(command: CancelOrderLineCommand): Promise<RestaurantOrderView> {
+    return this.prisma.$transaction(async (tx) => {
+      const line = await tx.orderLine.findFirst({
+        where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
+        select: { id: true, status: true, order: { select: { discountTotalCents: true } } },
+      });
+
+      if (!line) {
+        throw new ApplicationErrorException(
+          applicationError('order_line_not_found', `Order line "${command.lineId}" not found.`, { lineId: command.lineId }),
+        );
+      }
+      if (line.status !== 'preparing' && line.status !== 'ready') {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', 'Only preparing or ready lines can be cancelled.', { status: line.status }),
+        );
+      }
+
+      const completedPayment = await tx.payment.findFirst({
+        where: { orderId: command.orderId, status: 'completed' },
+        select: { id: true },
+      });
+      if (completedPayment) {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', 'Order cannot be modified after a completed payment.'),
+        );
+      }
+
+      await tx.orderLine.update({
+        where: { id: command.lineId },
+        data: { status: 'cancelled', cancellationReason: command.reason, cancelledAt: new Date() },
+      });
+
+      const allLines = await tx.orderLine.findMany({
+        where: { orderId: command.orderId },
+        select: { subtotalCents: true, taxCents: true, status: true },
+      });
+      const { subtotalCents, taxCents, totalCents } = calculateOrderTotals(
+        allLines.map((l) => ({ subtotalCents: l.subtotalCents, taxCents: l.taxCents, status: l.status as OrderLineStatus })),
+        line.order.discountTotalCents,
+      );
+      await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
+
+      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
+      return this.mapOrder(finalOrder as unknown as RawOrder);
+    });
   }
 
   sendPendingLinesToKitchen(_restaurantId: string, _tableId: string): Promise<RestaurantOrderView | null> {

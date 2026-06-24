@@ -1,0 +1,112 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import { applicationError } from '../../../shared/errors/application-error';
+import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
+import { err, ok } from '../../../shared/result/result';
+import type { RestaurantOrderView } from '../../domain/restaurant-order.models';
+import type { RestaurantOrderRepository } from '../ports/restaurant-order-repository.port';
+import { DeleteRestaurantOrderLineUseCase } from './delete-restaurant-order-line.use-case';
+
+function makeOrder(): RestaurantOrderView {
+  return {
+    order: {
+      id: 'order-1',
+      restaurantId: 'restaurant-1',
+      tableId: 'table-1',
+      status: 'open',
+      currency: 'EUR',
+      guestCount: 2,
+      subtotalCents: 0,
+      taxCents: 0,
+      discountTotalCents: 0,
+      totalCents: 0,
+      paidCents: 0,
+      balanceCents: 0,
+      openedAt: '2026-06-24T10:00:00.000Z',
+      updatedAt: '2026-06-24T10:00:00.000Z',
+      closedAt: null,
+    },
+    lines: [],
+    payments: [],
+  };
+}
+
+function makeRepository(): RestaurantOrderRepository {
+  return {
+    tableExists: vi.fn(),
+    findActiveByTable: vi.fn(),
+    findById: vi.fn(),
+    open: vi.fn(),
+    addLine: vi.fn(),
+    updatePendingLine: vi.fn(),
+    deletePendingLine: vi.fn(),
+    cancelLine: vi.fn(),
+    sendPendingLinesToKitchen: vi.fn(),
+    markActiveLinesServed: vi.fn(),
+    registerPayment: vi.fn(),
+  };
+}
+
+describe('DeleteRestaurantOrderLineUseCase', () => {
+  it('delegates the delete command to the repository and returns the updated order', async () => {
+    const repository = makeRepository();
+    const updatedOrder = makeOrder();
+    vi.mocked(repository.deletePendingLine).mockResolvedValue(updatedOrder);
+    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+
+    const result = await useCase.execute({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-1',
+    });
+
+    expect(result).toEqual(ok(updatedOrder));
+    expect(repository.deletePendingLine).toHaveBeenCalledWith({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-1',
+    });
+  });
+
+  it('returns invalid_order_state when the line is not pending', async () => {
+    const repository = makeRepository();
+    vi.mocked(repository.deletePendingLine).mockRejectedValue(
+      new ApplicationErrorException(applicationError('invalid_order_state', 'Only pending lines can be deleted.')),
+    );
+    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+
+    const result = await useCase.execute({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-sent',
+    });
+
+    expect(result).toEqual(err(expect.objectContaining({ code: 'invalid_order_state' })));
+  });
+
+  it('returns order_line_not_found when the line does not exist', async () => {
+    const repository = makeRepository();
+    vi.mocked(repository.deletePendingLine).mockRejectedValue(
+      new ApplicationErrorException(applicationError('order_line_not_found', 'Line not found.')),
+    );
+    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+
+    const result = await useCase.execute({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-missing',
+    });
+
+    expect(result).toEqual(err(expect.objectContaining({ code: 'order_line_not_found' })));
+  });
+
+  it('rethrows unexpected errors', async () => {
+    const repository = makeRepository();
+    vi.mocked(repository.deletePendingLine).mockRejectedValue(new Error('DB connection lost'));
+    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+
+    await expect(
+      useCase.execute({ restaurantId: 'restaurant-1', orderId: 'order-1', lineId: 'line-1' }),
+    ).rejects.toThrow('DB connection lost');
+  });
+});
