@@ -29,11 +29,15 @@ flowchart LR
   style T6 fill:#22c55e,color:#fff
   style T7 fill:#22c55e,color:#fff
   style T8 fill:#22c55e,color:#fff
+  style T10 fill:#22c55e,color:#fff
+  style T11 fill:#22c55e,color:#fff
 ```
+
+> Task 9 (E2E Testcontainers) requiere Docker; diferido hasta que Docker este disponible en la maquina de desarrollo.
 
 ## Scope
 
-Implementado:
+Implementado (Tasks 1-8, 10-11):
 
 - `GET /api/v1/restaurants/:id/menu` — catalogo con IDs persistentes
 - `GET /api/v1/restaurants/:id/service-floor`
@@ -48,12 +52,20 @@ Implementado:
 - `PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — actualizar cantidad/nota
 - `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — eliminar linea pendiente
 - `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel` — cancelar linea enviada
-
-Implementado (Task 8):
 - `POST /api/v1/restaurants/:id/orders/:orderId/payments` — registrar pago parcial o total
 
-Pendiente (Tasks 9-11):
-- Integracion Angular (Task 10)
+Angular (Task 10): `RestaurantPosApiService` expone los 7 metodos de pedido persistente:
+
+- `openRestaurantOrder(restaurantId, tableId, guestCount)` — POST `.../service-points/:tableId/orders`
+- `getRestaurantOrder(restaurantId, orderId)` — GET `.../orders/:orderId`
+- `addRestaurantOrderLine(restaurantId, orderId, body)` — POST `.../orders/:orderId/lines`
+- `updateRestaurantOrderLine(restaurantId, orderId, lineId, body)` — PATCH `.../orders/:orderId/lines/:lineId`
+- `deleteRestaurantOrderLine(restaurantId, orderId, lineId)` — DELETE `.../orders/:orderId/lines/:lineId`
+- `cancelRestaurantOrderLine(restaurantId, orderId, lineId, reason)` — POST `.../orders/:orderId/lines/:lineId/cancel`
+- `registerRestaurantOrderPayment(restaurantId, orderId, amountCents, method)` — POST `.../orders/:orderId/payments`
+
+Pendiente (Task 9):
+- Tests E2E con Testcontainers (requiere Docker)
 
 ## Domain Model
 
