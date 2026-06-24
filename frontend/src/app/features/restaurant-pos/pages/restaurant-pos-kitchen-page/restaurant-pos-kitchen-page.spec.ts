@@ -1,17 +1,39 @@
-import { fireEvent, render, screen, within } from '@testing-library/angular';
+import { signal } from '@angular/core';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular';
+import { NEVER, of } from 'rxjs';
+import { vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
+import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from '../../api/restaurant-pos-api.models';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosKitchenPage } from './restaurant-pos-kitchen-page';
 
-describe('RestaurantPosKitchenPage', () => {
-  const renderKitchenPage = async () => {
-    const i18n = provideI18nTesting();
+const nullContextMock = () => ({
+  activeRestaurant: signal<RestaurantSummaryDto | null>(null).asReadonly(),
+  load: vi.fn(),
+});
 
-    return render(RestaurantPosKitchenPage, {
+const idleApiMock = () => ({
+  getRestaurantServiceFloor: vi.fn(() => NEVER),
+  getRestaurantServicePointOrder: vi.fn(() => NEVER),
+});
+
+describe('RestaurantPosKitchenPage', () => {
+  const i18n = provideI18nTesting();
+
+  const renderKitchenPage = async (options?: {
+    api?: Partial<RestaurantPosApiService>;
+    restaurantContext?: Partial<RestaurantContextStore>;
+  }) =>
+    render(RestaurantPosKitchenPage, {
       imports: [...i18n.imports],
-      providers: [...i18n.providers],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantPosApiService, useValue: options?.api ?? idleApiMock() },
+        { provide: RestaurantContextStore, useValue: options?.restaurantContext ?? nullContextMock() },
+      ],
     });
-  };
 
   const sendTableOrderToKitchen = (store: RestaurantPosStore) => {
     store.selectTable('table-1');
@@ -69,5 +91,41 @@ describe('RestaurantPosKitchenPage', () => {
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('sent_to_kitchen');
     expect(screen.getByText('Este producto todavía no está marcado como preparado.')).toBeTruthy();
+  });
+
+  it('shows kitchen lines loaded from the API when a restaurant is active', async () => {
+    const mockServiceFloor: ServiceFloorDto = {
+      restaurantId: 'restaurant-1',
+      floor: { id: 'floor-1', name: 'Sala', rows: 10, columns: 10 },
+      elements: [{ id: 'elem-1', type: 'table', label: 'M1', x: 0, y: 0, width: 2, height: 2, tableId: 'table-api-1', shape: 'round' }],
+      servicePoints: [
+        {
+          table: { id: 'table-api-1', tableNumber: 1, name: null, capacity: 2, status: 'occupied', serviceStartedAt: null },
+          summary: { lineCount: 1, guestCount: 2, totalCents: 1000, currency: 'EUR', servicePhase: { course: 'mains', status: 'in_progress' } },
+        },
+      ],
+      totals: { servicePointCount: 1, occupiedCount: 1, openOrderCount: 1 },
+    };
+
+    const mockOrder: ServicePointOrderDto = {
+      order: { id: 'order-api-1', tableId: 'table-api-1', status: 'open', openedAt: '', updatedAt: '', subtotalCents: 1000, taxCents: 0, totalCents: 1000, currency: 'EUR' },
+      lines: [{ id: 'line-api-1', productName: 'Arroz con bogavante', quantity: 2, unitPriceCents: 2400, subtotalCents: 4800, status: 'sent_to_kitchen', course: 'mains', kitchenNote: null }],
+    };
+
+    const activeRestaurant = signal<RestaurantSummaryDto | null>({
+      id: 'restaurant-1', name: 'Test', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true,
+    });
+
+    await renderKitchenPage({
+      api: {
+        getRestaurantServiceFloor: vi.fn(() => of(mockServiceFloor)),
+        getRestaurantServicePointOrder: vi.fn(() => of(mockOrder)),
+      },
+      restaurantContext: { activeRestaurant: activeRestaurant.asReadonly(), load: vi.fn() },
+    });
+
+    await waitFor(() => {
+      expect(within(getPreparationColumn('En cocina')).getByText('2x Arroz con bogavante')).toBeTruthy();
+    });
   });
 });
