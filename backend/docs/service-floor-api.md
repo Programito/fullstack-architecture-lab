@@ -27,6 +27,7 @@ flowchart LR
   style T4 fill:#22c55e,color:#fff
   style T5 fill:#22c55e,color:#fff
   style T6 fill:#22c55e,color:#fff
+  style T7 fill:#22c55e,color:#fff
 ```
 
 ## Scope
@@ -47,9 +48,7 @@ Implementado:
 - `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — eliminar linea pendiente
 - `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel` — cancelar linea enviada
 
-Pendiente (Tasks 7-11):
-
-- Proyeccion de servicio sobre pedidos persistentes (Task 7)
+Pendiente (Tasks 8-11):
 - `POST /api/v1/restaurants/:id/orders/:orderId/payments` (Task 8)
 - Refactorizacion de `charge` con pago real (Task 8)
 - Cobertura E2E backend con Supertest + Testcontainers (Task 9)
@@ -867,7 +866,7 @@ flowchart LR
   J --> K["Mesa paid"]
 ```
 
-Lo que ya esta operativo hoy (Tasks 1-6):
+Lo que ya esta operativo hoy (Tasks 1-7):
 
 - lectura y gestion del plano de servicio
 - catalogo persistente con IDs reales para escritura
@@ -877,10 +876,10 @@ Lo que ya esta operativo hoy (Tasks 1-6):
 - eliminacion de lineas pendientes
 - cancelacion de lineas enviadas con motivo obligatorio
 - bloqueo de mutaciones tras pago completado
+- send-to-kitchen y mark-served usan el repositorio persistente cuando hay pedido activo; fallback a demo en ausencia de pedido
 
-Lo que sigue pendiente (Tasks 7-11):
+Lo que sigue pendiente (Tasks 8-11):
 
-- proyeccion de servicio sobre pedidos persistentes (totales reales en service-floor)
 - registro de pagos parciales y cierre de pedido
 - refactorizacion de `charge` con pago real
 - cobertura E2E backend
