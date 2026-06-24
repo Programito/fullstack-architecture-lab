@@ -180,6 +180,65 @@ El flujo operativo queda así:
 8. Servicio y cocina leen el snapshot de `OrderLine`, mostrando extras, `SIN ...`, nota de cocina o
    slots de combo sin depender de cambios posteriores del catálogo.
 
+## API de Pedidos Persistentes
+
+El servicio HTTP de pedidos vive en:
+
+```txt
+features/restaurant-pos/api/
+  restaurant-pos-api.models.ts   # tipos DTO para pedidos, líneas y pagos
+  restaurant-pos-api.service.ts  # métodos HTTP sobre RestaurantPosApiService
+  restaurant-pos-api.service.spec.ts
+```
+
+`RestaurantPosApiService` centraliza todas las llamadas al backend. Los métodos de pedidos
+persistentes siguen el contrato de `/api/v1/restaurants/:id/orders`:
+
+| Método | Verbo | Ruta |
+|---|---|---|
+| `openRestaurantOrder` | POST | `/restaurants/:id/service-points/:tableId/orders` |
+| `getRestaurantOrder` | GET | `/restaurants/:id/orders/:orderId` |
+| `addRestaurantOrderLine` | POST | `/restaurants/:id/orders/:orderId/lines` |
+| `updateRestaurantOrderLine` | PATCH | `/restaurants/:id/orders/:orderId/lines/:lineId` |
+| `deleteRestaurantOrderLine` | DELETE | `/restaurants/:id/orders/:orderId/lines/:lineId` |
+| `cancelRestaurantOrderLine` | POST | `/restaurants/:id/orders/:orderId/lines/:lineId/cancel` |
+| `registerRestaurantOrderPayment` | POST | `/restaurants/:id/orders/:orderId/payments` |
+
+Todos devuelven `Observable<RestaurantOrderDto>` (o `Observable<void>` para delete). El tipo
+`RestaurantOrderDto` incluye el pedido con sus totales, las líneas con estado de ciclo de vida y
+los pagos registrados:
+
+```mermaid
+flowchart LR
+  ApiService["RestaurantPosApiService"]
+  ModelsFile["restaurant-pos-api.models.ts"]
+  Backend["Backend NestJS\n/api/v1/restaurants"]
+
+  ApiService -->|"Observable<RestaurantOrderDto>"| ModelsFile
+  ApiService -->|HTTP| Backend
+```
+
+### Tipos DTO de pedido
+
+`restaurant-pos-api.models.ts` exporta los tipos primitivos de estado alineados con el backend:
+
+- `OrderStatusDto` — `open | pending_payment | paid | cancelled`
+- `OrderLineStatusDto` — `pending | preparing | ready | served | cancelled`
+- `OrderPaymentMethodDto` — `cash | card | bizum | other`
+- `RestaurantOrderDto` — pedido completo con `order`, `lines[]` y `payments[]`
+- Tipos de request: `OpenRestaurantOrderRequest`, `AddRestaurantOrderLineRequest`,
+  `UpdateRestaurantOrderLineRequest`, `CancelRestaurantOrderLineRequest`,
+  `RegisterRestaurantOrderPaymentRequest`
+
+### Reglas de frontera
+
+- `RestaurantPosApiService` no transforma ni deriva datos; mapea parámetros a URLs y devuelve el
+  DTO del backend directamente.
+- El store o la page que consuma estos métodos es responsable de mantener el estado de pedido
+  activo y de reemplazarlo con la respuesta de cada mutación.
+- No duplicar los tipos `OrderLineStatusDto` / `OrderStatusDto` en modelos de dominio frontend;
+  importar desde `restaurant-pos-api.models.ts`.
+
 ## Documentación
 
 Usa esta carpeta para arquitectura frontend, estrategia de testing y notas técnicas del producto.
