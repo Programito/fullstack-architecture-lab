@@ -68,6 +68,22 @@ export class RestaurantPosKitchenPage {
     const result = this.store.movePreparationLine(move.tableId, move.lineId, move.targetColumnId);
 
     this.preparationWarning.set(result.moved ? null : this.transloco.translate(result.messageKey ?? 'restaurantPos.preparationBoard.genericMoveError'));
+
+    if (!result.moved) return;
+
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const orderId = this.store.ordersByTable()[move.tableId]?.id;
+    if (!restaurant || !orderId) return;
+
+    const statusMap: Record<typeof move.targetColumnId, 'preparing' | 'ready' | 'served'> = {
+      in_kitchen: 'preparing',
+      ready: 'ready',
+      served: 'served',
+    };
+
+    this.api.updateRestaurantOrderLineStatus(restaurant.id, orderId, move.lineId, statusMap[move.targetColumnId])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
   }
 
   private countPreparationCards(columnId: PreparationBoardColumnId): number {
