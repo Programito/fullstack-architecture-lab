@@ -2,24 +2,35 @@
 
 ## Overview
 
-Esta API da soporte a la ruta operativa de `service` en MesaFlow. Su objetivo es cargar el plano del
-restaurante, los puntos de servicio visibles y el estado operativo minimo de cada mesa o taburete
-sin depender de mocks en frontend.
+Esta API da soporte a la ruta operativa de `service` en MesaFlow. Carga el plano del restaurante,
+los puntos de servicio y el estado operativo de cada mesa, y expone el catalogo persistente con los
+IDs reales necesarios para crear y editar pedidos.
 
-Este primer corte cubre lectura operativa y cuatro acciones base del flujo de sala:
+## Estado de implementacion
 
-- iniciar servicio (`occupy`)
-- enviar pedido a cocina (`send-to-kitchen`)
-- marcar pedido como servido (`mark-served`)
-- marcar la mesa como cobrada (`charge`)
+```mermaid
+flowchart LR
+  T1[Task 1\nSchema Prisma] --> T2[Task 2\nDomain + Pricing]
+  T2 --> T3[Task 3\nCatalogo persistente]
+  T3 --> T4[Task 4\nApertura pedido]
+  T4 --> T5[Task 5\nLineas CRUD]
+  T5 --> T6[Task 6\nProyeccion servicio]
+  T6 --> T7[Task 7\nPagos y cierre]
+  T7 --> T8[Task 8\nREST + E2E]
+  T8 --> T9[Task 9\nAngular write]
+  T9 --> T10[Task 10\nPagina servicio]
+  T10 --> T11[Task 11\nDocs]
 
-No incluye todavia creacion de pedidos, edicion persistente de lineas, registros de pago ni cierre de
-mesa. `charge` solo completa la transicion operativa del pedido y la mesa a `paid`.
+  style T1 fill:#22c55e,color:#fff
+  style T2 fill:#22c55e,color:#fff
+  style T3 fill:#22c55e,color:#fff
+```
 
 ## Scope
 
-Incluido en esta fase:
+Implementado:
 
+- `GET /api/v1/restaurants/:id/menu` — catalogo con IDs persistentes
 - `GET /api/v1/restaurants/:id/service-floor`
 - `GET /api/v1/restaurants/:id/service-points/:tableId`
 - `GET /api/v1/restaurants/:id/service-points/:tableId/order`
@@ -28,14 +39,14 @@ Incluido en esta fase:
 - `POST /api/v1/restaurants/:id/service-points/:tableId/mark-served`
 - `POST /api/v1/restaurants/:id/service-points/:tableId/charge`
 
-Fuera de alcance por ahora:
+Pendiente (Tasks 4-10):
 
-- crear pedido
-- anadir productos
-- editar lineas
-- modifiers detallados en escritura
-- registros de pago y conciliacion
-- cierre de servicio
+- `POST /api/v1/restaurants/:id/orders` — abrir pedido
+- `POST /api/v1/restaurants/:id/orders/:orderId/lines` — anadir linea
+- `PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId`
+- `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId`
+- `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel`
+- `POST /api/v1/restaurants/:id/orders/:orderId/payments`
 
 ## Domain Model
 
@@ -50,6 +61,103 @@ erDiagram
 ```
 
 ## Endpoints
+
+### GET /api/v1/restaurants/:id/menu
+
+Devuelve el menu activo del restaurante con todos los IDs persistentes necesarios para construir
+solicitudes de escritura de pedido (productos, grupos de modificadores, opciones, slots de combo,
+componentes de plato combinado).
+
+**Path params**
+
+- `id`: identificador del restaurante
+
+**Response 200**
+
+```json
+{
+  "restaurantId": "restaurant-mesaflow-centro",
+  "name": "Carta principal",
+  "isActive": true,
+  "sections": [
+    {
+      "id": "menu-section-uuid",
+      "name": "Principales",
+      "sortOrder": 2,
+      "isVisible": true,
+      "items": [
+        {
+          "id": "menu-item-uuid",
+          "restaurantProductId": "rp-uuid",
+          "productId": "product-uuid",
+          "name": "Hamburguesa craft",
+          "productType": "simple",
+          "priceCents": 1250,
+          "currency": "EUR",
+          "isAvailable": true,
+          "defaultCourse": "main",
+          "preparationRoute": "kitchen",
+          "modifierGroups": [
+            {
+              "id": "mg-uuid",
+              "name": "Extras",
+              "minSelections": 0,
+              "maxSelections": 3,
+              "isRequired": false,
+              "options": [
+                { "id": "opt-uuid", "name": "Queso", "priceDeltaCents": 100, "isAvailable": true }
+              ]
+            }
+          ],
+          "comboDefinition": null,
+          "platterComponents": []
+        },
+        {
+          "id": "menu-item-combo-uuid",
+          "restaurantProductId": "rp-combo-uuid",
+          "productId": "product-combo-uuid",
+          "name": "Menu Classic Burger",
+          "productType": "combo",
+          "priceCents": 1390,
+          "currency": "EUR",
+          "isAvailable": true,
+          "defaultCourse": "main",
+          "preparationRoute": "kitchen",
+          "modifierGroups": [],
+          "comboDefinition": {
+            "id": "combo-def-uuid",
+            "slots": [
+              {
+                "id": "slot-uuid",
+                "name": "Bebida",
+                "minSelections": 1,
+                "maxSelections": 1,
+                "isRequired": true,
+                "options": [
+                  {
+                    "id": "slot-opt-uuid",
+                    "restaurantProductId": "rp-beer-uuid",
+                    "name": "Cerveza",
+                    "supplementPriceCents": 150,
+                    "isAvailable": true
+                  }
+                ]
+              }
+            ]
+          },
+          "platterComponents": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Errors**
+
+- `404` restaurante no encontrado o sin menu activo
+
+---
 
 ### GET /api/v1/restaurants/:id/service-floor
 
