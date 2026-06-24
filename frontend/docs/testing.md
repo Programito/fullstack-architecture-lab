@@ -1,11 +1,11 @@
 # Testing Frontend
 
 El frontend sigue TDD y una estrategia de tests en forma de diamante. El objetivo es proteger el
-comportamiento sin bloquear demasiado la implementación.
+comportamiento sin bloquear demasiado la implementacion.
 
-## BDD En La Documentación
+## BDD En La Documentacion
 
-Usa BDD para documentar comportamiento funcional, criterios de aceptación y flujos importantes antes
+Usa BDD para documentar comportamiento funcional, criterios de aceptacion y flujos importantes antes
 de convertirlos en tests.
 
 ```gherkin
@@ -18,27 +18,27 @@ Scenario: Completar una tarea pendiente
   And se muestra el mensaje "La tarea se ha completado correctamente."
 ```
 
-BDD ayuda a acordar qué debe ocurrir. TDD ayuda a implementarlo con un test que falle primero.
+BDD ayuda a acordar que debe ocurrir. TDD ayuda a implementarlo con un test que falle primero.
 
 ## Ciclo TDD
 
 ```mermaid
 flowchart LR
-  Red["Escribir un test que falle"] --> Green["Implementar el cambio útil más pequeño"]
+  Red["Escribir un test que falle"] --> Green["Implementar el cambio util mas pequeno"]
   Green --> Refactor["Refactorizar con tests en verde"]
   Refactor --> Red
 ```
 
 Empieza con un test que falle por el motivo esperado. Si el test pasa antes de que exista la
-funcionalidad, todavía no está probando el comportamiento.
+funcionalidad, todavia no esta probando el comportamiento.
 
 ## Test Diamond
 
 ```mermaid
 flowchart TB
-  E2E["Pocos tests e2e<br/>Recorridos críticos"]
-  Integration["Muchos tests de integración/componentes<br/>Comportamiento, accesibilidad, estado, eventos"]
-  Unit["Pocos tests unitarios<br/>Lógica pura y casos límite"]
+  E2E["Pocos tests e2e<br/>Recorridos criticos"]
+  Integration["Muchos tests de integracion/componentes<br/>Comportamiento, accesibilidad, estado, eventos"]
+  Unit["Pocos tests unitarios<br/>Logica pura y casos limite"]
 
   E2E --> Integration
   Integration --> Unit
@@ -50,53 +50,85 @@ flowchart TB
 
 ## Tests Preferidos
 
-- Usa Testing Library para tests de componentes e integración.
+- Usa Testing Library para tests de componentes e integracion.
 - Busca elementos por rol accesible, label, placeholder, texto visible o estado orientado a usuario.
-- Prueba eventos emitidos, estados deshabilitados, validación, atributos ARIA y clases importantes.
-- Reserva tests unitarios estrechos para funciones puras, reducers, formatters y lógica con bordes claros.
-- Usa Playwright para flujos críticos que dependan de rutas, navegador o páginas reales.
+- Prueba eventos emitidos, estados deshabilitados, validacion, atributos ARIA y clases importantes.
+- Reserva tests unitarios estrechos para funciones puras, reducers, formatters y logica con bordes claros.
+- Usa Playwright para flujos criticos que dependan de rutas, navegador o paginas reales.
 
 ## UI De Feature
 
-Para cambios de UI dentro de una feature, empieza con el test más cercano al comportamiento y amplía
+Para cambios de UI dentro de una feature, empieza con el test mas cercano al comportamiento y amplia
 solo cuando el estado real viva fuera del componente.
 
-Patrón recomendado:
+Patron recomendado:
 
 - Component spec para comprobar render accesible, labels, roles, eventos emitidos y estados ARIA.
 - Page spec cuando el componente recibe datos ya filtrados o cuando la page coordina signals, store,
-  búsqueda, favoritos, categorías o selección.
-- Store spec cuando cambia una regla de negocio o un cálculo compartido.
+  busqueda, favoritos, categorias o seleccion.
+- Store spec cuando cambia una regla de negocio o un calculo compartido.
 - Build final cuando cambien templates, imports standalone, clases Tailwind nuevas o barrels de
   modelos.
 
-Ejemplo: un diálogo de búsqueda puede tener un spec que valide `radio`, `combobox`, `aria-pressed`,
-estrella favorita y eventos emitidos. La page debe cubrir que favoritos, búsqueda y categoría filtran
+Ejemplo: un dialogo de busqueda puede tener un spec que valide `radio`, `combobox`, `aria-pressed`,
+estrella favorita y eventos emitidos. La page debe cubrir que favoritos, busqueda y categoria filtran
 los productos reales.
 
-## Módulo Menu V1
+## Actions Object En Specs
 
-El módulo `features/menu/` combina lógica pura, integración con la store del POS y UI de
-personalización. La cobertura debe proteger la frontera entre catálogo mutable y snapshot de pedido.
+Cuando un `page.spec.ts` repite varias veces las mismas interacciones de Testing Library, usa un
+`actions object` pequeno dentro del propio spec para reducir ruido sin esconder el comportamiento.
+
+Patron recomendado:
+
+- Manten las aserciones en el test.
+- Extrae solo acciones repetidas: abrir un modal, seleccionar una celda, rellenar un formulario o
+  enviar una accion frecuente.
+- Prefiere nombres orientados a la persona usuaria, por ejemplo `openAddElementDialog()`,
+  `choosePosition()` o `submitEditElement()`.
+- Deja el `actions object` en el mismo fichero mientras solo lo use ese spec.
+- Muevelo a un fichero dedicado solo cuando varias specs compartan las mismas acciones o cuando el
+  helper crezca lo suficiente como para merecer reutilizacion real.
+
+Evita usar este patron si el helper empieza a ocultar demasiada logica o si convierte el test en
+una capa opaca tipo framework. La idea es hacer el spec mas legible, no alejarlo de Testing Library.
+
+Ejemplo simplificado:
+
+```ts
+const createPageActions = () => ({
+  openAddElementDialog: () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Anadir elemento' }));
+  },
+  choosePosition: (column: number, row: number) => {
+    fireEvent.click(screen.getByRole('button', { name: `Colocar en columna ${column} fila ${row}` }));
+  },
+});
+```
+
+## Modulo Menu V1
+
+El modulo `features/menu/` combina logica pura, integracion con la store del POS y UI de
+personalizacion. La cobertura debe proteger la frontera entre catalogo mutable y snapshot de pedido.
 
 Tests puros recomendados:
 
-- `MenuPricingService`: precio base, extras simples y múltiples, modificadores `remove` sin coste,
-  construcción de `selectedModifiers`, total de combos con suplementos y firmas iguales o distintas
-  por modificadores, nota o selección de slots.
-- `MenuValidationService`: producto no disponible, opción inválida, grupos requeridos, selección
-  única, máximos por grupo, slots requeridos de combo, productos permitidos y disponibilidad.
-- Mocks de menú: mantener categorías, disponibilidad y grupos realistas para hamburguesas, bebidas
-  café y combos sin depender de backend.
+- `MenuPricingService`: precio base, extras simples y multiples, modificadores `remove` sin coste,
+  construccion de `selectedModifiers`, total de combos con suplementos y firmas iguales o distintas
+  por modificadores, nota o seleccion de slots.
+- `MenuValidationService`: producto no disponible, opcion invalida, grupos requeridos, seleccion
+  unica, maximos por grupo, slots requeridos de combo, productos permitidos y disponibilidad.
+- Mocks de menu: mantener categorias, disponibilidad y grupos realistas para hamburguesas, bebidas,
+  cafe y combos sin depender de backend.
 
-Tests de integración con POS:
+Tests de integracion con POS:
 
 - `RestaurantPosStore` debe cubrir producto simple, producto personalizado, merge por
-  `configurationSignature`, separación por nota o modificadores distintos, rechazo de
-  personalización inválida y totales con modificadores.
-- Los combos deben cubrir configuración por slots, suplementos, rechazo de selecciones inválidas,
-  snapshot `selectedComboSlots`, firma estable y merge de líneas equivalentes.
-- Las operaciones de servicio y cocina se prueban por `line.id` para soportar varias líneas del
+  `configurationSignature`, separacion por nota o modificadores distintos, rechazo de
+  personalizacion invalida y totales con modificadores.
+- Los combos deben cubrir configuracion por slots, suplementos, rechazo de selecciones invalidas,
+  snapshot `selectedComboSlots`, firma estable y merge de lineas equivalentes.
+- Las operaciones de servicio y cocina se prueban por `line.id` para soportar varias lineas del
   mismo producto con configuraciones distintas.
 - Las notas se verifican como `kitchenNote` en el snapshot, manteniendo compatibilidad con el campo
   antiguo cuando exista.
@@ -104,27 +136,27 @@ Tests de integración con POS:
 Tests UI principales:
 
 - `ProductCustomizerDialog` renderiza grupos, permite seleccionar opciones, recalcula el precio en
-  vivo, captura nota de cocina y emite la confirmación.
-- `ComboCustomizerDialog` renderiza slots, marca la selección activa, bloquea productos no
-  disponibles, recalcula suplementos y emite la configuración confirmada.
-- `ProductSearchDialog` muestra precio, categoría, disponibilidad y badge de producto
-  personalizable, combo o plato combinado según corresponda.
+  vivo, captura nota de cocina y emite la confirmacion.
+- `ComboCustomizerDialog` renderiza slots, marca la seleccion activa, bloquea productos no
+  disponibles, recalcula suplementos y emite la configuracion confirmada.
+- `ProductSearchDialog` muestra precio, categoria, disponibilidad y badge de producto
+  personalizable, combo o plato combinado segun corresponda.
 - `ServiceTablePanel` muestra extras, `SIN ...`, nota de cocina y productos elegidos en combos bajo
-  cada línea.
+  cada linea.
 - La vista de cocina muestra modificadores, combos y notas sin crear una nueva pantalla de cocina.
-- La navegación del shell incluye `Menú` apuntando a `/restaurant-pos/menu`.
+- La navegacion del shell incluye `Menu` apuntando a `/restaurant-pos/menu`.
 
 ## Decisiones UX En Tests
 
-No pruebes todas las clases visuales. Sí conviene proteger clases cuando representan una decisión UX
-concreta y fácil de romper:
+No pruebes todas las clases visuales. Si conviene proteger clases cuando representan una decision UX
+concreta y facil de romper:
 
-- `focus-visible` para evitar anillos de foco después de clicks de ratón.
-- Alturas fijas o scroll interno cuando un modal debe mantener tamaño estable.
+- `focus-visible` para evitar anillos de foco despues de clicks de raton.
+- Alturas fijas o scroll interno cuando un modal debe mantener tamano estable.
 - Estados ARIA como `aria-pressed`, `aria-expanded`, `aria-selected` y `aria-checked`.
 - Labels accesibles de botones icon-only, buscadores, selects y controles segmentados.
 
-Si el test solo repite Tailwind sin explicar comportamiento, prefiere buscar una señal más cercana a
+Si el test solo repite Tailwind sin explicar comportamiento, prefiere buscar una senal mas cercana a
 la persona usuaria: rol, nombre accesible, texto visible, estado ARIA o evento emitido.
 
 ## Comandos
@@ -138,5 +170,5 @@ pnpm build
 pnpm build-storybook
 ```
 
-Ejecuta tests enfocados durante TDD y amplía la verificación antes de cerrar cambios compartidos o
+Ejecuta tests enfocados durante TDD y amplia la verificacion antes de cerrar cambios compartidos o
 de mayor riesgo.

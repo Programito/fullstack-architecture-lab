@@ -2,6 +2,9 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
+import { mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { SelectOption } from '../../../../shared/ui/select/select';
@@ -18,6 +21,7 @@ import { ServicePointSearchDialog } from '../../components/service-point-search-
 import { ServiceSummary } from '../../components/service-summary/service-summary';
 import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
 import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 const SERVICE_POINT_STATUS_FILTER_ORDER = ['free', 'occupied', 'waiting_kitchen', 'served', 'payment_pending', 'paid', 'cleaning', 'reserved'] as const satisfies readonly TableStatus[];
@@ -49,6 +53,8 @@ const isServicePointStatusFilter = (value: string): value is ServicePointStatusF
 })
 export class RestaurantPosServicePage {
   protected readonly store = inject(RestaurantPosStore);
+  private readonly api = inject(RestaurantPosApiService);
+  private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly transloco = inject(TranslocoService);
   private readonly storage = inject(KEY_VALUE_STORAGE);
   private readonly menu = inject(MenuMockService);
@@ -159,13 +165,54 @@ export class RestaurantPosServicePage {
   });
 
   constructor() {
+    this.restaurantContext.load();
+
     effect(() => {
       this.storage.setItem(FAVORITE_PRODUCTS_STORAGE_KEY, JSON.stringify(this.favoriteProductIds()));
+    });
+
+    effect(() => {
+      const restaurant = this.restaurantContext.activeRestaurant();
+
+      if (!restaurant) {
+        return;
+      }
+
+      this.api.getRestaurantServiceFloor(restaurant.id).subscribe((serviceFloor) => {
+        this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
+      });
+    });
+
+    effect(() => {
+      const restaurant = this.restaurantContext.activeRestaurant();
+      const tableId = this.store.selectedTableId();
+
+      if (!restaurant || !tableId) {
+        return;
+      }
+
+      this.api.getRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      });
+
+      this.api.getRestaurantServicePointOrder(restaurant.id, tableId).subscribe((serviceOrder) => {
+        this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
+      });
     });
   }
 
   protected occupySelectedTable(): void {
-    this.store.occupySelectedTable();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+
+    if (!restaurant || !tableId) {
+      this.store.occupySelectedTable();
+      return;
+    }
+
+    this.api.occupyRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
+      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+    });
   }
 
   protected openProductSearch(): void {
@@ -338,11 +385,35 @@ export class RestaurantPosServicePage {
   }
 
   protected sendToKitchen(): void {
-    this.store.sendSelectedOrderToKitchen();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+
+    if (!restaurant || !tableId) {
+      this.store.sendSelectedOrderToKitchen();
+      return;
+    }
+
+    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe((servicePoint) => {
+      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      this.api.getRestaurantServicePointOrder(restaurant.id, tableId).subscribe((serviceOrder) => {
+        this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
+      });
+    });
   }
 
   protected markServed(): void {
-    this.store.markSelectedOrderAsServed();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+
+    if (!restaurant || !tableId) {
+      this.store.markSelectedOrderAsServed();
+      return;
+    }
+
+    this.api.markRestaurantServicePointServed(restaurant.id, tableId).subscribe((servicePoint) => {
+      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      this.store.markSelectedOrderAsServed();
+    });
   }
 
   protected increaseProductQuantity(productId: string): void {
@@ -382,17 +453,11 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    if (paymentMethod !== 'cash') {
-      this.store.setSelectedPaymentMethod('cash');
-    }
-
-    this.store.chargeSelectedTable();
+    this.chargeSelectedServicePoint('cash');
   }
 
   protected acceptCardPayment(): void {
-    this.store.setSelectedPaymentMethod('card');
-    this.store.chargeSelectedTable();
-    this.cardGatewayOpen.set(false);
+    this.chargeSelectedServicePoint('card');
   }
 
   protected rejectCardPayment(): void {
@@ -418,6 +483,29 @@ export class RestaurantPosServicePage {
     }
 
     this.store.freeSelectedTable();
+  }
+
+  private chargeSelectedServicePoint(paymentMethod: PaymentMethod): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+    const applyCharge = (): void => {
+      this.store.setSelectedPaymentMethod(paymentMethod);
+      this.store.chargeSelectedTable();
+
+      if (paymentMethod === 'card') {
+        this.cardGatewayOpen.set(false);
+      }
+    };
+
+    if (!restaurant || !tableId) {
+      applyCharge();
+      return;
+    }
+
+    this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
+      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      applyCharge();
+    });
   }
 
   protected setPaymentMethod(paymentMethod: PaymentMethod): void {
@@ -558,4 +646,26 @@ export class RestaurantPosServicePage {
       return DEFAULT_FAVORITE_PRODUCT_IDS;
     }
   }
+
+  private mapServicePointDetail(servicePoint: ServicePointDetailDto): { table: RestaurantTable; floorElement?: FloorElement | null } {
+    return {
+      table: mapServiceTable(servicePoint.table, servicePoint.serviceInfo.totalCents, servicePoint.floorElement?.type === 'stool'),
+      ...(servicePoint.floorElement
+        ? {
+            floorElement: {
+              id: servicePoint.floorElement.id,
+              type: servicePoint.floorElement.type,
+              label: servicePoint.floorElement.label,
+              x: servicePoint.floorElement.x,
+              y: servicePoint.floorElement.y,
+              width: servicePoint.floorElement.width,
+              height: servicePoint.floorElement.height,
+              tableId: servicePoint.table.id,
+              ...(servicePoint.floorElement.shape ? { shape: servicePoint.floorElement.shape } : {}),
+            },
+          }
+        : {}),
+    };
+  }
+
 }

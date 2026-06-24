@@ -28,7 +28,10 @@ model User {
   enabled      Boolean    @default(true)
   accountType  AccountType @default(regular)
   roles        UserRole[]
+  roleAssignments UserRoleAssignment[]
   sessions     AuthSession[]
+  openedOrders  Order[]        @relation("OpenedOrders")
+  createdDiscounts OrderDiscount[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -41,6 +44,7 @@ model Role {
   description String?
   enabled     Boolean          @default(true)
   users       UserRole[]
+  userAssignments UserRoleAssignment[]
   permissions RolePermission[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -89,6 +93,24 @@ model UserRole {
   @@map("user_roles")
 }
 
+model UserRoleAssignment {
+  id             String                      @id @default(uuid())
+  userId         String
+  roleId         String
+  scopeType      UserRoleAssignmentScopeType
+  organizationId String?
+  restaurantId   String?
+  createdAt      DateTime                    @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant?   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, roleId, scopeType, organizationId, restaurantId])
+  @@map("user_role_assignments")
+}
+
 model RolePermission {
   roleId       String
   permissionId String
@@ -113,6 +135,507 @@ model OutboxEvent {
   @@map("outbox_events")
 }
 
+model Organization {
+  id            String                  @id @default(uuid())
+  name          String
+  legalName     String?
+  taxId         String?
+  accountType   OrganizationAccountType @default(regular)
+  restaurants   Restaurant[]
+  roleAssignments UserRoleAssignment[]
+  taxRates      TaxRate[]
+  products      Product[]
+  modifierGroups ModifierGroup[]
+  customers     Customer[]
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@unique([name])
+  @@map("organizations")
+}
+
+model Restaurant {
+  id              String                    @id @default(uuid())
+  organizationId  String
+  name            String
+  displayName     String?
+  address         String?
+  phone           String?
+  email           String?
+  timezone        String
+  currency        String
+  isActive        Boolean                   @default(true)
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  roleAssignments UserRoleAssignment[]
+  restaurantProducts RestaurantProduct[]
+  menus           RestaurantMenu[]
+  floors          RestaurantFloor[]
+  tables          RestaurantTable[]
+  orders          Order[]
+  reservations    Reservation[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("restaurants")
+}
+
+model TaxRate {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  ratePercent    Decimal      @db.Decimal(5, 2)
+  isActive       Boolean      @default(true)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  products       Product[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("tax_rates")
+}
+
+model Product {
+  id                      String           @id @default(uuid())
+  organizationId          String
+  name                    String
+  description             String?
+  productType             ProductType
+  defaultCourse           ProductCourse
+  defaultPreparationRoute PreparationRoute
+  taxRateId               String?
+  isActive                Boolean          @default(true)
+  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  taxRate                 TaxRate?         @relation(fields: [taxRateId], references: [id], onDelete: SetNull)
+  restaurantProducts      RestaurantProduct[]
+  comboDefinition         ComboDefinition?
+  platterDefinition       PlatterDefinition?
+  platterComponentRefs    PlatterComponent[]
+  orderLines              OrderLine[]
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, productType])
+  @@map("products")
+}
+
+model RestaurantProduct {
+  id                       String                          @id @default(uuid())
+  restaurantId             String
+  productId                String
+  displayName              String?
+  displayDescription       String?
+  priceCents               Int
+  currency                 String
+  isAvailable              Boolean                         @default(true)
+  isVisible                Boolean                         @default(true)
+  preparationRouteOverride PreparationRoute?
+  sortOrder                Int
+  restaurant               Restaurant                      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  product                  Product                         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  menuItems                MenuItem[]
+  modifierGroups           RestaurantProductModifierGroup[]
+  comboSlotOptions         ComboSlotOption[]
+  orderLines               OrderLine[]
+  createdAt                DateTime                        @default(now())
+  updatedAt                DateTime                        @updatedAt
+
+  @@unique([restaurantId, productId])
+  @@index([restaurantId, sortOrder])
+  @@map("restaurant_products")
+}
+
+model RestaurantMenu {
+  id          String        @id @default(uuid())
+  restaurantId String
+  name        String
+  isActive    Boolean       @default(false)
+  restaurant  Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  sections    MenuSection[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([restaurantId, name])
+  @@map("restaurant_menus")
+}
+
+model MenuSection {
+  id         String       @id @default(uuid())
+  menuId     String
+  name       String
+  sortOrder  Int
+  isVisible  Boolean      @default(true)
+  menu       RestaurantMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  items      MenuItem[]
+
+  @@unique([menuId, sortOrder])
+  @@unique([menuId, name])
+  @@map("menu_sections")
+}
+
+model MenuItem {
+  id                   String            @id @default(uuid())
+  menuSectionId        String
+  restaurantProductId  String
+  displayNameOverride  String?
+  priceOverrideCents   Int?
+  sortOrder            Int
+  isVisible            Boolean           @default(true)
+  menuSection          MenuSection       @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
+  restaurantProduct    RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+
+  @@unique([menuSectionId, restaurantProductId])
+  @@unique([menuSectionId, sortOrder])
+  @@map("menu_items")
+}
+
+model ModifierGroup {
+  id             String                 @id @default(uuid())
+  organizationId String
+  name           String
+  selectionType  ModifierSelectionType
+  minSelections  Int
+  maxSelections  Int
+  isRequired     Boolean                @default(false)
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  options        ModifierOption[]
+  restaurantProducts RestaurantProductModifierGroup[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("modifier_groups")
+}
+
+model ModifierOption {
+  id             String        @id @default(uuid())
+  modifierGroupId String
+  name           String
+  priceDeltaCents Int          @default(0)
+  isAvailable    Boolean       @default(true)
+  sortOrder      Int
+  modifierGroup  ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([modifierGroupId, name])
+  @@unique([modifierGroupId, sortOrder])
+  @@map("modifier_options")
+}
+
+model RestaurantProductModifierGroup {
+  id                String            @id @default(uuid())
+  restaurantProductId String
+  modifierGroupId   String
+  sortOrder         Int
+  restaurantProduct RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+  modifierGroup     ModifierGroup     @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantProductId, modifierGroupId])
+  @@unique([restaurantProductId, sortOrder])
+  @@map("restaurant_product_modifier_groups")
+}
+
+model ComboDefinition {
+  id             String          @id @default(uuid())
+  productId      String          @unique
+  pricingMode    ComboPricingMode
+  basePriceCents Int?
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  slots          ComboSlot[]
+
+  @@map("combo_definitions")
+}
+
+model ComboSlot {
+  id                String          @id @default(uuid())
+  comboDefinitionId String
+  name              String
+  minSelections     Int
+  maxSelections     Int
+  isRequired        Boolean         @default(false)
+  sortOrder         Int
+  comboDefinition   ComboDefinition @relation(fields: [comboDefinitionId], references: [id], onDelete: Cascade)
+  options           ComboSlotOption[]
+
+  @@unique([comboDefinitionId, sortOrder])
+  @@unique([comboDefinitionId, name])
+  @@map("combo_slots")
+}
+
+model ComboSlotOption {
+  id                  String            @id @default(uuid())
+  comboSlotId         String
+  restaurantProductId String
+  supplementPriceCents Int             @default(0)
+  isDefault           Boolean           @default(false)
+  isAvailable         Boolean           @default(true)
+  sortOrder           Int
+  comboSlot           ComboSlot         @relation(fields: [comboSlotId], references: [id], onDelete: Cascade)
+  restaurantProduct   RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+
+  @@unique([comboSlotId, restaurantProductId])
+  @@unique([comboSlotId, sortOrder])
+  @@map("combo_slot_options")
+}
+
+model PlatterDefinition {
+  id         String             @id @default(uuid())
+  productId  String             @unique
+  product    Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  components PlatterComponent[]
+
+  @@map("platter_definitions")
+}
+
+model PlatterComponent {
+  id                 String            @id @default(uuid())
+  platterDefinitionId String
+  componentProductId String?
+  name               String
+  quantity           Int?
+  isRemovable        Boolean           @default(false)
+  isReplaceable      Boolean           @default(false)
+  sortOrder          Int
+  platterDefinition  PlatterDefinition @relation(fields: [platterDefinitionId], references: [id], onDelete: Cascade)
+  componentProduct   Product?          @relation(fields: [componentProductId], references: [id], onDelete: SetNull)
+
+  @@unique([platterDefinitionId, sortOrder])
+  @@map("platter_components")
+}
+
+model Order {
+  id                  String            @id @default(uuid())
+  restaurantId        String
+  tableId             String?
+  status              OrderStatus       @default(open)
+  openedByUserId      String
+  currency            String
+  guestCount          Int
+  subtotalCents       Int
+  taxCents            Int               @default(0)
+  discountTotalCents  Int               @default(0)
+  totalCents          Int
+  closedAt            DateTime?
+  restaurant          Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table               RestaurantTable?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  openedByUser        User              @relation("OpenedOrders", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  lines               OrderLine[]
+  discounts           OrderDiscount[]
+  payments            Payment[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([restaurantId, status, createdAt])
+  @@index([openedByUserId, createdAt])
+  @@map("orders")
+}
+
+model OrderLine {
+  id                           String             @id @default(uuid())
+  orderId                      String
+  restaurantProductId          String?
+  productId                    String?
+  productNameSnapshot          String
+  productTypeSnapshot          ProductType
+  courseSnapshot               ProductCourse
+  preparationRouteSnapshot     PreparationRoute
+  basePriceCentsSnapshot       Int
+  unitPriceCents               Int
+  quantity                     Int
+  subtotalCents                Int
+  taxRateNameSnapshot          String?
+  taxRatePercentSnapshot       Decimal?           @db.Decimal(5, 2)
+  taxCents                     Int                @default(0)
+  status                       OrderLineStatus    @default(pending)
+  kitchenNote                  String?
+  cancellationReason           String?
+  cancelledAt                  DateTime?
+  configurationSignature       String
+  order                        Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  restaurantProduct            RestaurantProduct? @relation(fields: [restaurantProductId], references: [id], onDelete: SetNull)
+  product                      Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+  modifiers                    OrderLineModifier[]
+  comboSlots                   OrderLineComboSlot[]
+  platterComponents            OrderLinePlatterComponent[]
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  @@index([orderId, status, createdAt])
+  @@index([orderId, configurationSignature])
+  @@map("order_lines")
+}
+
+model OrderLineModifier {
+  id                  String    @id @default(uuid())
+  orderLineId         String
+  groupNameSnapshot   String
+  optionNameSnapshot  String
+  priceDeltaCents     Int       @default(0)
+  quantity            Int       @default(1)
+  orderLine           OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+
+  @@index([orderLineId])
+  @@map("order_line_modifiers")
+}
+
+model OrderLineComboSlot {
+  id                          String    @id @default(uuid())
+  orderLineId                 String
+  slotNameSnapshot            String
+  selectedProductNameSnapshot String
+  supplementPriceCents        Int       @default(0)
+  quantity                    Int       @default(1)
+  orderLine                   OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+
+  @@index([orderLineId])
+  @@map("order_line_combo_slots")
+}
+
+model OrderLinePlatterComponent {
+  id                      String    @id @default(uuid())
+  orderLineId             String
+  componentNameSnapshot   String
+  removed                 Boolean   @default(false)
+  replacementNameSnapshot String?
+  priceDeltaCents         Int       @default(0)
+  orderLine               OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+
+  @@index([orderLineId])
+  @@map("order_line_platter_components")
+}
+
+model OrderDiscount {
+  id               String            @id @default(uuid())
+  orderId          String
+  type             OrderDiscountType
+  value            Decimal           @db.Decimal(10, 2)
+  reason           String?
+  createdByUserId  String
+  order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdByUser    User              @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime          @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_discounts")
+}
+
+model Payment {
+  id          String         @id @default(uuid())
+  orderId     String
+  method      PaymentMethod
+  amountCents Int
+  status      PaymentStatus
+  paidAt      DateTime?
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([orderId, status, createdAt])
+  @@map("payments")
+}
+
+model RestaurantFloor {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  name          String
+  rows          Int
+  columns       Int
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  elements      FloorElement[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([restaurantId, name])
+  @@map("restaurant_floors")
+}
+
+model RestaurantTable {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  tableNumber   Int
+  name          String?
+  capacity      Int
+  isActive      Boolean        @default(true)
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  floorElements FloorElement[]
+  reservationTables ReservationTable[]
+  orders        Order[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([restaurantId, tableNumber])
+  @@map("restaurant_tables")
+}
+
+model FloorElement {
+  id         String           @id @default(uuid())
+  floorId     String
+  type       FloorElementType
+  tableId     String?
+  label      String
+  x          Int
+  y          Int
+  width      Int
+  height     Int
+  shape      TableShape?
+  sortOrder  Int
+  floor      RestaurantFloor  @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  table      RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([floorId, label])
+  @@unique([floorId, sortOrder])
+  @@map("floor_elements")
+}
+
+model Customer {
+  id             String        @id @default(uuid())
+  organizationId String
+  name           String
+  phone          String?
+  email          String?
+  notes          String?
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("customers")
+}
+
+model Reservation {
+  id                   String              @id @default(uuid())
+  restaurantId         String
+  customerId           String?
+  customerNameSnapshot String
+  customerPhoneSnapshot String?
+  partySize            Int
+  reservationAt        DateTime
+  durationMinutes      Int
+  status               ReservationStatus   @default(pending)
+  notes                String?
+  restaurant           Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer             Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  tables               ReservationTable[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([restaurantId, reservationAt, status])
+  @@map("reservations")
+}
+
+model ReservationTable {
+  reservationId  String
+  tableId        String
+  reservation    Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  table          RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@id([reservationId, tableId])
+  @@map("reservation_tables")
+}
+
 enum TaskStatus {
   PENDING
   COMPLETED
@@ -123,4 +646,106 @@ enum AccountType {
   demo
   system
   test
+}
+
+enum UserRoleAssignmentScopeType {
+  organization
+  restaurant
+}
+
+enum OrganizationAccountType {
+  regular
+  demo
+  internal
+}
+
+enum ProductType {
+  simple
+  combo
+  platter
+}
+
+enum ProductCourse {
+  drinks
+  starter
+  main
+  dessert
+  other
+}
+
+enum PreparationRoute {
+  direct
+  bar
+  kitchen
+  cold_station
+  dessert_station
+}
+
+enum ModifierSelectionType {
+  single
+  multiple
+}
+
+enum ComboPricingMode {
+  fixed
+  base_plus_supplements
+}
+
+enum OrderStatus {
+  open
+  pending_payment
+  paid
+  cancelled
+}
+
+enum OrderLineStatus {
+  pending
+  preparing
+  ready
+  served
+  cancelled
+}
+
+enum OrderDiscountType {
+  percentage
+  fixed_amount
+}
+
+enum PaymentMethod {
+  cash
+  card
+  bizum
+  other
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
+enum FloorElementType {
+  table
+  bar
+  kitchen
+  bathroom
+  entrance
+  blocked
+  stool
+}
+
+enum TableShape {
+  round
+  square
+  rectangle
+  long
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  seated
+  cancelled
+  no_show
 }

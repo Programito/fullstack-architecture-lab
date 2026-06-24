@@ -126,6 +126,14 @@ import { UsersController } from './presentation/rest/users.controller';
       useExisting: FakerFakeDataGenerator,
     },
   ],
-  exports: [DeveloperAccessService],
+  exports: [
+    DeveloperAccessService,
+    AuthGuard,
+    AuthTokenService,
+    USER_REPOSITORY,
+    ROLE_REPOSITORY,
+    PERMISSION_REPOSITORY,
+    AUTH_SESSION_REPOSITORY,
+  ],
 })
 export class IdentityModule {}

@@ -44,6 +44,7 @@ export class FloorPlan implements OnDestroy {
   readonly editElement = output<FloorElement>();
   readonly resizeElement = output<FloorElement>();
   readonly selectedElementChange = output<FloorElement | null>();
+  readonly elementMoved = output<FloorElement>();
   readonly servicePointSelected = output<FloorElement>();
 
   protected readonly floorCanvas = viewChild<ElementRef<HTMLElement>>('floorCanvas');
@@ -250,6 +251,7 @@ export class FloorPlan implements OnDestroy {
 
     if (nextPosition.x !== element.x || nextPosition.y !== element.y) {
       this.store.moveFloorElement(element.id, nextPosition.x, nextPosition.y);
+      this.elementMoved.emit({ ...element, x: nextPosition.x, y: nextPosition.y });
     }
   }
 

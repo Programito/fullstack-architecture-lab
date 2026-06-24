@@ -1,12 +1,15 @@
 import { NgClass, NgStyle } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { FloorPlan } from '../../components/floor-plan/floor-plan';
 import { TableVisual } from '../../components/table-visual/table-visual';
+import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import type { AddFloorElementInput, FloorElement, FloorElementType, TableShape } from '../../models/restaurant-pos.models';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 type MatrixCell = {
@@ -49,6 +52,8 @@ const ELEMENT_PRESETS: ElementPreset[] = [
 })
 export class RestaurantPosLayoutPage {
   protected readonly store = inject(RestaurantPosStore);
+  private readonly api = inject(RestaurantPosApiService);
+  private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly resizeModalOpen = signal(false);
@@ -139,7 +144,7 @@ export class RestaurantPosLayoutPage {
   );
   protected readonly elementActionLabel = computed(() => {
     if (this.editingElementId()) {
-      return this.translate('restaurantPos.layout.elementDialog.saveChanges');
+      return this.translate('restaurantPos.layout.elementDialog.editAction');
     }
 
     const label = this.elementLabelInput().trim();
@@ -155,6 +160,22 @@ export class RestaurantPosLayoutPage {
       this.store.canPlaceElement(placement, this.editingElementId() ?? undefined)
     );
   });
+
+  constructor() {
+    this.restaurantContext.load();
+
+    effect(() => {
+      const restaurant = this.restaurantContext.activeRestaurant();
+
+      if (!restaurant) {
+        return;
+      }
+
+      this.api.getRestaurantFloors(restaurant.id).subscribe((floors) => {
+        this.applyFloorsResponse(floors);
+      });
+    });
+  }
 
   protected openResizeModal(): void {
     this.resizeRowsInput.set(this.store.gridRows());
@@ -191,17 +212,49 @@ export class RestaurantPosLayoutPage {
 
   protected applyElementResize(): void {
     const elementId = this.resizingElementId();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const floorId = this.store.activeFloorId();
 
     if (!elementId) {
       return;
     }
 
+    const element = this.store.floorElements().find((candidate) => candidate.id === elementId);
+    if (!element) {
+      return;
+    }
+
     this.store.resizeFloorElement(elementId, this.resizeElementWidthInput(), this.resizeElementHeightInput());
 
-    const resizedElement = this.store.floorElements().find((element) => element.id === elementId);
-    if (resizedElement?.width === this.resizeElementWidthInput() && resizedElement.height === this.resizeElementHeightInput()) {
-      this.closeResizeElementModal();
+    const resizedElement = this.store.floorElements().find((candidate) => candidate.id === elementId);
+    if (!resizedElement || resizedElement.width !== this.resizeElementWidthInput() || resizedElement.height !== this.resizeElementHeightInput()) {
+      return;
     }
+
+    if (!restaurant || !floorId) {
+      this.closeResizeElementModal();
+      return;
+    }
+
+    this.api
+      .updateFloorElement(restaurant.id, floorId, elementId, {
+        label: resizedElement.label,
+        x: resizedElement.x,
+        y: resizedElement.y,
+        width: this.resizeElementWidthInput(),
+        height: this.resizeElementHeightInput(),
+        shape: resizedElement.shape ?? null,
+        capacity: null,
+      })
+      .subscribe({
+        next: (floors) => {
+          this.applyFloorsResponse(floors);
+          this.closeResizeElementModal();
+        },
+        error: () => {
+          this.store.resizeFloorElement(elementId, element.width, element.height);
+        },
+      });
   }
 
   protected selectResizeSize(columns: number, rows: number): void {
@@ -218,11 +271,30 @@ export class RestaurantPosLayoutPage {
   }
 
   protected applyResize(): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const floorId = this.store.activeFloorId();
+
     this.store.setGridSize(this.resizeRowsInput(), this.resizeColumnsInput());
 
-    if (this.store.gridRows() === this.resizeRowsInput() && this.store.gridColumns() === this.resizeColumnsInput()) {
-      this.closeResizeModal();
+    if (this.store.gridRows() !== this.resizeRowsInput() || this.store.gridColumns() !== this.resizeColumnsInput()) {
+      return;
     }
+
+    if (!restaurant || !floorId) {
+      this.closeResizeModal();
+      return;
+    }
+
+    this.api
+      .updateFloor(restaurant.id, floorId, {
+        name: this.store.activeFloorName(),
+        rows: this.resizeRowsInput(),
+        columns: this.resizeColumnsInput(),
+      })
+      .subscribe((floors) => {
+        this.applyFloorsResponse(floors);
+        this.closeResizeModal();
+      });
   }
 
   protected openAddElementModal(): void {
@@ -315,24 +387,97 @@ export class RestaurantPosLayoutPage {
   protected addSelectedElement(): void {
     const placement = this.selectedPlacement();
     const editingElementId = this.editingElementId();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const floorId = this.store.activeFloorId();
 
     if (!placement || !this.store.canPlaceElement(placement, editingElementId ?? undefined)) {
       return;
     }
 
     if (editingElementId) {
-      this.store.updateFloorElementDetails(editingElementId, placement);
+      const element = this.store.floorElements().find((candidate) => candidate.id === editingElementId);
+      if (!element) {
+        return;
+      }
+
+      const nextElement = {
+        ...element,
+        ...placement,
+      };
+
+      this.store.updateFloorElementDetails(editingElementId, nextElement);
       this.store.moveFloorElement(editingElementId, placement.x, placement.y);
       this.store.updateTableCapacityForElement(editingElementId, this.tableCapacityInput());
-    } else {
-      this.store.addFloorElement(placement);
-      const addedElement = this.store.floorElements().at(-1);
-      if (addedElement?.type === 'table') {
-        this.store.updateTableCapacityForElement(addedElement.id, this.tableCapacityInput());
+
+      if (!restaurant || !floorId) {
+        this.closeAddElementModal();
+        return;
       }
+
+      const updatedElement = this.store.floorElements().find((candidate) => candidate.id === editingElementId);
+      if (!updatedElement) {
+        return;
+      }
+
+      this.api
+        .updateFloorElement(restaurant.id, floorId, editingElementId, {
+          label: updatedElement.label,
+          x: updatedElement.x,
+          y: updatedElement.y,
+          width: updatedElement.width,
+          height: updatedElement.height,
+          shape: updatedElement.shape ?? null,
+          capacity: updatedElement.tableId ? this.tableCapacityInput() : null,
+        })
+        .subscribe({
+          next: (floors) => {
+            this.applyFloorsResponse(floors);
+            this.closeAddElementModal();
+          },
+          error: () => {
+            // Keep the dialog open so the user can retry the edit.
+          },
+        });
+      return;
+    } else {
+      if (restaurant && floorId) {
+        this.api
+          .createFloorElement(restaurant.id, floorId, {
+            type: placement.type,
+            label: placement.label,
+            x: placement.x,
+            y: placement.y,
+            width: placement.width,
+            height: placement.height,
+            tableId: placement.tableId ?? null,
+            shape: placement.shape ?? null,
+            sortOrder: this.store.nextFloorElementSortOrder(),
+          })
+          .subscribe({
+            next: (floors) => {
+              this.applyFloorsResponse(floors);
+              this.closeAddElementModal();
+            },
+            error: () => {
+              // Keep the dialog open so the user can retry or choose another position.
+            },
+          });
+      } else {
+        this.store.addFloorElement(placement);
+        const addedElement = this.store.floorElements().at(-1);
+        if (addedElement?.type === 'table') {
+          this.store.updateTableCapacityForElement(addedElement.id, this.tableCapacityInput());
+        }
+        this.closeAddElementModal();
+      }
+      return;
     }
 
     this.closeAddElementModal();
+  }
+
+  protected handleFloorElementMoved(_element: FloorElement): void {
+    this.persistCurrentFloorArrangement();
   }
 
   protected resizeCellClass(cell: MatrixCell): string {
@@ -449,6 +594,64 @@ export class RestaurantPosLayoutPage {
       height: this.elementHeightInput(),
       ...(preset.shape ? { shape: preset.shape } : {}),
     };
+  }
+
+  private applyFloorsResponse(floors: RestaurantFloorsDto): void {
+    const floor = floors.floors[0];
+
+    if (!floor) {
+      return;
+    }
+
+    this.store.hydrateLayout({
+      floorId: floor.id,
+      floorName: floor.name,
+      rows: floor.rows,
+      columns: floor.columns,
+      floorElements: floor.elements.map((element) => ({
+        id: element.id,
+        type: element.type,
+        label: element.label,
+        x: element.x,
+        y: element.y,
+        width: element.width,
+        height: element.height,
+        ...(element.tableId ? { tableId: element.tableId } : {}),
+        ...(element.shape ? { shape: element.shape } : {}),
+      })),
+      restaurantTables: floors.tables.map((table) => ({
+        id: table.id,
+        number: table.tableNumber,
+        capacity: table.capacity,
+        status: 'free',
+        total: 0,
+        openDuration: '0m',
+      })),
+    });
+  }
+
+  private persistCurrentFloorArrangement(): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const floorId = this.store.activeFloorId();
+
+    if (!restaurant || !floorId) {
+      return;
+    }
+
+    this.api
+      .reorderFloorElements(restaurant.id, floorId, {
+        elements: this.store.floorElements().map((element, index) => ({
+          id: element.id,
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height,
+          sortOrder: index + 1,
+        })),
+      })
+      .subscribe((floors) => {
+        this.applyFloorsResponse(floors);
+      });
   }
 
   private normalizePlacementCell(cell: MatrixCell): MatrixCell {

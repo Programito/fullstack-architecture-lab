@@ -5,11 +5,26 @@ import {
   DEMO_ACCOUNT_CATALOG,
   DEMO_ACCOUNT_PASSWORD,
 } from '../../src/identity/domain/demo-account-catalog';
+import { MESAFLOW_DEMO_ORGANIZATION_NAME, MESAFLOW_DEMO_RESTAURANT_NAME } from './mesaflow-demo.seed';
 
 export async function seedDemoUsers(prisma: PrismaClient): Promise<void> {
   const roles = await prisma.role.findMany({
     where: { name: { in: DEMO_ACCOUNT_CATALOG.map((account) => account.role) } },
   });
+  const organization = await prisma.organization.findUnique({
+    where: { name: MESAFLOW_DEMO_ORGANIZATION_NAME },
+  });
+  const restaurant = organization
+    ? await prisma.restaurant.findFirst({
+        where: {
+          organizationId: organization.id,
+          name: MESAFLOW_DEMO_RESTAURANT_NAME,
+        },
+      })
+    : null;
+  if (!organization || !restaurant) {
+    throw new Error('MesaFlow demo tenant must exist before demo users are seeded.');
+  }
   const roleIdByName = new Map(roles.map((role) => [role.name, role.id]));
   const passwordHash = await hash(DEMO_ACCOUNT_PASSWORD, 12);
 
@@ -37,5 +52,17 @@ export async function seedDemoUsers(prisma: PrismaClient): Promise<void> {
 
     await prisma.userRole.deleteMany({ where: { userId: user.id } });
     await prisma.userRole.create({ data: { userId: user.id, roleId } });
+    await prisma.userRoleAssignment.deleteMany({ where: { userId: user.id } });
+    await prisma.userRoleAssignment.createMany({
+      data: [
+        {
+          userId: user.id,
+          roleId,
+          scopeType: account.role === 'admin' || account.role === 'manager' ? 'organization' : 'restaurant',
+          organizationId: organization.id,
+          restaurantId: account.role === 'admin' || account.role === 'manager' ? null : restaurant.id,
+        },
+      ],
+    });
   }
 }

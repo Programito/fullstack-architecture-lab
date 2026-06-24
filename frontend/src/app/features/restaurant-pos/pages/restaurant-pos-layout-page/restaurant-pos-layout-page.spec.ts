@@ -1,16 +1,504 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
+import { of, throwError } from 'rxjs';
+import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS, MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosLayoutPage } from './restaurant-pos-layout-page';
 
 describe('RestaurantPosLayoutPage', () => {
-  const renderLayoutPage = async (locale = 'es') => {
-    const i18n = provideI18nTesting(locale);
-    return render(RestaurantPosLayoutPage, {
-      imports: [...i18n.imports],
-      providers: [...i18n.providers],
-    });
+  const createDefaultFloorsResponse = (): RestaurantFloorsDto => ({
+    restaurantId: 'restaurant-mesaflow-centro',
+    tables: MOCK_RESTAURANT_TABLES.map((table) => ({
+      id: table.id,
+      tableNumber: table.number,
+      name: `Mesa ${table.number}`,
+      capacity: table.capacity,
+      isActive: true,
+    })),
+    floors: [
+      {
+        id: 'floor-main',
+        name: 'Sala principal',
+        rows: DEFAULT_GRID_ROWS,
+        columns: DEFAULT_GRID_COLUMNS,
+        elements: MOCK_FLOOR_ELEMENTS.map((element, index) => ({
+          id: element.id,
+          type: element.type,
+          label: element.label,
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height,
+          tableId: element.tableId ?? null,
+          shape: element.shape ?? null,
+          sortOrder: index + 1,
+        })),
+      },
+    ],
+  });
+
+  const createRestaurantContextMock = (restaurantCount: 'single' | 'multiple' | 'empty' = 'single') => {
+    const restaurants =
+      restaurantCount === 'single'
+        ? [
+            {
+              id: 'restaurant-mesaflow-centro',
+              name: 'MesaFlow Centro',
+              displayName: 'MesaFlow Centro',
+              timezone: 'Europe/Madrid',
+              currency: 'EUR',
+              isActive: true,
+            },
+          ]
+        : restaurantCount === 'multiple'
+          ? [
+              {
+                id: 'restaurant-mesaflow-centro',
+                name: 'MesaFlow Centro',
+                displayName: 'MesaFlow Centro',
+                timezone: 'Europe/Madrid',
+                currency: 'EUR',
+                isActive: true,
+              },
+              {
+                id: 'restaurant-mesaflow-norte',
+                name: 'MesaFlow Norte',
+                displayName: 'MesaFlow Norte',
+                timezone: 'Europe/Madrid',
+                currency: 'EUR',
+                isActive: true,
+              },
+            ]
+          : [];
+
+    return {
+      load: vi.fn(),
+      activeRestaurant: () => (restaurantCount === 'single' ? restaurants[0] : null),
+      isLoading: () => false,
+      loadError: () => null,
+      multipleRestaurants: () => restaurantCount === 'multiple',
+      hasNoRestaurants: () => restaurantCount === 'empty',
+      restaurants: () => restaurants,
+    };
   };
+
+  const renderLayoutPage = async (
+    locale = 'es',
+    options?: {
+      restaurantContext?: ReturnType<typeof createRestaurantContextMock>;
+      apiOverrides?: Partial<RestaurantPosApiService>;
+    },
+  ) => {
+    const i18n = provideI18nTesting(locale);
+    const restaurantContext = options?.restaurantContext ?? createRestaurantContextMock();
+    let responseState = createDefaultFloorsResponse();
+    const defaultCreateFloorElement = vi.fn(
+      (restaurantId: string, _floorId: string, body: { type: string; label: string; x: number; y: number; width: number; height: number; tableId: string | null; shape: string | null; sortOrder: number }) => {
+        const nextTables = [...responseState.tables];
+        const nextElements = [...responseState.floors[0]!.elements];
+        let tableId = body.tableId;
+
+        if ((body.type === 'table' || body.type === 'stool') && !tableId) {
+          const nextTableNumber = Math.max(0, ...nextTables.map((table) => table.tableNumber)) + 1;
+          tableId = body.type === 'stool' ? `stool-${nextTableNumber}` : `table-${nextTableNumber}`;
+          nextTables.push({
+            id: tableId,
+            tableNumber: nextTableNumber,
+            name: `Mesa ${nextTableNumber}`,
+            capacity: body.type === 'stool' ? 1 : 4,
+            isActive: true,
+          });
+        }
+
+        nextElements.push({
+          id: `floor-element-${nextElements.length + 1}`,
+          type: body.type as RestaurantFloorsDto['floors'][number]['elements'][number]['type'],
+          label: body.label,
+          x: body.x,
+          y: body.y,
+          width: body.width,
+          height: body.height,
+          tableId,
+          shape: body.shape as RestaurantFloorsDto['floors'][number]['elements'][number]['shape'],
+          sortOrder: body.sortOrder,
+        });
+
+        responseState = {
+          restaurantId,
+          tables: nextTables,
+          floors: [{ ...responseState.floors[0]!, elements: nextElements }],
+        };
+
+        return of(responseState);
+      },
+    );
+    const defaultUpdateFloor = vi.fn((restaurantId: string, floorId: string, body: { name: string; rows: number; columns: number }) => {
+      responseState = {
+        restaurantId,
+        tables: responseState.tables,
+        floors: responseState.floors.map((floor) =>
+          floor.id === floorId ? { ...floor, name: body.name, rows: body.rows, columns: body.columns } : floor,
+        ),
+      };
+
+      return of(responseState);
+    });
+    const defaultUpdateFloorElement = vi.fn(
+      (
+        restaurantId: string,
+        floorId: string,
+        elementId: string,
+        body: {
+          label: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          shape: string | null;
+          capacity: number | null;
+        },
+      ) => {
+        responseState = {
+          restaurantId,
+          tables: responseState.tables.map((table) =>
+            table.id === responseState.floors[0]!.elements.find((element) => element.id === elementId)?.tableId
+              ? {
+                  ...table,
+                  name: body.label,
+                  capacity: body.capacity ?? table.capacity,
+                }
+              : table,
+          ),
+          floors: responseState.floors.map((floor) =>
+            floor.id === floorId
+              ? {
+                  ...floor,
+                  elements: floor.elements.map((element) =>
+                    element.id === elementId
+                      ? {
+                          ...element,
+                          label: body.label,
+                          x: body.x,
+                          y: body.y,
+                          width: body.width,
+                          height: body.height,
+                          shape: body.shape as RestaurantFloorsDto['floors'][number]['elements'][number]['shape'],
+                        }
+                      : element,
+                  ),
+                }
+              : floor,
+          ),
+        };
+
+        return of(responseState);
+      },
+    );
+    const defaultReorderFloorElements = vi.fn(
+      (
+        restaurantId: string,
+        floorId: string,
+        body: {
+          elements: Array<{ id: string; x: number; y: number; width: number; height: number; sortOrder: number }>;
+        },
+      ) => {
+        const updates = new Map(body.elements.map((element) => [element.id, element]));
+        responseState = {
+          restaurantId,
+          tables: responseState.tables,
+          floors: responseState.floors.map((floor) =>
+            floor.id === floorId
+              ? {
+                  ...floor,
+                  elements: floor.elements
+                    .map((element) => {
+                      const update = updates.get(element.id);
+                      return update ? { ...element, ...update } : element;
+                    })
+                    .sort((left, right) => left.sortOrder - right.sortOrder),
+                }
+              : floor,
+          ),
+        };
+
+        return of(responseState);
+      },
+    );
+    const api = {
+      listRestaurants: vi.fn(() => of([])),
+      getRestaurantFloors: vi.fn(() => of(responseState)),
+      createFloorElement: defaultCreateFloorElement,
+      updateFloor: defaultUpdateFloor,
+      updateFloorElement: defaultUpdateFloorElement,
+      reorderFloorElements: defaultReorderFloorElements,
+      ...(options?.apiOverrides ?? {}),
+    };
+
+    const view = await render(RestaurantPosLayoutPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantPosApiService, useValue: api },
+      ],
+    });
+
+    return {
+      ...view,
+      api,
+      restaurantContext,
+    };
+  };
+
+  const createLayoutPageActions = () => {
+    const openAddElementDialog = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+      return screen.getByRole('dialog', { name: 'Añadir elemento' });
+    };
+
+    const openResizeLayoutDialog = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
+      return screen.getByRole('dialog', { name: 'Redimensionar plano' });
+    };
+
+    const selectFloorElement = (label: string) => {
+      fireEvent.click(screen.getByLabelText(`${label} elemento del plano`));
+    };
+
+    const openEditElementDialog = (label: string) => {
+      selectFloorElement(label);
+      fireEvent.click(screen.getByRole('button', { name: `Editar ${label}` }));
+      return screen.getByRole('dialog', { name: 'Editar elemento' });
+    };
+
+    const openResizeElementDialog = (label: string) => {
+      selectFloorElement(label);
+      fireEvent.click(screen.getByRole('button', { name: `Redimensionar ${label}` }));
+      return screen.getByRole('dialog', { name: 'Redimensionar elemento' });
+    };
+
+    const choosePosition = (column: number, row: number) => {
+      fireEvent.click(screen.getByRole('button', { name: `Colocar en columna ${column} fila ${row}` }));
+    };
+
+    const fillElementForm = (values: {
+      type?: string;
+      preset?: string;
+      label?: string;
+      width?: number;
+      height?: number;
+      capacity?: number;
+    }) => {
+      if (values.type) {
+        fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: values.type } });
+      }
+
+      if (values.preset) {
+        fireEvent.change(screen.getByLabelText('Tamaño predefinido'), { target: { value: values.preset } });
+      }
+
+      if (values.label !== undefined) {
+        fireEvent.input(screen.getByLabelText('Etiqueta del elemento'), { target: { value: values.label } });
+      }
+
+      if (values.width !== undefined) {
+        fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: String(values.width) } });
+      }
+
+      if (values.height !== undefined) {
+        fireEvent.input(screen.getByLabelText('Alto'), { target: { value: String(values.height) } });
+      }
+
+      if (values.capacity !== undefined) {
+        fireEvent.input(screen.getByLabelText('Capacidad de mesa'), { target: { value: String(values.capacity) } });
+      }
+    };
+
+    const submitAddElement = () => {
+      fireEvent.click(within(screen.getByRole('dialog', { name: 'Añadir elemento' })).getByRole('button', { name: /Añadir/i }));
+    };
+
+    const submitEditElement = () => {
+      fireEvent.click(within(screen.getByRole('dialog', { name: 'Editar elemento' })).getByRole('button', { name: 'Editar' }));
+    };
+
+    const submitResizeLayout = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño del plano' }));
+    };
+
+    const submitResizeElement = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño' }));
+    };
+
+    return {
+      choosePosition,
+      fillElementForm,
+      openAddElementDialog,
+      openEditElementDialog,
+      openResizeElementDialog,
+      openResizeLayoutDialog,
+      selectFloorElement,
+      submitAddElement,
+      submitEditElement,
+      submitResizeElement,
+      submitResizeLayout,
+    };
+  };
+
+  it('loads the floor plan for the active restaurant', async () => {
+    const floorsResponse: RestaurantFloorsDto = {
+      restaurantId: 'restaurant-mesaflow-centro',
+      tables: [{ id: 'table-api-1', tableNumber: 11, name: 'Mesa 11', capacity: 4, isActive: true }],
+      floors: [
+        {
+          id: 'floor-main',
+          name: 'Sala principal',
+          rows: 12,
+          columns: 16,
+          elements: [{ id: 'floor-element-api-1', type: 'table', label: 'M11', x: 4, y: 4, width: 2, height: 2, tableId: 'table-api-1', shape: 'square', sortOrder: 1 }],
+        },
+      ],
+    };
+
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: {
+        getRestaurantFloors: vi.fn(() => of(floorsResponse)),
+      } as Partial<RestaurantPosApiService>,
+    });
+
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    expect(store.gridRows()).toBe(12);
+    expect(store.gridColumns()).toBe(16);
+    expect(store.floorElements()[0]?.label).toBe('M11');
+    expect(store.activeFloorId()).toBe('floor-main');
+    expect(store.activeFloorName()).toBe('Sala principal');
+  });
+
+  it('posts a new element and refreshes the layout from the backend response', async () => {
+    const createFloorElement = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: [
+              ...createDefaultFloorsResponse().floors[0]!.elements,
+              { id: 'floor-element-api-99', type: 'blocked', label: 'Zona temporal', x: 10, y: 9, width: 2, height: 1, tableId: null, shape: null, sortOrder: 9 },
+            ],
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+
+    const { api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        createFloorElement,
+      } as Partial<RestaurantPosApiService>,
+    });
+    const actions = createLayoutPageActions();
+
+    actions.openAddElementDialog();
+    actions.fillElementForm({ type: 'blocked-area', label: 'Zona temporal' });
+    actions.choosePosition(11, 10);
+    actions.submitAddElement();
+
+    expect(api.createFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      expect.objectContaining({
+        type: 'blocked',
+        label: 'Zona temporal',
+        x: 10,
+        y: 9,
+        width: 1,
+        height: 1,
+      }),
+    );
+    expect(screen.getByLabelText('Zona temporal elemento del plano')).toBeTruthy();
+  });
+
+  it('patches the floor dimensions and refreshes the layout', async () => {
+    const updateFloor = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 9,
+            columns: 10,
+            elements: createDefaultFloorsResponse().floors[0]!.elements,
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+
+    const { api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloor,
+      } as Partial<RestaurantPosApiService>,
+    });
+    const actions = createLayoutPageActions();
+
+    actions.openResizeLayoutDialog();
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '10' } });
+    actions.submitResizeLayout();
+
+    expect(api.updateFloor).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      expect.objectContaining({ name: 'Sala principal', rows: 9, columns: 10 }),
+    );
+    expect(screen.getByText('10 columnas x 9 filas')).toBeTruthy();
+  });
+
+  it('persists a reordered element arrangement through the backend', async () => {
+    const reorderFloorElements = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: createDefaultFloorsResponse()
+              .floors[0]!
+              .elements.map((element) => (element.id === 'floor-element-1' ? { ...element, x: 2, y: 3 } : element)),
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+
+    const { fixture, api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        reorderFloorElements,
+      } as Partial<RestaurantPosApiService>,
+    });
+
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    store.moveFloorElement('floor-element-1', 2, 3);
+    (fixture.componentInstance as any).handleFloorElementMoved(store.floorElements()[0]!);
+
+    expect(api.reorderFloorElements).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      expect.objectContaining({
+        elements: expect.arrayContaining([expect.objectContaining({ id: 'floor-element-1', x: 2, y: 3 })]),
+      }),
+    );
+    expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(expect.objectContaining({ x: 2, y: 3 }));
+  });
 
   it('shows a clean layout toolbar without technical grid controls on the page', async () => {
     await renderLayoutPage();
@@ -57,11 +545,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('opens the resize layout modal from the toolbar', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
-
-    expect(screen.getByRole('dialog', { name: 'Redimensionar plano' })).toBeTruthy();
-    const dialog = screen.getByRole('dialog', { name: 'Redimensionar plano' });
+    const dialog = actions.openResizeLayoutDialog();
     expect(within(dialog).getByRole('button', { name: 'Cerrar redimensionar plano' })).toBeTruthy();
     expect(within(dialog).getByLabelText('Controles de tamaño del plano')).toBeTruthy();
     expect(within(dialog).getByLabelText('Vista previa de redimensión')).toBeTruthy();
@@ -73,8 +559,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('updates the rows and columns preview when selecting cells in the resize matrix', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
+    actions.openResizeLayoutDialog();
     fireEvent.click(screen.getByRole('button', { name: 'Seleccionar 8 columnas x 6 filas' }));
 
     expect(screen.getByText('8 columnas x 6 filas')).toBeTruthy();
@@ -84,8 +571,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('updates the visual matrix preview when typing rows and columns', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
+    actions.openResizeLayoutDialog();
     fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '7' } });
     fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '9' } });
 
@@ -96,10 +584,11 @@ describe('RestaurantPosLayoutPage', () => {
   it('prevents invalid resize when existing elements would be outside the grid', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
+    actions.openResizeLayoutDialog();
     fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño del plano' }));
+    actions.submitResizeLayout();
     fixture.detectChanges();
 
     expect(store.gridColumns()).toBe(20);
@@ -110,14 +599,15 @@ describe('RestaurantPosLayoutPage', () => {
   it('applies a valid resize only after confirmation', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar plano' }));
+    actions.openResizeLayoutDialog();
     fireEvent.click(screen.getByRole('button', { name: 'Seleccionar 10 columnas x 9 filas' }));
 
     expect(store.gridRows()).toBe(20);
     expect(store.gridColumns()).toBe(20);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño del plano' }));
+    actions.submitResizeLayout();
 
     expect(store.gridRows()).toBe(9);
     expect(store.gridColumns()).toBe(10);
@@ -125,10 +615,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('opens a separate add element modal from the toolbar', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-
-    const dialog = screen.getByRole('dialog', { name: 'Añadir elemento' });
+    const dialog = actions.openAddElementDialog();
     expect(dialog).toBeTruthy();
     expect(dialog.className).toContain('theme-dialog');
     expect(within(dialog).getByRole('button', { name: 'Cerrar formulario de elemento' })).toBeTruthy();
@@ -147,8 +636,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('keeps the add element position selector visually clean while preserving accessible cell labels', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+    actions.openAddElementDialog();
 
     const selector = screen.getByLabelText('Selector de posición');
     expect(within(selector).getByRole('button', { name: 'Colocar en columna 9 fila 9' })).toBeTruthy();
@@ -173,26 +663,26 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('shows a selected element preview and summary in the add element modal', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-
-    const dialog = screen.getByRole('dialog', { name: 'Añadir elemento' });
+    const dialog = actions.openAddElementDialog();
     expect(within(dialog).getByLabelText('Vista previa del elemento seleccionado')).toBeTruthy();
     expect(within(dialog).getByText('M8')).toBeTruthy();
     expect(within(dialog).getByText('2 pax')).toBeTruthy();
     expect(within(dialog).getByText('Tamaño: 2 x 2')).toBeTruthy();
     expect(within(dialog).getByText('Posición: sin seleccionar')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }));
+    actions.choosePosition(9, 9);
 
     expect(within(dialog).getByText('Posición: columna 9, fila 9')).toBeTruthy();
   });
 
   it('updates the selected element preview when choosing another preset', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'kitchen' } });
+    actions.openAddElementDialog();
+    actions.fillElementForm({ type: 'kitchen' });
 
     const dialog = screen.getByRole('dialog', { name: 'Añadir elemento' });
     expect(within(dialog).getAllByText('Cocina').length).toBeGreaterThan(1);
@@ -202,9 +692,10 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('syncs preset size with custom width and height inputs', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.change(screen.getByLabelText('Tamaño predefinido'), { target: { value: 'square-table' } });
+    actions.openAddElementDialog();
+    actions.fillElementForm({ preset: 'square-table' });
 
     expect(screen.getByLabelText('Ancho')).toHaveProperty('value', '2');
     expect(screen.getByLabelText('Alto')).toHaveProperty('value', '2');
@@ -218,9 +709,10 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('sets a vertical bar preset to one column by three rows', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'bar-vertical' } });
+    actions.openAddElementDialog();
+    actions.fillElementForm({ type: 'bar-vertical' });
 
     expect(screen.getByLabelText('Ancho')).toHaveProperty('value', '1');
     expect(screen.getByLabelText('Alto')).toHaveProperty('value', '3');
@@ -230,8 +722,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('updates generated element labels when changing presets until the user edits the label', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+    actions.openAddElementDialog();
 
     expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'M8');
 
@@ -249,11 +742,9 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('opens the element modal in edit mode from the floor plan toolbar', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
-    fireEvent.click(screen.getByRole('button', { name: 'Editar M1' }));
-
-    expect(screen.getByRole('dialog', { name: 'Editar elemento' })).toBeTruthy();
+    expect(actions.openEditElementDialog('M1')).toBeTruthy();
     expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'M1');
     expect(screen.getByLabelText('Capacidad de mesa')).toHaveProperty('value', '2');
   });
@@ -261,11 +752,12 @@ describe('RestaurantPosLayoutPage', () => {
   it('uses the current grid size in the add element position selector', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
     store.setGridSize(9, 10);
     fixture.detectChanges();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
+    actions.openAddElementDialog();
 
     const selector = screen.getByLabelText('Selector de posición');
     expect(within(selector).getAllByRole('button').length).toBe(90);
@@ -277,10 +769,11 @@ describe('RestaurantPosLayoutPage', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const initialElementCount = store.floorElements().length;
     const initialTableCount = store.restaurantTables().length;
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
+    actions.openAddElementDialog();
+    actions.choosePosition(9, 9);
+    actions.submitAddElement();
 
     expect(store.floorElements().length).toBe(initialElementCount + 1);
     expect(store.restaurantTables().length).toBe(initialTableCount + 1);
@@ -295,15 +788,50 @@ describe('RestaurantPosLayoutPage', () => {
     );
   });
 
+  it('keeps the add element dialog open when the backend create request fails', async () => {
+    const apiError = new Error('create failed');
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: {
+        createFloorElement: vi.fn(() => throwError(() => apiError)),
+      },
+    });
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const initialElementCount = store.floorElements().length;
+    const actions = createLayoutPageActions();
+
+    actions.openAddElementDialog();
+    actions.choosePosition(9, 9);
+    actions.submitAddElement();
+
+    expect(screen.getByRole('dialog', { name: 'Añadir elemento' })).toBeTruthy();
+    expect(store.floorElements().length).toBe(initialElementCount);
+  });
+
+  it('keeps the edit element dialog open when the backend update request fails', async () => {
+    const apiError = new Error('update failed');
+    await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloorElement: vi.fn(() => throwError(() => apiError)),
+      },
+    });
+    const actions = createLayoutPageActions();
+
+    actions.openEditElementDialog('M1');
+    actions.fillElementForm({ label: 'Mesa editada' });
+    actions.submitEditElement();
+
+    expect(screen.getByRole('dialog', { name: 'Editar elemento' })).toBeTruthy();
+  });
+
   it('adds an element with a custom occupied size', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '3' } });
-    fireEvent.input(screen.getByLabelText('Alto'), { target: { value: '1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 5 fila 10' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
+    actions.openAddElementDialog();
+    actions.fillElementForm({ width: 3, height: 1 });
+    actions.choosePosition(5, 10);
+    actions.submitAddElement();
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -319,12 +847,13 @@ describe('RestaurantPosLayoutPage', () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const initialTableCount = store.restaurantTables().length;
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'stool' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
+    actions.openAddElementDialog();
+    actions.fillElementForm({ type: 'stool' });
+    actions.choosePosition(20, 20);
     expect(screen.getByLabelText('Etiqueta del elemento')).toHaveProperty('value', 'T4');
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir T4' }));
+    actions.submitAddElement();
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -341,11 +870,12 @@ describe('RestaurantPosLayoutPage', () => {
   it('adds a vertical bar as a bar floor element without changing the model type', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.change(screen.getByLabelText('Tipo de elemento'), { target: { value: 'bar-vertical' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 10 fila 2' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir Barra vertical' }));
+    actions.openAddElementDialog();
+    actions.fillElementForm({ type: 'bar-vertical' });
+    actions.choosePosition(10, 2);
+    actions.submitAddElement();
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -361,35 +891,60 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('opens the resize element modal from the floor plan toolbar', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar M1' }));
-
-    expect(screen.getByRole('dialog', { name: 'Redimensionar elemento' })).toBeTruthy();
+    expect(actions.openResizeElementDialog('M1')).toBeTruthy();
     expect(screen.getByLabelText('Ancho del elemento')).toHaveProperty('value', '2');
     expect(screen.getByLabelText('Alto del elemento')).toHaveProperty('value', '2');
   });
 
   it('applies a valid selected element resize', async () => {
-    const { fixture } = await renderLayoutPage();
+    const updateFloorElement = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables,
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: createDefaultFloorsResponse()
+              .floors[0]!
+              .elements.map((element) => (element.id === 'floor-element-1' ? { ...element, width: 3, height: 2 } : element)),
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+    const { fixture, api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloorElement,
+      } as Partial<RestaurantPosApiService>,
+    });
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar M1' }));
+    actions.openResizeElementDialog('M1');
     fireEvent.input(screen.getByLabelText('Ancho del elemento'), { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño' }));
+    actions.submitResizeElement();
 
+    expect(api.updateFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      'floor-element-1',
+      expect.objectContaining({ label: 'M1', x: 1, y: 1, width: 3, height: 2, shape: null }),
+    );
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(expect.objectContaining({ width: 3, height: 2 }));
   });
 
   it('prevents an invalid selected element resize', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
-    fireEvent.click(screen.getByRole('button', { name: 'Redimensionar M1' }));
+    actions.openResizeElementDialog('M1');
     fireEvent.input(screen.getByLabelText('Ancho del elemento'), { target: { value: '6' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar tamaño' }));
+    actions.submitResizeElement();
     fixture.detectChanges();
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(expect.objectContaining({ width: 2, height: 2 }));
@@ -400,15 +955,15 @@ describe('RestaurantPosLayoutPage', () => {
   it('keeps edge placement inside the grid for custom occupied sizes', async () => {
     const { fixture } = await renderLayoutPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
     store.setGridSize(10, 10);
     fixture.detectChanges();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
-    fireEvent.input(screen.getByLabelText('Alto'), { target: { value: '2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 10 fila 10' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir M8' }));
+    actions.openAddElementDialog();
+    actions.fillElementForm({ width: 2, height: 2 });
+    actions.choosePosition(10, 10);
+    actions.submitAddElement();
 
     expect(store.floorElements().at(-1)).toEqual(
       expect.objectContaining({
@@ -420,27 +975,68 @@ describe('RestaurantPosLayoutPage', () => {
     );
   });
 
-  it('saves layout-only changes from the edit modal', async () => {
-    const { fixture } = await renderLayoutPage();
+  it('persists element edits through the backend from the edit modal', async () => {
+    const updateFloorElement = vi.fn(() =>
+      of({
+        restaurantId: 'restaurant-mesaflow-centro',
+        tables: createDefaultFloorsResponse().tables.map((table) =>
+          table.id === 'table-1' ? { ...table, capacity: 6, name: 'Mesa terraza 1' } : table,
+        ),
+        floors: [
+          {
+            id: 'floor-main',
+            name: 'Sala principal',
+            rows: 20,
+            columns: 20,
+            elements: createDefaultFloorsResponse()
+              .floors[0]!
+              .elements.map((element) =>
+                element.id === 'floor-element-1' ? { ...element, label: 'Mesa terraza 1', width: 3, height: 2 } : element,
+              ),
+          },
+        ],
+      } satisfies RestaurantFloorsDto),
+    );
+    const { fixture, api } = await renderLayoutPage('es', {
+      apiOverrides: {
+        updateFloorElement,
+      } as Partial<RestaurantPosApiService>,
+    });
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
-    fireEvent.click(screen.getByRole('button', { name: 'Editar M1' }));
-    fireEvent.input(screen.getByLabelText('Etiqueta del elemento'), { target: { value: 'Terrace 1' } });
-    fireEvent.input(screen.getByLabelText('Capacidad de mesa'), { target: { value: '6' } });
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Editar elemento' })).getByRole('button', { name: 'Guardar cambios' }));
+    expect(actions.openEditElementDialog('M1')).toBeTruthy();
+    actions.fillElementForm({ label: 'Terrace 1', width: 3, capacity: 6 });
+    actions.choosePosition(2, 2);
+    actions.submitEditElement();
+
+    expect(api.updateFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      'floor-element-1',
+      expect.objectContaining({
+        label: 'Terrace 1',
+        x: 1,
+        y: 1,
+        width: 3,
+        height: 2,
+        shape: 'round',
+        capacity: 6,
+      }),
+    );
 
     expect(store.floorElements().find((element) => element.id === 'floor-element-1')).toEqual(
-      expect.objectContaining({ label: 'Terrace 1' }),
+      expect.objectContaining({ label: 'Mesa terraza 1', width: 3, height: 2 }),
     );
     expect(store.restaurantTables().find((table) => table.id === 'table-1')).toEqual(expect.objectContaining({ capacity: 6 }));
   });
 
   it('disables adding an element for an invalid position', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 1 fila 1' }));
+    actions.openAddElementDialog();
+    actions.choosePosition(1, 1);
 
     expect(screen.getByText('La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Añadir M8' })).toHaveProperty('disabled', true);
@@ -448,9 +1044,10 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('marks cells where the selected element cannot be placed as unavailable', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.input(screen.getByLabelText('Ancho'), { target: { value: '2' } });
+    actions.openAddElementDialog();
+    actions.fillElementForm({ width: 2 });
 
     const availableCell = screen.getByRole('button', { name: 'Colocar en columna 9 fila 9' });
     expect(availableCell.className).toContain('bg-emerald-50');
@@ -463,9 +1060,10 @@ describe('RestaurantPosLayoutPage', () => {
 
   it('allows the last matrix cell to anchor a fitting element inside the layout', async () => {
     await renderLayoutPage();
+    const actions = createLayoutPageActions();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir elemento' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar en columna 20 fila 20' }));
+    actions.openAddElementDialog();
+    actions.choosePosition(20, 20);
 
     expect(screen.getByText('Columnas 19-20, filas 19-20')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Añadir M8' })).toHaveProperty('disabled', false);

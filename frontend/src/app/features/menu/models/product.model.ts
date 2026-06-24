@@ -50,6 +50,7 @@ export interface PlatterComponent {
 
 export interface Product {
   id: string;
+  restaurantProductId?: string;
   name: ProductName;
   description?: string;
   categoryId: string;

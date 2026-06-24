@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> **Claude Code:** Este archivo es la configuración para Codex. La guía de Claude Code está en `CLAUDE.md`. Los comandos personalizados de Claude Code están en `.claude/commands/`.
+
 ## Project
 
 This repository contains:

@@ -78,6 +78,15 @@ pnpm prisma:studio
 ## Initial API
 
 - `GET /api/v1/health`
+- `GET /api/v1/restaurants`
+- `GET /api/v1/restaurants/:id/menu`
+- `GET /api/v1/restaurants/:id/floors`
+- `POST /api/v1/restaurants/:id/floors/:floorId/elements`
+- `PATCH /api/v1/restaurants/:id/floors/:floorId`
+- `PUT /api/v1/restaurants/:id/floors/:floorId/elements/reorder`
+- `GET /api/v1/restaurants/:id/reservations`
 - `POST /api/v1/tasks`
 - `GET /api/v1/tasks`
 - `PATCH /api/v1/tasks/:id/complete`
+
+MesaFlow endpoint documentation draft lives in `backend/docs/mesaflow-api.md`.

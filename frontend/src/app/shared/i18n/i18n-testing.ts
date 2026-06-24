@@ -191,6 +191,7 @@ const TEST_TRANSLATIONS = {
           size: 'Tamaño: {{width}} x {{height}}',
           addNamed: 'Añadir {{label}}',
           addElement: 'Añadir elemento',
+          editAction: 'Editar',
           saveChanges: 'Guardar cambios',
         },
       },

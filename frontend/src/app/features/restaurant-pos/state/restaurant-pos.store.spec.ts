@@ -45,6 +45,117 @@ describe('RestaurantPosStore', () => {
     expect(store.errorMessage()).toBeNull();
   });
 
+  it('hydrates the service floor and resets visible service orders', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+
+    store.hydrateServiceFloor({
+      floorId: 'floor-main',
+      floorName: 'Sala principal',
+      rows: 12,
+      columns: 16,
+      floorElements: [
+        { id: 'service-element-1', type: 'table', label: 'M1', x: 1, y: 1, width: 2, height: 2, tableId: 'table-1' },
+        { id: 'service-element-2', type: 'stool', label: 'Stool 1', x: 4, y: 1, width: 1, height: 1, tableId: 'stool-1' },
+      ],
+      restaurantTables: [
+        { id: 'table-1', number: 1, capacity: 2, status: 'free', total: 0, openDuration: '0m' },
+        { id: 'stool-1', number: 2, capacity: 1, status: 'occupied', total: 4.5, openDuration: '5m' },
+      ],
+    });
+
+    expect(store.activeFloorId()).toBe('floor-main');
+    expect(store.gridRows()).toBe(12);
+    expect(store.gridColumns()).toBe(16);
+    expect(store.floorElements()).toEqual([
+      expect.objectContaining({ id: 'service-element-1', tableId: 'table-1' }),
+      expect.objectContaining({ id: 'service-element-2', tableId: 'stool-1', type: 'stool' }),
+    ]);
+    expect(store.restaurantTables()).toEqual([
+      expect.objectContaining({ id: 'table-1', status: 'free' }),
+      expect.objectContaining({ id: 'stool-1', status: 'occupied', total: 4.5 }),
+    ]);
+    expect(store.ordersByTable()['table-1']).toEqual(expect.objectContaining({ tableId: 'table-1', lines: [], total: 0 }));
+    expect(store.ordersByTable()['stool-1']).toEqual(expect.objectContaining({ tableId: 'stool-1', lines: [], total: 0 }));
+    expect(store.selectedTableId()).toBe('table-1');
+  });
+
+  it('hydrates one service point detail and its backend order', () => {
+    store.hydrateServiceFloor({
+      floorId: 'floor-main',
+      floorName: 'Sala principal',
+      rows: 12,
+      columns: 16,
+      floorElements: [{ id: 'service-element-1', type: 'table', label: 'M1', x: 1, y: 1, width: 2, height: 2, tableId: 'table-1' }],
+      restaurantTables: [{ id: 'table-1', number: 1, capacity: 2, status: 'free', total: 0, openDuration: '0m' }],
+    });
+    store.selectTable('table-1');
+
+    store.hydrateServicePoint({
+      table: {
+        id: 'table-1',
+        number: 1,
+        capacity: 4,
+        status: 'waiting_kitchen',
+        total: 14,
+        openDuration: '18m',
+        occupiedAt: '2026-06-22T10:00:00.000Z',
+        serviceStartedAt: '2026-06-22T10:00:00.000Z',
+      },
+      floorElement: {
+        id: 'service-element-1',
+        type: 'table',
+        label: 'Mesa ventana',
+        x: 2,
+        y: 3,
+        width: 2,
+        height: 2,
+        tableId: 'table-1',
+        shape: 'round',
+      },
+    });
+    store.hydrateServicePointOrder('table-1', {
+      tableId: 'table-1',
+      total: 14,
+      status: 'sent_to_kitchen',
+      paymentMethod: 'pending',
+      lines: [
+        {
+          id: 'line-1',
+          productSnapshot: {
+            productId: 'service-product:line-1',
+            productName: 'Hamburguesa craft',
+            productType: 'simple',
+            basePrice: 14,
+            course: 'main',
+            preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+          },
+          productId: 'service-product:line-1',
+          productName: 'Hamburguesa craft',
+          quantity: 1,
+          basePrice: 14,
+          selectedModifiers: [],
+          unitPrice: 14,
+          subtotal: 14,
+          configurationSignature: 'service-line:line-1',
+          course: 'main',
+          status: 'sent_to_kitchen',
+        },
+      ],
+    });
+
+    expect(store.selectedTable()).toEqual(expect.objectContaining({ capacity: 4, status: 'waiting_kitchen', total: 14 }));
+    expect(store.floorElements()[0]).toEqual(expect.objectContaining({ label: 'Mesa ventana', x: 2, y: 3, shape: 'round' }));
+    expect(store.selectedOrder()).toEqual(
+      expect.objectContaining({
+        tableId: 'table-1',
+        status: 'sent_to_kitchen',
+        total: 14,
+        lines: [expect.objectContaining({ productName: 'Hamburguesa craft', status: 'sent_to_kitchen' })],
+      }),
+    );
+  });
+
   it('derives service info for a selected table even when its order is missing', () => {
     store.selectTable('table-1');
     (store as unknown as { _ordersByTable: { set: (orders: Record<string, never>) => void } })._ordersByTable.set({});

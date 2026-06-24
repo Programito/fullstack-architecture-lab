@@ -60,18 +60,23 @@ export class RestaurantPosStore {
   private readonly menuValidation = inject(MenuValidationService);
   private readonly _gridRows = signal(DEFAULT_GRID_ROWS);
   private readonly _gridColumns = signal(DEFAULT_GRID_COLUMNS);
+  private readonly _activeFloorId = signal<string | null>(null);
+  private readonly _activeFloorName = signal<string>('Sala principal');
   private readonly _floorElements = signal<FloorElement[]>(structuredClone(MOCK_FLOOR_ELEMENTS));
   private readonly _restaurantTables = signal<RestaurantTable[]>(structuredClone(MOCK_RESTAURANT_TABLES));
   private readonly _ordersByTable = signal<OrdersByTable>(structuredClone(MOCK_ORDERS_BY_TABLE));
   private readonly _selectedTableId = signal<string | null>(null);
   private readonly _mode = signal<PosMode>('operation');
   private readonly _errorMessage = signal<string | null>(null);
+  private readonly _backendProducts = signal<Product[] | null>(null);
 
   readonly gridRows = this._gridRows.asReadonly();
   readonly gridColumns = this._gridColumns.asReadonly();
+  readonly activeFloorId = this._activeFloorId.asReadonly();
+  readonly activeFloorName = this._activeFloorName.asReadonly();
   readonly floorElements = this._floorElements.asReadonly();
   readonly restaurantTables = this._restaurantTables.asReadonly();
-  readonly products = this.menu.products;
+  readonly products = computed(() => this._backendProducts() ?? this.menu.products());
   readonly ordersByTable = this._ordersByTable.asReadonly();
   readonly selectedTableId = this._selectedTableId.asReadonly();
   readonly mode = this._mode.asReadonly();
@@ -158,6 +163,10 @@ export class RestaurantPosStore {
 
   setMode(mode: PosMode): void {
     this._mode.set(mode);
+  }
+
+  hydrateProducts(products: Product[]): void {
+    this._backendProducts.set(products);
   }
 
   selectTable(tableId: string): void {
@@ -651,6 +660,59 @@ export class RestaurantPosStore {
     this.clearError();
   }
 
+  hydrateLayout(input: {
+    floorId?: string | null;
+    floorName?: string;
+    rows: number;
+    columns: number;
+    floorElements: FloorElement[];
+    restaurantTables: RestaurantTable[];
+  }): void {
+    this._activeFloorId.set(input.floorId ?? null);
+    this._activeFloorName.set(input.floorName ?? 'Sala principal');
+    this._gridRows.set(input.rows);
+    this._gridColumns.set(input.columns);
+    this._floorElements.set(structuredClone(input.floorElements));
+    this._restaurantTables.set(structuredClone(input.restaurantTables));
+    this.clearError();
+  }
+
+  hydrateServiceFloor(input: {
+    floorId?: string | null;
+    floorName?: string;
+    rows: number;
+    columns: number;
+    floorElements: FloorElement[];
+    restaurantTables: RestaurantTable[];
+  }): void {
+    this.hydrateLayout(input);
+    this._ordersByTable.set(this.createOrdersByTable(input.restaurantTables));
+
+    const selectedTableId = this._selectedTableId();
+    if (selectedTableId && !input.restaurantTables.some((table) => table.id === selectedTableId)) {
+      this._selectedTableId.set(null);
+    }
+  }
+
+  hydrateServicePoint(input: { table: RestaurantTable; floorElement?: FloorElement | null }): void {
+    this._restaurantTables.update((tables) => this.replaceOrAppendTable(tables, input.table));
+
+    const floorElement = input.floorElement;
+    if (floorElement) {
+      this._floorElements.update((elements) => this.replaceOrAppendFloorElement(elements, floorElement));
+    }
+
+    this.clearError();
+  }
+
+  hydrateServicePointOrder(tableId: string, order: TableOrder | null): void {
+    this._ordersByTable.update((ordersByTable) => ({
+      ...ordersByTable,
+      [tableId]: structuredClone(order ?? this.createEmptyOrder(tableId)),
+    }));
+    this.clearError();
+  }
+
   removeRow(): void {
     const nextRows = this._gridRows() - 1;
 
@@ -868,6 +930,10 @@ export class RestaurantPosStore {
     }
 
     return !this._floorElements().some((element) => element.id !== ignoredElementId && this.overlaps(element, input));
+  }
+
+  nextFloorElementSortOrder(): number {
+    return this._floorElements().length + 1;
   }
 
   private updateSelectedOrderStatus(
@@ -1295,6 +1361,28 @@ export class RestaurantPosStore {
             }
           : table,
       ),
+    );
+  }
+
+  private replaceOrAppendTable(tables: RestaurantTable[], nextTable: RestaurantTable): RestaurantTable[] {
+    return tables.some((table) => table.id === nextTable.id)
+      ? tables.map((table) => (table.id === nextTable.id ? structuredClone(nextTable) : table))
+      : [...tables, structuredClone(nextTable)];
+  }
+
+  private replaceOrAppendFloorElement(elements: FloorElement[], nextElement: FloorElement): FloorElement[] {
+    return elements.some((element) => element.id === nextElement.id)
+      ? elements.map((element) => (element.id === nextElement.id ? structuredClone(nextElement) : element))
+      : [...elements, structuredClone(nextElement)];
+  }
+
+  private createOrdersByTable(tables: RestaurantTable[]): OrdersByTable {
+    return tables.reduce<OrdersByTable>(
+      (ordersByTable, table) => ({
+        ...ordersByTable,
+        [table.id]: this.createEmptyOrder(table.id),
+      }),
+      {},
     );
   }
 
