@@ -13,17 +13,20 @@ flowchart LR
   T1[Task 1\nSchema Prisma] --> T2[Task 2\nDomain + Pricing]
   T2 --> T3[Task 3\nCatalogo persistente]
   T3 --> T4[Task 4\nApertura pedido]
-  T4 --> T5[Task 5\nLineas CRUD]
-  T5 --> T6[Task 6\nProyeccion servicio]
-  T6 --> T7[Task 7\nPagos y cierre]
-  T7 --> T8[Task 8\nREST + E2E]
-  T8 --> T9[Task 9\nAngular write]
-  T9 --> T10[Task 10\nPagina servicio]
-  T10 --> T11[Task 11\nDocs]
+  T4 --> T5[Task 5\nLineas configuradas]
+  T5 --> T6[Task 6\nCiclo vida lineas]
+  T6 --> T7[Task 7\nProyeccion servicio]
+  T7 --> T8[Task 8\nPagos y cierre]
+  T8 --> T9[Task 9\nREST E2E]
+  T9 --> T10[Task 10\nAngular write]
+  T10 --> T11[Task 11\nDocs finales]
 
   style T1 fill:#22c55e,color:#fff
   style T2 fill:#22c55e,color:#fff
   style T3 fill:#22c55e,color:#fff
+  style T4 fill:#22c55e,color:#fff
+  style T5 fill:#22c55e,color:#fff
+  style T6 fill:#22c55e,color:#fff
 ```
 
 ## Scope
@@ -38,15 +41,19 @@ Implementado:
 - `POST /api/v1/restaurants/:id/service-points/:tableId/send-to-kitchen`
 - `POST /api/v1/restaurants/:id/service-points/:tableId/mark-served`
 - `POST /api/v1/restaurants/:id/service-points/:tableId/charge`
+- `POST /api/v1/restaurants/:id/service-points/:tableId/orders` — abrir o recuperar pedido activo
+- `POST /api/v1/restaurants/:id/orders/:orderId/lines` — anadir linea configurada
+- `PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — actualizar cantidad/nota
+- `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — eliminar linea pendiente
+- `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel` — cancelar linea enviada
 
-Pendiente (Tasks 4-10):
+Pendiente (Tasks 7-11):
 
-- `POST /api/v1/restaurants/:id/orders` — abrir pedido
-- `POST /api/v1/restaurants/:id/orders/:orderId/lines` — anadir linea
-- `PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId`
-- `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId`
-- `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel`
-- `POST /api/v1/restaurants/:id/orders/:orderId/payments`
+- Proyeccion de servicio sobre pedidos persistentes (Task 7)
+- `POST /api/v1/restaurants/:id/orders/:orderId/payments` (Task 8)
+- Refactorizacion de `charge` con pago real (Task 8)
+- Cobertura E2E backend con Supertest + Testcontainers (Task 9)
+- Integracion Angular (Task 10)
 
 ## Domain Model
 
@@ -543,6 +550,204 @@ Despues del cobro, `GET .../order` devuelve `order: null` porque ya no existe un
 - `404` restaurante no encontrado
 - `404` mesa no encontrada en el restaurante
 
+---
+
+### POST /api/v1/restaurants/:id/service-points/:tableId/orders
+
+Abre un pedido nuevo para la mesa o devuelve el pedido activo existente (idempotente). Requiere autenticacion.
+
+**Path params**
+
+- `id`: identificador del restaurante
+- `tableId`: identificador de la mesa
+
+**Request body**
+
+```json
+{ "guestCount": 2 }
+```
+
+`guestCount` es opcional (por defecto 1).
+
+**Response 201** — pedido recien abierto
+
+**Response 200** — pedido activo ya existente
+
+```json
+{
+  "order": {
+    "id": "urn:uuid:...",
+    "restaurantId": "restaurant-mesaflow-centro",
+    "tableId": "table-1",
+    "status": "open",
+    "currency": "EUR",
+    "guestCount": 2,
+    "subtotalCents": 0,
+    "taxCents": 0,
+    "discountTotalCents": 0,
+    "totalCents": 0,
+    "paidCents": 0,
+    "balanceCents": 0,
+    "openedAt": "2026-06-24T10:00:00.000Z",
+    "updatedAt": "2026-06-24T10:00:00.000Z",
+    "closedAt": null
+  },
+  "lines": [],
+  "payments": []
+}
+```
+
+**Errors**
+
+- `400` `guestCount` menor o igual a cero
+- `401` sin autenticacion
+- `404` mesa no encontrada en el restaurante
+
+---
+
+### POST /api/v1/restaurants/:id/orders/:orderId/lines
+
+Anade una linea al pedido con toda su configuracion (modificadores, slots de combo, componentes de plato combinado). Requiere autenticacion.
+
+**Path params**
+
+- `id`: identificador del restaurante
+- `orderId`: identificador del pedido
+
+**Request body**
+
+```json
+{
+  "restaurantProductId": "rp-uuid",
+  "quantity": 2,
+  "kitchenNote": "Sin cebolla",
+  "modifiers": [
+    { "modifierGroupId": "mg-uuid", "modifierOptionId": "opt-uuid", "quantity": 1 }
+  ],
+  "comboSlots": [
+    { "comboSlotId": "slot-uuid", "restaurantProductId": "rp-drink-uuid", "quantity": 1 }
+  ],
+  "platterComponents": [
+    { "platterComponentId": "comp-uuid", "included": false }
+  ]
+}
+```
+
+`kitchenNote`, `modifiers`, `comboSlots` y `platterComponents` son opcionales.
+
+**Response 201**
+
+Devuelve el pedido completo actualizado (mismo schema que apertura).
+
+**Errors**
+
+- `400` cantidad menor o igual a cero, IDs de modificador/slot/componente invalidos
+- `401` sin autenticacion
+- `404` pedido no encontrado, producto no encontrado en el restaurante
+- `409` el pedido tiene un pago completado y no acepta mas lineas
+
+---
+
+### PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId
+
+Actualiza la cantidad y/o la nota de cocina de una linea pendiente. Requiere autenticacion.
+
+**Path params**
+
+- `id`, `orderId`, `lineId`
+
+**Request body**
+
+```json
+{ "quantity": 3, "kitchenNote": "Sin gluten" }
+```
+
+Ambos campos son opcionales; al menos uno debe estar presente para que la llamada sea util.
+
+**Response 200**
+
+Devuelve el pedido completo actualizado.
+
+**Errors**
+
+- `400` cantidad menor o igual a cero
+- `401` sin autenticacion
+- `404` pedido o linea no encontrados
+- `409` la linea no esta en estado `pending` o el pedido tiene un pago completado
+
+---
+
+### DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId
+
+Elimina fisicamente una linea pendiente del pedido. Requiere autenticacion.
+
+**Path params**
+
+- `id`, `orderId`, `lineId`
+
+**Response 200**
+
+Devuelve el pedido completo sin la linea eliminada.
+
+**Errors**
+
+- `401` sin autenticacion
+- `404` pedido o linea no encontrados
+- `409` la linea no esta en estado `pending` o el pedido tiene un pago completado
+
+---
+
+### POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel
+
+Cancela una linea que ya fue enviada a cocina (`preparing` o `ready`). Requiere autenticacion.
+
+**Path params**
+
+- `id`, `orderId`, `lineId`
+
+**Request body**
+
+```json
+{ "reason": "Cliente cambio de opinion" }
+```
+
+`reason` es obligatorio y no puede estar vacio.
+
+**Response 200**
+
+Devuelve el pedido completo con la linea en estado `cancelled`.
+
+**Errors**
+
+- `400` motivo de cancelacion vacio
+- `401` sin autenticacion
+- `404` pedido o linea no encontrados
+- `409` la linea no esta en estado `preparing` ni `ready`, o el pedido tiene un pago completado
+
+---
+
+## Estado de lineas y pedido
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending
+  pending --> preparing : send to kitchen
+  pending --> [*] : DELETE
+  preparing --> ready
+  preparing --> cancelled : cancel with reason
+  ready --> served
+  ready --> cancelled : cancel with reason
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> open
+  open --> pending_payment : partial payment
+  open --> paid : full payment
+  pending_payment --> paid : remaining balance paid
+  open --> cancelled : cancel order
+```
+
 ## Enums
 
 ### table.status
@@ -556,21 +761,18 @@ Despues del cobro, `GET .../order` devuelve `order: null` porque ya no existe un
 - `cleaning`
 - `reserved`
 
-### order.status
+### order.status (persistente)
 
 - `open`
-- `sent_to_kitchen`
-- `served`
-- `payment_pending`
+- `pending_payment`
 - `paid`
+- `cancelled`
 
-### line.status
+### line.status (persistente)
 
 - `pending`
-- `sent_to_kitchen`
 - `preparing`
 - `ready`
-- `picked_up`
 - `served`
 - `cancelled`
 
@@ -655,46 +857,40 @@ Flujo esperado:
 flowchart LR
   A["Mesa libre"] --> B["POST occupy"]
   B --> C["Mesa occupied"]
-  C --> D["POST send-to-kitchen"]
-  D --> E["Mesa waiting_kitchen"]
-  E --> F["POST mark-served"]
-  F --> G["Mesa served"]
-  G --> H["POST charge"]
-  H --> I["Mesa paid"]
+  C --> D["POST orders\nabre pedido"]
+  D --> E["POST lines\nañade lineas"]
+  E --> F["PATCH/DELETE lines\nedita pendientes"]
+  F --> G["POST send-to-kitchen"]
+  G --> H["POST cancel line\ncancela enviadas"]
+  G --> I["POST mark-served"]
+  I --> J["POST charge"]
+  J --> K["Mesa paid"]
 ```
 
-Lo que ya esta operativo hoy:
+Lo que ya esta operativo hoy (Tasks 1-6):
 
-- lectura de planta de servicio
-- lectura de detalle de mesa
-- lectura de pedido activo
-- iniciar servicio
-- enviar a cocina
-- marcar servido
-- marcar como cobrado
+- lectura y gestion del plano de servicio
+- catalogo persistente con IDs reales para escritura
+- apertura idempotente de pedido (con auth)
+- adicion de lineas con modificadores, combos y platos combinados
+- actualizacion de cantidad y nota de cocina en lineas pendientes
+- eliminacion de lineas pendientes
+- cancelacion de lineas enviadas con motivo obligatorio
+- bloqueo de mutaciones tras pago completado
 
-Lo que sigue fuera de alcance:
+Lo que sigue pendiente (Tasks 7-11):
 
-- persistir notas de linea
-- anadir o quitar productos en backend
-- modifiers en escritura
-- registrar transacciones y metodos de pago en backend
-- cierre de mesa
+- proyeccion de servicio sobre pedidos persistentes (totales reales en service-floor)
+- registro de pagos parciales y cierre de pedido
+- refactorizacion de `charge` con pago real
+- cobertura E2E backend
+- integracion Angular
 
 ## Error Model
 
-Convencion para esta fase:
-
-- `404` cuando el restaurante no existe
-- `404` cuando la mesa no existe dentro del restaurante
-- `400` cuando una accion no es valida para el estado o importe actual
-- `200` con `order: null` cuando la mesa existe pero todavia no tiene pedido abierto
-
-## Future Extensions
-
-Siguientes endpoints previstos fuera de esta fase:
-
-- `POST /api/v1/restaurants/:id/service-points/:tableId/orders`
-- `POST /api/v1/restaurants/:id/orders/:orderId/lines`
-- `PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId`
-- `POST /api/v1/restaurants/:id/orders/:orderId/payments`
+- `400` validacion de entrada: cantidad invalida, razon de cancelacion vacia, IDs de configuracion invalidos
+- `401` endpoint protegido sin token de autenticacion
+- `404` recurso no encontrado (restaurante, mesa, pedido, linea, producto)
+- `409` conflicto de estado: linea no modificable, pedido con pago completado
+- `422` error semantico: pago superior al saldo pendiente
+- `200` con `order: null` cuando la mesa existe pero no tiene pedido activo
