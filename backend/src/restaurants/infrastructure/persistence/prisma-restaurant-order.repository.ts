@@ -7,6 +7,7 @@ import type {
   AddOrderLineCommand,
   CancelOrderLineCommand,
   DeleteOrderLineCommand,
+  KitchenOrderLineStatus,
   OpenRestaurantOrderCommand,
   OrderLineStatus,
   OrderStatus,
@@ -19,6 +20,7 @@ import type {
   RestaurantOrderPlatterComponentView,
   RestaurantOrderView,
   UpdateOrderLineCommand,
+  UpdateOrderLineStatusCommand,
 } from '../../domain/restaurant-order.models';
 import type { RestaurantOrderRepository } from '../../application/ports/restaurant-order-repository.port';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -538,6 +540,42 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
         line.order.discountTotalCents,
       );
       await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
+
+      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
+      return this.mapOrder(finalOrder as unknown as RawOrder);
+    });
+  }
+
+  async updateLineStatus(command: UpdateOrderLineStatusCommand): Promise<RestaurantOrderView> {
+    const ALLOWED_TRANSITIONS: Record<KitchenOrderLineStatus, OrderLineStatus[]> = {
+      preparing: ['pending'],
+      ready: ['preparing'],
+      served: ['ready'],
+    };
+
+    return this.prisma.$transaction(async (tx) => {
+      const line = await tx.orderLine.findFirst({
+        where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
+        select: { id: true, status: true },
+      });
+
+      if (!line) {
+        throw new ApplicationErrorException(
+          applicationError('order_line_not_found', `Order line "${command.lineId}" not found.`, { lineId: command.lineId }),
+        );
+      }
+
+      const allowedFrom = ALLOWED_TRANSITIONS[command.status];
+      if (!allowedFrom.includes(line.status as OrderLineStatus)) {
+        throw new ApplicationErrorException(
+          applicationError('invalid_order_state', `Cannot transition line from "${line.status}" to "${command.status}".`, {
+            currentStatus: line.status,
+            targetStatus: command.status,
+          }),
+        );
+      }
+
+      await tx.orderLine.update({ where: { id: command.lineId }, data: { status: command.status } });
 
       const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
       return this.mapOrder(finalOrder as unknown as RawOrder);

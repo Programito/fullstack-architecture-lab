@@ -5,7 +5,7 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { err, ok } from '../../../shared/result/result';
 import type { RestaurantOrderView } from '../../domain/restaurant-order.models';
 import type { RestaurantOrderRepository } from '../ports/restaurant-order-repository.port';
-import { DeleteRestaurantOrderLineUseCase } from './delete-restaurant-order-line.use-case';
+import { UpdateRestaurantOrderLineStatusUseCase } from './update-restaurant-order-line-status.use-case';
 
 function makeOrder(): RestaurantOrderView {
   return {
@@ -16,12 +16,12 @@ function makeOrder(): RestaurantOrderView {
       status: 'open',
       currency: 'EUR',
       guestCount: 2,
-      subtotalCents: 0,
-      taxCents: 0,
+      subtotalCents: 1200,
+      taxCents: 208,
       discountTotalCents: 0,
-      totalCents: 0,
+      totalCents: 1200,
       paidCents: 0,
-      balanceCents: 0,
+      balanceCents: 1200,
       openedAt: '2026-06-24T10:00:00.000Z',
       updatedAt: '2026-06-24T10:00:00.000Z',
       closedAt: null,
@@ -48,38 +48,41 @@ function makeRepository(): RestaurantOrderRepository {
   };
 }
 
-describe('DeleteRestaurantOrderLineUseCase', () => {
-  it('delegates the delete command to the repository and returns the updated order', async () => {
+describe('UpdateRestaurantOrderLineStatusUseCase', () => {
+  it('delegates the status update to the repository and returns the updated order', async () => {
     const repository = makeRepository();
     const updatedOrder = makeOrder();
-    vi.mocked(repository.deletePendingLine).mockResolvedValue(updatedOrder);
-    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+    vi.mocked(repository.updateLineStatus).mockResolvedValue(updatedOrder);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
 
     const result = await useCase.execute({
       restaurantId: 'restaurant-1',
       orderId: 'order-1',
       lineId: 'line-1',
+      status: 'preparing',
     });
 
     expect(result).toEqual(ok(updatedOrder));
-    expect(repository.deletePendingLine).toHaveBeenCalledWith({
+    expect(repository.updateLineStatus).toHaveBeenCalledWith({
       restaurantId: 'restaurant-1',
       orderId: 'order-1',
       lineId: 'line-1',
+      status: 'preparing',
     });
   });
 
-  it('returns invalid_order_state when the line is not pending', async () => {
+  it('returns invalid_order_state when the status transition is not allowed', async () => {
     const repository = makeRepository();
-    vi.mocked(repository.deletePendingLine).mockRejectedValue(
-      new ApplicationErrorException(applicationError('invalid_order_state', 'Only pending lines can be deleted.')),
+    vi.mocked(repository.updateLineStatus).mockRejectedValue(
+      new ApplicationErrorException(applicationError('invalid_order_state', 'Status transition not allowed.')),
     );
-    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
 
     const result = await useCase.execute({
       restaurantId: 'restaurant-1',
       orderId: 'order-1',
-      lineId: 'line-sent',
+      lineId: 'line-1',
+      status: 'ready',
     });
 
     expect(result).toEqual(err(expect.objectContaining({ code: 'invalid_order_state' })));
@@ -87,15 +90,16 @@ describe('DeleteRestaurantOrderLineUseCase', () => {
 
   it('returns order_line_not_found when the line does not exist', async () => {
     const repository = makeRepository();
-    vi.mocked(repository.deletePendingLine).mockRejectedValue(
+    vi.mocked(repository.updateLineStatus).mockRejectedValue(
       new ApplicationErrorException(applicationError('order_line_not_found', 'Line not found.')),
     );
-    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
 
     const result = await useCase.execute({
       restaurantId: 'restaurant-1',
       orderId: 'order-1',
       lineId: 'line-missing',
+      status: 'ready',
     });
 
     expect(result).toEqual(err(expect.objectContaining({ code: 'order_line_not_found' })));
@@ -103,11 +107,11 @@ describe('DeleteRestaurantOrderLineUseCase', () => {
 
   it('rethrows unexpected errors', async () => {
     const repository = makeRepository();
-    vi.mocked(repository.deletePendingLine).mockRejectedValue(new Error('DB connection lost'));
-    const useCase = new DeleteRestaurantOrderLineUseCase(repository);
+    vi.mocked(repository.updateLineStatus).mockRejectedValue(new Error('DB connection lost'));
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
 
     await expect(
-      useCase.execute({ restaurantId: 'restaurant-1', orderId: 'order-1', lineId: 'line-1' }),
+      useCase.execute({ restaurantId: 'restaurant-1', orderId: 'order-1', lineId: 'line-1', status: 'ready' }),
     ).rejects.toThrow('DB connection lost');
   });
 });

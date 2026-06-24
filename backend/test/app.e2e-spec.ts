@@ -89,6 +89,7 @@ describe('App e2e', () => {
         updatePendingLine: () => Promise.reject(new Error('DB not available in E2E')),
         deletePendingLine: () => Promise.reject(new Error('DB not available in E2E')),
         cancelLine: () => Promise.reject(new Error('DB not available in E2E')),
+        updateLineStatus: () => Promise.reject(new Error('DB not available in E2E')),
         sendPendingLinesToKitchen: async () => null,
         markActiveLinesServed: async () => null,
         registerPayment: () => Promise.reject(new Error('DB not available in E2E')),
