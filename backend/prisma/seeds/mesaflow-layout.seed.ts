@@ -41,13 +41,13 @@ export async function seedMesaFlowLayoutDemo(prisma: PrismaClient): Promise<void
 
   const tableIdByLabel = new Map<string, string>();
   for (const table of [
-    { tableNumber: 1, name: 'Mesa 1', capacity: 2 },
-    { tableNumber: 2, name: 'Mesa 2', capacity: 4 },
-    { tableNumber: 3, name: 'Mesa 3', capacity: 6 },
-    { tableNumber: 4, name: 'Mesa 4', capacity: 4 },
-    { tableNumber: 5, name: 'Taburete 1', capacity: 1 },
-    { tableNumber: 6, name: 'Taburete 2', capacity: 1 },
-    { tableNumber: 7, name: 'Taburete 3', capacity: 1 },
+    { tableNumber: 1, id: 'table-1', name: 'Mesa 1', capacity: 2 },
+    { tableNumber: 2, id: 'table-2', name: 'Mesa 2', capacity: 4 },
+    { tableNumber: 3, id: 'table-3', name: 'Mesa 3', capacity: 6 },
+    { tableNumber: 4, id: 'table-4', name: 'Mesa 4', capacity: 4 },
+    { tableNumber: 5, id: 'stool-1', name: 'Taburete 1', capacity: 1 },
+    { tableNumber: 6, id: 'stool-2', name: 'Taburete 2', capacity: 1 },
+    { tableNumber: 7, id: 'stool-3', name: 'Taburete 3', capacity: 1 },
   ]) {
     const storedTable = await prisma.restaurantTable.upsert({
       where: {
@@ -57,11 +57,13 @@ export async function seedMesaFlowLayoutDemo(prisma: PrismaClient): Promise<void
         },
       },
       update: {
+        id: table.id,
         name: table.name,
         capacity: table.capacity,
         isActive: true,
       },
       create: {
+        id: table.id,
         restaurantId: restaurant.id,
         tableNumber: table.tableNumber,
         name: table.name,

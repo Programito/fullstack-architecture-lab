@@ -36,6 +36,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       },
     },
     update: {
+      id: 'restaurant-mesaflow-centro',
       displayName: 'MesaFlow Centro',
       address: 'Calle Mayor 1, Madrid',
       phone: '+34 910 000 000',
@@ -45,6 +46,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       isActive: true,
     },
     create: {
+      id: 'restaurant-mesaflow-centro',
       organizationId: organization.id,
       name: DEMO_RESTAURANT_NAME,
       displayName: 'MesaFlow Centro',

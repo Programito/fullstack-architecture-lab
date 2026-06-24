@@ -409,11 +409,15 @@ model Order {
   tableId             String?
   status              OrderStatus       @default(open)
   openedByUserId      String
+  currency            String
+  guestCount          Int
   subtotalCents       Int
+  taxCents            Int               @default(0)
   discountTotalCents  Int               @default(0)
   totalCents          Int
   closedAt            DateTime?
   restaurant          Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table               RestaurantTable?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
   openedByUser        User              @relation("OpenedOrders", fields: [openedByUserId], references: [id], onDelete: Restrict)
   lines               OrderLine[]
   discounts           OrderDiscount[]
@@ -433,12 +437,19 @@ model OrderLine {
   productId                    String?
   productNameSnapshot          String
   productTypeSnapshot          ProductType
+  courseSnapshot               ProductCourse
+  preparationRouteSnapshot     PreparationRoute
   basePriceCentsSnapshot       Int
   unitPriceCents               Int
   quantity                     Int
   subtotalCents                Int
+  taxRateNameSnapshot          String?
+  taxRatePercentSnapshot       Decimal?           @db.Decimal(5, 2)
+  taxCents                     Int                @default(0)
   status                       OrderLineStatus    @default(pending)
   kitchenNote                  String?
+  cancellationReason           String?
+  cancelledAt                  DateTime?
   configurationSignature       String
   order                        Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
   restaurantProduct            RestaurantProduct? @relation(fields: [restaurantProductId], references: [id], onDelete: SetNull)
@@ -460,6 +471,7 @@ model OrderLineModifier {
   groupNameSnapshot   String
   optionNameSnapshot  String
   priceDeltaCents     Int       @default(0)
+  quantity            Int       @default(1)
   orderLine           OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
 
   @@index([orderLineId])
@@ -472,6 +484,7 @@ model OrderLineComboSlot {
   slotNameSnapshot            String
   selectedProductNameSnapshot String
   supplementPriceCents        Int       @default(0)
+  quantity                    Int       @default(1)
   orderLine                   OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
 
   @@index([orderLineId])
@@ -546,6 +559,7 @@ model RestaurantTable {
   restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   floorElements FloorElement[]
   reservationTables ReservationTable[]
+  orders        Order[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
