@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, HttpException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpException, InternalServerErrorException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import type { ApplicationError } from '../errors/application-error';
 import type { Result } from '../result/result';
@@ -30,11 +30,18 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'restaurant_not_found':
     case 'table_not_found':
     case 'floor_not_found':
+    case 'order_not_found':
+    case 'order_line_not_found':
+    case 'restaurant_product_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':
     case 'role_name_already_taken':
+    case 'invalid_order_state':
       return new ConflictException(error.message);
+
+    case 'payment_exceeds_balance':
+      return new UnprocessableEntityException(error.message);
 
     default:
       return new InternalServerErrorException('Unexpected application error.');

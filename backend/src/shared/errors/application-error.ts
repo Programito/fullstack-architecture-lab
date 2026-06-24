@@ -15,7 +15,12 @@ export type ApplicationErrorCode =
   | 'invalid_floor_element_layout'
   | 'invalid_floor_layout'
   | 'invalid_service_action'
-  | 'invalid_order_configuration';
+  | 'invalid_order_configuration'
+  | 'order_not_found'
+  | 'order_line_not_found'
+  | 'restaurant_product_not_found'
+  | 'invalid_order_state'
+  | 'payment_exceeds_balance';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;

@@ -17,6 +17,7 @@ import { MarkRestaurantServicePointOrderServedUseCase } from '../../application/
 import { OccupyRestaurantServicePointUseCase } from '../../application/use-cases/occupy-restaurant-service-point.use-case';
 import { SendRestaurantServicePointOrderToKitchenUseCase } from '../../application/use-cases/send-restaurant-service-point-order-to-kitchen.use-case';
 import { OpenRestaurantOrderUseCase } from '../../application/use-cases/open-restaurant-order.use-case';
+import { AddRestaurantOrderLineUseCase } from '../../application/use-cases/add-restaurant-order-line.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from '../../application/use-cases/update-floor-element.use-case';
@@ -33,6 +34,7 @@ import { ServicePointDetailResponseDto } from './dto/service-point-detail-respon
 import { ServicePointOrderResponseDto } from './dto/service-point-order-response.dto';
 import { RestaurantSummaryResponseDto } from './dto/restaurant-summary-response.dto';
 import { OpenRestaurantOrderDto } from './dto/open-restaurant-order.dto';
+import { AddRestaurantOrderLineDto } from './dto/add-restaurant-order-line.dto';
 import { RestaurantOrderResponseDto } from './dto/restaurant-order-response.dto';
 
 @ApiTags('restaurants')
@@ -42,6 +44,7 @@ export class RestaurantsController {
     private readonly listRestaurants: ListRestaurantsUseCase,
     private readonly getRestaurantMenu: GetRestaurantMenuUseCase,
     private readonly openRestaurantOrder: OpenRestaurantOrderUseCase,
+    private readonly addRestaurantOrderLine: AddRestaurantOrderLineUseCase,
     private readonly getRestaurantFloors: GetRestaurantFloorsUseCase,
     private readonly getRestaurantServiceFloor: GetRestaurantServiceFloorUseCase,
     private readonly getRestaurantServicePoint: GetRestaurantServicePointUseCase,
@@ -129,6 +132,34 @@ export class RestaurantsController {
     );
     response.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
     return RestaurantOrderResponseDto.fromDomain(result.order);
+  }
+
+  @Post(':id/orders/:orderId/lines')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: RestaurantOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Order or product not found.' })
+  @ApiBadRequestResponse({ description: 'Invalid line configuration.' })
+  async addOrderLine(
+    @Param('id') restaurantId: string,
+    @Param('orderId') orderId: string,
+    @Body() body: AddRestaurantOrderLineDto,
+  ): Promise<RestaurantOrderResponseDto> {
+    return RestaurantOrderResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.addRestaurantOrderLine.execute({
+          restaurantId,
+          orderId,
+          restaurantProductId: body.restaurantProductId,
+          quantity: body.quantity,
+          kitchenNote: body.kitchenNote?.trim() || null,
+          modifiers: body.modifiers ?? [],
+          comboSlots: body.comboSlots ?? [],
+          platterComponents: body.platterComponents ?? [],
+        }),
+      ),
+    );
   }
 
   @Post(':id/service-points/:tableId/occupy')
