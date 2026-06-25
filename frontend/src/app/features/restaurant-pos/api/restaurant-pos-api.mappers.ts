@@ -122,6 +122,7 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
         configurationSignature: `service-line:${line.id}`,
         course,
         status: line.status,
+        statusUpdatedAt: line.updatedAt,
       };
     }),
   };

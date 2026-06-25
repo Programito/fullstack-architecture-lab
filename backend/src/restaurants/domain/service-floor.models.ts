@@ -102,5 +102,6 @@ export type ServicePointOrderView = {
     status: ServiceOrderLineStatus;
     course: ServicePhaseCourse;
     kitchenNote: string | null;
+    updatedAt: string;
   }>;
 };

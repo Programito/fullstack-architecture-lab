@@ -44,6 +44,7 @@ describe('RestaurantPosServicePage', () => {
           status: 'pending' | 'sent_to_kitchen';
           course: 'mains';
           kitchenNote: null;
+          updatedAt: string;
         }>;
       }
     >([
@@ -250,6 +251,7 @@ describe('RestaurantPosServicePage', () => {
             status: 'sent_to_kitchen',
             course: 'mains',
             kitchenNote: null,
+            updatedAt: '2026-06-22T10:00:00.000Z',
           },
         ],
       });

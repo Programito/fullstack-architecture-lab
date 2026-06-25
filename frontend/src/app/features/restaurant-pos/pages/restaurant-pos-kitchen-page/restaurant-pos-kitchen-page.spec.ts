@@ -46,51 +46,36 @@ describe('RestaurantPosKitchenPage', () => {
   const getPreparationColumn = (name: string): HTMLElement =>
     screen.getByRole('heading', { name }).closest('section')!;
 
-  it('renders the preparation board on the kitchen route', async () => {
+  it('renders the preparation board with the three new columns', async () => {
     await renderKitchenPage();
 
     expect(screen.getByRole('heading', { name: 'Cocina' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Preparación' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'En cocina' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Pendiente' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Preparándose' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Preparado' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Servido' })).toBeTruthy();
-    expect(screen.getAllByText('0').length).toBeGreaterThanOrEqual(3);
   });
 
-  it('moves preparation lines from kitchen to ready and served', async () => {
+  it('moves a line from pending to preparing then to ready', async () => {
     const { fixture } = await renderKitchenPage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     sendTableOrderToKitchen(store);
     fixture.detectChanges();
 
-    expect(within(getPreparationColumn('En cocina')).getByText('1x Hamburguesa craft')).toBeTruthy();
-    expect(within(getPreparationColumn('En cocina')).getByText('1x Croquetas de jamón ibérico')).toBeTruthy();
+    expect(within(getPreparationColumn('Pendiente')).getByText('1x Hamburguesa craft')).toBeTruthy();
     expect(screen.getByText(/Sin salsa/)).toBeTruthy();
 
-    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Marcar preparado' }));
+    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Preparándose' }));
+    fixture.detectChanges();
+
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('preparing');
+    expect(within(getPreparationColumn('Preparándose')).getByText('1x Hamburguesa craft')).toBeTruthy();
+
+    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Preparado' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('ready');
     expect(within(getPreparationColumn('Preparado')).getByText('1x Hamburguesa craft')).toBeTruthy();
-
-    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Marcar servido' }));
-    fixture.detectChanges();
-
-    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('served');
-    expect(within(getPreparationColumn('Servido')).getByText('1x Hamburguesa craft')).toBeTruthy();
-  });
-
-  it('shows a warning when serving a kitchen line before it is ready', async () => {
-    const { fixture } = await renderKitchenPage();
-    const store = fixture.debugElement.injector.get(RestaurantPosStore);
-    sendTableOrderToKitchen(store);
-    fixture.detectChanges();
-
-    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Marcar servido' }));
-    fixture.detectChanges();
-
-    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('sent_to_kitchen');
-    expect(screen.getByText('Este producto todavía no está marcado como preparado.')).toBeTruthy();
   });
 
   it('shows kitchen lines loaded from the API when a restaurant is active', async () => {
@@ -109,7 +94,7 @@ describe('RestaurantPosKitchenPage', () => {
 
     const mockOrder: ServicePointOrderDto = {
       order: { id: 'order-api-1', tableId: 'table-api-1', status: 'open', openedAt: '', updatedAt: '', subtotalCents: 1000, taxCents: 0, totalCents: 1000, currency: 'EUR' },
-      lines: [{ id: 'line-api-1', productName: 'Arroz con bogavante', quantity: 2, unitPriceCents: 2400, subtotalCents: 4800, status: 'sent_to_kitchen', course: 'mains', kitchenNote: null }],
+      lines: [{ id: 'line-api-1', productName: 'Arroz con bogavante', quantity: 2, unitPriceCents: 2400, subtotalCents: 4800, status: 'sent_to_kitchen', course: 'mains', kitchenNote: null, updatedAt: '' }],
     };
 
     const activeRestaurant = signal<RestaurantSummaryDto | null>({
@@ -118,14 +103,14 @@ describe('RestaurantPosKitchenPage', () => {
 
     await renderKitchenPage({
       api: {
-        getRestaurantServiceFloor: vi.fn(() => of(mockServiceFloor)),
-        getRestaurantServicePointOrder: vi.fn(() => of(mockOrder)),
-      },
+        getRestaurantServiceFloor: vi.fn((_r: string) => of(mockServiceFloor)),
+        getRestaurantServicePointOrder: vi.fn((_r: string, _t: string) => of(mockOrder)),
+      } as Partial<RestaurantPosApiService>,
       restaurantContext: { activeRestaurant: activeRestaurant.asReadonly(), load: vi.fn() },
     });
 
     await waitFor(() => {
-      expect(within(getPreparationColumn('En cocina')).getByText('2x Arroz con bogavante')).toBeTruthy();
+      expect(within(getPreparationColumn('Pendiente')).getByText('2x Arroz con bogavante')).toBeTruthy();
     });
   });
 });

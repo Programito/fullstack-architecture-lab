@@ -671,107 +671,72 @@ describe('RestaurantPosStore', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
     store.addProductToSelectedTable('product-3');
+    store.sendSelectedOrderToKitchen();
 
-    const inKitchenColumn = store.preparationBoardColumns().find((column) => column.id === 'in_kitchen');
+    const pendingColumn = store.preparationBoardColumns().find((column) => column.id === 'pending');
 
-    expect(inKitchenColumn?.cards).toEqual(
+    expect(pendingColumn?.cards).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          tableId: 'table-1',
-          tableNumber: 1,
-          line: expect.objectContaining({ productId: 'product-1' }),
-        }),
-        expect.objectContaining({
-          tableId: 'table-1',
-          tableNumber: 1,
-          line: expect.objectContaining({ productId: 'product-3' }),
-        }),
+        expect.objectContaining({ tableId: 'table-1', tableNumber: 1, line: expect.objectContaining({ productId: 'product-1' }) }),
+        expect.objectContaining({ tableId: 'table-1', tableNumber: 1, line: expect.objectContaining({ productId: 'product-3' }) }),
       ]),
     );
   });
 
-  it('moves a kitchen preparation line to ready', () => {
+  it('moves a pending preparation line to preparing', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
+    store.sendSelectedOrderToKitchen();
 
-    const result = store.movePreparationLine('table-1', 'product-1', 'ready');
+    const result = store.movePreparationLine('table-1', 'product-1', 'preparing');
 
     expect(result).toEqual({ moved: true });
-    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ status: 'ready', readyAt: expect.any(String) }));
-    expect(store.preparationBoardColumns().find((column) => column.id === 'ready')?.cards).toEqual(
+    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ status: 'preparing', preparingAt: expect.any(String) }));
+    expect(store.preparationBoardColumns().find((c) => c.id === 'preparing')?.cards).toEqual(
       expect.arrayContaining([expect.objectContaining({ line: expect.objectContaining({ productId: 'product-1' }) })]),
     );
   });
 
-  it('moves a ready preparation line to served', () => {
+  it('reverts a preparing line back to pending', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
-    store.movePreparationLine('table-1', 'product-1', 'ready');
+    store.sendSelectedOrderToKitchen();
+    store.movePreparationLine('table-1', 'product-1', 'preparing');
 
-    const result = store.movePreparationLine('table-1', 'product-1', 'served');
-
-    expect(result).toEqual({ moved: true });
-    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(expect.objectContaining({ status: 'served', servedAt: expect.any(String) }));
-  });
-
-  it('rejects serving kitchen products before they are ready', () => {
-    store.selectTable('table-1');
-    store.addProductToSelectedTable('product-1');
-
-    const result = store.movePreparationLine('table-1', 'product-1', 'served');
-
-    expect(result).toEqual({
-      moved: false,
-      reason: 'requires_ready_before_served',
-      messageKey: 'restaurantPos.preparationBoard.notReadyWarning',
-    });
-    expect(store.ordersByTable()['table-1'].lines[0].productSnapshot.preparationPolicy).toEqual({ route: 'kitchen', requiresReadyBeforeServe: true });
-    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('pending');
-  });
-
-  it('allows direct drink products to be served directly', () => {
-    store.selectTable('table-1');
-    store.addProductToSelectedTable('product-3');
-
-    const result = store.movePreparationLine('table-1', 'product-3', 'served');
+    const result = store.movePreparationLine('table-1', 'product-1', 'pending');
 
     expect(result).toEqual({ moved: true });
-    expect(store.ordersByTable()['table-1'].lines[0].productSnapshot.preparationPolicy).toEqual({ route: 'bar', requiresReadyBeforeServe: false });
-    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('served');
-  });
-
-  it('requires combo products with kitchen slot selections to be ready before served', () => {
-    store.selectTable('table-1');
-    store.addConfiguredComboToSelectedTable('product-16', [
-      { slotId: 'combo-burger', selectedProductIds: ['product-7'] },
-      { slotId: 'combo-side', selectedProductIds: ['product-9'] },
-      { slotId: 'combo-drink', selectedProductIds: ['product-10'] },
-    ]);
-
-    const result = store.movePreparationLine('table-1', 'product-16', 'served');
-
-    expect(result.moved).toBe(false);
-    expect(result.reason).toBe('requires_ready_before_served');
-    expect(store.ordersByTable()['table-1'].lines[0].productSnapshot.preparationPolicy).toEqual({ route: 'kitchen', requiresReadyBeforeServe: true });
-    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('pending');
-  });
-
-  it('requires platter products to be ready before served', () => {
-    store.selectTable('table-1');
-    store.addProductToSelectedTable('product-19');
-
-    const result = store.movePreparationLine('table-1', 'product-19', 'served');
-
-    expect(result.moved).toBe(false);
-    expect(result.reason).toBe('requires_ready_before_served');
-    expect(store.ordersByTable()['table-1'].lines[0]).toEqual(
-      expect.objectContaining({
-        status: 'pending',
-        productSnapshot: expect.objectContaining({ preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true } }),
-        platterComponents: expect.arrayContaining([expect.objectContaining({ name: 'Ensalada' })]),
-      }),
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('sent_to_kitchen');
+    expect(store.preparationBoardColumns().find((c) => c.id === 'pending')?.cards).toEqual(
+      expect.arrayContaining([expect.objectContaining({ line: expect.objectContaining({ productId: 'product-1' }) })]),
     );
   });
+
+  it('exposes served lines in servedPreparationCards', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.sendSelectedOrderToKitchen();
+    store.movePreparationLine('table-1', 'product-1', 'ready');
+    store.markSelectedOrderLineServed('product-1');
+
+    expect(store.servedPreparationCards()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ line: expect.objectContaining({ productId: 'product-1', status: 'served' }) })]),
+    );
+  });
+
+  it('cancels a served preparation line and removes it from served cards', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.sendSelectedOrderToKitchen();
+    store.movePreparationLine('table-1', 'product-1', 'ready');
+    store.markSelectedOrderLineServed('product-1');
+
+    store.cancelPreparationLine('table-1', 'product-1');
+
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('cancelled');
+    expect(store.servedPreparationCards()).toEqual([]);
+  });
+
 
   it('removes an order line and keeps order totals in sync', () => {
     store.selectTable('table-1');

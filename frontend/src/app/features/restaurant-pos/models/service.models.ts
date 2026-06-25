@@ -49,7 +49,7 @@ export interface KitchenBoardColumn {
   tickets: KitchenOrderTicket[];
 }
 
-export type PreparationBoardColumnId = 'in_kitchen' | 'ready' | 'served';
+export type PreparationBoardColumnId = 'pending' | 'preparing' | 'ready';
 export type PreparationFlow = 'direct' | 'kitchen';
 
 export interface PreparationBoardCard {
@@ -68,7 +68,7 @@ export interface PreparationBoardColumn {
 
 export interface PreparationMoveResult {
   moved: boolean;
-  reason?: 'requires_ready_before_served' | 'missing_line' | 'unsupported_target';
+  reason?: 'missing_line' | 'unsupported_target';
   messageKey?: string;
 }
 

@@ -55,6 +55,9 @@ class ServicePointOrderLineResponseDto {
 
   @ApiPropertyOptional({ example: 'Sin cebolla', nullable: true })
   kitchenNote!: string | null;
+
+  @ApiProperty({ example: '2026-06-21T12:20:00.000Z' })
+  updatedAt!: string;
 }
 
 export class ServicePointOrderResponseDto {

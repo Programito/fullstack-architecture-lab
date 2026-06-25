@@ -145,6 +145,7 @@ type DemoOrderLine = {
   status: ServiceOrderLineStatus;
   course: Exclude<ServicePhaseCourse, 'mixed' | 'none'>;
   kitchenNote: string | null;
+  updatedAt: string;
 };
 
 type DemoOrder = {
@@ -190,6 +191,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'preparing',
             course: 'mains',
             kitchenNote: 'Sin cebolla',
+            updatedAt: '2026-06-21T12:20:00.000Z',
           },
           {
             id: 'line-combo',
@@ -200,6 +202,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'pending',
             course: 'drinks',
             kitchenNote: null,
+            updatedAt: '2026-06-21T12:24:00.000Z',
           },
         ],
       },
@@ -223,6 +226,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'served',
             course: 'drinks',
             kitchenNote: null,
+            updatedAt: '2026-06-21T12:05:00.000Z',
           },
           {
             id: 'line-bar-coffee',
@@ -233,6 +237,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'served',
             course: 'drinks',
             kitchenNote: null,
+            updatedAt: '2026-06-21T12:08:00.000Z',
           },
         ],
       },
@@ -256,6 +261,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'served',
             course: 'starters',
             kitchenNote: null,
+            updatedAt: '2026-06-21T11:55:00.000Z',
           },
           {
             id: 'line-group-dessert',
@@ -266,6 +272,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'served',
             course: 'desserts',
             kitchenNote: null,
+            updatedAt: '2026-06-21T11:58:00.000Z',
           },
         ],
       },
@@ -289,6 +296,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
             status: 'served',
             course: 'mains',
             kitchenNote: null,
+            updatedAt: '2026-06-21T11:25:00.000Z',
           },
         ],
       },
@@ -478,6 +486,7 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
         status: line.status,
         course: line.course,
         kitchenNote: line.kitchenNote,
+        updatedAt: line.updatedAt,
       })),
     };
   }
@@ -543,10 +552,7 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
       updatedAt: now,
       lines: currentOrder.lines.map((line) =>
         line.status === 'pending'
-          ? {
-              ...line,
-              status: 'sent_to_kitchen',
-            }
+          ? { ...line, status: 'sent_to_kitchen' as const, updatedAt: now }
           : line,
       ),
     };
@@ -597,10 +603,7 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
       lines: currentOrder.lines.map((line) =>
         line.status === 'cancelled'
           ? line
-          : {
-              ...line,
-              status: 'served',
-            }
+          : { ...line, status: 'served' as const, updatedAt: now },
       ),
     };
 

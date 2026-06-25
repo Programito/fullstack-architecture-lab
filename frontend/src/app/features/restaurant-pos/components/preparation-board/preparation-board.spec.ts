@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import type { OrderCourse, OrderLineProductSnapshot, PreparationBoardColumn } from '../../models/restaurant-pos.models';
-import { PreparationBoard, type PreparationLineMove } from './preparation-board';
+import type { OrderCourse, OrderLineProductSnapshot, PreparationBoardCard, PreparationBoardColumn } from '../../models/restaurant-pos.models';
+import { PreparationBoard, type PreparationLineCancel, type PreparationLineMove } from './preparation-board';
 
 describe('PreparationBoard', () => {
   const productSnapshot = (
@@ -25,7 +25,7 @@ describe('PreparationBoard', () => {
 
   const columns: PreparationBoardColumn[] = [
     {
-      id: 'in_kitchen',
+      id: 'pending',
       cards: [
         {
           tableId: 'table-4',
@@ -50,14 +50,14 @@ describe('PreparationBoard', () => {
             subtotal: 23.8,
             configurationSignature: 'product-19::no-salt',
             course: 'main',
-            status: 'pending',
+            status: 'sent_to_kitchen',
             kitchenNote: 'sin sal',
           },
         },
       ],
     },
     {
-      id: 'ready',
+      id: 'preparing',
       cards: [
         {
           tableId: 'table-2',
@@ -92,63 +92,176 @@ describe('PreparationBoard', () => {
             subtotal: 15.5,
             configurationSignature: 'combo:product-16',
             course: 'main',
-            status: 'ready',
+            status: 'preparing',
           },
         },
       ],
     },
-    { id: 'served', cards: [] },
+    {
+      id: 'ready',
+      cards: [],
+    },
   ];
 
-  it('groups order line cards by preparation status', async () => {
+  const servedCard: PreparationBoardCard = {
+    tableId: 'table-3',
+    tableNumber: 3,
+    preparationFlow: 'kitchen',
+    requiresReadyBeforeServed: true,
+    line: {
+      id: 'line-served',
+      productSnapshot: productSnapshot('product-1', 'Hamburguesa craft', 'simple', 9.5, 'main'),
+      productId: 'product-1',
+      productName: 'Hamburguesa craft',
+      quantity: 1,
+      basePrice: 9.5,
+      selectedModifiers: [],
+      unitPrice: 9.5,
+      subtotal: 9.5,
+      configurationSignature: 'product-1',
+      course: 'main',
+      status: 'served',
+    },
+  };
+
+  it('shows the three preparation columns', async () => {
     const i18n = provideI18nTesting();
 
     await render(PreparationBoard, {
       imports: [...i18n.imports],
       providers: [...i18n.providers],
-      inputs: { columns, warning: null },
+      inputs: { columns, servedCards: [], warning: null },
     });
 
     expect(screen.getByRole('heading', { name: 'Preparación' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'En cocina' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Pendiente' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Preparándose' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Preparado' })).toBeTruthy();
-    expect(within(screen.getByText('En cocina').closest('section') as HTMLElement).getByText('Mesa 4')).toBeTruthy();
+  });
+
+  it('renders card content including notes, modifiers and combo slots', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [], warning: null },
+    });
+
+    expect(within(screen.getByText('Pendiente').closest('section') as HTMLElement).getByText('Mesa 4')).toBeTruthy();
     expect(screen.getByText('2x Plato combinado vegetal')).toBeTruthy();
+    expect(screen.getByText(/sin sal/)).toBeTruthy();
     expect(screen.getByText(/Incluye:/)).toBeTruthy();
     expect(screen.getByText(/huevo, patatas, ensalada/)).toBeTruthy();
-    expect(screen.getByText(/Nota:/)).toBeTruthy();
-    expect(screen.getByText(/sin sal/)).toBeTruthy();
     expect(screen.getByText(/Burger:/)).toBeTruthy();
     expect(screen.getByText(/Truffle Burger \+2,00/)).toBeTruthy();
   });
 
-  it('emits preparation moves from fallback actions', async () => {
+  it('renders remove modifiers as red pills', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [], warning: null },
+    });
+
+    const pill = screen.getByText('SIN Sal');
+    expect(pill.tagName.toLowerCase()).toBe('span');
+    expect(pill.className).toMatch(/text-red/);
+  });
+
+  it('shows action buttons per column', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [], warning: null },
+    });
+
+    expect(screen.getByRole('button', { name: 'Preparándose' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Preparado' })).toBeTruthy();
+  });
+
+  it('emits lineMoved when action buttons are clicked', async () => {
     const i18n = provideI18nTesting();
     const lineMoved = vi.fn<(move: PreparationLineMove) => void>();
 
     const { fixture } = await render(PreparationBoard, {
       imports: [...i18n.imports],
       providers: [...i18n.providers],
-      inputs: { columns, warning: null },
+      inputs: { columns, servedCards: [], warning: null },
     });
     fixture.componentInstance.lineMoved.subscribe(lineMoved);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Marcar preparado' })[0]);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Marcar servido' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Preparándose' }));
+    expect(lineMoved).toHaveBeenCalledWith({ tableId: 'table-4', lineId: 'line-platter', targetColumnId: 'preparing' });
 
-    expect(lineMoved).toHaveBeenCalledWith({ tableId: 'table-4', lineId: 'line-platter', targetColumnId: 'ready' });
-    expect(lineMoved).toHaveBeenCalledWith({ tableId: 'table-4', lineId: 'line-platter', targetColumnId: 'served' });
+    fireEvent.click(screen.getByRole('button', { name: 'Preparado' }));
+    expect(lineMoved).toHaveBeenCalledWith({ tableId: 'table-2', lineId: 'line-combo', targetColumnId: 'ready' });
   });
 
-  it('shows validation warnings', async () => {
+  it('shows the served count button when there are served cards', async () => {
     const i18n = provideI18nTesting();
 
     await render(PreparationBoard, {
       imports: [...i18n.imports],
       providers: [...i18n.providers],
-      inputs: { columns, warning: 'Este producto todavía no está marcado como preparado.' },
+      inputs: { columns, servedCards: [servedCard], warning: null },
     });
 
-    expect(screen.getByText('Este producto todavía no está marcado como preparado.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /servido/i })).toBeTruthy();
+    expect(screen.getByText(/1 servido/)).toBeTruthy();
+  });
+
+  it('opens the served modal when the badge is clicked', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [servedCard], warning: null },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /servido/i }));
+
+    expect(screen.getByRole('heading', { name: 'Líneas servidas' })).toBeTruthy();
+    expect(screen.getByText(/Hamburguesa craft/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancelar línea' })).toBeTruthy();
+  });
+
+  it('shows inline confirmation on cancel and emits lineCancelled on confirm', async () => {
+    const i18n = provideI18nTesting();
+    const lineCancelled = vi.fn<(cancel: PreparationLineCancel) => void>();
+
+    const { fixture } = await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [servedCard], warning: null },
+    });
+    fixture.componentInstance.lineCancelled.subscribe(lineCancelled);
+
+    fireEvent.click(screen.getByRole('button', { name: /servido/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar línea' }));
+
+    expect(screen.getByText(/¿Cancelar esta línea\?/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sí, cancelar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Volver' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, cancelar' }));
+    expect(lineCancelled).toHaveBeenCalledWith({ tableId: 'table-3', lineId: 'line-served' });
+  });
+
+  it('shows a validation warning', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [], warning: 'No se ha podido mover la línea.' },
+    });
+
+    expect(screen.getByText('No se ha podido mover la línea.')).toBeTruthy();
   });
 });
