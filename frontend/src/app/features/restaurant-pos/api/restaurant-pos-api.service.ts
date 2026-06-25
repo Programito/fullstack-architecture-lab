@@ -96,6 +96,22 @@ export class RestaurantPosApiService {
     return this.http.post<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines/${lineId}/cancel`, body);
   }
 
+  updateRestaurantOrderLineStatus(
+    restaurantId: string,
+    orderId: string,
+    lineId: string,
+    status: 'preparing' | 'ready' | 'served',
+  ): Observable<RestaurantOrderDto> {
+    return this.http.patch<RestaurantOrderDto>(
+      `${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines/${lineId}/status`,
+      { status },
+    );
+  }
+
+  freeRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/free`, {});
+  }
+
   registerRestaurantOrderPayment(restaurantId: string, orderId: string, amountCents: number, method: OrderPaymentMethodDto): Observable<RestaurantOrderDto> {
     return this.http.post<RestaurantOrderDto>(`${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/payments`, { amountCents, method });
   }

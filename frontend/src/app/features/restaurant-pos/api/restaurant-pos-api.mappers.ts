@@ -87,6 +87,7 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
   if (!serviceOrder.order) return null;
 
   return {
+    id: serviceOrder.order.id,
     tableId: serviceOrder.order.tableId,
     total: serviceOrder.order.totalCents / 100,
     status: serviceOrder.order.status,

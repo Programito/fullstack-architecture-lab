@@ -348,16 +348,6 @@ export class RestaurantPosServicePage {
     this.addProduct(productId);
   }
 
-  protected increaseConfiguredLine(lineId: string): void {
-    const line = this.store.selectedOrder()?.lines.find((currentLine) => currentLine.id === lineId);
-    this.store.increaseSelectedOrderLine(lineId);
-    this.lastAddedProductId.set(line?.productId ?? null);
-  }
-
-  protected decreaseConfiguredLine(lineId: string): void {
-    this.store.decreaseSelectedOrderLine(lineId);
-  }
-
   protected closeProductCustomizer(): void {
     this.productCustomizerOpen.set(false);
     this.customizingProductId.set(null);
@@ -417,11 +407,45 @@ export class RestaurantPosServicePage {
   }
 
   protected increaseProductQuantity(productId: string): void {
+    const ctx = this.resolveApiLine(productId);
     this.store.increaseSelectedOrderLine(productId);
+    if (ctx) {
+      this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 }).subscribe();
+    }
   }
 
   protected decreaseProductQuantity(productId: string): void {
+    const ctx = this.resolveApiLine(productId);
     this.store.decreaseSelectedOrderLine(productId);
+    if (ctx) {
+      if (ctx.line.quantity <= 1) {
+        this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe();
+      } else {
+        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 }).subscribe();
+      }
+    }
+  }
+
+  protected increaseConfiguredLine(lineId: string): void {
+    const ctx = this.resolveApiLine(lineId);
+    const line = this.store.selectedOrder()?.lines.find((l) => l.id === lineId);
+    this.store.increaseSelectedOrderLine(lineId);
+    this.lastAddedProductId.set(line?.productId ?? null);
+    if (ctx) {
+      this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 }).subscribe();
+    }
+  }
+
+  protected decreaseConfiguredLine(lineId: string): void {
+    const ctx = this.resolveApiLine(lineId);
+    this.store.decreaseSelectedOrderLine(lineId);
+    if (ctx) {
+      if (ctx.line.quantity <= 1) {
+        this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe();
+      } else {
+        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 }).subscribe();
+      }
+    }
   }
 
   protected markProductReady(productId: string): void {
@@ -433,11 +457,19 @@ export class RestaurantPosServicePage {
   }
 
   protected removeProduct(productId: string): void {
+    const ctx = this.resolveApiLine(productId);
     this.store.removeSelectedOrderLine(productId);
+    if (ctx) {
+      this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe();
+    }
   }
 
   protected updateProductNote(change: { lineId: string; note: string }): void {
+    const ctx = this.resolveApiLine(change.lineId);
     this.store.updateSelectedOrderLineNote(change.lineId, change.note);
+    if (ctx) {
+      this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { kitchenNote: change.note }).subscribe();
+    }
   }
 
   protected chargeTable(): void {
@@ -482,7 +514,18 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.store.freeSelectedTable();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+
+    if (!restaurant || !tableId) {
+      this.store.freeSelectedTable();
+      return;
+    }
+
+    this.api.freeRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
+      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      this.store.freeSelectedTable();
+    });
   }
 
   private chargeSelectedServicePoint(paymentMethod: PaymentMethod): void {
@@ -645,6 +688,15 @@ export class RestaurantPosServicePage {
     } catch {
       return DEFAULT_FAVORITE_PRODUCT_IDS;
     }
+  }
+
+  private resolveApiLine(lineIdOrProductId: string): { line: OrderLine; orderId: string; restaurantId: string } | null {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const order = this.store.selectedOrder();
+    if (!restaurant || !order?.id) return null;
+    const line = order.lines.find((l) => l.id === lineIdOrProductId || l.productId === lineIdOrProductId) ?? null;
+    if (!line || line.id.startsWith('line:')) return null;
+    return { line, orderId: order.id, restaurantId: restaurant.id };
   }
 
   private mapServicePointDetail(servicePoint: ServicePointDetailDto): { table: RestaurantTable; floorElement?: FloorElement | null } {

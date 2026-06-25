@@ -6,6 +6,7 @@ import type {
   RegisterOrderPaymentCommand,
   RestaurantOrderView,
   UpdateOrderLineCommand,
+  UpdateOrderLineStatusCommand,
 } from '../../domain/restaurant-order.models';
 
 export const RESTAURANT_ORDER_REPOSITORY = Symbol('RESTAURANT_ORDER_REPOSITORY');
@@ -19,6 +20,7 @@ export interface RestaurantOrderRepository {
   updatePendingLine(command: UpdateOrderLineCommand): Promise<RestaurantOrderView>;
   deletePendingLine(command: DeleteOrderLineCommand): Promise<RestaurantOrderView>;
   cancelLine(command: CancelOrderLineCommand): Promise<RestaurantOrderView>;
+  updateLineStatus(command: UpdateOrderLineStatusCommand): Promise<RestaurantOrderView>;
   sendPendingLinesToKitchen(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null>;
   markActiveLinesServed(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null>;
   registerPayment(command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView>;

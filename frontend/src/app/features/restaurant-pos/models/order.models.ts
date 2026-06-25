@@ -75,6 +75,7 @@ export type OrderStatus = 'open' | 'sent_to_kitchen' | 'served' | 'payment_pendi
 export type OrderLineStatus = 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
 
 export interface TableOrder {
+  id?: string;
   tableId: string;
   lines: OrderLine[];
   total: number;

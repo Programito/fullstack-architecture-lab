@@ -41,6 +41,7 @@ function makeRepository(): RestaurantOrderRepository {
     updatePendingLine: vi.fn(),
     deletePendingLine: vi.fn(),
     cancelLine: vi.fn(),
+    updateLineStatus: vi.fn(),
     sendPendingLinesToKitchen: vi.fn(),
     markActiveLinesServed: vi.fn(),
     registerPayment: vi.fn(),

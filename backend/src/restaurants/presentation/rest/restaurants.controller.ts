@@ -21,6 +21,8 @@ import { AddRestaurantOrderLineUseCase } from '../../application/use-cases/add-r
 import { UpdateRestaurantOrderLineUseCase } from '../../application/use-cases/update-restaurant-order-line.use-case';
 import { DeleteRestaurantOrderLineUseCase } from '../../application/use-cases/delete-restaurant-order-line.use-case';
 import { CancelRestaurantOrderLineUseCase } from '../../application/use-cases/cancel-restaurant-order-line.use-case';
+import { UpdateRestaurantOrderLineStatusUseCase } from '../../application/use-cases/update-restaurant-order-line-status.use-case';
+import { FreeRestaurantServicePointUseCase } from '../../application/use-cases/free-restaurant-service-point.use-case';
 import { RegisterRestaurantOrderPaymentUseCase } from '../../application/use-cases/register-restaurant-order-payment.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
@@ -41,6 +43,7 @@ import { OpenRestaurantOrderDto } from './dto/open-restaurant-order.dto';
 import { AddRestaurantOrderLineDto } from './dto/add-restaurant-order-line.dto';
 import { UpdateRestaurantOrderLineDto } from './dto/update-restaurant-order-line.dto';
 import { CancelRestaurantOrderLineDto } from './dto/cancel-restaurant-order-line.dto';
+import { UpdateRestaurantOrderLineStatusDto } from './dto/update-restaurant-order-line-status.dto';
 import { RegisterRestaurantOrderPaymentDto } from './dto/register-restaurant-order-payment.dto';
 import { RestaurantOrderResponseDto } from './dto/restaurant-order-response.dto';
 
@@ -55,6 +58,8 @@ export class RestaurantsController {
     private readonly updateRestaurantOrderLine: UpdateRestaurantOrderLineUseCase,
     private readonly deleteRestaurantOrderLine: DeleteRestaurantOrderLineUseCase,
     private readonly cancelRestaurantOrderLine: CancelRestaurantOrderLineUseCase,
+    private readonly updateRestaurantOrderLineStatus: UpdateRestaurantOrderLineStatusUseCase,
+    private readonly freeRestaurantServicePoint: FreeRestaurantServicePointUseCase,
     private readonly registerRestaurantOrderPayment: RegisterRestaurantOrderPaymentUseCase,
     private readonly getRestaurantFloors: GetRestaurantFloorsUseCase,
     private readonly getRestaurantServiceFloor: GetRestaurantServiceFloorUseCase,
@@ -242,6 +247,26 @@ export class RestaurantsController {
     );
   }
 
+  @Patch(':id/orders/:orderId/lines/:lineId/status')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: RestaurantOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Order or line not found.' })
+  @ApiBadRequestResponse({ description: 'Invalid status transition.' })
+  async updateOrderLineStatus(
+    @Param('id') restaurantId: string,
+    @Param('orderId') orderId: string,
+    @Param('lineId') lineId: string,
+    @Body() body: UpdateRestaurantOrderLineStatusDto,
+  ): Promise<RestaurantOrderResponseDto> {
+    return RestaurantOrderResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.updateRestaurantOrderLineStatus.execute({ restaurantId, orderId, lineId, status: body.status }),
+      ),
+    );
+  }
+
   @Post(':id/orders/:orderId/payments')
   @Version('1')
   @UseGuards(AuthGuard)
@@ -301,6 +326,18 @@ export class RestaurantsController {
   async chargeServicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
     return ServicePointDetailResponseDto.fromDomain(
       unwrapResultOrThrow(await this.chargeRestaurantServicePoint.execute(id, tableId)),
+    );
+  }
+
+  @Post(':id/service-points/:tableId/free')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
+  async freeServicePoint(@Param('id') restaurantId: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
+    return ServicePointDetailResponseDto.fromDomain(
+      unwrapResultOrThrow(await this.freeRestaurantServicePoint.execute(restaurantId, tableId)),
     );
   }
 

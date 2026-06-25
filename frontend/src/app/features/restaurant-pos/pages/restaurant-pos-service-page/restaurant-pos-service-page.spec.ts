@@ -10,7 +10,7 @@ import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 describe('RestaurantPosServicePage', () => {
   const createRestaurantPosApiMock = (): Pick<
     RestaurantPosApiService,
-    'listRestaurants' | 'getRestaurantServiceFloor' | 'getRestaurantServicePoint' | 'getRestaurantServicePointOrder' | 'occupyRestaurantServicePoint' | 'sendRestaurantServicePointToKitchen' | 'markRestaurantServicePointServed' | 'chargeRestaurantServicePoint'
+    'listRestaurants' | 'getRestaurantServiceFloor' | 'getRestaurantServicePoint' | 'getRestaurantServicePointOrder' | 'occupyRestaurantServicePoint' | 'sendRestaurantServicePointToKitchen' | 'markRestaurantServicePointServed' | 'chargeRestaurantServicePoint' | 'freeRestaurantServicePoint'
   > => {
     const tableStatuses = new Map<string, 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'paid'>([
       ['table-1', 'free'],
@@ -359,6 +359,46 @@ describe('RestaurantPosServicePage', () => {
           status: 'paid' as const,
           occupiedAt: '2026-06-22T10:15:00.000Z',
           serviceStartedAt: '2026-06-22T10:15:00.000Z',
+        },
+        floorElement: element
+          ? {
+              id: element.id,
+              label: element.label,
+              type: element.type,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              shape: element.shape ?? null,
+            }
+          : null,
+        serviceInfo: {
+          guestCount: table.capacity,
+          lineCount: 0,
+          totalCents: 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: 'none' as const,
+            status: 'no_order' as const,
+          },
+          durationMinutes: 0,
+        },
+      });
+    }),
+    freeRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
+      tableStatuses.set(tableId, 'free');
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
+      const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
+
+      return of({
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: 'free' as const,
+          occupiedAt: null,
+          serviceStartedAt: null,
         },
         floorElement: element
           ? {
