@@ -203,6 +203,8 @@ persistentes siguen el contrato de `/api/v1/restaurants/:id/orders`:
 | `deleteRestaurantOrderLine` | DELETE | `/restaurants/:id/orders/:orderId/lines/:lineId` |
 | `cancelRestaurantOrderLine` | POST | `/restaurants/:id/orders/:orderId/lines/:lineId/cancel` |
 | `registerRestaurantOrderPayment` | POST | `/restaurants/:id/orders/:orderId/payments` |
+| `updateRestaurantOrderLineStatus` | PATCH | `/restaurants/:id/orders/:orderId/lines/:lineId/status` |
+| `freeRestaurantServicePoint` | POST | `/restaurants/:id/service-points/:tableId/free` |
 
 Todos devuelven `Observable<RestaurantOrderDto>` (o `Observable<void>` para delete). El tipo
 `RestaurantOrderDto` incluye el pedido con sus totales, las líneas con estado de ciclo de vida y
@@ -238,6 +240,65 @@ flowchart LR
   activo y de reemplazarlo con la respuesta de cada mutación.
 - No duplicar los tipos `OrderLineStatusDto` / `OrderStatusDto` en modelos de dominio frontend;
   importar desde `restaurant-pos-api.models.ts`.
+
+## Persistencia de escritura en las páginas POS
+
+### Identificador de pedido en el store
+
+`TableOrder` incluye un campo opcional `id?: string` que almacena el ID de pedido del backend.
+`mapServicePointOrder` lo populea desde `serviceOrder.order.id` al hidratar el store. Esto permite
+que las páginas consulten el orderId sin llamadas adicionales al backend:
+
+```ts
+const orderId = this.store.ordersByTable()[tableId]?.id;
+```
+
+### Líneas API vs. líneas locales
+
+Las líneas añadidas manualmente antes de que exista un pedido persistente usan IDs con prefijo
+`line:` (generados en el store). Las líneas provenientes del backend tienen UUIDs sin prefijo.
+
+`RestaurantPosServicePage` usa el helper privado `resolveApiLine` para distinguirlas:
+
+```ts
+private resolveApiLine(lineIdOrProductId: string): { line; orderId; restaurantId } | null {
+  // devuelve null si no hay restaurante activo, el pedido no tiene ID backend,
+  // la línea no existe, o el ID de línea empieza por 'line:'
+}
+```
+
+Solo se llama al backend para líneas con ID de backend real. Las operaciones sobre líneas locales
+solo mutan el store.
+
+### Board de cocina
+
+`RestaurantPosKitchenPage.movePreparationLine` llama a `updateRestaurantOrderLineStatus` tras cada
+movimiento exitoso en el board. El `statusMap` convierte el `targetColumnId` a estado de backend:
+
+```ts
+{ in_kitchen: 'preparing', ready: 'ready', served: 'served' }
+```
+
+Si la llamada al backend falla, la mutación local en el store ya ocurrió; el estado visual puede
+quedar adelantado respecto al backend hasta el siguiente polling.
+
+### Liberación de mesa
+
+`RestaurantPosServicePage.freeTable` llama a `freeRestaurantServicePoint` antes de limpiar el
+estado local. Primero hidrata el store con la respuesta del backend y luego ejecuta
+`store.freeSelectedTable()` para garantizar que el estado local siempre refleja lo confirmado por
+el servidor.
+
+```mermaid
+sequenceDiagram
+  participant UI as ServicePage
+  participant API as RestaurantPosApiService
+  participant Store as RestaurantPosStore
+  UI->>API: freeRestaurantServicePoint(restaurantId, tableId)
+  API-->>UI: ServicePointDetailDto (status=free)
+  UI->>Store: hydrateServicePoint(mappedDetail)
+  UI->>Store: freeSelectedTable()
+```
 
 ## Documentación
 

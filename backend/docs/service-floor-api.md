@@ -53,8 +53,10 @@ Implementado (Tasks 1-8, 10-11):
 - `DELETE /api/v1/restaurants/:id/orders/:orderId/lines/:lineId` — eliminar linea pendiente
 - `POST /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/cancel` — cancelar linea enviada
 - `POST /api/v1/restaurants/:id/orders/:orderId/payments` — registrar pago parcial o total
+- `PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/status` — avanzar estado de linea desde el board de cocina
+- `POST /api/v1/restaurants/:id/service-points/:tableId/free` — liberar mesa y borrar el pedido activo
 
-Angular (Task 10): `RestaurantPosApiService` expone los 7 metodos de pedido persistente:
+Angular: `RestaurantPosApiService` expone los 9 metodos de escritura persistente:
 
 - `openRestaurantOrder(restaurantId, tableId, guestCount)` — POST `.../service-points/:tableId/orders`
 - `getRestaurantOrder(restaurantId, orderId)` — GET `.../orders/:orderId`
@@ -63,8 +65,10 @@ Angular (Task 10): `RestaurantPosApiService` expone los 7 metodos de pedido pers
 - `deleteRestaurantOrderLine(restaurantId, orderId, lineId)` — DELETE `.../orders/:orderId/lines/:lineId`
 - `cancelRestaurantOrderLine(restaurantId, orderId, lineId, reason)` — POST `.../orders/:orderId/lines/:lineId/cancel`
 - `registerRestaurantOrderPayment(restaurantId, orderId, amountCents, method)` — POST `.../orders/:orderId/payments`
+- `updateRestaurantOrderLineStatus(restaurantId, orderId, lineId, status)` — PATCH `.../orders/:orderId/lines/:lineId/status`
+- `freeRestaurantServicePoint(restaurantId, tableId)` — POST `.../service-points/:tableId/free`
 
-Pendiente (Task 9):
+Pendiente:
 - Tests E2E con Testcontainers (requiere Docker)
 
 ## Domain Model
@@ -767,17 +771,111 @@ Devuelve el pedido completo. Si el pago cubre el saldo pendiente, el pedido pasa
 
 ---
 
+### PATCH /api/v1/restaurants/:id/orders/:orderId/lines/:lineId/status
+
+Avanza el estado de ciclo de vida de una linea desde el board de cocina. Valida que la transicion
+sea valida segun la maquina de estados; rechaza transiciones no permitidas con `409`.
+
+**Transiciones permitidas**
+
+| status solicitado | estado actual requerido |
+|---|---|
+| `preparing` | `pending` |
+| `ready` | `preparing` |
+| `served` | `ready` |
+
+**Path params**
+
+- `id`: identificador del restaurante
+- `orderId`: identificador del pedido
+- `lineId`: identificador de la linea
+
+**Request body**
+
+```json
+{ "status": "preparing" }
+```
+
+`status` acepta: `preparing`, `ready`, `served`.
+
+**Response 200**
+
+Devuelve el pedido completo actualizado.
+
+**Errors**
+
+- `404` pedido o linea no encontrados
+- `409` la transicion no esta permitida desde el estado actual de la linea
+
+---
+
+### POST /api/v1/restaurants/:id/service-points/:tableId/free
+
+Libera una mesa: borra el pedido activo y pone la mesa en estado `free`.
+
+**Path params**
+
+- `id`: identificador del restaurante
+- `tableId`: identificador de la mesa
+
+**Response 201**
+
+Devuelve el `ServicePointDetailDto` con `table.status: "free"` y `serviceInfo` en estado inicial.
+
+```json
+{
+  "table": {
+    "id": "table-2",
+    "tableNumber": 2,
+    "name": "Mesa 2",
+    "capacity": 4,
+    "status": "free",
+    "occupiedAt": null,
+    "serviceStartedAt": null
+  },
+  "floorElement": {
+    "id": "floor-element-2",
+    "label": "M2",
+    "type": "table",
+    "x": 5,
+    "y": 1,
+    "width": 2,
+    "height": 2,
+    "shape": "rectangle"
+  },
+  "serviceInfo": {
+    "guestCount": 4,
+    "lineCount": 0,
+    "totalCents": 0,
+    "currency": "EUR",
+    "servicePhase": {
+      "course": "none",
+      "status": "no_order"
+    },
+    "durationMinutes": 0
+  }
+}
+```
+
+**Errors**
+
+- `404` restaurante no encontrado
+- `404` mesa no encontrada en el restaurante
+
+---
+
 ## Estado de lineas y pedido
 
 ```mermaid
 stateDiagram-v2
   [*] --> pending
-  pending --> preparing : send to kitchen
+  pending --> sent_to_kitchen : POST send-to-kitchen
   pending --> [*] : DELETE
-  preparing --> ready
-  preparing --> cancelled : cancel with reason
-  ready --> served
-  ready --> cancelled : cancel with reason
+  sent_to_kitchen --> preparing : PATCH status=preparing
+  preparing --> ready : PATCH status=ready
+  ready --> served : PATCH status=served
+  preparing --> cancelled : POST cancel
+  ready --> cancelled : POST cancel
 ```
 
 ```mermaid
@@ -902,13 +1000,16 @@ flowchart LR
   D --> E["POST lines\nañade lineas"]
   E --> F["PATCH/DELETE lines\nedita pendientes"]
   F --> G["POST send-to-kitchen"]
-  G --> H["POST cancel line\ncancela enviadas"]
-  G --> I["POST mark-served"]
-  I --> J["POST charge"]
-  J --> K["Mesa paid"]
+  G --> H["PATCH lines/:id/status\ncocina: preparing→ready→served"]
+  G --> I["POST cancel line\ncancela enviadas"]
+  G --> J["POST mark-served"]
+  J --> K["POST charge"]
+  K --> L["Mesa paid"]
+  L --> M["POST free\nlibera mesa"]
+  M --> A
 ```
 
-Lo que ya esta operativo hoy (Tasks 1-8):
+Lo que ya esta operativo:
 
 - lectura y gestion del plano de servicio
 - catalogo persistente con IDs reales para escritura
@@ -920,12 +1021,12 @@ Lo que ya esta operativo hoy (Tasks 1-8):
 - bloqueo de mutaciones tras pago completado
 - send-to-kitchen y mark-served usan el repositorio persistente cuando hay pedido activo; fallback a demo en ausencia de pedido
 - registro de pagos parciales y totales; orden pasa a `pending_payment` o `paid` segun saldo
+- avance de estado de linea desde board de cocina (`preparing → ready → served`)
+- liberacion de mesa via REST con hidratacion del store
 
-Lo que sigue pendiente (Tasks 9-11):
+Pendiente:
 
 - cobertura E2E backend con Testcontainers (requiere Docker)
-- integracion Angular con pedidos persistentes
-- documentacion final y quality check
 
 ## Error Model
 
