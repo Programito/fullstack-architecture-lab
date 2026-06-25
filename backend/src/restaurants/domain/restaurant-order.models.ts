@@ -38,7 +38,7 @@ export type CancelOrderLineCommand = DeleteOrderLineCommand & {
   reason: string;
 };
 
-export type KitchenOrderLineStatus = 'preparing' | 'ready' | 'served';
+export type KitchenOrderLineStatus = 'sent_to_kitchen' | 'preparing' | 'ready' | 'served';
 
 export type UpdateOrderLineStatusCommand = {
   restaurantId: string;

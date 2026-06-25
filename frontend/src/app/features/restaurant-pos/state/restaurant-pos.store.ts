@@ -699,7 +699,16 @@ export class RestaurantPosStore {
     restaurantTables: RestaurantTable[];
   }): void {
     this.hydrateLayout(input);
-    this._ordersByTable.set(this.createOrdersByTable(input.restaurantTables));
+
+    const currentOrders = untracked(() => this._ordersByTable());
+    const nextOrders = input.restaurantTables.reduce<OrdersByTable>(
+      (acc, table) => ({
+        ...acc,
+        [table.id]: currentOrders[table.id] ?? this.createEmptyOrder(table.id),
+      }),
+      {},
+    );
+    this._ordersByTable.set(nextOrders);
 
     const selectedTableId = this._selectedTableId();
     if (selectedTableId && !input.restaurantTables.some((table) => table.id === selectedTableId)) {

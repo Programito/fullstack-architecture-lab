@@ -4,6 +4,7 @@ import type {
   RestaurantReservation,
   RestaurantSummary,
 } from '../../domain/restaurant-read.models';
+import type { RestaurantOrderView } from '../../domain/restaurant-order.models';
 import type { ServiceFloorView, ServicePointDetailView, ServicePointOrderView } from '../../domain/service-floor.models';
 
 export const RESTAURANT_READ_REPOSITORY = Symbol('RESTAURANT_READ_REPOSITORY');
@@ -45,6 +46,12 @@ export interface RestaurantReadRepository {
       capacity: number | null;
     },
   ): Promise<RestaurantFloors | null>;
+  updateServiceOrderLineStatus(
+    restaurantId: string,
+    orderId: string,
+    lineId: string,
+    status: 'sent_to_kitchen' | 'preparing' | 'ready' | 'served',
+  ): Promise<RestaurantOrderView | null>;
   createFloorElement(
     restaurantId: string,
     floorId: string,

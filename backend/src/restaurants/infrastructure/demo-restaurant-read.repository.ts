@@ -9,6 +9,7 @@ import type {
   RestaurantReservation,
   RestaurantSummary,
 } from '../domain/restaurant-read.models';
+import type { OrderLineStatus, RestaurantOrderView } from '../domain/restaurant-order.models';
 import { deriveServicePhase, getServiceDurationMinutes } from '../domain/service-phase';
 import type {
   ServiceFloorView,
@@ -875,6 +876,104 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
       currency: order.currency,
       servicePhase: deriveServicePhase(order.lines.map((line) => ({ status: line.status, course: line.course }))),
     };
+  }
+
+  async updateServiceOrderLineStatus(
+    restaurantId: string,
+    orderId: string,
+    lineId: string,
+    status: 'sent_to_kitchen' | 'preparing' | 'ready' | 'served',
+  ): Promise<RestaurantOrderView | null> {
+    const ordersMap = new Map(this.serviceOrders);
+    const orders = ordersMap.get(restaurantId);
+    if (!orders) return null;
+
+    const orderIndex = orders.findIndex((o) => o.id === orderId);
+    if (orderIndex === -1) return null;
+
+    const order = orders[orderIndex];
+    const lineIndex = order.lines.findIndex((l) => l.id === lineId);
+    if (lineIndex === -1) return null;
+
+    const now = new Date().toISOString();
+    const updatedLines = order.lines.map((line, idx) =>
+      idx === lineIndex ? { ...line, status, updatedAt: now } : line,
+    );
+    const updatedOrder = { ...order, lines: updatedLines, updatedAt: now };
+    const updatedOrders = orders.map((o, idx) => (idx === orderIndex ? updatedOrder : o));
+    ordersMap.set(restaurantId, updatedOrders);
+    this.serviceOrders = [...ordersMap.entries()];
+
+    return this.buildDemoOrderView(restaurantId, updatedOrder);
+  }
+
+  private buildDemoOrderView(restaurantId: string, order: DemoOrder): RestaurantOrderView {
+    return {
+      order: {
+        id: order.id,
+        restaurantId,
+        tableId: order.tableId,
+        status: order.status === 'payment_pending' ? 'pending_payment' : (order.status as 'open' | 'paid' | 'cancelled'),
+        currency: order.currency,
+        guestCount: 0,
+        subtotalCents: order.subtotalCents,
+        taxCents: order.taxCents,
+        discountTotalCents: 0,
+        totalCents: order.totalCents,
+        paidCents: 0,
+        balanceCents: order.totalCents,
+        openedAt: order.openedAt,
+        updatedAt: order.updatedAt,
+        closedAt: null,
+      },
+      lines: order.lines.map((line) => ({
+        id: line.id,
+        restaurantProductId: null,
+        productId: null,
+        productName: line.productName,
+        productType: 'simple',
+        course: this.mapDemoLineCourse(line.course),
+        preparationRoute: line.course === 'drinks' ? 'bar' : 'kitchen',
+        basePriceCents: line.unitPriceCents,
+        unitPriceCents: line.unitPriceCents,
+        quantity: line.quantity,
+        subtotalCents: line.subtotalCents,
+        taxRateName: null,
+        taxRatePercent: null,
+        taxCents: 0,
+        status: this.mapDemoLineStatus(line.status),
+        kitchenNote: line.kitchenNote,
+        cancellationReason: null,
+        cancelledAt: null,
+        configurationSignature: line.id,
+        modifiers: [],
+        comboSlots: [],
+        platterComponents: [],
+      })),
+      payments: [],
+    };
+  }
+
+  private mapDemoLineCourse(course: DemoOrderLine['course']): RestaurantOrderView['lines'][number]['course'] {
+    switch (course) {
+      case 'drinks': return 'drinks';
+      case 'starters': return 'starter';
+      case 'mains': return 'main';
+      case 'desserts': return 'dessert';
+      default: return 'other';
+    }
+  }
+
+  private mapDemoLineStatus(status: ServiceOrderLineStatus): OrderLineStatus {
+    switch (status) {
+      case 'pending': return 'pending';
+      case 'sent_to_kitchen': return 'pending';
+      case 'preparing': return 'preparing';
+      case 'ready': return 'ready';
+      case 'picked_up': return 'ready';
+      case 'served': return 'served';
+      case 'cancelled': return 'cancelled';
+    }
   }
 
   private isOccupiedStatus(status: ServiceTableStatus): boolean {

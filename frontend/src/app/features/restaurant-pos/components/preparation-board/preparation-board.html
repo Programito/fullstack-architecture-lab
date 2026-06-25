@@ -26,7 +26,7 @@
     </div>
   </div>
 
-  <div class="mt-4 grid gap-3 xl:grid-cols-3">
+  <div class="mt-4 grid gap-3 lg:grid-cols-3">
     @for (column of columns(); track trackColumn($index, column)) {
       <section
         class="min-h-72 rounded-md border p-3"
@@ -45,30 +45,29 @@
         <div class="mt-3 grid gap-2">
           @for (card of column.cards; track trackCard($index, card)) {
             <article
-              class="theme-order-line rounded-md border bg-white/80 p-3 shadow-sm transition-colors dark:bg-slate-950/55"
+              class="theme-order-line overflow-hidden rounded-md border bg-white/80 shadow-sm transition-colors dark:bg-slate-950/55"
               [ngClass]="{
                 'border-l-4 border-l-amber-400 dark:border-l-amber-500': slaClass(card) === 'sla-warn',
                 'border-l-4 border-l-red-500 dark:border-l-red-500': slaClass(card) === 'sla-crit'
               }"
               cdkDrag [cdkDragData]="card"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.tableLabel' | transloco: { number: card.tableNumber } }}</p>
-                  <h4 class="theme-title mt-0.5 truncate text-base font-bold leading-tight">{{ card.line.quantity }}x {{ card.line.productName }}</h4>
-                </div>
-                <div class="flex shrink-0 flex-col items-end gap-1">
-                  <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold">
-                    <app-icon name="drag_indicator" size="sm" />
-                    {{ lineStatusLabel(card.line.status) }}
-                  </span>
+              <!-- Drag handle -->
+              <div cdkDragHandle class="flex cursor-grab items-center justify-center border-b bg-slate-100 py-1 active:cursor-grabbing dark:border-white/10 dark:bg-white/4">
+                <app-icon name="drag_indicator" size="sm" class="text-slate-400 dark:text-slate-500" />
+              </div>
+
+              <div class="p-3">
+                <!-- Mesa + timer -->
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-sm font-bold">{{ 'restaurantPos.preparationBoard.tableLabel' | transloco: { number: card.tableNumber } }}</p>
                   @if (elapsedMinutes(card); as mins) {
                     <span
                       class="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold"
                       [ngClass]="{
                         'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300': slaClass(card) === 'sla-warn',
                         'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300': slaClass(card) === 'sla-crit',
-                        'theme-muted': slaClass(card) === ''
+                        'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400': slaClass(card) === ''
                       }"
                     >
                       <app-icon name="schedule" size="sm" />
@@ -76,56 +75,64 @@
                     </span>
                   }
                 </div>
+
+                <!-- Cantidad + nombre -->
+                <div class="mt-2 flex items-baseline gap-2">
+                  <span class="text-2xl font-black leading-none tabular-nums">{{ card.line.quantity }}×</span>
+                  <h4 class="theme-title text-base font-bold leading-tight">{{ card.line.productName }}</h4>
+                </div>
+
+                @if (card.line.kitchenNote) {
+                  <div class="mt-2 flex items-start gap-1.5 rounded-md border-l-4 border-amber-400 bg-amber-50 py-1.5 pl-2.5 pr-2 dark:border-amber-600 dark:bg-amber-950/30">
+                    <app-icon name="edit_note" size="sm" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <p class="text-xs font-semibold text-amber-900 dark:text-amber-100">{{ card.line.kitchenNote }}</p>
+                  </div>
+                }
+
+                @if (hasModifiers(card.line)) {
+                  <div class="mt-2 flex flex-wrap gap-1">
+                    @for (mod of card.line.selectedModifiers; track mod.optionId) {
+                      <span [ngClass]="modifierPillClass(mod.type)" class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold">
+                        @if (mod.type === 'remove') {
+                          {{ 'restaurantPos.service.withoutModifier' | transloco: { name: mod.name } }}
+                        } @else {
+                          {{ mod.name }}
+                        }
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (hasComboSlots(card.line)) {
+                  <div class="mt-2 space-y-0.5 rounded-md border px-2 py-1.5 text-xs">
+                    @for (slot of card.line.selectedComboSlots; track slot.slotId) {
+                      <p class="theme-muted">
+                        <span class="font-semibold">{{ slot.slotName }}:</span>
+                        {{ comboSlotLabel(slot) }}
+                      </p>
+                    }
+                  </div>
+                }
+
+                @if (hasPlatterComponents(card.line)) {
+                  <p class="theme-muted mt-2 rounded-md border px-2 py-1.5 text-xs">
+                    <span class="font-semibold">{{ 'restaurantPos.service.platterComponentsLabel' | transloco }}</span>
+                    {{ platterComponentsLabel(card.line) }}
+                  </p>
+                }
+
+                @if (stationLabel(card)) {
+                  <p class="theme-muted mt-2 text-xs font-semibold">{{ stationLabel(card) }}</p>
+                }
               </div>
 
-              @if (card.line.kitchenNote) {
-                <div class="mt-2 flex items-start gap-1.5 rounded-md border-l-4 border-amber-400 bg-amber-50 py-1.5 pl-2.5 pr-2 dark:border-amber-600 dark:bg-amber-950/30">
-                  <app-icon name="edit_note" size="sm" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                  <p class="text-xs font-semibold text-amber-900 dark:text-amber-100">{{ card.line.kitchenNote }}</p>
-                </div>
-              }
-
-              @if (hasModifiers(card.line)) {
-                <div class="mt-2 flex flex-wrap gap-1">
-                  @for (mod of card.line.selectedModifiers; track mod.optionId) {
-                    <span [ngClass]="modifierPillClass(mod.type)" class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold">
-                      @if (mod.type === 'remove') {
-                        {{ 'restaurantPos.service.withoutModifier' | transloco: { name: mod.name } }}
-                      } @else {
-                        {{ mod.name }}
-                      }
-                    </span>
-                  }
-                </div>
-              }
-
-              @if (hasComboSlots(card.line)) {
-                <div class="mt-2 space-y-0.5 rounded-md border px-2 py-1.5 text-xs">
-                  @for (slot of card.line.selectedComboSlots; track slot.slotId) {
-                    <p class="theme-muted">
-                      <span class="font-semibold">{{ slot.slotName }}:</span>
-                      {{ comboSlotLabel(slot) }}
-                    </p>
-                  }
-                </div>
-              }
-
-              @if (hasPlatterComponents(card.line)) {
-                <p class="theme-muted mt-2 rounded-md border px-2 py-1.5 text-xs">
-                  <span class="font-semibold">{{ 'restaurantPos.service.platterComponentsLabel' | transloco }}</span>
-                  {{ platterComponentsLabel(card.line) }}
-                </p>
-              }
-
-              @if (stationLabel(card)) {
-                <p class="theme-muted mt-2 text-xs font-semibold">{{ stationLabel(card) }}</p>
-              }
-
+              <!-- Botón de acción full-width -->
               @if (nextAction(column.id); as target) {
-                <div class="mt-3">
+                <div class="border-t px-3 pb-3 pt-2.5 dark:border-slate-700/60">
                   <button
                     type="button"
-                    class="rounded-md border px-2 py-1.5 text-xs font-semibold transition hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:hover:bg-slate-900"
+                    class="w-full rounded-md px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                    [ngClass]="nextActionClass(column.id)"
                     (click)="moveCard(card, target)"
                   >
                     {{ nextActionLabel(column.id) }}
@@ -134,7 +141,7 @@
               }
             </article>
           } @empty {
-            <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-center text-sm">{{ 'restaurantPos.preparationBoard.emptyColumn' | transloco }}</p>
+            <p class="rounded-md border border-dashed px-3 py-6 text-center text-sm opacity-50">{{ 'restaurantPos.preparationBoard.emptyColumn' | transloco }}</p>
           }
         </div>
       </section>

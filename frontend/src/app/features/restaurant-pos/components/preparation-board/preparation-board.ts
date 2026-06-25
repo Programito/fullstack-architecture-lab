@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { Component, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { timer } from 'rxjs';
@@ -22,7 +22,7 @@ export interface PreparationLineCancel {
 
 @Component({
   selector: 'app-preparation-board',
-  imports: [CdkDrag, CdkDropList, Dialog, Icon, NgClass, TranslocoPipe],
+  imports: [CdkDrag, CdkDragHandle, CdkDropList, Dialog, Icon, NgClass, TranslocoPipe],
   templateUrl: './preparation-board.html',
 })
 export class PreparationBoard {
@@ -72,6 +72,16 @@ export class PreparationBoard {
     if (columnId === 'pending') return 'preparing';
     if (columnId === 'preparing') return 'ready';
     return null;
+  }
+
+  protected nextActionClass(columnId: PreparationBoardColumnId): string {
+    if (columnId === 'pending') {
+      return 'bg-amber-500 text-white hover:bg-amber-600 focus-visible:ring-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700';
+    }
+    if (columnId === 'preparing') {
+      return 'bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-700 dark:hover:bg-emerald-800';
+    }
+    return '';
   }
 
   protected nextActionLabel(columnId: PreparationBoardColumnId): string {

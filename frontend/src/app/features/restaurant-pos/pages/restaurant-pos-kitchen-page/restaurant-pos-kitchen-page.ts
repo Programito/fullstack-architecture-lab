@@ -88,7 +88,8 @@ export class RestaurantPosKitchenPage {
     const orderId = this.store.ordersByTable()[move.tableId]?.id;
     if (!restaurant || !orderId) return;
 
-    const statusMap: Partial<Record<PreparationBoardColumnId, 'preparing' | 'ready'>> = {
+    const statusMap: Partial<Record<PreparationBoardColumnId, 'sent_to_kitchen' | 'preparing' | 'ready'>> = {
+      pending: 'sent_to_kitchen',
       preparing: 'preparing',
       ready: 'ready',
     };
