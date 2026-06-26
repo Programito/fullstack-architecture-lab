@@ -46,6 +46,8 @@ import { CancelRestaurantOrderLineDto } from './dto/cancel-restaurant-order-line
 import { UpdateRestaurantOrderLineStatusDto } from './dto/update-restaurant-order-line-status.dto';
 import { RegisterRestaurantOrderPaymentDto } from './dto/register-restaurant-order-payment.dto';
 import { RestaurantOrderResponseDto } from './dto/restaurant-order-response.dto';
+import { SetMenuItemAvailabilityDto } from './dto/set-menu-item-availability.dto';
+import { SetRestaurantMenuItemAvailabilityUseCase } from '../../application/use-cases/set-restaurant-menu-item-availability.use-case';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -53,6 +55,7 @@ export class RestaurantsController {
   constructor(
     private readonly listRestaurants: ListRestaurantsUseCase,
     private readonly getRestaurantMenu: GetRestaurantMenuUseCase,
+    private readonly setMenuItemAvailability: SetRestaurantMenuItemAvailabilityUseCase,
     private readonly openRestaurantOrder: OpenRestaurantOrderUseCase,
     private readonly addRestaurantOrderLine: AddRestaurantOrderLineUseCase,
     private readonly updateRestaurantOrderLine: UpdateRestaurantOrderLineUseCase,
@@ -90,6 +93,20 @@ export class RestaurantsController {
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
   async menu(@Param('id') id: string): Promise<RestaurantMenuResponseDto> {
     return RestaurantMenuResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantMenu.execute(id)));
+  }
+
+  @Patch(':id/products/:restaurantProductId/availability')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ description: 'Availability updated.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Product not found in this restaurant.' })
+  async setItemAvailability(
+    @Param('id') restaurantId: string,
+    @Param('restaurantProductId') restaurantProductId: string,
+    @Body() body: SetMenuItemAvailabilityDto,
+  ): Promise<void> {
+    unwrapResultOrThrow(await this.setMenuItemAvailability.execute(restaurantId, restaurantProductId, body.available));
   }
 
   @Get(':id/floors')

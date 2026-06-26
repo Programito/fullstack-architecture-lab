@@ -4,6 +4,7 @@ import { IdentityModule } from '../identity/identity.module';
 import { ChargeRestaurantServicePointUseCase } from './application/use-cases/charge-restaurant-service-point.use-case';
 import { GetRestaurantFloorsUseCase } from './application/use-cases/get-restaurant-floors.use-case';
 import { GetRestaurantMenuUseCase } from './application/use-cases/get-restaurant-menu.use-case';
+import { SetRestaurantMenuItemAvailabilityUseCase } from './application/use-cases/set-restaurant-menu-item-availability.use-case';
 import { GetRestaurantServiceFloorUseCase } from './application/use-cases/get-restaurant-service-floor.use-case';
 import { GetRestaurantServicePointOrderUseCase } from './application/use-cases/get-restaurant-service-point-order.use-case';
 import { GetRestaurantServicePointUseCase } from './application/use-cases/get-restaurant-service-point.use-case';
@@ -38,6 +39,7 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
   providers: [
     ListRestaurantsUseCase,
     GetRestaurantMenuUseCase,
+    SetRestaurantMenuItemAvailabilityUseCase,
     OpenRestaurantOrderUseCase,
     AddRestaurantOrderLineUseCase,
     UpdateRestaurantOrderLineUseCase,

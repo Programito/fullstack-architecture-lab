@@ -144,4 +144,8 @@ export class RestaurantPosApiService {
   ): Observable<RestaurantFloorsDto> {
     return this.http.put<RestaurantFloorsDto>(`${this.restaurantsUrl}/${restaurantId}/floors/${floorId}/elements/reorder`, request);
   }
+
+  setMenuItemAvailability(restaurantId: string, restaurantProductId: string, available: boolean): Observable<void> {
+    return this.http.patch<void>(`${this.restaurantsUrl}/${restaurantId}/products/${restaurantProductId}/availability`, { available });
+  }
 }

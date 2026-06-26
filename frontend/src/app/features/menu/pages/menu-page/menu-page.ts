@@ -1,12 +1,19 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { map } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
+import { Dialog } from '../../../../shared/ui/dialog/dialog';
+import { Icon } from '../../../../shared/ui/icon/icon';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
-import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import type { SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
-import type { ModifierGroup, Product } from '../../models/menu.models';
-import { MenuMockService } from '../../services/menu-mock.service';
+import { Switch } from '../../../../shared/ui/switch/switch';
+import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../../models/menu.models';
+import { MenuApiService, type MenuData } from '../../services/menu-api.service';
 import { MenuPricingService } from '../../services/menu-pricing.service';
 
 type AvailabilityFilter = 'all' | 'available' | 'sold-out';
@@ -16,13 +23,30 @@ type PreparationRoute = Product['preparationPolicy']['route'];
 
 @Component({
   selector: 'app-menu-page',
-  imports: [Badge, CurrencyPipe, SearchInput, Select, SegmentedControl, TranslocoPipe],
+  imports: [Badge, CurrencyPipe, Dialog, Icon, NgTemplateOutlet, SearchInput, SegmentedControl, Switch, TranslocoPipe],
   templateUrl: './menu-page.html',
 })
 export class MenuPage {
-  private readonly menu = inject(MenuMockService);
+  private readonly menuApi = inject(MenuApiService);
   private readonly pricing = inject(MenuPricingService);
   private readonly transloco = inject(TranslocoService);
+  private readonly bp = inject(BreakpointObserver);
+
+  private readonly menuResource = rxResource<MenuData, unknown>({
+    stream: () => this.menuApi.getMenu(),
+  });
+
+  protected readonly menuLoading = this.menuResource.isLoading;
+  protected readonly menuError = this.menuResource.error;
+  protected readonly categories = computed<MenuCategory[]>(() => this.menuResource.value()?.categories ?? []);
+  protected readonly modifierGroups = computed<ModifierGroup[]>(() => this.menuResource.value()?.modifierGroups ?? []);
+  protected readonly products = computed<Product[]>(() => this.menuResource.value()?.products ?? []);
+  protected readonly comboDefinitions = computed<ComboProductDefinition[]>(() => this.menuResource.value()?.comboProductDefinitions ?? []);
+
+  protected readonly isMobile = toSignal(
+    this.bp.observe('(max-width: 1023px)').pipe(map((r) => r.matches)),
+    { initialValue: false },
+  );
   protected readonly query = signal('');
   protected readonly categoryFilter = signal('all');
   protected readonly availabilityFilter = signal<AvailabilityFilter>('all');
@@ -30,11 +54,19 @@ export class MenuPage {
   protected readonly activeTab = signal<MenuPageTab>('products');
   protected readonly selectedProductId = signal<string | null>(null);
   protected readonly selectedOptionIds = signal<string[]>([]);
+  protected readonly mobileDetailOpen = signal(false);
+  protected readonly mobileDetailTitle = computed(() => this.selectedProduct()?.name ?? '');
+  protected readonly categorySelectorOpen = signal(false);
+  protected readonly categorySelectorQuery = signal('');
+  protected readonly currentCategoryLabel = computed(
+    () => this.categoryOptions().find((opt) => opt.value === this.categoryFilter())?.label ?? '',
+  );
+  protected readonly filteredCategoryOptions = computed(() => {
+    const q = this.normalize(this.categorySelectorQuery());
+    if (!q) return this.categoryOptions();
+    return this.categoryOptions().filter((opt) => this.normalize(opt.label).includes(q));
+  });
 
-  protected readonly categories = this.menu.categories;
-  protected readonly modifierGroups = this.menu.modifierGroups;
-  protected readonly products = this.menu.products;
-  protected readonly comboDefinitions = this.menu.comboProductDefinitions;
   protected readonly availableCount = computed(() => this.products().filter((product) => product.available).length);
   protected readonly customizableCount = computed(() => this.products().filter((product) => product.modifierGroupIds.length > 0).length);
   protected readonly menuTabOptions = computed<SegmentedControlOption[]>(() => [
@@ -87,11 +119,11 @@ export class MenuPage {
   });
   protected readonly selectedModifierGroups = computed(() => {
     const product = this.selectedProduct();
-    return product ? this.pricing.getModifierGroupsForProduct(product) : [];
+    return product ? this.pricing.getModifierGroupsForProduct(product, this.modifierGroups()) : [];
   });
   protected readonly selectedModifiers = computed(() => {
     const product = this.selectedProduct();
-    return product ? this.pricing.buildSelectedModifiers(product, this.selectedOptionIds()) : [];
+    return product ? this.pricing.buildSelectedModifiers(product, this.selectedOptionIds(), this.modifierGroups()) : [];
   });
   protected readonly previewPrice = computed(() => {
     const product = this.selectedProduct();
@@ -111,6 +143,33 @@ export class MenuPage {
   protected selectProduct(product: Product): void {
     this.selectedProductId.set(product.id);
     this.selectedOptionIds.set(this.defaultOptionIds(product));
+  }
+
+  protected handleProductClick(product: Product): void {
+    this.selectProduct(product);
+    if (this.isMobile()) this.mobileDetailOpen.set(true);
+  }
+
+  protected closeMobileDetail(): void {
+    this.mobileDetailOpen.set(false);
+  }
+
+  protected selectCategory(value: string): void {
+    this.setCategoryFilter(value);
+    this.categorySelectorOpen.set(false);
+    this.categorySelectorQuery.set('');
+  }
+
+  protected closeCategorySelector(): void {
+    this.categorySelectorOpen.set(false);
+    this.categorySelectorQuery.set('');
+  }
+
+  protected toggleAvailability(product: Product): void {
+    if (!product.restaurantProductId) return;
+    this.menuApi.toggleAvailability(product.restaurantProductId, !product.available).subscribe({
+      complete: () => this.menuResource.reload(),
+    });
   }
 
   protected setCategoryFilter(value: string): void {
@@ -206,7 +265,7 @@ export class MenuPage {
   }
 
   protected modifierGroupNames(product: Product): string {
-    return this.pricing.getModifierGroupsForProduct(product).map((group) => group.name).join(', ');
+    return this.pricing.getModifierGroupsForProduct(product, this.modifierGroups()).map((group) => group.name).join(', ');
   }
 
   protected isOptionSelected(optionId: string): boolean {
@@ -231,7 +290,7 @@ export class MenuPage {
 
   private defaultOptionIds(product: Product): string[] {
     return this.pricing
-      .getModifierGroupsForProduct(product)
+      .getModifierGroupsForProduct(product, this.modifierGroups())
       .flatMap((group) => group.options.filter((option) => option.selectedByDefault).map((option) => option.id));
   }
 
@@ -258,7 +317,7 @@ export class MenuPage {
       .trim()
       .toLocaleLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .replace(/[̀-ͯ]/g, '');
   }
 
   private translate(key: string): string {

@@ -1,15 +1,44 @@
+import { of } from 'rxjs';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
+import { MenuApiService, type MenuData } from '../../services/menu-api.service';
+import {
+  localizeComboProductDefinitions,
+  localizeMenuCategories,
+  localizeMenuProducts,
+  localizeModifierGroups,
+} from '../../services/menu-mock.service';
 import { MenuPage } from './menu-page';
+
+function buildMockMenuData(): MenuData {
+  return {
+    categories: localizeMenuCategories('es'),
+    products: localizeMenuProducts('es'),
+    modifierGroups: localizeModifierGroups('es'),
+    comboProductDefinitions: localizeComboProductDefinitions('es'),
+  };
+}
 
 describe('MenuPage', () => {
   const renderPage = async () => {
     const i18n = provideI18nTesting('es');
 
-    return render(MenuPage, {
+    const result = await render(MenuPage, {
       imports: [...i18n.imports],
-      providers: [...i18n.providers],
+      providers: [
+        ...i18n.providers,
+        {
+          provide: MenuApiService,
+          useValue: {
+            getMenu: () => of(buildMockMenuData()),
+            toggleAvailability: () => of(undefined),
+          },
+        },
+      ],
     });
+    await result.fixture.whenStable();
+    result.fixture.detectChanges();
+    return result;
   };
 
   it('renders localized catalog products, tabs and filters by localized search text', async () => {
@@ -33,7 +62,9 @@ describe('MenuPage', () => {
   it('filters by category, availability and customization state', async () => {
     const { fixture } = await renderPage();
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Categoría' }), { target: { value: 'drinks' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Categoría' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Bebidas' }));
     fixture.detectChanges();
 
     expect(screen.getAllByText('Limonada con gas').length).toBeGreaterThan(0);
@@ -55,7 +86,9 @@ describe('MenuPage', () => {
   it('lists menu products with a menu badge and keeps them out of the simple filter', async () => {
     const { fixture } = await renderPage();
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Categoría' }), { target: { value: 'menus' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Categoría' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Menús' }));
     fixture.detectChanges();
 
     expect(screen.getAllByText('Menu Classic Burger').length).toBeGreaterThan(0);
@@ -113,8 +146,7 @@ describe('MenuPage', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Disponibilidad' }));
     fixture.detectChanges();
-    expect(screen.getByRole('heading', { name: 'Productos disponibles' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Productos agotados' })).toBeTruthy();
+    expect(screen.getByText('Activa o desactiva productos para el servicio de hoy.')).toBeTruthy();
     expect(screen.getByText('Coulant de chocolate')).toBeTruthy();
   });
 

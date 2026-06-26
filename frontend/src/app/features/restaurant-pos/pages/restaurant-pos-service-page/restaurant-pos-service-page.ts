@@ -111,7 +111,7 @@ export class RestaurantPosServicePage {
   });
   protected readonly customizingModifierGroups = computed(() => {
     const product = this.customizingProduct();
-    return product ? this.menuPricing.getModifierGroupsForProduct(product) : [];
+    return product ? this.menuPricing.getModifierGroupsForProduct(product, this.menu.modifierGroups()) : [];
   });
   protected readonly customizingComboProduct = computed(() => {
     const productId = this.customizingComboProductId();

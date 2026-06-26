@@ -1,27 +1,18 @@
-import { inject, Injectable } from '@angular/core';
-import { MenuMockService, MOCK_MENU_PRODUCTS, MOCK_MODIFIER_GROUPS } from './menu-mock.service';
+import { Injectable } from '@angular/core';
 import type { ComboProductDefinition, ComboSlotSelection, ModifierGroup, Product, SelectedModifier } from '../models/menu.models';
 
 @Injectable({ providedIn: 'root' })
 export class MenuPricingService {
-  private readonly menu = inject(MenuMockService);
-
-  getProductModifierGroups(productId: string): ModifierGroup[] {
-    const product = this.menu.products().find((currentProduct) => currentProduct.id === productId) ?? MOCK_MENU_PRODUCTS.find((currentProduct) => currentProduct.id === productId);
-    return product ? this.getModifierGroupsForProduct(product) : [];
-  }
-
-  getModifierGroupsForProduct(product: Product): ModifierGroup[] {
-    const modifierGroups = this.menu.modifierGroups?.() ?? MOCK_MODIFIER_GROUPS;
+  getModifierGroupsForProduct(product: Product, modifierGroups: ModifierGroup[]): ModifierGroup[] {
     return product.modifierGroupIds
       .map((groupId) => modifierGroups.find((group) => group.id === groupId))
       .filter((group): group is ModifierGroup => !!group);
   }
 
-  buildSelectedModifiers(product: Product, selectedModifierOptionIds: string[]): SelectedModifier[] {
+  buildSelectedModifiers(product: Product, selectedModifierOptionIds: string[], modifierGroups: ModifierGroup[]): SelectedModifier[] {
     const selectedIds = new Set(selectedModifierOptionIds);
 
-    return this.getModifierGroupsForProduct(product).flatMap((group) =>
+    return this.getModifierGroupsForProduct(product, modifierGroups).flatMap((group) =>
       group.options
         .filter((option) => selectedIds.has(option.id))
         .map((option) => ({

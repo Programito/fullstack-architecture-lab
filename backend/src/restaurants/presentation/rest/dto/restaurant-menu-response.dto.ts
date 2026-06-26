@@ -22,6 +22,7 @@ class RestaurantMenuModifierOptionResponseDto {
 class RestaurantMenuModifierGroupResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ enum: ['single', 'multiple'] }) selectionType!: 'single' | 'multiple';
   @ApiProperty() minSelections!: number;
   @ApiProperty() maxSelections!: number;
   @ApiProperty() isRequired!: boolean;
@@ -63,6 +64,7 @@ class RestaurantMenuItemResponseDto {
   @ApiProperty({ example: 'rp-burger-001', required: false }) restaurantProductId?: string;
   @ApiProperty({ example: 'product-burger-001', required: false }) productId?: string;
   @ApiProperty({ example: 'Hamburguesa craft' }) name!: string;
+  @ApiProperty({ example: 'Hamburguesa de 200g con queso cheddar', required: false }) description?: string;
   @ApiProperty({ enum: ['simple', 'combo', 'platter'], example: 'simple' }) productType!: RestaurantMenuItem['productType'];
   @ApiProperty({ example: 1250 }) priceCents!: number;
   @ApiProperty({ example: 'EUR' }) currency!: string;
@@ -114,6 +116,7 @@ function mapItem(item: RestaurantMenuItem): RestaurantMenuItemResponseDto {
     restaurantProductId: item.restaurantProductId,
     productId: item.productId,
     name: item.name,
+    description: item.description,
     productType: item.productType,
     priceCents: item.priceCents,
     currency: item.currency,
@@ -130,6 +133,7 @@ function mapModifierGroup(mg: RestaurantMenuModifierGroup): RestaurantMenuModifi
   return {
     id: mg.id,
     name: mg.name,
+    selectionType: mg.selectionType,
     minSelections: mg.minSelections,
     maxSelections: mg.maxSelections,
     isRequired: mg.isRequired,

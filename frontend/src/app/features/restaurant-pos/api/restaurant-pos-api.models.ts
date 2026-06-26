@@ -300,6 +300,7 @@ export type RestaurantMenuModifierOptionDto = {
 export type RestaurantMenuModifierGroupDto = {
   id: string;
   name: string;
+  selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
   isRequired: boolean;
@@ -341,6 +342,7 @@ export type RestaurantMenuItemDto = {
   restaurantProductId?: string;
   productId?: string;
   name: string;
+  description?: string;
   productType: 'simple' | 'combo' | 'platter';
   priceCents: number;
   currency: string;
