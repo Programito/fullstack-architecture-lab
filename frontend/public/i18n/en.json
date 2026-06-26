@@ -390,6 +390,8 @@
       "elapsedPending": "not sent",
       "elapsedLessThanMinute": "less than 1 min",
       "elapsedMinutes": "{{count}} min",
+      "soundOn": "Sound on",
+      "soundOff": "Sound off",
       "columns": {
         "sent_to_kitchen": {
           "title": "Queued",
@@ -410,17 +412,24 @@
     },
     "preparationBoard": {
       "title": "Preparation",
-      "description": "Move lines between kitchen, ready, and served.",
-      "in_kitchen": "In kitchen",
+      "description": "Move lines between pending, preparing, and ready.",
+      "pending": "Pending",
+      "preparing": "Preparing",
       "ready": "Ready",
-      "served": "Served",
       "emptyColumn": "No lines in this stage.",
       "tableLabel": "Table {{number}}",
-      "markReady": "Mark ready",
-      "markServed": "Mark served",
+      "markPreparing": "Preparing",
+      "markReady": "Ready",
       "directStation": "Bar",
-      "notReadyWarning": "This product is not marked as ready yet.",
-      "genericMoveError": "The line could not be moved."
+      "genericMoveError": "The line could not be moved.",
+      "servedCount": "{{count}} served",
+      "servedModalTitle": "Served lines",
+      "servedModalDescription": "Review served lines. You can cancel one if it was served by mistake.",
+      "cancelLine": "Cancel line",
+      "cancelLineConfirm": "Cancel this line? This action cannot be undone.",
+      "cancelLineConfirmAction": "Yes, cancel",
+      "cancelLineAbort": "Go back",
+      "elapsedMinutes": "{{count}} min"
     },
     "tableStatus": {
       "free": "Free",

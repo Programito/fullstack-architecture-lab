@@ -173,11 +173,7 @@ export class RestaurantPosServicePage {
 
     effect(() => {
       const restaurant = this.restaurantContext.activeRestaurant();
-
-      if (!restaurant) {
-        return;
-      }
-
+      if (!restaurant) return;
       this.api.getRestaurantServiceFloor(restaurant.id).subscribe((serviceFloor) => {
         this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
       });

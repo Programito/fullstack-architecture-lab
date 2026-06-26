@@ -64,6 +64,7 @@ export interface OrderLine {
   selectedComboSlots?: SelectedComboSlotSnapshot[];
   platterComponents?: PlatterComponentSnapshot[];
   note?: string;
+  statusUpdatedAt?: string;
   sentToKitchenAt?: string;
   preparingAt?: string;
   readyAt?: string;

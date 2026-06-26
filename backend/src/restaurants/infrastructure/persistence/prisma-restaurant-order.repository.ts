@@ -548,9 +548,14 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
 
   async updateLineStatus(command: UpdateOrderLineStatusCommand): Promise<RestaurantOrderView> {
     const ALLOWED_TRANSITIONS: Record<KitchenOrderLineStatus, OrderLineStatus[]> = {
+      sent_to_kitchen: ['preparing'],
       preparing: ['pending'],
       ready: ['preparing'],
       served: ['ready'],
+    };
+    // sent_to_kitchen is a service-layer concept; in the DB it maps back to pending
+    const DB_STATUS_MAP: Partial<Record<KitchenOrderLineStatus, OrderLineStatus>> = {
+      sent_to_kitchen: 'pending',
     };
 
     return this.prisma.$transaction(async (tx) => {
@@ -575,7 +580,8 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
         );
       }
 
-      await tx.orderLine.update({ where: { id: command.lineId }, data: { status: command.status } });
+      const dbStatus = DB_STATUS_MAP[command.status] ?? (command.status as OrderLineStatus);
+      await tx.orderLine.update({ where: { id: command.lineId }, data: { status: dbStatus } });
 
       const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
       return this.mapOrder(finalOrder as unknown as RawOrder);

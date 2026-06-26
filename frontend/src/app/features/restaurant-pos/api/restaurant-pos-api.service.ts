@@ -100,7 +100,7 @@ export class RestaurantPosApiService {
     restaurantId: string,
     orderId: string,
     lineId: string,
-    status: 'preparing' | 'ready' | 'served',
+    status: 'sent_to_kitchen' | 'preparing' | 'ready' | 'served',
   ): Observable<RestaurantOrderDto> {
     return this.http.patch<RestaurantOrderDto>(
       `${this.restaurantsUrl}/${restaurantId}/orders/${orderId}/lines/${lineId}/status`,

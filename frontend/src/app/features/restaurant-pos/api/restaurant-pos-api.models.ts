@@ -156,6 +156,7 @@ export type ServicePointOrderDto = {
     status: ServiceOrderLineStatusDto;
     course: ServicePhaseCourseDto;
     kitchenNote: string | null;
+    updatedAt: string;
   }>;
 };
 

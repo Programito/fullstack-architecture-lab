@@ -390,6 +390,8 @@
       "elapsedPending": "sense enviar",
       "elapsedLessThanMinute": "menys d'1 min",
       "elapsedMinutes": "{{count}} min",
+      "soundOn": "So activat",
+      "soundOff": "Activar so",
       "columns": {
         "sent_to_kitchen": {
           "title": "En cua",
@@ -410,17 +412,24 @@
     },
     "preparationBoard": {
       "title": "Preparació",
-      "description": "Mou les línies entre cuina, preparat i servit.",
-      "in_kitchen": "A cuina",
+      "description": "Mou les línies entre pendent, preparant-se i preparat.",
+      "pending": "Pendent",
+      "preparing": "Preparant-se",
       "ready": "Preparat",
-      "served": "Servit",
       "emptyColumn": "No hi ha línies en aquesta fase.",
       "tableLabel": "Taula {{number}}",
-      "markReady": "Marcar preparat",
-      "markServed": "Marcar servit",
+      "markPreparing": "Preparant-se",
+      "markReady": "Preparat",
       "directStation": "Barra",
-      "notReadyWarning": "Aquest producte encara no està marcat com a preparat.",
-      "genericMoveError": "No s'ha pogut moure la línia."
+      "genericMoveError": "No s'ha pogut moure la línia.",
+      "servedCount": "{{count}} servit(s)",
+      "servedModalTitle": "Línies servides",
+      "servedModalDescription": "Revisa les línies ja servides. Pots cancel·lar-ne una si s'ha servit per error.",
+      "cancelLine": "Cancel·lar línia",
+      "cancelLineConfirm": "Cancel·lar aquesta línia? Aquesta acció no es pot desfer.",
+      "cancelLineConfirmAction": "Sí, cancel·lar",
+      "cancelLineAbort": "Tornar",
+      "elapsedMinutes": "{{count}} min"
     },
     "tableStatus": {
       "free": "Lliure",

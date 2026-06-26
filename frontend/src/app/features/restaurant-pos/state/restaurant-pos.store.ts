@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal, untracked } from '@angular/core';
 import type {
   AddFloorElementInput,
   EditableFloorElementType,
@@ -48,8 +48,7 @@ const DEFAULT_ELEMENT_LABELS: Record<EditableFloorElementType, string> = {
 };
 const COURSE_SERVICE_ORDER: OrderCourse[] = ['drinks', 'starter', 'main', 'dessert', 'other'];
 const KITCHEN_BOARD_STATUSES: KitchenBoardStatus[] = ['sent_to_kitchen', 'preparing', 'ready'];
-const PREPARATION_BOARD_COLUMNS: PreparationBoardColumnId[] = ['in_kitchen', 'ready', 'served'];
-const NOT_READY_WARNING_KEY = 'restaurantPos.preparationBoard.notReadyWarning';
+const PREPARATION_BOARD_COLUMNS: PreparationBoardColumnId[] = ['pending', 'preparing', 'ready'];
 
 @Injectable({
   providedIn: 'root',
@@ -149,11 +148,18 @@ export class RestaurantPosStore {
         .filter((ticket) => ticket.lines.length > 0),
     })),
   );
-  readonly preparationBoardColumns = computed<PreparationBoardColumn[]>(() =>
-    PREPARATION_BOARD_COLUMNS.map((id) => ({
+  readonly preparationBoardColumns = computed<PreparationBoardColumn[]>(() => {
+    const allCards = this.createPreparationBoardCards();
+    return PREPARATION_BOARD_COLUMNS.map((id) => ({
       id,
-      cards: this.createPreparationBoardCards().filter((card) => this.getPreparationColumnId(card.line.status) === id),
-    })),
+      cards: allCards.filter((card) => {
+        const columnId = this.getPreparationColumnId(card.line.status);
+        return columnId === id;
+      }),
+    }));
+  });
+  readonly servedPreparationCards = computed<PreparationBoardColumn['cards']>(() =>
+    this.createPreparationBoardCards().filter((card) => card.line.status === 'served'),
   );
   readonly salesToday = computed(() => this.roundCurrency(this._restaurantTables().reduce((total, table) => total + table.total, 0)));
   readonly averageTicket = computed(() => {
@@ -495,36 +501,43 @@ export class RestaurantPosStore {
       return { moved: false, reason: 'missing_line' };
     }
 
+    if (targetColumn === 'preparing') {
+      this.updateOrderLine(tableId, line.id, (currentLine) => {
+        if (currentLine.status === 'served' || currentLine.status === 'cancelled') return currentLine;
+        const now = this.nowIso();
+        return {
+          ...currentLine,
+          status: 'preparing',
+          sentToKitchenAt: currentLine.sentToKitchenAt ?? now,
+          preparingAt: currentLine.preparingAt ?? now,
+          readyAt: undefined,
+          pickedUpAt: undefined,
+        };
+      });
+      return { moved: true };
+    }
+
     if (targetColumn === 'ready') {
       this.markOrderLineReady(tableId, line.id);
       return { moved: true };
     }
 
-    if (targetColumn === 'served') {
-      if (this.lineRequiresReadyBeforeServed(line) && line.status !== 'ready' && line.status !== 'picked_up') {
-        return { moved: false, reason: 'requires_ready_before_served', messageKey: NOT_READY_WARNING_KEY };
-      }
-
-      this.markOrderLineServed(tableId, line.id);
-      return { moved: true };
-    }
-
-    if (targetColumn === 'in_kitchen') {
-      this.updateOrderLine(tableId, line.id, (currentLine) =>
-        currentLine.status === 'served'
-          ? currentLine
-          : {
-              ...currentLine,
-              status: 'preparing',
-              readyAt: undefined,
-              pickedUpAt: undefined,
-              servedAt: undefined,
-            },
-      );
+    if (targetColumn === 'pending') {
+      this.updateOrderLine(tableId, line.id, (currentLine) => {
+        if (currentLine.status !== 'preparing') return currentLine;
+        return { ...currentLine, status: 'sent_to_kitchen', preparingAt: undefined };
+      });
       return { moved: true };
     }
 
     return { moved: false, reason: 'unsupported_target' };
+  }
+
+  cancelPreparationLine(tableId: string, lineIdOrProductId: string): void {
+    this.updateOrderLine(tableId, lineIdOrProductId, (line) => {
+      if (line.status !== 'served') return line;
+      return { ...line, status: 'cancelled' };
+    });
   }
 
   markSelectedOrderLineServed(lineIdOrProductId: string): void {
@@ -686,7 +699,16 @@ export class RestaurantPosStore {
     restaurantTables: RestaurantTable[];
   }): void {
     this.hydrateLayout(input);
-    this._ordersByTable.set(this.createOrdersByTable(input.restaurantTables));
+
+    const currentOrders = untracked(() => this._ordersByTable());
+    const nextOrders = input.restaurantTables.reduce<OrdersByTable>(
+      (acc, table) => ({
+        ...acc,
+        [table.id]: currentOrders[table.id] ?? this.createEmptyOrder(table.id),
+      }),
+      {},
+    );
+    this._ordersByTable.set(nextOrders);
 
     const selectedTableId = this._selectedTableId();
     if (selectedTableId && !input.restaurantTables.some((table) => table.id === selectedTableId)) {
@@ -706,9 +728,12 @@ export class RestaurantPosStore {
   }
 
   hydrateServicePointOrder(tableId: string, order: TableOrder | null): void {
+    const incoming = order ?? this.createEmptyOrder(tableId);
+    const current = untracked(() => this._ordersByTable()[tableId]);
+    if (JSON.stringify(current) === JSON.stringify(incoming)) return;
     this._ordersByTable.update((ordersByTable) => ({
       ...ordersByTable,
-      [tableId]: structuredClone(order ?? this.createEmptyOrder(tableId)),
+      [tableId]: structuredClone(incoming),
     }));
     this.clearError();
   }
@@ -1022,7 +1047,7 @@ export class RestaurantPosStore {
         }
 
         return order.lines
-          .filter((line) => line.status !== 'cancelled')
+          .filter((line) => line.status !== 'cancelled' && line.status !== 'pending')
           .map((line) => {
             const preparationFlow = this.getPreparationFlow(line);
 
@@ -1038,16 +1063,11 @@ export class RestaurantPosStore {
       });
   }
 
-  private getPreparationColumnId(status: OrderLine['status']): PreparationBoardColumnId {
-    if (status === 'ready' || status === 'picked_up') {
-      return 'ready';
-    }
-
-    if (status === 'served') {
-      return 'served';
-    }
-
-    return 'in_kitchen';
+  private getPreparationColumnId(status: OrderLine['status']): PreparationBoardColumnId | null {
+    if (status === 'ready' || status === 'picked_up') return 'ready';
+    if (status === 'preparing') return 'preparing';
+    if (status === 'sent_to_kitchen') return 'pending';
+    return null;
   }
 
   private getPreparationFlow(line: OrderLine): PreparationFlow {

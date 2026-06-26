@@ -390,6 +390,8 @@
       "elapsedPending": "sin enviar",
       "elapsedLessThanMinute": "menos de 1 min",
       "elapsedMinutes": "{{count}} min",
+      "soundOn": "Sonido activado",
+      "soundOff": "Activar sonido",
       "columns": {
         "sent_to_kitchen": {
           "title": "En cola",
@@ -410,17 +412,24 @@
     },
     "preparationBoard": {
       "title": "Preparación",
-      "description": "Mueve las líneas entre cocina, preparado y servido.",
-      "in_kitchen": "En cocina",
+      "description": "Mueve las líneas entre pendiente, preparándose y preparado.",
+      "pending": "Pendiente",
+      "preparing": "Preparándose",
       "ready": "Preparado",
-      "served": "Servido",
       "emptyColumn": "No hay líneas en esta fase.",
       "tableLabel": "Mesa {{number}}",
-      "markReady": "Marcar preparado",
-      "markServed": "Marcar servido",
+      "markPreparing": "Preparándose",
+      "markReady": "Preparado",
       "directStation": "Barra",
-      "notReadyWarning": "Este producto todavía no está marcado como preparado.",
-      "genericMoveError": "No se ha podido mover la línea."
+      "genericMoveError": "No se ha podido mover la línea.",
+      "servedCount": "{{count}} servido(s)",
+      "servedModalTitle": "Líneas servidas",
+      "servedModalDescription": "Revisa las líneas ya servidas. Puedes cancelar una si se ha servido por error.",
+      "cancelLine": "Cancelar línea",
+      "cancelLineConfirm": "¿Cancelar esta línea? Esta acción no se puede deshacer.",
+      "cancelLineConfirmAction": "Sí, cancelar",
+      "cancelLineAbort": "Volver",
+      "elapsedMinutes": "{{count}} min"
     },
     "tableStatus": {
       "free": "Libre",

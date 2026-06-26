@@ -5,6 +5,21 @@
         <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.kitchen.eyebrow' | transloco }}</p>
         <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.kitchen.title' | transloco }}</h1>
       </div>
+
+      <button
+        type="button"
+        (click)="toggleSound()"
+        [attr.aria-pressed]="soundEnabled()"
+        [attr.aria-label]="(soundEnabled() ? 'restaurantPos.kitchen.soundOn' : 'restaurantPos.kitchen.soundOff') | transloco"
+        class="theme-muted flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors hover:theme-title"
+        [class.text-amber-500]="soundEnabled()"
+        [class.border-amber-400]="soundEnabled()"
+      >
+        <app-icon [name]="soundEnabled() ? 'notifications_active' : 'notifications_off'" size="sm" />
+        <span class="hidden sm:inline">
+          {{ (soundEnabled() ? 'restaurantPos.kitchen.soundOn' : 'restaurantPos.kitchen.soundOff') | transloco }}
+        </span>
+      </button>
     </div>
   </header>
 
@@ -18,7 +33,7 @@
 
         <dl class="theme-soft-panel grid grid-cols-3 gap-3 rounded-md border px-3 py-2 text-sm sm:min-w-80">
           <div>
-            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.in_kitchen' | transloco }}</dt>
+            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.pending' | transloco }}</dt>
             <dd class="theme-title text-xl font-semibold">{{ pendingLineCount() }}</dd>
           </div>
           <div>
@@ -26,7 +41,7 @@
             <dd class="theme-title text-xl font-semibold">{{ readyLineCount() }}</dd>
           </div>
           <div>
-            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.served' | transloco }}</dt>
+            <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.servedModalTitle' | transloco }}</dt>
             <dd class="theme-title text-xl font-semibold">{{ servedLineCount() }}</dd>
           </div>
         </dl>
@@ -35,8 +50,10 @@
 
     <app-preparation-board
       [columns]="store.preparationBoardColumns()"
+      [servedCards]="store.servedPreparationCards()"
       [warning]="preparationWarning()"
       (lineMoved)="movePreparationLine($event)"
+      (lineCancelled)="cancelPreparationLine($event)"
     />
   </div>
 </main>
