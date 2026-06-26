@@ -1,16 +1,13 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { Component, computed, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { EMPTY, switchMap, timer } from 'rxjs';
-import { mapServiceFloor, mapServicePointOrder } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { PreparationBoard, type PreparationLineCancel, type PreparationLineMove } from '../../components/preparation-board/preparation-board';
-import type { PreparationBoardColumnId } from '../../models/restaurant-pos.models';
+import type { PreparationBoardColumn, PreparationBoardColumnId } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { Icon } from '../../../../shared/ui/icon/icon';
 
-const KITCHEN_POLL_INTERVAL_MS = 30_000;
 const SOUND_WARMUP_MS = 5_000;
 
 @Component({
@@ -42,34 +39,11 @@ export class RestaurantPosKitchenPage {
   );
 
   constructor() {
-    this.restaurantContext.load();
-
     setTimeout(() => { this.warmupDone = true; }, SOUND_WARMUP_MS);
 
-    toObservable(this.restaurantContext.activeRestaurant).pipe(
-      takeUntilDestroyed(this.destroyRef),
-      switchMap((restaurant) => {
-        if (!restaurant) return EMPTY;
-        return timer(0, KITCHEN_POLL_INTERVAL_MS).pipe(
-          switchMap(() => this.api.getRestaurantServiceFloor(restaurant.id)),
-        );
-      }),
-    ).subscribe((serviceFloor) => {
-      const restaurant = this.restaurantContext.activeRestaurant();
-      if (!restaurant) return;
-
-      this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
-
-      serviceFloor.servicePoints
-        .filter((sp) => sp.summary.lineCount > 0)
-        .forEach((sp) => {
-          this.api.getRestaurantServicePointOrder(restaurant.id, sp.table.id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((order) => {
-              this.store.hydrateServicePointOrder(sp.table.id, mapServicePointOrder(order));
-              this.detectAndChime();
-            });
-        });
+    effect(() => {
+      const columns = this.store.preparationBoardColumns();
+      untracked(() => this.detectAndChime(columns));
     });
   }
 
@@ -114,12 +88,10 @@ export class RestaurantPosKitchenPage {
       .subscribe();
   }
 
-  private detectAndChime(): void {
+  private detectAndChime(columns: readonly PreparationBoardColumn[]): void {
     if (!this.warmupDone) return;
 
-    const currentIds = this.store
-      .preparationBoardColumns()
-      .flatMap((col) => col.cards.map((card) => card.line.id));
+    const currentIds = columns.flatMap((col) => col.cards.map((card) => card.line.id));
 
     const hasNew = currentIds.some((id) => !this.knownLineIds.has(id));
     currentIds.forEach((id) => this.knownLineIds.add(id));

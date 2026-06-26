@@ -1,9 +1,10 @@
 import { signal } from '@angular/core';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular';
+import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { NEVER, of } from 'rxjs';
 import { vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from '../../api/restaurant-pos-api.models';
+import { mapServiceFloor, mapServicePointOrder } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
@@ -62,23 +63,23 @@ describe('RestaurantPosKitchenPage', () => {
     sendTableOrderToKitchen(store);
     fixture.detectChanges();
 
-    expect(within(getPreparationColumn('Pendiente')).getByText('1x Hamburguesa craft')).toBeTruthy();
+    expect(within(getPreparationColumn('Pendiente')).getByRole('heading', { name: 'Hamburguesa craft' })).toBeTruthy();
     expect(screen.getByText(/Sin salsa/)).toBeTruthy();
 
-    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Preparándose' }));
+    fireEvent.click(within(screen.getByRole('heading', { name: 'Hamburguesa craft' }).closest('article')!).getByRole('button', { name: 'Preparándose' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('preparing');
-    expect(within(getPreparationColumn('Preparándose')).getByText('1x Hamburguesa craft')).toBeTruthy();
+    expect(within(getPreparationColumn('Preparándose')).getByRole('heading', { name: 'Hamburguesa craft' })).toBeTruthy();
 
-    fireEvent.click(within(screen.getByText('1x Hamburguesa craft').closest('article')!).getByRole('button', { name: 'Preparado' }));
+    fireEvent.click(within(screen.getByRole('heading', { name: 'Hamburguesa craft' }).closest('article')!).getByRole('button', { name: 'Preparado' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('ready');
-    expect(within(getPreparationColumn('Preparado')).getByText('1x Hamburguesa craft')).toBeTruthy();
+    expect(within(getPreparationColumn('Preparado')).getByRole('heading', { name: 'Hamburguesa craft' })).toBeTruthy();
   });
 
-  it('shows kitchen lines loaded from the API when a restaurant is active', async () => {
+  it('shows kitchen lines when the store is hydrated with backend data', async () => {
     const mockServiceFloor: ServiceFloorDto = {
       restaurantId: 'restaurant-1',
       floor: { id: 'floor-1', name: 'Sala', rows: 10, columns: 10 },
@@ -97,20 +98,13 @@ describe('RestaurantPosKitchenPage', () => {
       lines: [{ id: 'line-api-1', productName: 'Arroz con bogavante', quantity: 2, unitPriceCents: 2400, subtotalCents: 4800, status: 'sent_to_kitchen', course: 'mains', kitchenNote: null, updatedAt: '' }],
     };
 
-    const activeRestaurant = signal<RestaurantSummaryDto | null>({
-      id: 'restaurant-1', name: 'Test', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true,
-    });
+    const { fixture } = await renderKitchenPage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
 
-    await renderKitchenPage({
-      api: {
-        getRestaurantServiceFloor: vi.fn((_r: string) => of(mockServiceFloor)),
-        getRestaurantServicePointOrder: vi.fn((_r: string, _t: string) => of(mockOrder)),
-      } as Partial<RestaurantPosApiService>,
-      restaurantContext: { activeRestaurant: activeRestaurant.asReadonly(), load: vi.fn() },
-    });
+    store.hydrateServiceFloor(mapServiceFloor(mockServiceFloor));
+    store.hydrateServicePointOrder('table-api-1', mapServicePointOrder(mockOrder));
+    fixture.detectChanges();
 
-    await waitFor(() => {
-      expect(within(getPreparationColumn('Pendiente')).getByText('2x Arroz con bogavante')).toBeTruthy();
-    });
+    expect(within(getPreparationColumn('Pendiente')).getByRole('heading', { name: 'Arroz con bogavante' })).toBeTruthy();
   });
 });

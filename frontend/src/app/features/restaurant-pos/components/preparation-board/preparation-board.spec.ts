@@ -149,7 +149,7 @@ describe('PreparationBoard', () => {
     });
 
     expect(within(screen.getByText('Pendiente').closest('section') as HTMLElement).getByText('Mesa 4')).toBeTruthy();
-    expect(screen.getByText('2x Plato combinado vegetal')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Plato combinado vegetal' })).toBeTruthy();
     expect(screen.getByText(/sin sal/)).toBeTruthy();
     expect(screen.getByText(/Incluye:/)).toBeTruthy();
     expect(screen.getByText(/huevo, patatas, ensalada/)).toBeTruthy();

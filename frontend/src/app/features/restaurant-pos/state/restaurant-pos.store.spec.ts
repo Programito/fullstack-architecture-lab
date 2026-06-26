@@ -45,7 +45,7 @@ describe('RestaurantPosStore', () => {
     expect(store.errorMessage()).toBeNull();
   });
 
-  it('hydrates the service floor and resets visible service orders', () => {
+  it('hydrates the service floor and preserves existing orders while initializing new ones', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
 
@@ -75,7 +75,10 @@ describe('RestaurantPosStore', () => {
       expect.objectContaining({ id: 'table-1', status: 'free' }),
       expect.objectContaining({ id: 'stool-1', status: 'occupied', total: 4.5 }),
     ]);
-    expect(store.ordersByTable()['table-1']).toEqual(expect.objectContaining({ tableId: 'table-1', lines: [], total: 0 }));
+    // table-1's existing order is preserved (not reset) so the added product remains
+    expect(store.ordersByTable()['table-1']).toEqual(expect.objectContaining({ tableId: 'table-1' }));
+    expect(store.ordersByTable()['table-1'].lines.length).toBeGreaterThan(0);
+    // stool-1 is new — gets a fresh empty order
     expect(store.ordersByTable()['stool-1']).toEqual(expect.objectContaining({ tableId: 'stool-1', lines: [], total: 0 }));
     expect(store.selectedTableId()).toBe('table-1');
   });
