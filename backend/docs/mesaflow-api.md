@@ -89,7 +89,96 @@ Notas rápidas:
   endpoint for layout editing and keeps `restaurant_tables` separate from `floor_elements`.
 
 - `GET /api/v1/restaurants/:id/reservations`
-  Returns reservation projections with customer snapshots and linked table ids.
+  Returns reservation projections with customer snapshots, linked table ids and enriched table
+  data ready for the front-of-house agenda.
+
+- `POST /api/v1/restaurants/:restaurantId/reservations`
+  Creates one reservation with customer snapshots, party size, date/time, optional notes and
+  optional table ids.
+
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/confirm`
+  Moves one reservation from `pending` to `confirmed`.
+
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/seat`
+  Moves one reservation from `confirmed` to `seated`.
+
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/no-show`
+  Moves one reservation from `confirmed` to `no_show`.
+
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/cancel`
+  Moves one reservation from `pending` or `confirmed` to `cancelled`.
+
+### Reservation creation contract
+
+`POST /api/v1/restaurants/:restaurantId/reservations` creates a reservation. The request body:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `customerNameSnapshot` | `string` | yes | Customer name at booking time. Must not be blank. |
+| `customerPhoneSnapshot` | `string \| null` | no | Phone snapshot, stored even if a `customerId` exists. |
+| `partySize` | `integer` | yes | Number of people. Must be ≥ 1. |
+| `reservationAt` | `ISO-8601` | yes | Date and time of the reservation. Must be in the future. |
+| `durationMinutes` | `integer` | no | Expected duration in minutes. Must be ≥ 15. Defaults to 90. |
+| `notes` | `string \| null` | no | Operational notes visible to front-of-house staff. |
+| `tableIds` | `string[]` | no | Optional list of pre-assigned restaurant table IDs. |
+
+Validation errors are returned as `400` with code `invalid_reservation_creation` and a `reason`
+detail field:
+
+| Reason | Condition |
+|---|---|
+| `missing_customer_name` | `customerNameSnapshot` is blank after trimming |
+| `invalid_party_size` | `partySize` is less than 1 |
+| `invalid_duration` | `durationMinutes` is less than 15 |
+| `invalid_reservation_at` | `reservationAt` is not a parseable date |
+| `reservation_in_past` | `reservationAt` is not in the future |
+
+### Reservation agenda contract
+
+`GET /api/v1/restaurants/:id/reservations` keeps `tableIds: string[]` for compatibility and adds a
+frontend-friendly `tables` collection so the POS can render labels such as `Mesa 1` or `Terraza 4`
+without extra joins.
+
+Response shape:
+
+```json
+{
+  "id": "reservation-demo-lunch",
+  "customerId": null,
+  "customerNameSnapshot": "Laura Gomez",
+  "customerPhoneSnapshot": "+34 600 111 222",
+  "partySize": 2,
+  "reservationAt": "2026-06-27T13:30:00.000Z",
+  "durationMinutes": 90,
+  "status": "confirmed",
+  "notes": "Mesa tranquila.",
+  "tableIds": ["table_1"],
+  "tables": [{ "id": "table_1", "tableNumber": 1, "name": "Mesa 1" }]
+}
+```
+
+### Reservation status transitions
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending : POST /reservations
+  pending --> confirmed : PATCH /confirm
+  pending --> cancelled : PATCH /cancel
+  confirmed --> seated : PATCH /seat
+  confirmed --> no_show : PATCH /no-show
+  confirmed --> cancelled : PATCH /cancel
+```
+
+Transitions from `seated`, `cancelled` and `no_show` are terminal and will be rejected.
+
+### Reservation errors
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `restaurant_not_found` | 404 | The restaurant scope does not exist |
+| `reservation_not_found` | 404 | The reservation does not exist in that restaurant |
+| `invalid_reservation_creation` | 400 | A field failed creation validation (see `reason` detail) |
+| `invalid_reservation_state` | 400 | The requested status transition is not allowed |
 
 ## Menu Admin
 
@@ -184,6 +273,5 @@ The next write endpoints expected on top of the current data model are:
 - `POST /api/v1/restaurants/:restaurantId/orders`
 - `POST /api/v1/orders/:id/lines`
 - `POST /api/v1/orders/:id/payments`
-- `POST /api/v1/restaurants/:restaurantId/reservations`
 
 These are intentionally not implemented yet so the read contracts can stabilize first.

@@ -432,6 +432,151 @@ sequenceDiagram
   UI->>Store: freeSelectedTable()
 ```
 
+## Agenda operativa de reservas
+
+La pantalla `RestaurantPosReservationsPage` actua como agenda diaria de sala. En `v0.0.2` no abre
+servicio automaticamente ni usa un calendario mensual; su responsabilidad es leer reservas del dia,
+filtrarlas y ejecutar transiciones operativas simples.
+
+Estructura relevante:
+
+```txt
+features/restaurant-pos/
+  api/
+    restaurant-pos-api.models.ts
+    restaurant-pos-api.service.ts
+  pages/restaurant-pos-reservations-page/
+    restaurant-pos-reservations-page.ts
+    restaurant-pos-reservations-page.html
+    restaurant-pos-reservations-page.css
+    restaurant-pos-reservations-page.spec.ts
+```
+
+### Responsabilidades de la page
+
+- Cargar reservas del restaurante activo con `RestaurantPosApiService`.
+- Filtrar por fecha, estado, servicio y busqueda de cliente o telefono.
+- Derivar una agenda visual por servicios `Comidas` y `Cenas`.
+- Calcular resumen superior: reservas, pax, sin mesa y reservas vencidas.
+- Mostrar acciones rapidas por reserva con estado de carga y error local.
+
+### Contrato de API usado por frontend
+
+`RestaurantPosApiService` centraliza la lectura y las acciones rapidas:
+
+| Metodo | Verbo | Ruta |
+|---|---|---|
+| `getRestaurantReservations` | GET | `/restaurants/:id/reservations` |
+| `createRestaurantReservation` | POST | `/restaurants/:id/reservations` |
+| `confirmRestaurantReservation` | PATCH | `/restaurants/:id/reservations/:reservationId/confirm` |
+| `seatRestaurantReservation` | PATCH | `/restaurants/:id/reservations/:reservationId/seat` |
+| `markRestaurantReservationNoShow` | PATCH | `/restaurants/:id/reservations/:reservationId/no-show` |
+| `cancelRestaurantReservation` | PATCH | `/restaurants/:id/reservations/:reservationId/cancel` |
+
+El DTO de reserva mantiene `tableIds` por compatibilidad y anade `tables[]` enriquecido para
+renderizar etiquetas de mesa sin composicion extra en la page.
+
+Tipos DTO de reserva en `restaurant-pos-api.models.ts`:
+
+```ts
+type RestaurantReservationTableDto = {
+  id: string;
+  tableNumber: number;
+  name: string | null;
+};
+
+type RestaurantReservationDto = {
+  id: string;
+  customerId: string | null;
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;   // ISO-8601
+  durationMinutes: number;
+  status: 'pending' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
+  notes: string | null;
+  tableIds: string[];
+  tables: RestaurantReservationTableDto[];
+};
+
+type CreateRestaurantReservationRequest = {
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;   // ISO-8601, debe ser futuro
+  durationMinutes: number; // >= 15, default 90
+  notes: string | null;
+  tableIds: string[];
+};
+```
+
+### Estado derivado de agenda
+
+La page mantiene el estado de pantalla con `signal()` y deriva la agenda con `computed()`:
+
+- `selectedDate`
+- `searchQuery`
+- `statusFilter`
+- `serviceFilter`
+- `actionState`
+- `dayReservations`
+- `summary`
+- `lunchReservations`
+- `dinnerReservations`
+
+La transformacion convierte cada `RestaurantReservationDto` en un item de agenda con:
+
+- `serviceBucket`: `lunch` o `dinner`
+- `tableLabel`: mesas enriquecidas o `Sin mesa asignada`
+- `isUpcoming`
+- `isOverdue`
+- `isUnassigned`
+- `availableActions`
+
+### Reglas UX de v0.0.2
+
+- `pending` muestra `Confirmar` y `Cancelar`.
+- `confirmed` muestra `Sentar`, `No-show` y `Cancelar`.
+- `seated`, `cancelled` y `no_show` no exponen nuevas acciones.
+- `seat` solo cambia el estado a `seated`; no abre pedido ni vincula una mesa activa.
+- Las reservas vencidas son las del dia cuya hora ya paso y siguen en `pending` o `confirmed`.
+- Las reservas futuras del dia se marcan como proximas.
+
+Esta frontera deja preparado `v0.0.3` para anadir una accion separada de abrir servicio desde una
+reserva ya sentada sin mezclar la agenda con la operativa de pedido.
+
+### Alta manual de reservas en v0.0.3
+
+La misma page permite crear una reserva manual desde `Nueva reserva`. El formulario mantiene estado
+local con signals y, al guardar, llama a `createRestaurantReservation(...)` en el API service.
+
+El selector de mesas reutiliza `getRestaurantFloors()` para evitar una API adicional solo de
+tablas. La conversión de `selectedDate + time` se hace en hora local con `new Date(year, month,
+day, hour, minute).toISOString()` para no desplazar la reserva por forzar un sufijo `Z` manual.
+
+```mermaid
+sequenceDiagram
+  participant Page as ReservationsPage
+  participant API as RestaurantPosApiService
+  participant Back as Backend
+
+  Page->>API: createRestaurantReservation(restaurantId, request)
+  API->>Back: POST /restaurants/:id/reservations
+  Back-->>API: RestaurantReservationDto (201)
+  API-->>Page: Observable<RestaurantReservationDto>
+  Page->>Page: cerrar formulario + limpiar estado
+  Page->>API: getRestaurantReservations(restaurantId)
+  API->>Back: GET /restaurants/:id/reservations
+  Back-->>API: RestaurantReservationDto[]
+  API-->>Page: agenda recargada
+```
+
+Tras una creación correcta:
+
+- se cierra el formulario
+- se limpia el estado local
+- se recarga la agenda diaria
+
 ## Documentación
 
 Usa esta carpeta para arquitectura frontend, estrategia de testing y notas técnicas del producto.
