@@ -9,6 +9,7 @@ import type {
   CancelRestaurantOrderLineRequest,
   CreateFloorElementRequest,
   CreateMenuSectionRequest,
+  CreateRestaurantProductRequest,
   MenuItemAdminDto,
   MenuSectionAdminDto,
   OpenRestaurantOrderRequest,
@@ -18,6 +19,7 @@ import type {
   RestaurantFloorsDto,
   RestaurantMenuDto,
   RestaurantOrderDto,
+  RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
   RestaurantSummaryDto,
   ServiceFloorDto,
@@ -28,6 +30,7 @@ import type {
   UpdateMenuSectionItemRequest,
   UpdateMenuSectionRequest,
   UpdateRestaurantOrderLineRequest,
+  UpdateRestaurantProductRequest,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -159,6 +162,22 @@ export class RestaurantPosApiService {
 
   listRestaurantProducts(restaurantId: string): Observable<RestaurantProductSummaryDto[]> {
     return this.http.get<RestaurantProductSummaryDto[]>(`${this.restaurantsUrl}/${restaurantId}/products`);
+  }
+
+  getRestaurantProduct(restaurantId: string, productId: string): Observable<RestaurantProductDetailDto> {
+    return this.http.get<RestaurantProductDetailDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}`);
+  }
+
+  createRestaurantProduct(restaurantId: string, body: CreateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
+    return this.http.post<RestaurantProductDetailDto>(`${this.restaurantsUrl}/${restaurantId}/products`, body);
+  }
+
+  updateRestaurantProduct(restaurantId: string, productId: string, body: UpdateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
+    return this.http.patch<RestaurantProductDetailDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}`, body);
+  }
+
+  deleteRestaurantProduct(restaurantId: string, productId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}`);
   }
 
   createMenuSection(restaurantId: string, menuId: string, body: CreateMenuSectionRequest): Observable<MenuSectionAdminDto> {

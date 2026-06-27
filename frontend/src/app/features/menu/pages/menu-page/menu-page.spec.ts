@@ -2,7 +2,7 @@ import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import { MenuApiService, type MenuData, type MenuSectionAdminDto } from '../../services/menu-api.service';
+import { MenuApiService, type MenuData, type MenuSectionAdminDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
 import {
   localizeComboProductDefinitions,
   localizeMenuCategories,
@@ -21,10 +21,26 @@ function buildMockMenuData(): MenuData {
   };
 }
 
+const CATALOG_ONLY_PRODUCT: RestaurantProductSummaryDto = {
+  id: 'rp-catalog-new',
+  productId: 'p-catalog-new',
+  name: 'Agua mineral',
+  displayName: null,
+  productType: 'simple',
+  course: 'drinks',
+  preparationRoute: 'direct',
+  priceCents: 150,
+  currency: 'EUR',
+  isAvailable: true,
+  isVisible: true,
+};
+
 function makeMockMenuApi(overrides: Partial<{
   createSection: () => ReturnType<MenuApiService['createSection']>;
   updateSection: () => ReturnType<MenuApiService['updateSection']>;
   deleteSection: () => ReturnType<MenuApiService['deleteSection']>;
+  listProducts: () => ReturnType<MenuApiService['listProducts']>;
+  addSectionItem: () => ReturnType<MenuApiService['addSectionItem']>;
 }> = {}) {
   return {
     getMenu: () => of(buildMockMenuData()),
@@ -32,9 +48,13 @@ function makeMockMenuApi(overrides: Partial<{
     createSection: overrides.createSection ?? (() => of({ id: 'new-sec', menuId: 'menu-demo-main', name: 'Nueva', sortOrder: 5, isVisible: true } as MenuSectionAdminDto)),
     updateSection: overrides.updateSection ?? (() => of({ id: 'cat-hamburguesas', menuId: 'menu-demo-main', name: 'Hamburguesas', sortOrder: 0, isVisible: false } as MenuSectionAdminDto)),
     deleteSection: overrides.deleteSection ?? (() => of(undefined)),
-    listProducts: () => of([]),
-    addSectionItem: () => of(undefined),
+    listProducts: overrides.listProducts ?? (() => of([])),
+    addSectionItem: overrides.addSectionItem ?? (() => of(undefined)),
     removeSectionItem: () => of(undefined),
+    getProduct: () => of(undefined),
+    createProduct: () => of(undefined),
+    updateProduct: () => of(undefined),
+    deleteProduct: () => of(undefined),
   };
 }
 
@@ -263,6 +283,50 @@ describe('MenuPage', () => {
       await fixture.whenStable();
 
       expect(deleteSection).toHaveBeenCalled();
+    });
+  });
+
+  describe('tab Productos — artículo sin sección', () => {
+    const renderWithCatalogProduct = async (overrides = {}) => {
+      const result = await renderPage({
+        listProducts: () => of([CATALOG_ONLY_PRODUCT]),
+        ...overrides,
+      });
+      return result;
+    };
+
+    it('muestra badge "Sin sección" para artículos del catálogo sin asignar', async () => {
+      await renderWithCatalogProduct();
+      expect(screen.getAllByText('Sin sección').length).toBeGreaterThan(0);
+    });
+
+    it('muestra botón "Añadir a sección" para artículos sin asignar', async () => {
+      await renderWithCatalogProduct();
+      expect(screen.getByRole('button', { name: /añadir a sección/i })).toBeTruthy();
+    });
+
+    it('abre el selector de sección al pulsar "Añadir a sección"', async () => {
+      const { fixture } = await renderWithCatalogProduct();
+
+      fireEvent.click(screen.getByRole('button', { name: /añadir a sección/i }));
+      fixture.detectChanges();
+
+      expect(screen.getByRole('dialog', { name: /añadir a sección/i })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Bebidas' })).toBeTruthy();
+    });
+
+    it('llama a addSectionItem con menuId, sectionId y restaurantProductId correctos', async () => {
+      const addSectionItem = vi.fn(() => of(undefined));
+      const { fixture } = await renderWithCatalogProduct({ addSectionItem });
+
+      fireEvent.click(screen.getByRole('button', { name: /añadir a sección/i }));
+      fixture.detectChanges();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Bebidas' }));
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(addSectionItem).toHaveBeenCalledWith('menu-demo-main', 'drinks', 'rp-catalog-new');
     });
   });
 });

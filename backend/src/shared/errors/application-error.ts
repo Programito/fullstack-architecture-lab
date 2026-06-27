@@ -25,7 +25,8 @@ export type ApplicationErrorCode =
   | 'menu_section_not_found'
   | 'menu_section_name_taken'
   | 'menu_item_not_found'
-  | 'menu_item_already_in_section';
+  | 'menu_item_already_in_section'
+  | 'product_name_taken';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -69,6 +70,10 @@ export function invalidServiceAction(details?: Record<string, unknown>): Applica
   return applicationError('invalid_service_action', 'Service action is invalid for the current table state.', details);
 }
 
+export function restaurantProductNotFound(productId: string): ApplicationError {
+  return applicationError('restaurant_product_not_found', `Restaurant product "${productId}" was not found.`, { productId });
+}
+
 export function menuNotFound(menuId: string): ApplicationError {
   return applicationError('menu_not_found', `Menu "${menuId}" was not found.`, { menuId });
 }
@@ -87,4 +92,8 @@ export function menuItemNotFound(itemId: string): ApplicationError {
 
 export function menuItemAlreadyInSection(restaurantProductId: string): ApplicationError {
   return applicationError('menu_item_already_in_section', `Product "${restaurantProductId}" is already in this section.`, { restaurantProductId });
+}
+
+export function productNameTaken(name: string): ApplicationError {
+  return applicationError('product_name_taken', `A product named "${name}" already exists in this organization.`, { name });
 }

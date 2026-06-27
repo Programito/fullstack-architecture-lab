@@ -605,7 +605,16 @@
       "deleteSectionTitle": "Eliminar sección",
       "deleteSectionConfirm": "¿Eliminar la sección \"{{name}}\"? Se eliminarán también los ítems que contiene.",
       "confirmDelete": "Confirmar eliminación",
-      "cancelDelete": "Cancelar"
+      "cancelDelete": "Cancelar",
+      "newProduct": "Nuevo producto",
+      "editProduct": "Editar producto",
+      "deleteProductTitle": "Eliminar producto",
+      "deleteProductDescription": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
+      "confirmDeleteProduct": "Eliminar",
+      "cancelDeleteProduct": "Cancelar",
+      "noSection": "Sin sección",
+      "addToSection": "Añadir a sección",
+      "addToSectionTitle": "Añadir a sección"
     },
     "customizer": {
       "title": "Personalizar producto",
@@ -624,6 +633,36 @@
       "close": "Cerrar configuración de menú",
       "noValidProducts": "No hay productos disponibles para este slot.",
       "invalidSelection": "Completa los slots obligatorios para añadir el menú."
+    },
+    "product": {
+      "form": {
+        "createTitle": "Nuevo producto",
+        "editTitle": "Editar producto",
+        "name": "Nombre",
+        "namePlaceholder": "Nombre del producto",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Descripción opcional",
+        "price": "Precio (€)",
+        "course": "Servicio",
+        "route": "Ruta de preparación",
+        "available": "Disponible",
+        "create": "Crear producto",
+        "save": "Guardar cambios",
+        "cancel": "Cancelar"
+      },
+      "success": {
+        "created": "Artículo creado correctamente.",
+        "updated": "Artículo actualizado correctamente.",
+        "deleted": "Artículo eliminado correctamente.",
+        "addedToSection": "Artículo añadido a la sección correctamente."
+      },
+      "errors": {
+        "nameTaken": "Ya existe un artículo con ese nombre.",
+        "saveFailed": "No se pudo guardar el artículo.",
+        "deleteFailed": "No se pudo eliminar el artículo.",
+        "alreadyInSection": "El artículo ya está en esa sección.",
+        "addToSectionFailed": "No se pudo añadir el artículo a la sección."
+      }
     }
   }
 }

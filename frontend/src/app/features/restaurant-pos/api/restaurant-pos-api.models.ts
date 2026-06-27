@@ -394,10 +394,49 @@ export type RestaurantProductSummaryDto = {
   name: string;
   displayName: string | null;
   productType: 'simple' | 'combo' | 'platter';
+  course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+  preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   priceCents: number;
   currency: string;
   isAvailable: boolean;
   isVisible: boolean;
+};
+
+export type RestaurantProductDetailDto = {
+  id: string;
+  productId: string;
+  organizationId: string;
+  name: string;
+  displayName: string | null;
+  description: string | null;
+  displayDescription: string | null;
+  productType: 'simple' | 'combo' | 'platter';
+  course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+  preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  preparationRouteOverride: string | null;
+  priceCents: number;
+  currency: string;
+  isAvailable: boolean;
+  isVisible: boolean;
+};
+
+export type CreateRestaurantProductRequest = {
+  name: string;
+  description?: string;
+  priceCents: number;
+  currency: string;
+  course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+  preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+};
+
+export type UpdateRestaurantProductRequest = {
+  name?: string;
+  description?: string | null;
+  priceCents?: number;
+  course?: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+  preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  isAvailable?: boolean;
+  isVisible?: boolean;
 };
 
 export type CreateMenuSectionRequest = { name: string; isVisible?: boolean };

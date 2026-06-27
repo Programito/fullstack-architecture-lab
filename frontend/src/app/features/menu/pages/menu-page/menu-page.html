@@ -35,6 +35,11 @@
     </div>
 
     @if (activeTab() === 'products') {
+      @if (menuLoading()) {
+        <div class="flex items-center justify-center py-16">
+          <app-spinner size="lg" variant="primary" />
+        </div>
+      } @else {
       <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <!-- Lista de productos -->
         <section class="grid content-start gap-4">
@@ -85,6 +90,14 @@
             </div>
           </div>
 
+          <!-- Botón nuevo producto -->
+          <div class="flex justify-end">
+            <app-button variant="primary" fill="solid" size="sm" (pressed)="openCreateProduct()">
+              <app-icon name="add" size="sm" [decorative]="true" />
+              {{ 'menu.page.newProduct' | transloco }}
+            </app-button>
+          </div>
+
           <!-- Grid de tarjetas -->
           <div class="grid gap-3 sm:grid-cols-2">
             @for (product of filteredProducts(); track product.id) {
@@ -104,11 +117,14 @@
                     <div class="flex flex-wrap gap-1.5">
                       <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
                       <app-badge [variant]="product.available ? 'success' : 'danger'" size="sm">{{ availabilityLabel(product) }}</app-badge>
+                      @if (isCatalogOnly(product)) {
+                        <app-badge variant="neutral" size="sm">{{ 'menu.page.noSection' | transloco }}</app-badge>
+                      }
                     </div>
                     <span class="theme-title shrink-0 text-lg font-bold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</span>
                   </div>
                   <h2 class="theme-title text-base font-semibold leading-tight">{{ product.name }}</h2>
-                  <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ preparationRouteLabel(product) }}</p>
+                  <p class="theme-muted text-sm">@if (categoryName(product)) {{{ categoryName(product) }} &middot; }{{ preparationRouteLabel(product) }}</p>
                   @if (product.allergens?.length) {
                     <p class="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                       <app-icon name="warning" size="sm" [decorative]="false" [ariaLabel]="'menu.page.allergens' | transloco" />
@@ -116,7 +132,7 @@
                     </p>
                   }
                 </button>
-                <div class="border-t px-4 py-3 dark:border-white/10" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-between gap-2 border-t px-4 py-3 dark:border-white/10" (click)="$event.stopPropagation()">
                   <app-switch
                     size="sm"
                     variant="primary"
@@ -125,6 +141,19 @@
                     [checked]="product.available"
                     (checkedChange)="toggleAvailability(product)"
                   />
+                  <div class="flex shrink-0 gap-1">
+                    @if (isCatalogOnly(product)) {
+                      <app-button variant="neutral" fill="outline" size="sm" (pressed)="openAddToSection(product)">
+                        {{ 'menu.page.addToSection' | transloco }}
+                      </app-button>
+                    }
+                    <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'menu.page.editProduct' | transloco" (pressed)="openEditProduct(product)">
+                      <app-icon name="edit" size="sm" [decorative]="true" />
+                    </app-button>
+                    <app-button variant="danger" fill="clear" size="sm" [ariaLabel]="'menu.page.deleteProduct' | transloco" (pressed)="openDeleteProduct(product)">
+                      <app-icon name="delete" size="sm" [decorative]="true" />
+                    </app-button>
+                  </div>
                 </div>
               </article>
             } @empty {
@@ -194,6 +223,53 @@
           </ul>
         </div>
       </app-dialog>
+      <!-- Dialog de formulario de producto (crear / editar) -->
+      <app-product-form-dialog
+        [open]="productFormOpen()"
+        [product]="productFormProduct()"
+        [loading]="productFormLoading()"
+        (closed)="closeProductForm()"
+        (confirmed)="submitProductForm($event)"
+      />
+      <!-- Dialog de confirmación de borrado de producto -->
+      <app-dialog
+        [open]="deleteProductOpen()"
+        [title]="'menu.page.deleteProductTitle' | transloco"
+        [showActions]="true"
+        [confirmLabel]="'menu.page.confirmDeleteProduct' | transloco"
+        confirmVariant="danger"
+        [confirmLoading]="deleteProductLoading()"
+        [cancelLabel]="'menu.page.cancelDeleteProduct' | transloco"
+        size="sm"
+        (closed)="cancelDeleteProduct()"
+        (cancelled)="cancelDeleteProduct()"
+        (confirmed)="confirmDeleteProduct()"
+      >
+        <p class="theme-muted text-sm">{{ 'menu.page.deleteProductDescription' | transloco: { name: productToDelete()?.name ?? '' } }}</p>
+      </app-dialog>
+      <!-- Dialog de selector de sección -->
+      <app-dialog
+        [open]="addToSectionOpen()"
+        [title]="'menu.page.addToSectionTitle' | transloco"
+        [showActions]="false"
+        size="sm"
+        (closed)="cancelAddToSection()"
+      >
+        <ul class="grid gap-1 pb-1">
+          @for (category of categories(); track category.id) {
+            <li>
+              <button
+                type="button"
+                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                (click)="confirmAddToSection(category.id)"
+              >
+                <span class="theme-title">{{ category.name }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </app-dialog>
+      }
     } @else if (activeTab() === 'categories') {
       <section class="grid content-start gap-4">
         <div class="flex items-center justify-between gap-3">

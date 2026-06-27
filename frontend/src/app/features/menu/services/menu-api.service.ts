@@ -2,11 +2,14 @@ import { inject, Injectable } from '@angular/core';
 import { map, type Observable } from 'rxjs';
 
 import type {
+  CreateRestaurantProductRequest,
   MenuSectionAdminDto,
   RestaurantMenuDto,
   RestaurantMenuItemDto,
   RestaurantMenuModifierGroupDto,
+  RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
+  UpdateRestaurantProductRequest,
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../models/menu.models';
@@ -20,7 +23,7 @@ export type MenuData = {
   comboProductDefinitions: ComboProductDefinition[];
 };
 
-export type { MenuSectionAdminDto, RestaurantProductSummaryDto };
+export type { CreateRestaurantProductRequest, MenuSectionAdminDto, RestaurantProductDetailDto, RestaurantProductSummaryDto, UpdateRestaurantProductRequest };
 
 const RESTAURANT_ID = 'restaurant-mesaflow-centro';
 
@@ -58,6 +61,22 @@ export class MenuApiService {
 
   removeSectionItem(menuId: string, sectionId: string, itemId: string): Observable<void> {
     return this.api.removeMenuSectionItem(RESTAURANT_ID, menuId, sectionId, itemId);
+  }
+
+  getProduct(productId: string): Observable<RestaurantProductDetailDto> {
+    return this.api.getRestaurantProduct(RESTAURANT_ID, productId);
+  }
+
+  createProduct(data: CreateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
+    return this.api.createRestaurantProduct(RESTAURANT_ID, data);
+  }
+
+  updateProduct(productId: string, data: UpdateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
+    return this.api.updateRestaurantProduct(RESTAURANT_ID, productId, data);
+  }
+
+  deleteProduct(productId: string): Observable<void> {
+    return this.api.deleteRestaurantProduct(RESTAURANT_ID, productId);
   }
 }
 

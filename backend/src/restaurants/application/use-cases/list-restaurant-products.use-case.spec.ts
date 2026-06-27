@@ -35,6 +35,8 @@ describe('ListRestaurantProductsUseCase', () => {
         currency: 'EUR',
         isAvailable: true,
         isVisible: true,
+        course: 'main' as const,
+        preparationRoute: 'kitchen' as const,
       },
     ];
     vi.mocked(repository.listRestaurantProducts).mockResolvedValue(products);

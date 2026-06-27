@@ -43,6 +43,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_order_state':
     case 'menu_section_name_taken':
     case 'menu_item_already_in_section':
+    case 'product_name_taken':
       return new ConflictException(error.message);
 
     case 'payment_exceeds_balance':

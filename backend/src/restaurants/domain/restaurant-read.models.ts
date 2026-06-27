@@ -93,6 +93,29 @@ export type RestaurantProductSummary = {
   name: string;
   displayName: string | null;
   productType: 'simple' | 'combo' | 'platter';
+  course: ProductCourse;
+  preparationRoute: PreparationRoute;
+  priceCents: number;
+  currency: string;
+  isAvailable: boolean;
+  isVisible: boolean;
+};
+
+export type ProductCourse = 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
+export type PreparationRoute = 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+
+export type RestaurantProductDetail = {
+  id: string;
+  productId: string;
+  organizationId: string;
+  name: string;
+  displayName: string | null;
+  description: string | null;
+  displayDescription: string | null;
+  productType: 'simple' | 'combo' | 'platter';
+  course: ProductCourse;
+  preparationRoute: PreparationRoute;
+  preparationRouteOverride: PreparationRoute | null;
   priceCents: number;
   currency: string;
   isAvailable: boolean;

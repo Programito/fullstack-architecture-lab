@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
-import { menuSectionNameTaken, menuItemAlreadyInSection } from '../../../shared/errors/application-error';
+import { menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import type { RestaurantMenuAdminRepository, SortOrderItem } from '../../application/ports/restaurant-menu-admin-repository.port';
-import type { RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import type { CreateProductData, RestaurantMenuAdminRepository, SortOrderItem, UpdateProductData } from '../../application/ports/restaurant-menu-admin-repository.port';
+import type { PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 
 @Injectable()
 export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminRepository {
@@ -180,7 +180,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     const rows = await this.prisma.restaurantProduct.findMany({
       where: { restaurantId },
       orderBy: { sortOrder: 'asc' },
-      include: { product: { select: { name: true, productType: true } } },
+      include: { product: { select: { name: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
     });
 
     return rows.map((rp) => ({
@@ -189,11 +189,128 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       name: rp.displayName ?? rp.product.name,
       displayName: rp.displayName,
       productType: rp.product.productType as 'simple' | 'combo' | 'platter',
+      course: rp.product.defaultCourse as RestaurantProductSummary['course'],
+      preparationRoute: rp.product.defaultPreparationRoute as RestaurantProductSummary['preparationRoute'],
       priceCents: rp.priceCents,
       currency: rp.currency,
       isAvailable: rp.isAvailable,
       isVisible: rp.isVisible,
     }));
+  }
+
+  async findRestaurantProductById(restaurantId: string, productId: string): Promise<RestaurantProductDetail | null> {
+    const rp = await this.prisma.restaurantProduct.findFirst({
+      where: { id: productId, restaurantId },
+      include: { product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+    });
+    return rp ? mapProductDetail(rp) : null;
+  }
+
+  async createProduct(restaurantId: string, data: CreateProductData): Promise<RestaurantProductDetail> {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { organizationId: true },
+    });
+    if (!restaurant) {
+      throw new Error(`Restaurant "${restaurantId}" not found.`);
+    }
+
+    const count = await this.prisma.restaurantProduct.count({ where: { restaurantId } });
+
+    try {
+      const rp = await this.prisma.$transaction(async (tx) => {
+        const product = await tx.product.create({
+          data: {
+            organizationId: restaurant.organizationId,
+            name: data.name,
+            description: data.description ?? null,
+            productType: 'simple',
+            defaultCourse: data.course,
+            defaultPreparationRoute: data.preparationRoute,
+          },
+        });
+
+        return tx.restaurantProduct.create({
+          data: {
+            restaurantId,
+            productId: product.id,
+            priceCents: data.priceCents,
+            currency: data.currency,
+            isAvailable: true,
+            isVisible: true,
+            sortOrder: count,
+          },
+          include: { product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+        });
+      });
+
+      return mapProductDetail(rp);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ApplicationErrorException(productNameTaken(data.name));
+      }
+      throw error;
+    }
+  }
+
+  async updateProduct(restaurantId: string, productId: string, data: UpdateProductData): Promise<RestaurantProductDetail | null> {
+    const existing = await this.prisma.restaurantProduct.findFirst({
+      where: { id: productId, restaurantId },
+      select: { id: true, productId: true },
+    });
+    if (!existing) return null;
+
+    try {
+      const rp = await this.prisma.$transaction(async (tx) => {
+        if (data.name !== undefined || data.description !== undefined || data.course !== undefined || data.preparationRoute !== undefined) {
+          await tx.product.update({
+            where: { id: existing.productId },
+            data: {
+              ...(data.name !== undefined && { name: data.name }),
+              ...(data.description !== undefined && { description: data.description }),
+              ...(data.course !== undefined && { defaultCourse: data.course }),
+              ...(data.preparationRoute !== undefined && { defaultPreparationRoute: data.preparationRoute }),
+            },
+          });
+        }
+
+        return tx.restaurantProduct.update({
+          where: { id: productId },
+          data: {
+            ...(data.priceCents !== undefined && { priceCents: data.priceCents }),
+            ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
+            ...(data.isVisible !== undefined && { isVisible: data.isVisible }),
+          },
+          include: { product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+        });
+      });
+
+      return mapProductDetail(rp);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ApplicationErrorException(productNameTaken(data.name ?? ''));
+      }
+      throw error;
+    }
+  }
+
+  async deleteProduct(restaurantId: string, productId: string): Promise<boolean> {
+    const existing = await this.prisma.restaurantProduct.findFirst({
+      where: { id: productId, restaurantId },
+      select: { id: true, productId: true },
+    });
+    if (!existing) return false;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.restaurantProduct.delete({ where: { id: productId } });
+
+      const siblingCount = await tx.restaurantProduct.count({ where: { productId: existing.productId } });
+      if (siblingCount === 0) {
+        await tx.product.delete({ where: { id: existing.productId } });
+      }
+    });
+
+    return true;
   }
 }
 
@@ -216,5 +333,45 @@ function mapItem(item: { id: string; menuSectionId: string; restaurantProductId:
     priceOverrideCents: item.priceOverrideCents,
     sortOrder: item.sortOrder,
     isVisible: item.isVisible,
+  };
+}
+
+type RpWithProduct = {
+  id: string;
+  productId: string;
+  displayName: string | null;
+  displayDescription: string | null;
+  priceCents: number;
+  currency: string;
+  isAvailable: boolean;
+  isVisible: boolean;
+  preparationRouteOverride: string | null;
+  product: {
+    organizationId: string;
+    name: string;
+    description: string | null;
+    productType: string;
+    defaultCourse: string;
+    defaultPreparationRoute: string;
+  };
+};
+
+function mapProductDetail(rp: RpWithProduct): RestaurantProductDetail {
+  return {
+    id: rp.id,
+    productId: rp.productId,
+    organizationId: rp.product.organizationId,
+    name: rp.product.name,
+    displayName: rp.displayName,
+    description: rp.product.description,
+    displayDescription: rp.displayDescription,
+    productType: rp.product.productType as 'simple' | 'combo' | 'platter',
+    course: rp.product.defaultCourse as ProductCourse,
+    preparationRoute: rp.product.defaultPreparationRoute as PreparationRoute,
+    preparationRouteOverride: rp.preparationRouteOverride as PreparationRoute | null,
+    priceCents: rp.priceCents,
+    currency: rp.currency,
+    isAvailable: rp.isAvailable,
+    isVisible: rp.isVisible,
   };
 }

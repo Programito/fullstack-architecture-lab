@@ -180,22 +180,24 @@ El flujo operativo queda así:
 8. Servicio y cocina leen el snapshot de `OrderLine`, mostrando extras, `SIN ...`, nota de cocina o
    slots de combo sin depender de cambios posteriores del catálogo.
 
-## Administración de Menú (CRUD de secciones)
+## Administración de Menú
 
-La pestaña **Categorías** de `MenuPage` conecta con el backend para crear, editar, eliminar y reordenar secciones del menú activo.
+`MenuPage` conecta con el backend para gestionar secciones (pestaña Categorías) y productos
+(pestaña Productos) del menú activo.
 
 ### Servicio de API
 
-`MenuApiService` (`features/menu/services/menu-api.service.ts`) actúa como capa de traducción entre el backend y el modelo de frontend:
+`MenuApiService` (`features/menu/services/menu-api.service.ts`) actúa como capa de traducción entre
+el backend y el modelo de frontend:
 
 ```mermaid
 flowchart LR
   Page["MenuPage\n(signals + computed)"]
   Svc["MenuApiService"]
   PosApi["RestaurantPosApiService\n(HTTP)"]
-  Backend["Backend\n/api/v1/restaurants/:id/menus/:menuId/sections"]
+  Backend["Backend\n/api/v1/restaurants/:id"]
 
-  Page -->|"createSection / updateSection\ndeleteSection / listProducts"| Svc
+  Page -->|"secciones + productos"| Svc
   Svc --> PosApi
   PosApi -->|Observable| Backend
 ```
@@ -205,16 +207,50 @@ Métodos expuestos por `MenuApiService`:
 | Método | Descripción |
 |---|---|
 | `getMenu()` | Lee el menú activo e incluye `menuId` en `MenuData` |
-| `createSection(menuId, name, isVisible)` | Crea sección nueva; devuelve `MenuSectionAdminDto` |
+| `createSection(menuId, name, isVisible)` | Crea sección nueva |
 | `updateSection(menuId, sectionId, data)` | Actualiza `name` o `isVisible` |
 | `deleteSection(menuId, sectionId)` | Elimina sección |
-| `listProducts(menuId)` | Lista productos del restaurante para asignar |
-| `addSectionItem(menuId, sectionId, data)` | Añade ítem a sección |
+| `listProducts()` | Lista todos los productos del restaurante (incluye sin sección) |
+| `addSectionItem(menuId, sectionId, restaurantProductId)` | Asigna producto a sección |
 | `removeSectionItem(menuId, sectionId, itemId)` | Elimina ítem de sección |
+| `getProduct(productId)` | Detalle completo de un producto |
+| `createProduct(data)` | Crea producto en el catálogo |
+| `updateProduct(productId, data)` | Actualiza campos del producto |
+| `deleteProduct(productId)` | Elimina producto del catálogo |
 
-### Estado de página
+### Carga paralela del catálogo
 
-`MenuPage` mantiene el estado CRUD de categorías con signals propios; no hay store externo:
+Al inicializar y en cada recarga, `MenuPage` lanza `getMenu()` y `listProducts()` en paralelo con
+`forkJoin`:
+
+```mermaid
+sequenceDiagram
+  participant Page as MenuPage
+  participant API as MenuApiService
+  participant Back as Backend
+
+  Page->>API: forkJoin(getMenu(), listProducts())
+  API->>Back: GET /restaurants/:id/menu
+  API->>Back: GET /restaurants/:id/products
+  Back-->>API: MenuData
+  Back-->>API: RestaurantProductSummaryDto[]
+  API-->>Page: { menuData, catalogProducts }
+  Page->>Page: _menuData.set(menuData)
+  Page->>Page: _catalogProducts.set(catalogProducts)
+```
+
+El computed `products` fusiona ambas fuentes: los productos en secciones vienen de `menuData` (con
+`categoryId` poblado); los productos del catálogo que no aparecen en ninguna sección se añaden con
+`categoryId: ''`. Esto permite mostrar un inventario completo en la pestaña Productos aunque no
+todos estén asignados a una sección.
+
+### Productos sin sección
+
+Un producto con `categoryId === ''` es un producto del catálogo no asignado a ninguna sección del
+menú. En la tarjeta de producto se muestra el badge **Sin sección** y el botón **Añadir a sección**,
+que abre un selector con las secciones existentes y llama a `addSectionItem`.
+
+### Estado de la pestaña Categorías
 
 ```mermaid
 stateDiagram-v2
@@ -228,23 +264,53 @@ stateDiagram-v2
   Listado --> Listado : toggleSectionVisibility() → reload
 ```
 
-Signals y computeds relevantes:
+### Estado de la pestaña Productos
 
-- `menuId` — computed desde `menuResource`, necesario para todas las llamadas de admin
-- `createSectionOpen` — controla la visibilidad del formulario inline
-- `newSectionName` — valor del campo de texto del formulario
-- `sectionToDelete` — sección seleccionada para confirmar su eliminación
-- `deleteSectionOpen` — controla la visibilidad del diálogo de confirmación
+```mermaid
+stateDiagram-v2
+  [*] --> Cargando : inicialización
+  Cargando --> Listado : forkJoin completo
+  Listado --> FormularioCrear : openCreateProduct()
+  Listado --> FormularioEditar : openEditProduct() → getProduct()
+  FormularioCrear --> Listado : closeProductForm()
+  FormularioCrear --> Listado : submitProductForm() → reload + toast
+  FormularioEditar --> Listado : closeProductForm()
+  FormularioEditar --> Listado : submitProductForm() → reload + toast
+  Listado --> ConfirmarEliminar : openDeleteProduct(product)
+  ConfirmarEliminar --> Listado : cancelDeleteProduct()
+  ConfirmarEliminar --> Listado : confirmDeleteProduct() → reload + toast
+  Listado --> SelectorSeccion : openAddToSection(product)
+  SelectorSeccion --> Listado : cancelAddToSection()
+  SelectorSeccion --> Listado : confirmAddToSection(sectionId) → reload + toast
+```
 
-### Flujo de recarga
+Signals de producto en `MenuPage`:
 
-Todas las mutaciones (crear, actualizar, eliminar) llaman a `menuResource.reload()` en el `complete` de la suscripción. Esto garantiza que la lista refleja el estado del backend sin gestión manual de caché.
+| Signal | Tipo | Descripción |
+|---|---|---|
+| `_catalogProducts` | `RestaurantProductSummaryDto[]` | Productos cargados de `listProducts()` |
+| `products` | `computed<Product[]>` | Fusión de menú + catálogo |
+| `productFormOpen` | `boolean` | Visibilidad del formulario crear/editar |
+| `productFormProduct` | `RestaurantProductDetailDto \| null` | `null` en crear, detalle en editar |
+| `productFormLoading` | `boolean` | Spinner del botón de guardar |
+| `productToDelete` | `Product \| null` | Producto pendiente de confirmación |
+| `deleteProductOpen` | `boolean` | Visibilidad del diálogo de borrado |
+| `addToSectionProduct` | `Product \| null` | Producto pendiente de asignación |
+| `addToSectionOpen` | `boolean` | Visibilidad del selector de sección |
+
+### Feedback con toasts
+
+Todas las mutaciones muestran un toast de éxito en `complete` y un toast de error en `error`. Los
+errores 409 se distinguen por `mapHttpError(err).type === 'conflict'` para dar un mensaje más
+específico (nombre duplicado, producto ya en sección).
 
 ### Reglas de frontera
 
 - `MenuApiService` no transforma datos de dominio; mapea las respuestas DTO directamente.
-- `MenuPage` no delega el estado de formulario ni el diálogo de confirmación a componentes hijo; los gestiona con signals propios al ser estado efímero de pantalla.
-- El `menuId` se obtiene del recurso del menú (no hardcodeado) para soportar múltiples menús por restaurante en el futuro.
+- `MenuPage` gestiona todo el estado CRUD con signals propios; no hay store externo.
+- El `menuId` se obtiene del menú cargado (no hardcodeado) para soportar múltiples menús.
+- La recarga siempre relanza `forkJoin(getMenu(), listProducts())` para mantener ambas listas
+  sincronizadas tras cualquier mutación.
 
 ## API de Pedidos Persistentes
 
