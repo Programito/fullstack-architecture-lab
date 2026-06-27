@@ -14,6 +14,7 @@ type RawModifierGroup = {
   modifierGroup: {
     id: string;
     name: string;
+    selectionType: string;
     minSelections: number;
     maxSelections: number;
     isRequired: boolean;
@@ -51,6 +52,7 @@ type RawMenuItem = {
     product: {
       id: string;
       name: string;
+      description: string | null;
       productType: string;
       defaultCourse: string | null;
       defaultPreparationRoute: string | null;
@@ -64,6 +66,14 @@ type RawMenuItem = {
 @Injectable()
 export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCatalogRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async setItemAvailability(restaurantId: string, restaurantProductId: string, available: boolean): Promise<boolean> {
+    const result = await this.prisma.restaurantProduct.updateMany({
+      where: { id: restaurantProductId, restaurantId },
+      data: { isAvailable: available },
+    });
+    return result.count > 0;
+  }
 
   async findActiveMenu(restaurantId: string): Promise<RestaurantMenu | null> {
     const menu = await this.prisma.restaurantMenu.findFirst({
@@ -102,7 +112,9 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
                     modifierGroups: {
                       orderBy: { sortOrder: 'asc' },
                       include: {
-                        modifierGroup: { include: { options: { orderBy: { sortOrder: 'asc' } } } },
+                        modifierGroup: {
+                          include: { options: { orderBy: { sortOrder: 'asc' } } },
+                        },
                       },
                     },
                   },
@@ -117,6 +129,7 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
     if (!menu) return null;
 
     return {
+      id: menu.id,
       restaurantId: menu.restaurantId,
       name: menu.name,
       isActive: menu.isActive,
@@ -139,6 +152,7 @@ function mapMenuItem(item: RawMenuItem) {
     restaurantProductId: rp.id,
     productId: product.id,
     name: item.displayNameOverride ?? rp.displayName ?? product.name,
+    description: product.description ?? undefined,
     productType: product.productType as 'simple' | 'combo' | 'platter',
     priceCents: item.priceOverrideCents ?? rp.priceCents,
     currency: rp.currency,
@@ -158,6 +172,7 @@ function mapModifierGroup(rpMg: RawModifierGroup): RestaurantMenuModifierGroup {
   return {
     id: mg.id,
     name: mg.name,
+    selectionType: (mg.selectionType === 'single' ? 'single' : 'multiple') as 'single' | 'multiple',
     minSelections: mg.minSelections,
     maxSelections: mg.maxSelections,
     isRequired: mg.isRequired,

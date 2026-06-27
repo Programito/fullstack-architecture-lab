@@ -31,7 +31,7 @@ export class ProductCustomizerDialog {
   protected readonly kitchenNote = signal('');
   protected readonly selectedModifiers = computed(() => {
     const product = this.product();
-    return product ? this.pricing.buildSelectedModifiers(product, this.selectedOptionIds()) : [];
+    return product ? this.pricing.buildSelectedModifiers(product, this.selectedOptionIds(), [...this.modifierGroups()]) : [];
   });
   protected readonly previewPrice = computed(() => {
     const product = this.product();

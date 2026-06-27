@@ -201,7 +201,7 @@ export class RestaurantPosStore {
       return;
     }
 
-    const validation = this.menuValidation.validateCustomization(product, selectedModifierOptionIds);
+    const validation = this.menuValidation.validateCustomization(product, selectedModifierOptionIds, this.menu.modifierGroups());
 
     if (!validation.valid) {
       this.setError(PRODUCT_UNAVAILABLE_ERROR);
@@ -211,7 +211,7 @@ export class RestaurantPosStore {
     const order = this.ensureOrder(tableId);
     const table = this.getTable(tableId);
     const now = this.nowIso();
-    const selectedModifiers = this.menuPricing.buildSelectedModifiers(product, selectedModifierOptionIds);
+    const selectedModifiers = this.menuPricing.buildSelectedModifiers(product, selectedModifierOptionIds, this.menu.modifierGroups());
     const unitPrice = this.menuPricing.calculateCustomizedProductPrice(product, selectedModifiers);
     const configurationSignature = this.menuPricing.createConfigurationSignature(product.id, selectedModifierOptionIds, kitchenNote);
     const lineId = this.createOrderLineId(configurationSignature);
@@ -1321,7 +1321,7 @@ export class RestaurantPosStore {
 
   private getDefaultModifierOptionIds(product: Product): string[] {
     return this.menuPricing
-      .getModifierGroupsForProduct(product)
+      .getModifierGroupsForProduct(product, this.menu.modifierGroups())
       .flatMap((group) => group.options.filter((option) => option.selectedByDefault).map((option) => option.id));
   }
 

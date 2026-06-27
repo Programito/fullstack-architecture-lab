@@ -180,6 +180,72 @@ El flujo operativo queda así:
 8. Servicio y cocina leen el snapshot de `OrderLine`, mostrando extras, `SIN ...`, nota de cocina o
    slots de combo sin depender de cambios posteriores del catálogo.
 
+## Administración de Menú (CRUD de secciones)
+
+La pestaña **Categorías** de `MenuPage` conecta con el backend para crear, editar, eliminar y reordenar secciones del menú activo.
+
+### Servicio de API
+
+`MenuApiService` (`features/menu/services/menu-api.service.ts`) actúa como capa de traducción entre el backend y el modelo de frontend:
+
+```mermaid
+flowchart LR
+  Page["MenuPage\n(signals + computed)"]
+  Svc["MenuApiService"]
+  PosApi["RestaurantPosApiService\n(HTTP)"]
+  Backend["Backend\n/api/v1/restaurants/:id/menus/:menuId/sections"]
+
+  Page -->|"createSection / updateSection\ndeleteSection / listProducts"| Svc
+  Svc --> PosApi
+  PosApi -->|Observable| Backend
+```
+
+Métodos expuestos por `MenuApiService`:
+
+| Método | Descripción |
+|---|---|
+| `getMenu()` | Lee el menú activo e incluye `menuId` en `MenuData` |
+| `createSection(menuId, name, isVisible)` | Crea sección nueva; devuelve `MenuSectionAdminDto` |
+| `updateSection(menuId, sectionId, data)` | Actualiza `name` o `isVisible` |
+| `deleteSection(menuId, sectionId)` | Elimina sección |
+| `listProducts(menuId)` | Lista productos del restaurante para asignar |
+| `addSectionItem(menuId, sectionId, data)` | Añade ítem a sección |
+| `removeSectionItem(menuId, sectionId, itemId)` | Elimina ítem de sección |
+
+### Estado de página
+
+`MenuPage` mantiene el estado CRUD de categorías con signals propios; no hay store externo:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Listado : menú cargado
+  Listado --> FormularioNuevo : openCreateSection()
+  FormularioNuevo --> Listado : cancelCreateSection()
+  FormularioNuevo --> Listado : submitCreateSection() → reload
+  Listado --> ConfirmarEliminar : openDeleteSection(category)
+  ConfirmarEliminar --> Listado : cancelDeleteSection()
+  ConfirmarEliminar --> Listado : confirmDeleteSection() → reload
+  Listado --> Listado : toggleSectionVisibility() → reload
+```
+
+Signals y computeds relevantes:
+
+- `menuId` — computed desde `menuResource`, necesario para todas las llamadas de admin
+- `createSectionOpen` — controla la visibilidad del formulario inline
+- `newSectionName` — valor del campo de texto del formulario
+- `sectionToDelete` — sección seleccionada para confirmar su eliminación
+- `deleteSectionOpen` — controla la visibilidad del diálogo de confirmación
+
+### Flujo de recarga
+
+Todas las mutaciones (crear, actualizar, eliminar) llaman a `menuResource.reload()` en el `complete` de la suscripción. Esto garantiza que la lista refleja el estado del backend sin gestión manual de caché.
+
+### Reglas de frontera
+
+- `MenuApiService` no transforma datos de dominio; mapea las respuestas DTO directamente.
+- `MenuPage` no delega el estado de formulario ni el diálogo de confirmación a componentes hijo; los gestiona con signals propios al ser estado efímero de pantalla.
+- El `menuId` se obtiene del recurso del menú (no hardcodeado) para soportar múltiples menús por restaurante en el futuro.
+
 ## API de Pedidos Persistentes
 
 El servicio HTTP de pedidos vive en:

@@ -15,8 +15,8 @@ async function main(): Promise<void> {
   await seedRoles(prisma);
   await seedMesaFlowDemo(prisma);
   await seedDemoUsers(prisma);
-  await seedMesaFlowOrdersDemo(prisma);
   await seedMesaFlowLayoutDemo(prisma);
+  await seedMesaFlowOrdersDemo(prisma);
   await seedMesaFlowReservationsDemo(prisma);
 }
 

@@ -4,4 +4,5 @@ export const RESTAURANT_ORDER_CATALOG_REPOSITORY = Symbol('RESTAURANT_ORDER_CATA
 
 export interface RestaurantOrderCatalogRepository {
   findActiveMenu(restaurantId: string): Promise<RestaurantMenu | null>;
+  setItemAvailability(restaurantId: string, restaurantProductId: string, available: boolean): Promise<boolean>;
 }

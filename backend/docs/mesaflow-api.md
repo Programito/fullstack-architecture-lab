@@ -91,6 +91,70 @@ Notas rápidas:
 - `GET /api/v1/restaurants/:id/reservations`
   Returns reservation projections with customer snapshots and linked table ids.
 
+## Menu Admin
+
+Endpoints de administración de secciones e ítems del menú. Requieren que exista un menú activo para el restaurante.
+
+### Secciones
+
+- `POST /api/v1/restaurants/:id/menus/:menuId/sections`
+  Crea una nueva sección en el menú. El campo `name` debe ser único dentro del menú.
+
+- `PATCH /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId`
+  Actualiza `name` o `isVisible` de una sección. Retorna el estado actualizado.
+
+- `DELETE /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId`
+  Elimina la sección y sus ítems asociados.
+
+- `PUT /api/v1/restaurants/:id/menus/:menuId/sections/reorder`
+  Reordena las secciones del menú. Recibe un array `items: [{ id, sortOrder }]`.
+
+### Ítems de sección
+
+- `POST /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId/items`
+  Añade un ítem a la sección. El campo `restaurantProductId` referencia un producto del restaurante.
+
+- `PATCH /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId/items/:itemId`
+  Actualiza `sortOrder` u otros metadatos del ítem.
+
+- `DELETE /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId/items/:itemId`
+  Elimina el ítem de la sección.
+
+- `PUT /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId/items/reorder`
+  Reordena los ítems dentro de una sección. Recibe `items: [{ id, sortOrder }]`.
+
+### Productos disponibles
+
+- `GET /api/v1/restaurants/:id/products`
+  Devuelve el resumen de productos del restaurante para asignarlos a secciones del menú
+  (`RestaurantProductSummaryDto`: `id`, `name`, `available`, `basePrice`, `sku`).
+
+```mermaid
+flowchart TB
+  Client["Frontend Angular\nMenuApiService"]
+  Controller["RestaurantsController\n/api/v1/restaurants/:id"]
+  UseCases["Casos de uso\nCreateMenuSection\nUpdateMenuSection\nDeleteMenuSection\nAddMenuSectionItem\nUpdateMenuSectionItem\nRemoveMenuSectionItem\nReorderMenuSections\nReorderMenuSectionItems\nListRestaurantProducts"]
+  Repo["PrismaRestaurantMenuAdminRepository"]
+  DB["PostgreSQL\nmenu_sections\nmenu_items"]
+
+  Client -->|"HTTP CRUD"| Controller
+  Controller --> UseCases
+  UseCases --> Repo
+  Repo --> DB
+```
+
+### Errores
+
+Los endpoints de admin de menú lanzan errores alineados con `application-error.mapper.ts`:
+
+| Código | HTTP | Descripción |
+|---|---|---|
+| `menu_not_found` | 404 | El menú no existe en el restaurante |
+| `menu_section_not_found` | 404 | La sección no existe en el menú |
+| `menu_section_name_taken` | 409 | Ya existe una sección con ese nombre |
+| `menu_item_not_found` | 404 | El ítem no existe en la sección |
+| `menu_item_already_in_section` | 409 | El producto ya está en la sección |
+
 ## Follow-up write endpoints
 
 The next write endpoints expected on top of the current data model are:

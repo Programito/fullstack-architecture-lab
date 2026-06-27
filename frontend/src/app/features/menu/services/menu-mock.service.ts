@@ -1,4 +1,4 @@
-import { computed, Injectable } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
@@ -535,11 +535,24 @@ export const MOCK_COMBO_PRODUCT_DEFINITIONS: ComboProductDefinition[] = localize
 export class MenuMockService {
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
+  private readonly _availabilityOverrides = signal<Map<string, boolean>>(new Map());
+
   readonly locale = computed<AppLocale>(() => this.toSupportedLocale(this.activeLang()));
   readonly categories = computed(() => localizeMenuCategories(this.locale()));
   readonly modifierGroups = computed(() => localizeModifierGroups(this.locale()));
-  readonly products = computed(() => localizeMenuProducts(this.locale()));
+  readonly products = computed(() => {
+    const base = localizeMenuProducts(this.locale());
+    const overrides = this._availabilityOverrides();
+    if (overrides.size === 0) return base;
+    return base.map((p) => (overrides.has(p.id) ? { ...p, available: overrides.get(p.id)! } : p));
+  });
   readonly comboProductDefinitions = computed(() => localizeComboProductDefinitions(this.locale()));
+
+  toggleAvailability(productId: string): void {
+    const current = this.products().find((p) => p.id === productId);
+    if (!current) return;
+    this._availabilityOverrides.update((m) => new Map(m).set(productId, !current.available));
+  }
 
   private toSupportedLocale(locale: string): AppLocale {
     return locale === 'en' || locale === 'ca' ? locale : 'es';

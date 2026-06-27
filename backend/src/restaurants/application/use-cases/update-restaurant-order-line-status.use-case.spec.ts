@@ -52,8 +52,9 @@ describe('UpdateRestaurantOrderLineStatusUseCase', () => {
   it('delegates the status update to the repository and returns the updated order', async () => {
     const repository = makeRepository();
     const updatedOrder = makeOrder();
+    vi.mocked(repository.findById).mockResolvedValue(makeOrder());
     vi.mocked(repository.updateLineStatus).mockResolvedValue(updatedOrder);
-    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository, {} as never);
 
     const result = await useCase.execute({
       restaurantId: 'restaurant-1',
@@ -73,10 +74,11 @@ describe('UpdateRestaurantOrderLineStatusUseCase', () => {
 
   it('returns invalid_order_state when the status transition is not allowed', async () => {
     const repository = makeRepository();
+    vi.mocked(repository.findById).mockResolvedValue(makeOrder());
     vi.mocked(repository.updateLineStatus).mockRejectedValue(
       new ApplicationErrorException(applicationError('invalid_order_state', 'Status transition not allowed.')),
     );
-    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository, {} as never);
 
     const result = await useCase.execute({
       restaurantId: 'restaurant-1',
@@ -90,10 +92,11 @@ describe('UpdateRestaurantOrderLineStatusUseCase', () => {
 
   it('returns order_line_not_found when the line does not exist', async () => {
     const repository = makeRepository();
+    vi.mocked(repository.findById).mockResolvedValue(makeOrder());
     vi.mocked(repository.updateLineStatus).mockRejectedValue(
       new ApplicationErrorException(applicationError('order_line_not_found', 'Line not found.')),
     );
-    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository, {} as never);
 
     const result = await useCase.execute({
       restaurantId: 'restaurant-1',
@@ -107,8 +110,9 @@ describe('UpdateRestaurantOrderLineStatusUseCase', () => {
 
   it('rethrows unexpected errors', async () => {
     const repository = makeRepository();
+    vi.mocked(repository.findById).mockResolvedValue(makeOrder());
     vi.mocked(repository.updateLineStatus).mockRejectedValue(new Error('DB connection lost'));
-    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository);
+    const useCase = new UpdateRestaurantOrderLineStatusUseCase(repository, {} as never);
 
     await expect(
       useCase.execute({ restaurantId: 'restaurant-1', orderId: 'order-1', lineId: 'line-1', status: 'ready' }),

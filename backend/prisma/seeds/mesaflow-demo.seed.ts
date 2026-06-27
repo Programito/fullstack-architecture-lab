@@ -134,7 +134,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
         displayDescription: entry.displayDescription ?? null,
         priceCents: entry.priceCents,
         currency: restaurant.currency,
-        isAvailable: true,
+        isAvailable: entry.isAvailable ?? true,
         isVisible: true,
         preparationRouteOverride: entry.preparationRouteOverride ?? null,
         sortOrder: entry.sortOrder,
@@ -146,7 +146,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
         displayDescription: entry.displayDescription ?? null,
         priceCents: entry.priceCents,
         currency: restaurant.currency,
-        isAvailable: true,
+        isAvailable: entry.isAvailable ?? true,
         isVisible: true,
         preparationRouteOverride: entry.preparationRouteOverride ?? null,
         sortOrder: entry.sortOrder,
@@ -154,6 +154,8 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     });
     saleIdByProductName.set(entry.productName, sale.id);
   }
+
+  // ── Menu sections ────────────────────────────────────────────────────────────
 
   const menu = await prisma.restaurantMenu.upsert({
     where: {
@@ -175,36 +177,66 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     update: { sortOrder: 1, isVisible: true },
     create: { menuId: menu.id, name: 'Bebidas', sortOrder: 1, isVisible: true },
   });
-  const startersSection = await prisma.menuSection.upsert({
-    where: { menuId_name: { menuId: menu.id, name: 'Entrantes' } },
+  const tapasSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Tapas' } },
     update: { sortOrder: 2, isVisible: true },
-    create: { menuId: menu.id, name: 'Entrantes', sortOrder: 2, isVisible: true },
+    create: { menuId: menu.id, name: 'Tapas', sortOrder: 2, isVisible: true },
   });
-  const mainsSection = await prisma.menuSection.upsert({
-    where: { menuId_name: { menuId: menu.id, name: 'Principales' } },
+  const burgersSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Hamburguesas' } },
     update: { sortOrder: 3, isVisible: true },
-    create: { menuId: menu.id, name: 'Principales', sortOrder: 3, isVisible: true },
+    create: { menuId: menu.id, name: 'Hamburguesas', sortOrder: 3, isVisible: true },
+  });
+  const saladsSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Ensaladas' } },
+    update: { sortOrder: 4, isVisible: true },
+    create: { menuId: menu.id, name: 'Ensaladas', sortOrder: 4, isVisible: true },
+  });
+  const plattersSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Platos combinados' } },
+    update: { sortOrder: 5, isVisible: true },
+    create: { menuId: menu.id, name: 'Platos combinados', sortOrder: 5, isVisible: true },
   });
   const dessertsSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Postres' } },
-    update: { sortOrder: 4, isVisible: true },
-    create: { menuId: menu.id, name: 'Postres', sortOrder: 4, isVisible: true },
+    update: { sortOrder: 6, isVisible: true },
+    create: { menuId: menu.id, name: 'Postres', sortOrder: 6, isVisible: true },
+  });
+  const coffeeSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Café' } },
+    update: { sortOrder: 7, isVisible: true },
+    create: { menuId: menu.id, name: 'Café', sortOrder: 7, isVisible: true },
+  });
+  const menusSection = await prisma.menuSection.upsert({
+    where: { menuId_name: { menuId: menu.id, name: 'Menús' } },
+    update: { sortOrder: 8, isVisible: true },
+    create: { menuId: menu.id, name: 'Menús', sortOrder: 8, isVisible: true },
   });
 
   for (const item of [
     { sectionId: drinksSection.id, productName: 'Coca-Cola', sortOrder: 1 },
     { sectionId: drinksSection.id, productName: 'Agua mineral', sortOrder: 2 },
     { sectionId: drinksSection.id, productName: 'Cerveza', sortOrder: 3 },
-    { sectionId: drinksSection.id, productName: 'Vino tinto copa', sortOrder: 4 },
-    { sectionId: drinksSection.id, productName: 'Cafe solo', sortOrder: 5 },
-    { sectionId: startersSection.id, productName: 'Croquetas de jamon iberico', sortOrder: 1 },
-    { sectionId: startersSection.id, productName: 'Nachos caseros', sortOrder: 2 },
-    { sectionId: startersSection.id, productName: 'Ensalada', sortOrder: 3 },
-    { sectionId: mainsSection.id, productName: 'Hamburguesa craft', sortOrder: 1 },
-    { sectionId: mainsSection.id, productName: 'Sandwich club', sortOrder: 2 },
-    { sectionId: mainsSection.id, productName: 'Menu Classic Burger', sortOrder: 3 },
-    { sectionId: mainsSection.id, productName: 'Plato combinado vegetal', sortOrder: 4 },
+    { sectionId: drinksSection.id, productName: 'Limonada con gas', sortOrder: 4 },
+    { sectionId: drinksSection.id, productName: 'Vino tinto copa', sortOrder: 5 },
+    { sectionId: tapasSection.id, productName: 'Croquetas de jamon iberico', sortOrder: 1 },
+    { sectionId: tapasSection.id, productName: 'Patatas bravas', sortOrder: 2 },
+    { sectionId: tapasSection.id, productName: 'Nachos caseros', sortOrder: 3 },
+    { sectionId: tapasSection.id, productName: 'Patatas fritas', sortOrder: 4 },
+    { sectionId: burgersSection.id, productName: 'Hamburguesa craft', sortOrder: 1 },
+    { sectionId: burgersSection.id, productName: 'Hamburguesa clasica', sortOrder: 2 },
+    { sectionId: burgersSection.id, productName: 'Hamburguesa trufada', sortOrder: 3 },
+    { sectionId: burgersSection.id, productName: 'Hamburguesa vegetal', sortOrder: 4 },
+    { sectionId: saladsSection.id, productName: 'Ensalada cesar', sortOrder: 1 },
+    { sectionId: saladsSection.id, productName: 'Ensalada', sortOrder: 2 },
+    { sectionId: plattersSection.id, productName: 'Plato combinado de lomo', sortOrder: 1 },
+    { sectionId: plattersSection.id, productName: 'Plato combinado de pollo', sortOrder: 2 },
+    { sectionId: plattersSection.id, productName: 'Plato combinado vegetal', sortOrder: 3 },
     { sectionId: dessertsSection.id, productName: 'Tarta de queso', sortOrder: 1 },
+    { sectionId: dessertsSection.id, productName: 'Coulant de chocolate', sortOrder: 2 },
+    { sectionId: coffeeSection.id, productName: 'Cafe solo', sortOrder: 1 },
+    { sectionId: coffeeSection.id, productName: 'Cafe con leche', sortOrder: 2 },
+    { sectionId: menusSection.id, productName: 'Menu Classic Burger', sortOrder: 1 },
   ]) {
     const restaurantProductId = saleIdByProductName.get(item.productName);
     if (!restaurantProductId) throw new Error(`Missing restaurant product for "${item.productName}".`);
@@ -225,405 +257,261 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  const extrasGroup = await prisma.modifierGroup.upsert({
-    where: { organizationId_name: { organizationId: organization.id, name: 'Extras' } },
-    update: {
-      selectionType: 'multiple',
-      minSelections: 0,
-      maxSelections: 3,
-      isRequired: false,
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Extras',
-      selectionType: 'multiple',
-      minSelections: 0,
-      maxSelections: 3,
-      isRequired: false,
-    },
+  // ── Modifier groups ──────────────────────────────────────────────────────────
+
+  const burgerExtrasGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Extras de hamburguesa' } },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+    create: { organizationId: organization.id, name: 'Extras de hamburguesa', selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
   });
-  const cookingGroup = await prisma.modifierGroup.upsert({
-    where: { organizationId_name: { organizationId: organization.id, name: 'Punto de coccion' } },
-    update: {
-      selectionType: 'single',
-      minSelections: 1,
-      maxSelections: 1,
-      isRequired: true,
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Punto de coccion',
-      selectionType: 'single',
-      minSelections: 1,
-      maxSelections: 1,
-      isRequired: true,
-    },
+  const burgerRemoveGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Quitar ingredientes hamburguesa' } },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+    create: { organizationId: organization.id, name: 'Quitar ingredientes hamburguesa', selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
   });
-  const saucesGroup = await prisma.modifierGroup.upsert({
-    where: { organizationId_name: { organizationId: organization.id, name: 'Salsas' } },
-    update: {
-      selectionType: 'multiple',
-      minSelections: 0,
-      maxSelections: 2,
-      isRequired: false,
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Salsas',
-      selectionType: 'multiple',
-      minSelections: 0,
-      maxSelections: 2,
-      isRequired: false,
-    },
+  const burgerPointGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Punto de la carne' } },
+    update: { selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
+    create: { organizationId: organization.id, name: 'Punto de la carne', selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
+  });
+  const drinkSizeGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Tamaño de bebida' } },
+    update: { selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
+    create: { organizationId: organization.id, name: 'Tamaño de bebida', selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
+  });
+  const coffeeOptionsGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Opciones de café' } },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+    create: { organizationId: organization.id, name: 'Opciones de café', selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+  });
+  const platterRemoveGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Quitar ingredientes plato' } },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 4, isRequired: false },
+    create: { organizationId: organization.id, name: 'Quitar ingredientes plato', selectionType: 'multiple', minSelections: 0, maxSelections: 4, isRequired: false },
+  });
+  const platterExtrasGroup = await prisma.modifierGroup.upsert({
+    where: { organizationId_name: { organizationId: organization.id, name: 'Extras de plato combinado' } },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+    create: { organizationId: organization.id, name: 'Extras de plato combinado', selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
   });
 
+  // ── Modifier options ─────────────────────────────────────────────────────────
+
   for (const option of [
-    { groupId: extrasGroup.id, name: 'Queso', priceDeltaCents: 100, sortOrder: 1 },
-    { groupId: extrasGroup.id, name: 'Bacon', priceDeltaCents: 150, sortOrder: 2 },
-    { groupId: extrasGroup.id, name: 'Huevo', priceDeltaCents: 120, sortOrder: 3 },
-    { groupId: cookingGroup.id, name: 'Al punto', priceDeltaCents: 0, sortOrder: 1 },
-    { groupId: cookingGroup.id, name: 'Muy hecha', priceDeltaCents: 0, sortOrder: 2 },
-    { groupId: saucesGroup.id, name: 'Guacamole', priceDeltaCents: 100, sortOrder: 1 },
-    { groupId: saucesGroup.id, name: 'Salsa cheddar', priceDeltaCents: 100, sortOrder: 2 },
+    { groupId: burgerExtrasGroup.id, name: 'Bacon', priceDeltaCents: 150, sortOrder: 1 },
+    { groupId: burgerExtrasGroup.id, name: 'Queso extra', priceDeltaCents: 100, sortOrder: 2 },
+    { groupId: burgerExtrasGroup.id, name: 'Huevo', priceDeltaCents: 120, sortOrder: 3 },
+    { groupId: burgerRemoveGroup.id, name: 'Sin cebolla', priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: burgerRemoveGroup.id, name: 'Sin pepinillos', priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: burgerRemoveGroup.id, name: 'Sin salsa', priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: burgerPointGroup.id, name: 'Poco hecha', priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: burgerPointGroup.id, name: 'Al punto', priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: burgerPointGroup.id, name: 'Muy hecha', priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: drinkSizeGroup.id, name: 'Mediana', priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: drinkSizeGroup.id, name: 'Grande', priceDeltaCents: 80, sortOrder: 2 },
+    { groupId: drinkSizeGroup.id, name: 'XL', priceDeltaCents: 120, sortOrder: 3 },
+    { groupId: coffeeOptionsGroup.id, name: 'Carga extra', priceDeltaCents: 70, sortOrder: 1 },
+    { groupId: coffeeOptionsGroup.id, name: 'Bebida de avena', priceDeltaCents: 50, sortOrder: 2 },
+    { groupId: coffeeOptionsGroup.id, name: 'Descafeinado', priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: platterRemoveGroup.id, name: 'Sin huevo', priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: platterRemoveGroup.id, name: 'Sin patatas', priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: platterRemoveGroup.id, name: 'Sin ensalada', priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: platterExtrasGroup.id, name: 'Huevo extra', priceDeltaCents: 120, sortOrder: 1 },
+    { groupId: platterExtrasGroup.id, name: 'Patatas extra', priceDeltaCents: 150, sortOrder: 2 },
+    { groupId: platterExtrasGroup.id, name: 'Salsa extra', priceDeltaCents: 80, sortOrder: 3 },
   ]) {
     await prisma.modifierOption.upsert({
-      where: {
-        modifierGroupId_name: {
-          modifierGroupId: option.groupId,
-          name: option.name,
-        },
-      },
-      update: {
-        priceDeltaCents: option.priceDeltaCents,
-        isAvailable: true,
-        sortOrder: option.sortOrder,
-      },
-      create: {
-        modifierGroupId: option.groupId,
-        name: option.name,
-        priceDeltaCents: option.priceDeltaCents,
-        isAvailable: true,
-        sortOrder: option.sortOrder,
-      },
+      where: { modifierGroupId_name: { modifierGroupId: option.groupId, name: option.name } },
+      update: { priceDeltaCents: option.priceDeltaCents, isAvailable: true, sortOrder: option.sortOrder },
+      create: { modifierGroupId: option.groupId, name: option.name, priceDeltaCents: option.priceDeltaCents, isAvailable: true, sortOrder: option.sortOrder },
     });
   }
 
-  const burgerSaleId = saleIdByProductName.get('Hamburguesa craft');
-  if (!burgerSaleId) throw new Error('Missing burger sale.');
-  await prisma.restaurantProductModifierGroup.upsert({
-    where: {
-      restaurantProductId_modifierGroupId: {
-        restaurantProductId: burgerSaleId,
-        modifierGroupId: extrasGroup.id,
-      },
-    },
-    update: { sortOrder: 1 },
-    create: {
-      restaurantProductId: burgerSaleId,
-      modifierGroupId: extrasGroup.id,
-      sortOrder: 1,
-    },
-  });
-  await prisma.restaurantProductModifierGroup.upsert({
-    where: {
-      restaurantProductId_modifierGroupId: {
-        restaurantProductId: burgerSaleId,
-        modifierGroupId: cookingGroup.id,
-      },
-    },
-    update: { sortOrder: 2 },
-    create: {
-      restaurantProductId: burgerSaleId,
-      modifierGroupId: cookingGroup.id,
-      sortOrder: 2,
-    },
-  });
-  const nachosSaleId = saleIdByProductName.get('Nachos caseros');
-  if (!nachosSaleId) throw new Error('Missing nachos sale.');
-  await prisma.restaurantProductModifierGroup.upsert({
-    where: {
-      restaurantProductId_modifierGroupId: {
-        restaurantProductId: nachosSaleId,
-        modifierGroupId: saucesGroup.id,
-      },
-    },
-    update: { sortOrder: 1 },
-    create: {
-      restaurantProductId: nachosSaleId,
-      modifierGroupId: saucesGroup.id,
-      sortOrder: 1,
-    },
-  });
+  // ── Assign modifier groups to products ───────────────────────────────────────
+
+  for (const { productName, groupId, sortOrder } of [
+    { productName: 'Hamburguesa craft', groupId: burgerExtrasGroup.id, sortOrder: 1 },
+    { productName: 'Hamburguesa craft', groupId: burgerRemoveGroup.id, sortOrder: 2 },
+    { productName: 'Hamburguesa craft', groupId: burgerPointGroup.id, sortOrder: 3 },
+    { productName: 'Hamburguesa clasica', groupId: burgerExtrasGroup.id, sortOrder: 1 },
+    { productName: 'Hamburguesa clasica', groupId: burgerRemoveGroup.id, sortOrder: 2 },
+    { productName: 'Hamburguesa clasica', groupId: burgerPointGroup.id, sortOrder: 3 },
+    { productName: 'Hamburguesa trufada', groupId: burgerExtrasGroup.id, sortOrder: 1 },
+    { productName: 'Hamburguesa trufada', groupId: burgerRemoveGroup.id, sortOrder: 2 },
+    { productName: 'Hamburguesa trufada', groupId: burgerPointGroup.id, sortOrder: 3 },
+    { productName: 'Hamburguesa vegetal', groupId: burgerExtrasGroup.id, sortOrder: 1 },
+    { productName: 'Hamburguesa vegetal', groupId: burgerRemoveGroup.id, sortOrder: 2 },
+    { productName: 'Hamburguesa vegetal', groupId: burgerPointGroup.id, sortOrder: 3 },
+    { productName: 'Coca-Cola', groupId: drinkSizeGroup.id, sortOrder: 1 },
+    { productName: 'Cerveza', groupId: drinkSizeGroup.id, sortOrder: 1 },
+    { productName: 'Limonada con gas', groupId: drinkSizeGroup.id, sortOrder: 1 },
+    { productName: 'Cafe solo', groupId: coffeeOptionsGroup.id, sortOrder: 1 },
+    { productName: 'Cafe con leche', groupId: coffeeOptionsGroup.id, sortOrder: 1 },
+    { productName: 'Plato combinado de lomo', groupId: platterRemoveGroup.id, sortOrder: 1 },
+    { productName: 'Plato combinado de lomo', groupId: platterExtrasGroup.id, sortOrder: 2 },
+    { productName: 'Plato combinado de pollo', groupId: platterRemoveGroup.id, sortOrder: 1 },
+    { productName: 'Plato combinado de pollo', groupId: platterExtrasGroup.id, sortOrder: 2 },
+  ]) {
+    const restaurantProductId = saleIdByProductName.get(productName);
+    if (!restaurantProductId) throw new Error(`Missing restaurant product for modifier group assignment: "${productName}".`);
+    await prisma.restaurantProductModifierGroup.upsert({
+      where: { restaurantProductId_modifierGroupId: { restaurantProductId, modifierGroupId: groupId } },
+      update: { sortOrder },
+      create: { restaurantProductId, modifierGroupId: groupId, sortOrder },
+    });
+  }
+
+  // ── Combo: Menu Classic Burger ───────────────────────────────────────────────
 
   const comboProductId = productIdByName.get('Menu Classic Burger');
   if (!comboProductId) throw new Error('Missing combo product.');
   const comboDefinition = await prisma.comboDefinition.upsert({
     where: { productId: comboProductId },
-    update: {
-      pricingMode: 'base_plus_supplements',
-      basePriceCents: 1390,
-    },
-    create: {
-      productId: comboProductId,
-      pricingMode: 'base_plus_supplements',
-      basePriceCents: 1390,
-    },
+    update: { pricingMode: 'base_plus_supplements', basePriceCents: 1390 },
+    create: { productId: comboProductId, pricingMode: 'base_plus_supplements', basePriceCents: 1390 },
+  });
+  const comboBurgerSlot = await prisma.comboSlot.upsert({
+    where: { comboDefinitionId_name: { comboDefinitionId: comboDefinition.id, name: 'Hamburguesa' } },
+    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 1 },
+    create: { comboDefinitionId: comboDefinition.id, name: 'Hamburguesa', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 1 },
   });
   const comboDrinkSlot = await prisma.comboSlot.upsert({
-    where: {
-      comboDefinitionId_name: {
-        comboDefinitionId: comboDefinition.id,
-        name: 'Bebida',
-      },
-    },
-    update: {
-      minSelections: 1,
-      maxSelections: 1,
-      isRequired: true,
-      sortOrder: 1,
-    },
-    create: {
-      comboDefinitionId: comboDefinition.id,
-      name: 'Bebida',
-      minSelections: 1,
-      maxSelections: 1,
-      isRequired: true,
-      sortOrder: 1,
-    },
+    where: { comboDefinitionId_name: { comboDefinitionId: comboDefinition.id, name: 'Bebida' } },
+    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 2 },
+    create: { comboDefinitionId: comboDefinition.id, name: 'Bebida', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 2 },
   });
   const comboSideSlot = await prisma.comboSlot.upsert({
-    where: {
-      comboDefinitionId_name: {
-        comboDefinitionId: comboDefinition.id,
-        name: 'Acompanamiento',
-      },
-    },
-    update: {
-      minSelections: 1,
-      maxSelections: 1,
-      isRequired: true,
-      sortOrder: 2,
-    },
-    create: {
-      comboDefinitionId: comboDefinition.id,
-      name: 'Acompanamiento',
-      minSelections: 1,
-      maxSelections: 1,
-      isRequired: true,
-      sortOrder: 2,
-    },
+    where: { comboDefinitionId_name: { comboDefinitionId: comboDefinition.id, name: 'Acompañamiento' } },
+    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3 },
+    create: { comboDefinitionId: comboDefinition.id, name: 'Acompañamiento', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3 },
   });
 
-  for (const option of [
-    { productName: 'Agua mineral', supplementPriceCents: 0, sortOrder: 1, isDefault: true },
-    { productName: 'Coca-Cola', supplementPriceCents: 0, sortOrder: 2, isDefault: false },
-    { productName: 'Cerveza', supplementPriceCents: 150, sortOrder: 3, isDefault: false },
+  for (const opt of [
+    { slotId: comboBurgerSlot.id, productName: 'Hamburguesa clasica', supplementPriceCents: 0, isDefault: true, sortOrder: 1 },
+    { slotId: comboBurgerSlot.id, productName: 'Hamburguesa craft', supplementPriceCents: 100, isDefault: false, sortOrder: 2 },
+    { slotId: comboBurgerSlot.id, productName: 'Hamburguesa vegetal', supplementPriceCents: 50, isDefault: false, sortOrder: 3 },
+    { slotId: comboDrinkSlot.id, productName: 'Agua mineral', supplementPriceCents: 0, isDefault: true, sortOrder: 1 },
+    { slotId: comboDrinkSlot.id, productName: 'Coca-Cola', supplementPriceCents: 0, isDefault: false, sortOrder: 2 },
+    { slotId: comboDrinkSlot.id, productName: 'Cerveza', supplementPriceCents: 150, isDefault: false, sortOrder: 3 },
+    { slotId: comboSideSlot.id, productName: 'Patatas fritas', supplementPriceCents: 0, isDefault: true, sortOrder: 1 },
+    { slotId: comboSideSlot.id, productName: 'Ensalada', supplementPriceCents: 50, isDefault: false, sortOrder: 2 },
   ]) {
-    const restaurantProductId = saleIdByProductName.get(option.productName);
-    if (!restaurantProductId) throw new Error(`Missing combo option sale for "${option.productName}".`);
+    const restaurantProductId = saleIdByProductName.get(opt.productName);
+    if (!restaurantProductId) throw new Error(`Missing combo slot option product "${opt.productName}".`);
     await prisma.comboSlotOption.upsert({
-      where: {
-        comboSlotId_restaurantProductId: {
-          comboSlotId: comboDrinkSlot.id,
-          restaurantProductId,
-        },
-      },
-      update: {
-        supplementPriceCents: option.supplementPriceCents,
-        isDefault: option.isDefault,
-        isAvailable: true,
-        sortOrder: option.sortOrder,
-      },
-      create: {
-        comboSlotId: comboDrinkSlot.id,
-        restaurantProductId,
-        supplementPriceCents: option.supplementPriceCents,
-        isDefault: option.isDefault,
-        isAvailable: true,
-        sortOrder: option.sortOrder,
-      },
-    });
-  }
-  for (const option of [
-    { productName: 'Patatas fritas', supplementPriceCents: 0, sortOrder: 1, isDefault: true },
-    { productName: 'Ensalada', supplementPriceCents: 50, sortOrder: 2, isDefault: false },
-  ]) {
-    const restaurantProductId = saleIdByProductName.get(option.productName);
-    if (!restaurantProductId) {
-      throw new Error(`Missing combo side sale for "${option.productName}".`);
-    }
-    await prisma.comboSlotOption.upsert({
-      where: {
-        comboSlotId_restaurantProductId: {
-          comboSlotId: comboSideSlot.id,
-          restaurantProductId,
-        },
-      },
-      update: {
-        supplementPriceCents: option.supplementPriceCents,
-        isDefault: option.isDefault,
-        isAvailable: true,
-        sortOrder: option.sortOrder,
-      },
-      create: {
-        comboSlotId: comboSideSlot.id,
-        restaurantProductId,
-        supplementPriceCents: option.supplementPriceCents,
-        isDefault: option.isDefault,
-        isAvailable: true,
-        sortOrder: option.sortOrder,
-      },
+      where: { comboSlotId_restaurantProductId: { comboSlotId: opt.slotId, restaurantProductId } },
+      update: { supplementPriceCents: opt.supplementPriceCents, isDefault: opt.isDefault, isAvailable: true, sortOrder: opt.sortOrder },
+      create: { comboSlotId: opt.slotId, restaurantProductId, supplementPriceCents: opt.supplementPriceCents, isDefault: opt.isDefault, isAvailable: true, sortOrder: opt.sortOrder },
     });
   }
 
-  const platterProductId = productIdByName.get('Plato combinado vegetal');
-  if (!platterProductId) throw new Error('Missing platter product.');
-  const platterDefinition = await prisma.platterDefinition.upsert({
-    where: { productId: platterProductId },
-    update: {},
-    create: { productId: platterProductId },
-  });
-  for (const component of [
-    { name: 'Huevo', productName: undefined, quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 1 },
+  // ── Platters ─────────────────────────────────────────────────────────────────
+
+  for (const platter of [
     {
-      name: 'Patatas fritas',
-      productName: 'Patatas fritas',
-      quantity: 1,
-      isRemovable: false,
-      isReplaceable: false,
-      sortOrder: 2,
+      productName: 'Plato combinado de lomo',
+      components: [
+        { name: 'Lomo', productName: undefined, quantity: 1, isRemovable: false, isReplaceable: false, sortOrder: 1 },
+        { name: 'Huevo', productName: undefined, quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 2 },
+        { name: 'Patatas fritas', productName: 'Patatas fritas', quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 3 },
+        { name: 'Ensalada', productName: 'Ensalada', quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 4 },
+      ],
     },
-    { name: 'Ensalada', productName: 'Ensalada', quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 3 },
+    {
+      productName: 'Plato combinado de pollo',
+      components: [
+        { name: 'Pollo', productName: undefined, quantity: 1, isRemovable: false, isReplaceable: false, sortOrder: 1 },
+        { name: 'Huevo', productName: undefined, quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 2 },
+        { name: 'Patatas fritas', productName: 'Patatas fritas', quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 3 },
+        { name: 'Ensalada', productName: 'Ensalada', quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 4 },
+      ],
+    },
+    {
+      productName: 'Plato combinado vegetal',
+      components: [
+        { name: 'Huevo', productName: undefined, quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 1 },
+        { name: 'Patatas fritas', productName: 'Patatas fritas', quantity: 1, isRemovable: false, isReplaceable: false, sortOrder: 2 },
+        { name: 'Ensalada', productName: 'Ensalada', quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 3 },
+        { name: 'Verduras de temporada', productName: undefined, quantity: 1, isRemovable: true, isReplaceable: false, sortOrder: 4 },
+      ],
+    },
   ]) {
-    await prisma.platterComponent.upsert({
-      where: {
-        platterDefinitionId_sortOrder: {
-          platterDefinitionId: platterDefinition.id,
-          sortOrder: component.sortOrder,
-        },
-      },
-      update: {
-        componentProductId: component.productName ? (productIdByName.get(component.productName) ?? null) : null,
-        name: component.name,
-        quantity: component.quantity,
-        isRemovable: component.isRemovable,
-        isReplaceable: component.isReplaceable,
-      },
-      create: {
-        platterDefinitionId: platterDefinition.id,
-        componentProductId: component.productName ? (productIdByName.get(component.productName) ?? null) : null,
-        name: component.name,
-        quantity: component.quantity,
-        isRemovable: component.isRemovable,
-        isReplaceable: component.isReplaceable,
-        sortOrder: component.sortOrder,
-      },
+    const platterProductId = productIdByName.get(platter.productName);
+    if (!platterProductId) throw new Error(`Missing platter product "${platter.productName}".`);
+    const platterDef = await prisma.platterDefinition.upsert({
+      where: { productId: platterProductId },
+      update: {},
+      create: { productId: platterProductId },
     });
+    for (const comp of platter.components) {
+      const componentProductId = comp.productName ? (productIdByName.get(comp.productName) ?? null) : null;
+      await prisma.platterComponent.upsert({
+        where: { platterDefinitionId_sortOrder: { platterDefinitionId: platterDef.id, sortOrder: comp.sortOrder } },
+        update: { componentProductId, name: comp.name, quantity: comp.quantity, isRemovable: comp.isRemovable, isReplaceable: comp.isReplaceable },
+        create: { platterDefinitionId: platterDef.id, componentProductId, name: comp.name, quantity: comp.quantity, isRemovable: comp.isRemovable, isReplaceable: comp.isReplaceable, sortOrder: comp.sortOrder },
+      });
+    }
   }
 }
 
 function demoProducts(): DemoProductDefinition[] {
   return [
-    {
-      name: 'Coca-Cola',
-      productType: 'simple',
-      defaultCourse: 'drinks',
-      defaultPreparationRoute: 'bar',
-      taxName: 'IVA General',
-    },
-    {
-      name: 'Agua mineral',
-      productType: 'simple',
-      defaultCourse: 'drinks',
-      defaultPreparationRoute: 'direct',
-      taxName: 'VAT 0%',
-    },
-    {
-      name: 'Cerveza',
-      productType: 'simple',
-      defaultCourse: 'drinks',
-      defaultPreparationRoute: 'bar',
-      taxName: 'IVA General',
-    },
-    {
-      name: 'Vino tinto copa',
-      productType: 'simple',
-      defaultCourse: 'drinks',
-      defaultPreparationRoute: 'bar',
-      taxName: 'IVA General',
-    },
-    {
-      name: 'Cafe solo',
-      productType: 'simple',
-      defaultCourse: 'dessert',
-      defaultPreparationRoute: 'bar',
-      taxName: 'IVA Reducido',
-    },
+    { name: 'Coca-Cola', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
+    { name: 'Agua mineral', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'direct', taxName: 'VAT 0%' },
+    { name: 'Cerveza', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
+    { name: 'Limonada con gas', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
+    { name: 'Vino tinto copa', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
     {
       name: 'Hamburguesa craft',
-      description: 'Hamburguesa premium con pan brioche.',
-      productType: 'simple',
-      defaultCourse: 'main',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA General',
+      description: 'Hamburguesa de ternera con lechuga, tomate, cebolla, pepinillos y salsa de la casa.',
+      productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
     {
-      name: 'Croquetas de jamon iberico',
-      productType: 'simple',
-      defaultCourse: 'starter',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA Reducido',
+      name: 'Hamburguesa clasica',
+      description: 'Hamburguesa clásica con queso, lechuga y tomate.',
+      productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
     {
-      name: 'Nachos caseros',
-      description: 'Totopos con cheddar y pico de gallo.',
-      productType: 'simple',
-      defaultCourse: 'starter',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA Reducido',
+      name: 'Hamburguesa trufada',
+      description: 'Hamburguesa premium con queso de trufa y cebolla caramelizada.',
+      productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
     {
-      name: 'Menu Classic Burger',
-      productType: 'combo',
-      defaultCourse: 'main',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA General',
+      name: 'Hamburguesa vegetal',
+      description: 'Hamburguesa vegetal con aguacate y pimientos asados.',
+      productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+    },
+    { name: 'Croquetas de jamon iberico', description: 'Croquetas caseras de jamón ibérico de bellota.', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
+    { name: 'Patatas bravas', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
+    { name: 'Nachos caseros', description: 'Totopos con cheddar fundido y pico de gallo.', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
+    { name: 'Patatas fritas', productType: 'simple', defaultCourse: 'other', defaultPreparationRoute: 'kitchen', taxName: 'IVA General' },
+    { name: 'Ensalada cesar', description: 'Lechuga romana, pollo a la plancha, anchoas y aliño César.', productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'cold_station', taxName: 'IVA Reducido' },
+    { name: 'Ensalada', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'cold_station', taxName: 'IVA Reducido' },
+    {
+      name: 'Plato combinado de lomo',
+      description: 'Lomo a la plancha con huevo, patatas fritas y ensalada.',
+      productType: 'platter', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
     {
-      name: 'Sandwich club',
-      productType: 'simple',
-      defaultCourse: 'main',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA Reducido',
+      name: 'Plato combinado de pollo',
+      description: 'Pollo a la plancha con huevo, patatas fritas y ensalada.',
+      productType: 'platter', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
     {
       name: 'Plato combinado vegetal',
-      productType: 'platter',
-      defaultCourse: 'main',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA General',
+      description: 'Huevo, patatas fritas, ensalada y verduras de temporada.',
+      productType: 'platter', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
+    { name: 'Tarta de queso', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'dessert_station', taxName: 'IVA Reducido' },
+    { name: 'Coulant de chocolate', description: 'Bizcocho de chocolate con interior fundido y helado de vainilla.', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'dessert_station', taxName: 'IVA Reducido' },
+    { name: 'Cafe solo', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'bar', taxName: 'IVA Reducido' },
+    { name: 'Cafe con leche', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'bar', taxName: 'IVA Reducido' },
     {
-      name: 'Patatas fritas',
-      productType: 'simple',
-      defaultCourse: 'other',
-      defaultPreparationRoute: 'kitchen',
-      taxName: 'IVA General',
+      name: 'Menu Classic Burger',
+      description: 'Hamburguesa a elegir, bebida y acompañamiento.',
+      productType: 'combo', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
     },
-    {
-      name: 'Ensalada',
-      productType: 'simple',
-      defaultCourse: 'starter',
-      defaultPreparationRoute: 'cold_station',
-      taxName: 'IVA Reducido',
-    },
-    {
-      name: 'Tarta de queso',
-      productType: 'simple',
-      defaultCourse: 'dessert',
-      defaultPreparationRoute: 'dessert_station',
-      taxName: 'IVA Reducido',
-    },
+    { name: 'Sandwich club', productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
   ];
 }
 
@@ -632,24 +520,36 @@ function demoRestaurantProducts(): Array<{
   displayName?: string;
   displayDescription?: string;
   priceCents: number;
+  isAvailable?: boolean;
   preparationRouteOverride?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   sortOrder: number;
 }> {
   return [
-    { productName: 'Coca-Cola', priceCents: 300, sortOrder: 1 },
-    { productName: 'Agua mineral', priceCents: 250, sortOrder: 2 },
-    { productName: 'Cerveza', priceCents: 350, sortOrder: 3 },
-    { productName: 'Vino tinto copa', priceCents: 420, sortOrder: 4 },
-    { productName: 'Cafe solo', priceCents: 180, sortOrder: 5 },
+    { productName: 'Coca-Cola', priceCents: 320, sortOrder: 1 },
+    { productName: 'Agua mineral', priceCents: 200, sortOrder: 2 },
+    { productName: 'Cerveza', priceCents: 380, isAvailable: false, sortOrder: 3 },
+    { productName: 'Limonada con gas', priceCents: 450, sortOrder: 4 },
+    { productName: 'Vino tinto copa', priceCents: 420, sortOrder: 5 },
     { productName: 'Hamburguesa craft', priceCents: 1250, sortOrder: 6 },
-    { productName: 'Croquetas de jamon iberico', priceCents: 980, sortOrder: 7 },
-    { productName: 'Nachos caseros', priceCents: 890, sortOrder: 8 },
-    { productName: 'Menu Classic Burger', priceCents: 1390, sortOrder: 9 },
-    { productName: 'Sandwich club', priceCents: 1090, sortOrder: 10 },
-    { productName: 'Plato combinado vegetal', priceCents: 1190, sortOrder: 11 },
-    { productName: 'Patatas fritas', priceCents: 400, sortOrder: 12 },
-    { productName: 'Ensalada', priceCents: 450, sortOrder: 13 },
-    { productName: 'Tarta de queso', priceCents: 520, sortOrder: 14 },
+    { productName: 'Hamburguesa clasica', priceCents: 1150, sortOrder: 7 },
+    { productName: 'Hamburguesa trufada', priceCents: 1550, sortOrder: 8 },
+    { productName: 'Hamburguesa vegetal', priceCents: 1300, sortOrder: 9 },
+    { productName: 'Croquetas de jamon iberico', priceCents: 875, sortOrder: 10 },
+    { productName: 'Patatas bravas', priceCents: 675, sortOrder: 11 },
+    { productName: 'Nachos caseros', priceCents: 890, sortOrder: 12 },
+    { productName: 'Patatas fritas', priceCents: 450, sortOrder: 13 },
+    { productName: 'Ensalada cesar', priceCents: 1000, sortOrder: 14 },
+    { productName: 'Ensalada', priceCents: 450, sortOrder: 15 },
+    { productName: 'Plato combinado de lomo', priceCents: 1290, sortOrder: 16 },
+    { productName: 'Plato combinado de pollo', priceCents: 1250, sortOrder: 17 },
+    { productName: 'Plato combinado vegetal', priceCents: 1190, sortOrder: 18 },
+    { productName: 'Tarta de queso', priceCents: 700, isAvailable: false, sortOrder: 19 },
+    { productName: 'Coulant de chocolate', priceCents: 700, isAvailable: false, sortOrder: 20 },
+    { productName: 'Cafe solo', priceCents: 250, sortOrder: 21 },
+    { productName: 'Cafe con leche', priceCents: 280, sortOrder: 22 },
+    { productName: 'Menu Classic Burger', priceCents: 1390, sortOrder: 23 },
+    // backward compat
+    { productName: 'Sandwich club', priceCents: 1090, sortOrder: 24 },
   ];
 }
 

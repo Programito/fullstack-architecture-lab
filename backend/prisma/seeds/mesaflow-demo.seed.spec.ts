@@ -5,50 +5,28 @@ import { seedMesaFlowDemo } from './mesaflow-demo.seed';
 
 describe('seedMesaFlowDemo', () => {
   it('creates the demo organization, restaurant, taxes, catalog, menu, modifiers, combo and platter data idempotently', async () => {
+    let productSeq = 0;
+    let sectionSeq = 0;
+    let modifierGroupSeq = 0;
+    let comboSlotSeq = 0;
+
     const organizationUpsert = vi.fn().mockResolvedValue({ id: 'org-demo' });
-    const restaurantUpsert = vi.fn().mockResolvedValue({ id: 'rest-demo', organizationId: 'org-demo' });
+    const restaurantUpsert = vi.fn().mockResolvedValue({ id: 'rest-demo', organizationId: 'org-demo', currency: 'EUR' });
     const taxRateUpsert = vi.fn().mockResolvedValue({ id: 'tax-general' });
-    const productUpsert = vi
-      .fn()
-      .mockResolvedValueOnce({ id: 'product-coke' })
-      .mockResolvedValueOnce({ id: 'product-water' })
-      .mockResolvedValueOnce({ id: 'product-beer' })
-      .mockResolvedValueOnce({ id: 'product-wine' })
-      .mockResolvedValueOnce({ id: 'product-coffee' })
-      .mockResolvedValueOnce({ id: 'product-burger' })
-      .mockResolvedValueOnce({ id: 'product-croquetas' })
-      .mockResolvedValueOnce({ id: 'product-nachos' })
-      .mockResolvedValueOnce({ id: 'product-combo' })
-      .mockResolvedValueOnce({ id: 'product-sandwich' })
-      .mockResolvedValueOnce({ id: 'product-platter' })
-      .mockResolvedValueOnce({ id: 'product-fries' })
-      .mockResolvedValueOnce({ id: 'product-salad' })
-      .mockResolvedValueOnce({ id: 'product-cheesecake' });
-    const restaurantProductUpsert = vi
-      .fn()
-      .mockImplementation(async ({ where }: { where: { restaurantId_productId: { productId: string } } }) => ({
+    const productUpsert = vi.fn().mockImplementation(async () => ({ id: `product-${++productSeq}` }));
+    const restaurantProductUpsert = vi.fn().mockImplementation(
+      async ({ where }: { where: { restaurantId_productId: { productId: string } } }) => ({
         id: `sale-${where.restaurantId_productId.productId}`,
-      }));
+      }),
+    );
     const restaurantMenuUpsert = vi.fn().mockResolvedValue({ id: 'menu-main' });
-    const menuSectionUpsert = vi
-      .fn()
-      .mockResolvedValueOnce({ id: 'section-drinks' })
-      .mockResolvedValueOnce({ id: 'section-starters' })
-      .mockResolvedValueOnce({ id: 'section-mains' })
-      .mockResolvedValueOnce({ id: 'section-desserts' });
+    const menuSectionUpsert = vi.fn().mockImplementation(async () => ({ id: `section-${++sectionSeq}` }));
     const menuItemUpsert = vi.fn().mockResolvedValue(undefined);
-    const modifierGroupUpsert = vi
-      .fn()
-      .mockResolvedValueOnce({ id: 'group-extras' })
-      .mockResolvedValueOnce({ id: 'group-cooking' })
-      .mockResolvedValueOnce({ id: 'group-sauces' });
+    const modifierGroupUpsert = vi.fn().mockImplementation(async () => ({ id: `group-${++modifierGroupSeq}` }));
     const modifierOptionUpsert = vi.fn().mockResolvedValue(undefined);
     const restaurantProductModifierGroupUpsert = vi.fn().mockResolvedValue(undefined);
     const comboDefinitionUpsert = vi.fn().mockResolvedValue({ id: 'combo-definition' });
-    const comboSlotUpsert = vi
-      .fn()
-      .mockResolvedValueOnce({ id: 'combo-slot-drink' })
-      .mockResolvedValueOnce({ id: 'combo-slot-side' });
+    const comboSlotUpsert = vi.fn().mockImplementation(async () => ({ id: `combo-slot-${++comboSlotSeq}` }));
     const comboSlotOptionUpsert = vi.fn().mockResolvedValue(undefined);
     const platterDefinitionUpsert = vi.fn().mockResolvedValue({ id: 'platter-definition' });
     const platterComponentUpsert = vi.fn().mockResolvedValue(undefined);
@@ -74,9 +52,7 @@ describe('seedMesaFlowDemo', () => {
     await seedMesaFlowDemo(prisma);
 
     expect(organizationUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { name: 'MesaFlow Demo' },
-      }),
+      expect.objectContaining({ where: { name: 'MesaFlow Demo' } }),
     );
     expect(restaurantUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -84,30 +60,34 @@ describe('seedMesaFlowDemo', () => {
       }),
     );
     expect(taxRateUpsert).toHaveBeenCalledTimes(3);
-    expect(productUpsert).toHaveBeenCalledTimes(14);
-    expect(restaurantProductUpsert).toHaveBeenCalledTimes(14);
+
+    // 24 products: 4 drinks + 4 burgers + 4 tapas + 2 salads + 3 platters + 2 desserts + 2 coffee + 1 combo + 1 sandwich + 1 wine
+    expect(productUpsert).toHaveBeenCalledTimes(24);
+    expect(restaurantProductUpsert).toHaveBeenCalledTimes(24);
+
+    // 8 menu sections
+    expect(menuSectionUpsert).toHaveBeenCalledTimes(8);
     expect(menuItemUpsert).toHaveBeenCalled();
-    expect(restaurantProductModifierGroupUpsert).toHaveBeenCalledTimes(3);
+
+    // 7 modifier groups: burger-extras, burger-remove, burger-point, drink-size, coffee-options, platter-remove, platter-extras
+    expect(modifierGroupUpsert).toHaveBeenCalledTimes(7);
+    expect(modifierOptionUpsert).toHaveBeenCalledTimes(21);
+
+    // burger × 4 products × 3 groups + drink-size × 3 products + coffee × 2 products + platter × 2 products × 2 groups
+    expect(restaurantProductModifierGroupUpsert).toHaveBeenCalledTimes(21);
+
+    // 3 combo slots
+    expect(comboSlotUpsert).toHaveBeenCalledTimes(3);
     expect(comboSlotOptionUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
-          supplementPriceCents: 150,
-        }),
+        create: expect.objectContaining({ supplementPriceCents: 150 }),
       }),
     );
-    expect(comboSlotOptionUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
-          supplementPriceCents: 50,
-        }),
-      }),
-    );
+
+    expect(platterDefinitionUpsert).toHaveBeenCalledTimes(3);
     expect(platterComponentUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
-          name: 'Huevo',
-          isRemovable: true,
-        }),
+        create: expect.objectContaining({ name: 'Huevo', isRemovable: true }),
       }),
     );
   });

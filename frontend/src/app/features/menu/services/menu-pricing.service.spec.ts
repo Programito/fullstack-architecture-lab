@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideI18nTesting } from '../../../shared/i18n/i18n-testing';
-import { MOCK_COMBO_PRODUCT_DEFINITIONS, MOCK_MENU_PRODUCTS } from './menu-mock.service';
+import { MOCK_COMBO_PRODUCT_DEFINITIONS, MOCK_MENU_PRODUCTS, MOCK_MODIFIER_GROUPS } from './menu-mock.service';
 import { MenuPricingService } from './menu-pricing.service';
 import { MenuValidationService } from './menu-validation.service';
 
@@ -29,28 +29,28 @@ describe('menu business logic', () => {
   });
 
   it('calculates price with one or multiple extra modifiers', () => {
-    const oneExtra = pricing.buildSelectedModifiers(burger(), ['point-medium', 'extra-bacon']);
-    const multipleExtras = pricing.buildSelectedModifiers(burger(), ['point-medium', 'extra-bacon', 'extra-cheese']);
+    const oneExtra = pricing.buildSelectedModifiers(burger(), ['point-medium', 'extra-bacon'], MOCK_MODIFIER_GROUPS);
+    const multipleExtras = pricing.buildSelectedModifiers(burger(), ['point-medium', 'extra-bacon', 'extra-cheese'], MOCK_MODIFIER_GROUPS);
 
     expect(pricing.calculateCustomizedProductPrice(burger(), oneExtra)).toBe(14);
     expect(pricing.calculateCustomizedProductPrice(burger(), multipleExtras)).toBe(15);
   });
 
   it('keeps remove modifiers free', () => {
-    const modifiers = pricing.buildSelectedModifiers(burger(), ['point-medium', 'remove-onion', 'remove-sauce']);
+    const modifiers = pricing.buildSelectedModifiers(burger(), ['point-medium', 'remove-onion', 'remove-sauce'], MOCK_MODIFIER_GROUPS);
 
     expect(pricing.calculateCustomizedProductPrice(burger(), modifiers)).toBe(12.5);
   });
 
   it('validates required single, max selections, invalid options and unavailable products', () => {
-    expect(validation.validateCustomization(burger(), ['extra-bacon']).valid).toBe(false);
-    expect(validation.validateCustomization(burger(), ['point-medium', 'extra-bacon', 'extra-cheese', 'extra-egg', 'remove-onion']).valid).toBe(true);
-    expect(validation.validateCustomization(burger(), ['point-medium', 'unknown-option']).valid).toBe(false);
-    expect(validation.validateCustomization(unavailable(), []).valid).toBe(false);
+    expect(validation.validateCustomization(burger(), ['extra-bacon'], MOCK_MODIFIER_GROUPS).valid).toBe(false);
+    expect(validation.validateCustomization(burger(), ['point-medium', 'extra-bacon', 'extra-cheese', 'extra-egg', 'remove-onion'], MOCK_MODIFIER_GROUPS).valid).toBe(true);
+    expect(validation.validateCustomization(burger(), ['point-medium', 'unknown-option'], MOCK_MODIFIER_GROUPS).valid).toBe(false);
+    expect(validation.validateCustomization(unavailable(), [], MOCK_MODIFIER_GROUPS).valid).toBe(false);
   });
 
   it('requires selected options to belong to the product modifier groups', () => {
-    expect(validation.validateCustomization(water(), ['extra-bacon']).valid).toBe(false);
+    expect(validation.validateCustomization(water(), ['extra-bacon'], MOCK_MODIFIER_GROUPS).valid).toBe(false);
   });
 
   it('creates stable configuration signatures that include modifiers and kitchen notes', () => {
@@ -66,7 +66,7 @@ describe('menu business logic', () => {
   });
 
   it('builds selected modifiers with names, deltas, groups and types', () => {
-    expect(pricing.buildSelectedModifiers(burger(), ['point-medium', 'extra-cheese', 'remove-onion'])).toEqual([
+    expect(pricing.buildSelectedModifiers(burger(), ['point-medium', 'extra-cheese', 'remove-onion'], MOCK_MODIFIER_GROUPS)).toEqual([
       expect.objectContaining({ groupName: 'Burger extras', name: 'Cheese', priceDelta: 1, type: 'multiple' }),
       expect.objectContaining({ groupName: 'Remove ingredients', name: 'Onion', priceDelta: 0, type: 'remove' }),
       expect.objectContaining({ groupName: 'Burger point', name: 'Medium', priceDelta: 0, type: 'single' }),

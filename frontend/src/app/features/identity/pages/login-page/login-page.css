@@ -48,4 +48,11 @@
 @keyframes login-page-spin{to{transform:rotate(360deg)}}
 @media (max-width:960px){.login-page__hero{grid-template-columns:1fr}.login-page__access-card{order:1}.login-page__intro{order:2}}
 @media (max-width:720px){.login-page__toolbar{align-items:flex-start;flex-direction:column}.login-page__preferences{width:100%;justify-content:flex-end}}
-@media (prefers-reduced-motion:reduce){.login-page__access-card,.login-page__intro,.login-page__tab-panel,.login-page__panel,.login-page__role-section,.login-page__benefits li,.login-page__role-spinner{animation:none}.login-page__role,.login-page__role-action,.login-page__input,.login-page__password-toggle{transition:none}}
+.login-page__seed{display:grid;gap:.6rem;padding-top:1.25rem;border-top:1px solid var(--ui-border)}
+.login-page__seed-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:.6rem 1rem;border:1px dashed var(--ui-border);border-radius:.9rem;background:transparent;color:var(--ui-text-muted);font-size:.85rem;cursor:pointer;transition:border-color .16s ease,color .16s ease,background-color .16s ease}
+.login-page__seed-btn:hover:not(:disabled){border-color:var(--ui-primary);color:var(--ui-primary);background:color-mix(in srgb,var(--ui-primary) 5%,transparent)}
+.login-page__seed-btn:disabled{opacity:.55;cursor:not-allowed}
+.login-page__seed-feedback{margin:0;font-size:.83rem;text-align:center}
+.login-page__seed-feedback--done{color:var(--ui-success,#22c55e)}
+.login-page__seed-feedback--error{color:var(--ui-danger)}
+@media (prefers-reduced-motion:reduce){.login-page__access-card,.login-page__intro,.login-page__tab-panel,.login-page__panel,.login-page__role-section,.login-page__benefits li,.login-page__role-spinner{animation:none}.login-page__role,.login-page__role-action,.login-page__input,.login-page__password-toggle,.login-page__seed-btn{transition:none}}

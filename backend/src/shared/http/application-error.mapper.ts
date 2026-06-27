@@ -33,11 +33,16 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'order_not_found':
     case 'order_line_not_found':
     case 'restaurant_product_not_found':
+    case 'menu_not_found':
+    case 'menu_section_not_found':
+    case 'menu_item_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':
     case 'role_name_already_taken':
     case 'invalid_order_state':
+    case 'menu_section_name_taken':
+    case 'menu_item_already_in_section':
       return new ConflictException(error.message);
 
     case 'payment_exceeds_balance':

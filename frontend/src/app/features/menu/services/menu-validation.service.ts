@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import type { ComboProductDefinition, ComboSlotSelection, Product } from '../models/menu.models';
+import type { ComboProductDefinition, ComboSlotSelection, ModifierGroup, Product } from '../models/menu.models';
 import { MenuPricingService } from './menu-pricing.service';
 
 export interface ValidationResult {
@@ -11,14 +11,14 @@ export interface ValidationResult {
 export class MenuValidationService {
   private readonly pricing = inject(MenuPricingService);
 
-  validateCustomization(product: Product, selectedModifierOptionIds: string[]): ValidationResult {
+  validateCustomization(product: Product, selectedModifierOptionIds: string[], modifierGroups: ModifierGroup[]): ValidationResult {
     const errors: string[] = [];
 
     if (!product.available) {
       errors.push('Product is unavailable.');
     }
 
-    const groups = this.pricing.getModifierGroupsForProduct(product);
+    const groups = this.pricing.getModifierGroupsForProduct(product, modifierGroups);
     const assignedOptionIds = new Set(groups.flatMap((group) => group.options.map((option) => option.id)));
     const selectedIds = [...new Set(selectedModifierOptionIds)];
 

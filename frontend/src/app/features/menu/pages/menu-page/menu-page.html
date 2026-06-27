@@ -20,18 +20,25 @@
   </header>
 
   <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 lg:p-6">
-    <app-segmented-control
-      size="sm"
-      variant="pill"
-      [ariaLabel]="'menu.page.tabsLabel' | transloco"
-      [options]="menuTabOptions()"
-      [value]="activeTab()"
-      (valueChange)="setActiveTab($event)"
-    />
+    <!-- Tabs: overflow-x-auto + inline style para que no trunquen en móvil -->
+    <div class="overflow-x-auto">
+      <app-segmented-control
+        [style.width]="'max-content'"
+        [style.maxWidth]="'none'"
+        size="sm"
+        variant="pill"
+        [ariaLabel]="'menu.page.tabsLabel' | transloco"
+        [options]="menuTabOptions()"
+        [value]="activeTab()"
+        (valueChange)="setActiveTab($event)"
+      />
+    </div>
 
     @if (activeTab() === 'products') {
       <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <!-- Lista de productos -->
         <section class="grid content-start gap-4">
+          <!-- Filtros -->
           <div class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
             <app-search-input
               [label]="'menu.page.searchLabel' | transloco"
@@ -41,178 +48,246 @@
               (valueChange)="updateQuery($event)"
               (searched)="updateQuery($event)"
             />
-
-            <div class="grid gap-3 xl:grid-cols-[minmax(12rem,1fr)_auto_auto] xl:items-end">
-              <app-select
-                size="sm"
-                fill="outline"
-                variant="neutral"
-                [label]="'menu.page.categoryFilter' | transloco"
-                [value]="categoryFilter()"
-                [options]="categoryOptions()"
-                (valueChange)="setCategoryFilter($event)"
-              />
-
-              <app-segmented-control
-                size="sm"
-                variant="pill"
-                [ariaLabel]="'menu.page.availabilityFilter' | transloco"
-                [options]="availabilityOptions()"
-                [value]="availabilityFilter()"
-                (valueChange)="setAvailabilityFilter($event)"
-              />
-
-              <app-segmented-control
-                size="sm"
-                variant="pill"
-                [ariaLabel]="'menu.page.customizationFilter' | transloco"
-                [options]="customizationOptions()"
-                [value]="customizationFilter()"
-                (valueChange)="setCustomizationFilter($event)"
-              />
+            <!-- Fila de filtros: botón categoría, segs en columnas iguales -->
+            <div class="grid gap-3">
+              <div class="grid gap-1">
+                <span class="theme-muted text-xs font-medium">{{ 'menu.page.categoryFilter' | transloco }}</span>
+                <button
+                  type="button"
+                  class="theme-field flex h-8 w-full items-center justify-between gap-2 rounded-md border px-3 text-sm transition-colors hover:border-cyan-500"
+                  [attr.aria-label]="'menu.page.categoryFilter' | transloco"
+                  (click)="categorySelectorOpen.set(true)"
+                >
+                  <span class="theme-title truncate">{{ currentCategoryLabel() }}</span>
+                  <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted shrink-0" />
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <app-segmented-control
+                  [style.width]="'100%'"
+                  size="sm"
+                  variant="pill"
+                  [ariaLabel]="'menu.page.availabilityFilter' | transloco"
+                  [options]="availabilityOptions()"
+                  [value]="availabilityFilter()"
+                  (valueChange)="setAvailabilityFilter($event)"
+                />
+                <app-segmented-control
+                  [style.width]="'100%'"
+                  size="sm"
+                  variant="pill"
+                  [ariaLabel]="'menu.page.customizationFilter' | transloco"
+                  [options]="customizationOptions()"
+                  [value]="customizationFilter()"
+                  (valueChange)="setCustomizationFilter($event)"
+                />
+              </div>
             </div>
           </div>
 
-          <div class="grid content-start gap-3">
+          <!-- Grid de tarjetas -->
+          <div class="grid gap-3 sm:grid-cols-2">
             @for (product of filteredProducts(); track product.id) {
-              <button
-                type="button"
-                class="theme-panel grid cursor-pointer gap-3 rounded-lg border p-4 text-left shadow-sm transition hover:border-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 md:grid-cols-[minmax(0,1fr)_auto]"
-                [class.border-cyan-500]="isSelected(product)"
-                [class.opacity-65]="!product.available"
-                (click)="selectProduct(product)"
+              <article
+                class="theme-panel grid cursor-pointer gap-0 overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md focus-within:ring-2 focus-within:ring-cyan-500"
+                [class.ring-2]="isSelected(product)"
+                [class.ring-cyan-500]="isSelected(product)"
+                [class.border-cyan-400]="isSelected(product)"
               >
-                <span class="grid min-w-0 gap-3">
-                  <span class="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                    <span class="theme-title truncate text-base font-semibold">{{ product.name }}</span>
-                    <span class="theme-title shrink-0 text-base font-semibold sm:text-right">{{ product.basePrice | currency: 'EUR' }}</span>
-                  </span>
-                  <span class="theme-muted text-sm">
-                    {{ categoryName(product) }} &middot; {{ preparationRouteLabel(product) }}
-                  </span>
-                  @if (product.description) {
-                    <span class="theme-muted text-sm">{{ product.description }}</span>
+                <button
+                  type="button"
+                  class="grid w-full cursor-pointer gap-2 p-4 text-left focus:outline-none"
+                  (click)="handleProductClick(product)"
+                  [attr.aria-label]="product.name"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex flex-wrap gap-1.5">
+                      <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
+                      <app-badge [variant]="product.available ? 'success' : 'danger'" size="sm">{{ availabilityLabel(product) }}</app-badge>
+                    </div>
+                    <span class="theme-title shrink-0 text-lg font-bold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</span>
+                  </div>
+                  <h2 class="theme-title text-base font-semibold leading-tight">{{ product.name }}</h2>
+                  <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ preparationRouteLabel(product) }}</p>
+                  @if (product.allergens?.length) {
+                    <p class="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                      <app-icon name="warning" size="sm" [decorative]="false" [ariaLabel]="'menu.page.allergens' | transloco" />
+                      {{ 'menu.page.allergens' | transloco }}
+                    </p>
                   }
-                  <span class="flex flex-wrap gap-1.5">
-                    <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
-                    <app-badge [variant]="product.available ? 'success' : 'danger'" size="sm">{{ availabilityLabel(product) }}</app-badge>
-                    @if (product.allergens?.length) {
-                      <app-badge variant="warning" size="sm">{{ 'menu.page.allergens' | transloco }}</app-badge>
-                    }
-                  </span>
-                </span>
-              </button>
+                </button>
+                <div class="border-t px-4 py-3 dark:border-white/10" (click)="$event.stopPropagation()">
+                  <app-switch
+                    size="sm"
+                    variant="primary"
+                    [label]="(product.available ? 'menu.page.toggleAvailability' : 'menu.page.soldOut') | transloco"
+                    [labelClass]="!product.available ? 'text-red-500 dark:text-red-400' : ''"
+                    [checked]="product.available"
+                    (checkedChange)="toggleAvailability(product)"
+                  />
+                </div>
+              </article>
             } @empty {
-              <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noResults' | transloco }}</p>
+              <p class="theme-muted col-span-full rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noResults' | transloco }}</p>
             }
           </div>
         </section>
 
-        <aside class="theme-panel h-fit rounded-lg border p-4 shadow-sm">
+        <!-- Panel de detalle (solo desktop ≥ lg) -->
+        <aside class="theme-panel hidden h-fit rounded-xl border p-5 shadow-sm lg:block">
           @if (selectedProduct(); as product) {
-            <div class="grid gap-4">
-              <header class="grid gap-2">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h2 class="theme-title text-xl font-semibold">{{ product.name }}</h2>
-                  <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
-                  @if (!product.available) {
-                    <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
-                  }
-                </div>
-                <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ preparationRouteLabel(product) }}</p>
-                @if (product.description) {
-                  <p class="theme-muted text-sm">{{ product.description }}</p>
-                }
-              </header>
-
-              <div class="grid grid-cols-2 gap-2">
-                <div class="theme-soft-panel rounded-md border px-3 py-2">
-                  <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.customizer.basePrice' | transloco }}</p>
-                  <p class="theme-title text-lg font-semibold">{{ product.basePrice | currency: 'EUR' }}</p>
-                </div>
-                <div class="theme-soft-panel rounded-md border px-3 py-2">
-                  <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.previewPrice' | transloco }}</p>
-                  <p class="theme-title text-lg font-semibold">{{ previewPrice() | currency: 'EUR' }}</p>
-                </div>
-              </div>
-
-              @if (product.allergens?.length) {
-                <section>
-                  <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.allergens' | transloco }}</h3>
-                  <p class="theme-muted mt-1 text-sm">{{ product.allergens?.join(', ') }}</p>
-                </section>
-              }
-
-              @if (selectedModifierGroups().length) {
-                <section class="grid gap-3">
-                  <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.modifiers' | transloco }}</h3>
-                  @for (group of selectedModifierGroups(); track group.id) {
-                    <fieldset class="grid gap-2 rounded-md border p-3">
-                      <legend class="theme-title px-1 text-sm font-semibold">
-                        {{ group.name }}
-                        @if (group.required) {
-                          <span class="theme-muted text-xs">({{ 'menu.customizer.required' | transloco }})</span>
-                        }
-                      </legend>
-
-                      @for (option of group.options; track option.id) {
-                        <label class="theme-field flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
-                          <span class="inline-flex items-center gap-2">
-                            <input
-                              [type]="group.type === 'single' ? 'radio' : 'checkbox'"
-                              [name]="group.id"
-                              [checked]="isOptionSelected(option.id)"
-                              (change)="group.type === 'single' ? selectSingle(group, option.id) : toggleOption(option.id)"
-                            />
-                            <span>{{ group.type === 'remove' ? ('menu.customizer.without' | transloco: { name: option.name }) : option.name }}</span>
-                          </span>
-                          <span class="theme-muted text-xs font-semibold">
-                            @if (option.priceDelta > 0) {
-                              +{{ option.priceDelta | currency: 'EUR' }}
-                            } @else {
-                              {{ 0 | currency: 'EUR' }}
-                            }
-                          </span>
-                        </label>
-                      }
-                    </fieldset>
-                  }
-                </section>
-              } @else {
-                <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'menu.page.noModifiers' | transloco }}</p>
-              }
-            </div>
+            <ng-container *ngTemplateOutlet="productDetailTpl; context: { product }" />
           } @else {
             <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSelection' | transloco }}</p>
           }
         </aside>
       </div>
-    } @else if (activeTab() === 'categories') {
-      <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        @for (category of categories(); track category.id) {
-          <article class="theme-panel grid gap-2 rounded-lg border p-4 shadow-sm">
-            <div class="flex items-start justify-between gap-3">
-              <h2 class="theme-title text-base font-semibold">{{ category.name }}</h2>
-              <app-badge variant="neutral" size="sm">{{ categoryProductCount(category.id) }}</app-badge>
-            </div>
-            <p class="theme-muted text-sm">
-              @if (category.parentId) {
-                {{ 'menu.page.parentCategory' | transloco }}: {{ category.parentId }}
-              } @else if (childCategories(category.id)) {
-                {{ 'menu.page.childCategories' | transloco }}: {{ childCategories(category.id) }}
-              } @else {
-                {{ 'menu.page.noChildCategories' | transloco }}
-              }
-            </p>
-          </article>
+
+      <!-- Dialog de detalle (solo móvil < lg) -->
+      <app-dialog
+        [open]="mobileDetailOpen()"
+        [title]="mobileDetailTitle()"
+        [closeAriaLabel]="'menu.page.closeDetail' | transloco"
+        [showActions]="false"
+        size="lg"
+        (closed)="closeMobileDetail()"
+      >
+        @if (selectedProduct(); as product) {
+          <ng-container *ngTemplateOutlet="productDetailTpl; context: { product }" />
         }
+      </app-dialog>
+      <!-- Dialog de selector de categoría -->
+      <app-dialog
+        [open]="categorySelectorOpen()"
+        [title]="'menu.page.categoryFilter' | transloco"
+        [showActions]="false"
+        size="sm"
+        (closed)="closeCategorySelector()"
+      >
+        <div class="grid gap-3">
+          <app-search-input
+            [label]="'menu.page.categorySearch' | transloco"
+            [placeholder]="'menu.page.categorySearch' | transloco"
+            [value]="categorySelectorQuery()"
+            [clearAriaLabel]="'menu.page.clearSearch' | transloco"
+            (valueChange)="categorySelectorQuery.set($event)"
+            (searched)="categorySelectorQuery.set($event)"
+          />
+          <ul class="grid gap-1 pb-1">
+            @for (opt of filteredCategoryOptions(); track opt.value) {
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                  [class.font-semibold]="opt.value === categoryFilter()"
+                  (click)="selectCategory(opt.value)"
+                >
+                  @if (opt.value === categoryFilter()) {
+                    <app-icon name="check" size="sm" class="shrink-0 text-cyan-600" [decorative]="true" />
+                  } @else {
+                    <span class="w-4 shrink-0"></span>
+                  }
+                  <span class="theme-title">{{ opt.label }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      </app-dialog>
+    } @else if (activeTab() === 'categories') {
+      <section class="grid content-start gap-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="theme-title text-sm font-semibold">{{ 'menu.page.tabs.categories' | transloco }}</h2>
+          <app-button size="sm" variant="primary" fill="outline" (pressed)="openCreateSection()">
+            {{ 'menu.page.newSection' | transloco }}
+          </app-button>
+        </div>
+
+        @if (createSectionOpen()) {
+          <div class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
+            <app-input
+              [label]="'menu.page.sectionNameLabel' | transloco"
+              [placeholder]="'menu.page.sectionNamePlaceholder' | transloco"
+              [value]="newSectionName()"
+              (valueChange)="newSectionName.set($event)"
+            />
+            <div class="flex gap-2">
+              <app-button size="sm" variant="primary" (pressed)="submitCreateSection()">
+                {{ 'menu.page.saveSection' | transloco }}
+              </app-button>
+              <app-button size="sm" variant="neutral" fill="clear" (pressed)="cancelCreateSection()">
+                {{ 'menu.page.cancelSection' | transloco }}
+              </app-button>
+            </div>
+          </div>
+        }
+
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          @for (category of categories(); track category.id) {
+            <article class="theme-panel grid gap-2 rounded-xl border p-4 shadow-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <app-icon name="category" size="sm" class="theme-muted shrink-0" />
+                  <h2 class="theme-title text-base font-semibold">{{ category.name }}</h2>
+                </div>
+                <app-badge variant="neutral" size="sm">{{ categoryProductCount(category.id) }}</app-badge>
+              </div>
+              <p class="theme-muted text-sm">
+                @if (category.parentId) {
+                  {{ 'menu.page.parentCategory' | transloco }}: {{ category.parentId }}
+                } @else if (childCategories(category.id)) {
+                  {{ 'menu.page.childCategories' | transloco }}: {{ childCategories(category.id) }}
+                } @else {
+                  {{ 'menu.page.noChildCategories' | transloco }}
+                }
+              </p>
+              <div class="flex items-center justify-between gap-3 border-t pt-2 dark:border-white/10">
+                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    [checked]="category.isVisible !== false"
+                    (change)="toggleSectionVisibility(category)"
+                  />
+                  <span class="theme-muted">{{ 'menu.page.sectionVisibilityLabel' | transloco }}</span>
+                </label>
+                <button
+                  type="button"
+                  class="theme-muted flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:text-red-500"
+                  [attr.aria-label]="'menu.page.deleteSectionLabel' | transloco"
+                  (click)="openDeleteSection(category)"
+                >
+                  <app-icon name="delete" size="sm" [decorative]="true" />
+                </button>
+              </div>
+            </article>
+          }
+        </div>
       </section>
+
+      <app-dialog
+        [open]="deleteSectionOpen()"
+        [title]="'menu.page.deleteSectionTitle' | transloco"
+        [showActions]="true"
+        [confirmLabel]="'menu.page.confirmDelete' | transloco"
+        [cancelLabel]="'menu.page.cancelDelete' | transloco"
+        confirmVariant="danger"
+        size="sm"
+        (confirmed)="confirmDeleteSection()"
+        (closed)="cancelDeleteSection()"
+      >
+        <p class="theme-muted text-sm">
+          {{ 'menu.page.deleteSectionConfirm' | transloco: { name: sectionToDelete()?.name ?? '' } }}
+        </p>
+      </app-dialog>
     } @else if (activeTab() === 'modifiers') {
       <section class="grid gap-3 md:grid-cols-2">
         @for (group of modifierGroups(); track group.id) {
-          <article class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+          <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="theme-title text-base font-semibold">{{ group.name }}</h2>
+              <div class="flex items-center gap-2">
+                <app-icon name="tune" size="sm" class="theme-muted shrink-0" />
+                <h2 class="theme-title text-base font-semibold">{{ group.name }}</h2>
+              </div>
               <app-badge variant="secondary" size="sm">{{ group.options.length }} {{ 'menu.page.options' | transloco }}</app-badge>
             </div>
             <p class="theme-muted text-sm">{{ 'menu.page.modifierType' | transloco }}: {{ group.type }}</p>
@@ -227,10 +302,13 @@
     } @else if (activeTab() === 'combos') {
       <section class="grid gap-3 md:grid-cols-2">
         @for (product of comboProducts(); track product.id) {
-          <article class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+          <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
-              <h2 class="theme-title text-base font-semibold">{{ product.name }}</h2>
-              <span class="theme-title font-semibold">{{ product.basePrice | currency: 'EUR' }}</span>
+              <div class="flex items-center gap-2">
+                <app-icon name="restaurant_menu" size="sm" class="theme-muted shrink-0" />
+                <h2 class="theme-title text-base font-semibold">{{ product.name }}</h2>
+              </div>
+              <span class="theme-title font-bold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</span>
             </div>
             <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ comboSlotCount(product) }} {{ 'menu.page.slots' | transloco }}</p>
             <span class="flex flex-wrap gap-1.5">
@@ -245,10 +323,13 @@
     } @else if (activeTab() === 'platters') {
       <section class="grid gap-3 md:grid-cols-2">
         @for (product of platterProducts(); track product.id) {
-          <article class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+          <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
-              <h2 class="theme-title text-base font-semibold">{{ product.name }}</h2>
-              <span class="theme-title font-semibold">{{ product.basePrice | currency: 'EUR' }}</span>
+              <div class="flex items-center gap-2">
+                <app-icon name="set_meal" size="sm" class="theme-muted shrink-0" />
+                <h2 class="theme-title text-base font-semibold">{{ product.name }}</h2>
+              </div>
+              <span class="theme-title font-bold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</span>
             </div>
             @if (product.description) {
               <p class="theme-muted text-sm">{{ product.description }}</p>
@@ -264,29 +345,120 @@
         }
       </section>
     } @else {
-      <section class="grid gap-4 lg:grid-cols-2">
-        <article class="theme-panel grid content-start gap-3 rounded-lg border p-4 shadow-sm">
-          <h2 class="theme-title text-base font-semibold">{{ 'menu.page.availableProducts' | transloco }}</h2>
-          @for (product of availableProducts(); track product.id) {
-            <div class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
-              <span class="theme-title min-w-0 truncate text-sm font-semibold">{{ product.name }}</span>
-              <app-badge variant="success" size="sm">{{ availabilityLabel(product) }}</app-badge>
+      <!-- Tab Disponibilidad -->
+      <section class="grid content-start gap-3">
+        <p class="theme-muted text-sm">{{ 'menu.page.availabilityManagementDescription' | transloco }}</p>
+        <div class="grid gap-2">
+          @for (product of products(); track product.id) {
+            <div class="theme-panel flex items-center justify-between gap-4 rounded-xl border px-4 py-3 shadow-sm">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="theme-title truncate text-sm font-semibold">{{ product.name }}</span>
+                  <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
+                </div>
+                <p class="theme-muted mt-0.5 text-xs">{{ categoryName(product) }} &middot; {{ product.basePrice | currency: 'EUR' }}</p>
+              </div>
+              <app-switch
+                size="sm"
+                variant="primary"
+                [label]="(product.available ? 'menu.page.toggleAvailability' : 'menu.page.soldOut') | transloco"
+                [labelClass]="!product.available ? 'text-red-500 dark:text-red-400' : ''"
+                [checked]="product.available"
+                (checkedChange)="toggleAvailability(product)"
+              />
             </div>
           }
-        </article>
-
-        <article class="theme-panel grid content-start gap-3 rounded-lg border p-4 shadow-sm">
-          <h2 class="theme-title text-base font-semibold">{{ 'menu.page.soldOutProducts' | transloco }}</h2>
-          @for (product of unavailableProducts(); track product.id) {
-            <div class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
-              <span class="theme-title min-w-0 truncate text-sm font-semibold">{{ product.name }}</span>
-              <app-badge variant="danger" size="sm">{{ availabilityLabel(product) }}</app-badge>
-            </div>
-          } @empty {
-            <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'menu.page.noSoldOutProducts' | transloco }}</p>
-          }
-        </article>
+        </div>
       </section>
     }
   </div>
 </main>
+
+<!-- Template reutilizable: detalle de producto (desktop aside + mobile dialog) -->
+<ng-template #productDetailTpl let-product="product">
+  <div class="grid gap-4">
+    <header class="grid gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <h2 class="theme-title text-xl font-semibold">{{ product.name }}</h2>
+        <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
+        @if (!product.available) {
+          <app-badge variant="danger" size="sm">{{ 'menu.page.soldOut' | transloco }}</app-badge>
+        }
+      </div>
+      <p class="theme-muted text-sm">{{ categoryName(product) }} &middot; {{ preparationRouteLabel(product) }}</p>
+      @if (product.description) {
+        <p class="theme-muted text-sm">{{ product.description }}</p>
+      }
+    </header>
+
+    <div class="grid grid-cols-2 gap-2">
+      <div class="theme-soft-panel rounded-md border px-3 py-2">
+        <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.customizer.basePrice' | transloco }}</p>
+        <p class="theme-title text-lg font-semibold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</p>
+      </div>
+      <div class="theme-soft-panel rounded-md border px-3 py-2">
+        <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.previewPrice' | transloco }}</p>
+        <p class="theme-title text-lg font-semibold tabular-nums">{{ previewPrice() | currency: 'EUR' }}</p>
+      </div>
+    </div>
+
+    <div class="theme-soft-panel flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+      <span [class]="'text-sm font-medium ' + (!product.available ? 'text-red-500 dark:text-red-400' : 'theme-muted')">
+        {{ (product.available ? 'menu.page.toggleAvailability' : 'menu.page.soldOut') | transloco }}
+      </span>
+      <app-switch
+        size="sm"
+        variant="primary"
+        [label]="(product.available ? 'menu.page.toggleAvailability' : 'menu.page.soldOut') | transloco"
+        [labelClass]="!product.available ? 'text-red-500 dark:text-red-400' : ''"
+        [checked]="product.available"
+        (checkedChange)="toggleAvailability(product)"
+      />
+    </div>
+
+    @if (product.allergens?.length) {
+      <section>
+        <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.allergens' | transloco }}</h3>
+        <p class="theme-muted mt-1 text-sm">{{ product.allergens?.join(', ') }}</p>
+      </section>
+    }
+
+    @if (selectedModifierGroups().length) {
+      <section class="grid gap-3">
+        <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.modifiers' | transloco }}</h3>
+        @for (group of selectedModifierGroups(); track group.id) {
+          <fieldset class="grid gap-2 rounded-md border p-3">
+            <legend class="theme-title px-1 text-sm font-semibold">
+              {{ group.name }}
+              @if (group.required) {
+                <span class="theme-muted text-xs">({{ 'menu.customizer.required' | transloco }})</span>
+              }
+            </legend>
+            @for (option of group.options; track option.id) {
+              <label class="theme-field flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                <span class="inline-flex items-center gap-2">
+                  <input
+                    [type]="group.type === 'single' ? 'radio' : 'checkbox'"
+                    [name]="group.id"
+                    [checked]="isOptionSelected(option.id)"
+                    (change)="group.type === 'single' ? selectSingle(group, option.id) : toggleOption(option.id)"
+                  />
+                  <span>{{ group.type === 'remove' ? ('menu.customizer.without' | transloco: { name: option.name }) : option.name }}</span>
+                </span>
+                <span class="theme-muted text-xs font-semibold">
+                  @if (option.priceDelta > 0) {
+                    +{{ option.priceDelta | currency: 'EUR' }}
+                  } @else {
+                    {{ 0 | currency: 'EUR' }}
+                  }
+                </span>
+              </label>
+            }
+          </fieldset>
+        }
+      </section>
+    } @else {
+      <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'menu.page.noModifiers' | transloco }}</p>
+    }
+  </div>
+</ng-template>

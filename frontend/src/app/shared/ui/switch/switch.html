@@ -15,7 +15,7 @@
 
   <label class="switch-field__label" [for]="switchId">
     @if (label()) {
-      <span class="switch-field__title">
+      <span [class]="'switch-field__title' + (labelClass() ? ' ' + labelClass() : '')">
         {{ label() }}
         @if (required()) {
           <span aria-hidden="true">*</span>

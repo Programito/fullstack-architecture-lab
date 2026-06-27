@@ -73,6 +73,12 @@
     "errors": {
       "invalidCredentials": "No se ha podido iniciar sesión. Revisa el email y la contraseña.",
       "demoUnavailable": "No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos."
+    },
+    "seed": {
+      "label": "Cargar datos de demostración",
+      "loading": "Cargando datos...",
+      "done": "Datos de demostración cargados correctamente.",
+      "error": "No se han podido cargar los datos. Inténtalo de nuevo."
     }
   },
   "developer": {
@@ -556,6 +562,7 @@
       "searchLabel": "Buscar en el catálogo",
       "searchPlaceholder": "Buscar producto, categoría, alérgeno o modificador",
       "clearSearch": "Limpiar búsqueda de catálogo",
+      "categorySearch": "Buscar categoría",
       "categoryFilter": "Categoría",
       "allCategories": "Todas las categorías",
       "availabilityFilter": "Disponibilidad",
@@ -583,7 +590,22 @@
       "noSoldOutProducts": "No hay productos agotados.",
       "noModifiers": "Este producto no tiene modificadores.",
       "noResults": "No hay productos que coincidan con los filtros.",
-      "noSelection": "Selecciona un producto para revisar su detalle."
+      "noSelection": "Selecciona un producto para revisar su detalle.",
+      "closeDetail": "Cerrar detalle",
+      "productDetail": "Detalle del producto",
+      "toggleAvailability": "Disponible",
+      "availabilityManagementDescription": "Activa o desactiva productos para el servicio de hoy.",
+      "newSection": "Nueva sección",
+      "sectionNameLabel": "Nombre",
+      "sectionNamePlaceholder": "Nombre de la sección",
+      "saveSection": "Guardar",
+      "cancelSection": "Cancelar",
+      "sectionVisibilityLabel": "Visible en la carta",
+      "deleteSectionLabel": "Eliminar sección",
+      "deleteSectionTitle": "Eliminar sección",
+      "deleteSectionConfirm": "¿Eliminar la sección \"{{name}}\"? Se eliminarán también los ítems que contiene.",
+      "confirmDelete": "Confirmar eliminación",
+      "cancelDelete": "Cancelar"
     },
     "customizer": {
       "title": "Personalizar producto",
