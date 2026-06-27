@@ -38,6 +38,7 @@ const INITIAL_MENUS = new Map<string, RestaurantMenu>([
   [
     DEMO_RESTAURANT_ID,
     {
+      id: 'menu-demo-main',
       restaurantId: DEMO_RESTAURANT_ID,
       name: 'Carta principal',
       isActive: true,

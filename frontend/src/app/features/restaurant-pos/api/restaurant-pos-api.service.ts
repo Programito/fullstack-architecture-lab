@@ -4,21 +4,29 @@ import type { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../../../core/api/api.config';
 import type {
+  AddMenuSectionItemRequest,
   AddRestaurantOrderLineRequest,
   CancelRestaurantOrderLineRequest,
   CreateFloorElementRequest,
+  CreateMenuSectionRequest,
+  MenuItemAdminDto,
+  MenuSectionAdminDto,
   OpenRestaurantOrderRequest,
   OrderPaymentMethodDto,
   ReorderFloorElementsRequest,
+  ReorderItemsRequest,
   RestaurantFloorsDto,
   RestaurantMenuDto,
   RestaurantOrderDto,
+  RestaurantProductSummaryDto,
   RestaurantSummaryDto,
   ServiceFloorDto,
   ServicePointDetailDto,
   ServicePointOrderDto,
   UpdateFloorElementRequest,
   UpdateFloorRequest,
+  UpdateMenuSectionItemRequest,
+  UpdateMenuSectionRequest,
   UpdateRestaurantOrderLineRequest,
 } from './restaurant-pos-api.models';
 
@@ -147,5 +155,41 @@ export class RestaurantPosApiService {
 
   setMenuItemAvailability(restaurantId: string, restaurantProductId: string, available: boolean): Observable<void> {
     return this.http.patch<void>(`${this.restaurantsUrl}/${restaurantId}/products/${restaurantProductId}/availability`, { available });
+  }
+
+  listRestaurantProducts(restaurantId: string): Observable<RestaurantProductSummaryDto[]> {
+    return this.http.get<RestaurantProductSummaryDto[]>(`${this.restaurantsUrl}/${restaurantId}/products`);
+  }
+
+  createMenuSection(restaurantId: string, menuId: string, body: CreateMenuSectionRequest): Observable<MenuSectionAdminDto> {
+    return this.http.post<MenuSectionAdminDto>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections`, body);
+  }
+
+  updateMenuSection(restaurantId: string, menuId: string, sectionId: string, body: UpdateMenuSectionRequest): Observable<MenuSectionAdminDto> {
+    return this.http.patch<MenuSectionAdminDto>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}`, body);
+  }
+
+  deleteMenuSection(restaurantId: string, menuId: string, sectionId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}`);
+  }
+
+  reorderMenuSections(restaurantId: string, menuId: string, body: ReorderItemsRequest): Observable<void> {
+    return this.http.put<void>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/reorder`, body);
+  }
+
+  addMenuSectionItem(restaurantId: string, menuId: string, sectionId: string, body: AddMenuSectionItemRequest): Observable<MenuItemAdminDto> {
+    return this.http.post<MenuItemAdminDto>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}/items`, body);
+  }
+
+  updateMenuSectionItem(restaurantId: string, menuId: string, sectionId: string, itemId: string, body: UpdateMenuSectionItemRequest): Observable<MenuItemAdminDto> {
+    return this.http.patch<MenuItemAdminDto>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}/items/${itemId}`, body);
+  }
+
+  removeMenuSectionItem(restaurantId: string, menuId: string, sectionId: string, itemId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}/items/${itemId}`);
+  }
+
+  reorderMenuSectionItems(restaurantId: string, menuId: string, sectionId: string, body: ReorderItemsRequest): Observable<void> {
+    return this.http.put<void>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}/items/reorder`, body);
   }
 }

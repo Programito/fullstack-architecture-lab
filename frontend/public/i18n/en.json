@@ -73,6 +73,12 @@
     "errors": {
       "invalidCredentials": "Sign-in failed. Check your email and password.",
       "demoUnavailable": "The demo could not be opened right now. Try again in a few minutes."
+    },
+    "seed": {
+      "label": "Load demo data",
+      "loading": "Loading data...",
+      "done": "Demo data loaded successfully.",
+      "error": "Could not load the data. Please try again."
     }
   },
   "developer": {
@@ -556,6 +562,7 @@
       "searchLabel": "Search catalog",
       "searchPlaceholder": "Search product, category, allergen, or modifier",
       "clearSearch": "Clear catalog search",
+      "categorySearch": "Search category",
       "categoryFilter": "Category",
       "allCategories": "All categories",
       "availabilityFilter": "Availability",
@@ -583,7 +590,22 @@
       "noSoldOutProducts": "No sold-out products.",
       "noModifiers": "This product has no modifiers.",
       "noResults": "No products match the filters.",
-      "noSelection": "Select a product to review its details."
+      "noSelection": "Select a product to review its details.",
+      "closeDetail": "Close detail",
+      "productDetail": "Product detail",
+      "toggleAvailability": "Available",
+      "availabilityManagementDescription": "Enable or disable products for today's service.",
+      "newSection": "New section",
+      "sectionNameLabel": "Name",
+      "sectionNamePlaceholder": "Section name",
+      "saveSection": "Save",
+      "cancelSection": "Cancel",
+      "sectionVisibilityLabel": "Visible on the menu",
+      "deleteSectionLabel": "Delete section",
+      "deleteSectionTitle": "Delete section",
+      "deleteSectionConfirm": "Delete section \"{{name}}\"? Its items will also be removed.",
+      "confirmDelete": "Confirm delete",
+      "cancelDelete": "Cancel"
     },
     "customizer": {
       "title": "Customize product",

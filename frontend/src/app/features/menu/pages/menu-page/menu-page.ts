@@ -1,13 +1,14 @@
 import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { map } from 'rxjs';
+import { BehaviorSubject, map, switchMap } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
+import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
+import { Input } from '../../../../shared/ui/input/input';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
@@ -23,7 +24,7 @@ type PreparationRoute = Product['preparationPolicy']['route'];
 
 @Component({
   selector: 'app-menu-page',
-  imports: [Badge, CurrencyPipe, Dialog, Icon, NgTemplateOutlet, SearchInput, SegmentedControl, Switch, TranslocoPipe],
+  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, NgTemplateOutlet, SearchInput, SegmentedControl, Switch, TranslocoPipe],
   templateUrl: './menu-page.html',
 })
 export class MenuPage {
@@ -32,16 +33,39 @@ export class MenuPage {
   private readonly transloco = inject(TranslocoService);
   private readonly bp = inject(BreakpointObserver);
 
-  private readonly menuResource = rxResource<MenuData, unknown>({
-    stream: () => this.menuApi.getMenu(),
-  });
+  private readonly reloadTrigger = new BehaviorSubject<void>(undefined);
+  private readonly _menuLoading = signal(true);
+  private readonly _menuError = signal<unknown>(null);
+  private readonly _menuData = signal<MenuData | undefined>(undefined);
 
-  protected readonly menuLoading = this.menuResource.isLoading;
-  protected readonly menuError = this.menuResource.error;
-  protected readonly categories = computed<MenuCategory[]>(() => this.menuResource.value()?.categories ?? []);
-  protected readonly modifierGroups = computed<ModifierGroup[]>(() => this.menuResource.value()?.modifierGroups ?? []);
-  protected readonly products = computed<Product[]>(() => this.menuResource.value()?.products ?? []);
-  protected readonly comboDefinitions = computed<ComboProductDefinition[]>(() => this.menuResource.value()?.comboProductDefinitions ?? []);
+  protected readonly menuLoading = this._menuLoading.asReadonly();
+  protected readonly menuError = this._menuError.asReadonly();
+  protected readonly menuId = computed(() => this._menuData()?.menuId ?? '');
+  protected readonly categories = computed<MenuCategory[]>(() => this._menuData()?.categories ?? []);
+  protected readonly modifierGroups = computed<ModifierGroup[]>(() => this._menuData()?.modifierGroups ?? []);
+  protected readonly products = computed<Product[]>(() => this._menuData()?.products ?? []);
+  protected readonly comboDefinitions = computed<ComboProductDefinition[]>(() => this._menuData()?.comboProductDefinitions ?? []);
+
+  constructor() {
+    this.reloadTrigger.pipe(
+      switchMap(() => this.menuApi.getMenu()),
+      takeUntilDestroyed(),
+    ).subscribe({
+      next: (data) => {
+        this._menuData.set(data);
+        this._menuLoading.set(false);
+      },
+      error: (err) => {
+        this._menuError.set(err);
+        this._menuLoading.set(false);
+      },
+    });
+  }
+
+  protected readonly createSectionOpen = signal(false);
+  protected readonly newSectionName = signal('');
+  protected readonly sectionToDelete = signal<MenuCategory | null>(null);
+  protected readonly deleteSectionOpen = signal(false);
 
   protected readonly isMobile = toSignal(
     this.bp.observe('(max-width: 1023px)').pipe(map((r) => r.matches)),
@@ -165,11 +189,66 @@ export class MenuPage {
     this.categorySelectorQuery.set('');
   }
 
+  protected openCreateSection(): void {
+    this.newSectionName.set('');
+    this.createSectionOpen.set(true);
+  }
+
+  protected cancelCreateSection(): void {
+    this.createSectionOpen.set(false);
+    this.newSectionName.set('');
+  }
+
+  protected submitCreateSection(): void {
+    const name = this.newSectionName().trim();
+    if (!name) return;
+    this.menuApi.createSection(this.menuId(), name, true).subscribe({
+      complete: () => {
+        this.createSectionOpen.set(false);
+        this.newSectionName.set('');
+        this.reloadMenuData();
+      },
+    });
+  }
+
+  protected toggleSectionVisibility(category: MenuCategory): void {
+    this.menuApi.updateSection(this.menuId(), category.id, { isVisible: !category.isVisible }).subscribe({
+      complete: () => this.reloadMenuData(),
+    });
+  }
+
+  protected openDeleteSection(category: MenuCategory): void {
+    this.sectionToDelete.set(category);
+    this.deleteSectionOpen.set(true);
+  }
+
+  protected cancelDeleteSection(): void {
+    this.deleteSectionOpen.set(false);
+    this.sectionToDelete.set(null);
+  }
+
+  protected confirmDeleteSection(): void {
+    const category = this.sectionToDelete();
+    if (!category) return;
+    this.menuApi.deleteSection(this.menuId(), category.id).subscribe({
+      complete: () => {
+        this.deleteSectionOpen.set(false);
+        this.sectionToDelete.set(null);
+        this.reloadMenuData();
+      },
+    });
+  }
+
   protected toggleAvailability(product: Product): void {
     if (!product.restaurantProductId) return;
     this.menuApi.toggleAvailability(product.restaurantProductId, !product.available).subscribe({
-      complete: () => this.menuResource.reload(),
+      complete: () => this.reloadMenuData(),
     });
+  }
+
+  private reloadMenuData(): void {
+    this._menuLoading.set(true);
+    this.reloadTrigger.next();
   }
 
   protected setCategoryFilter(value: string): void {

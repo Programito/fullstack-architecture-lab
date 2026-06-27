@@ -20,7 +20,12 @@ export type ApplicationErrorCode =
   | 'order_line_not_found'
   | 'restaurant_product_not_found'
   | 'invalid_order_state'
-  | 'payment_exceeds_balance';
+  | 'payment_exceeds_balance'
+  | 'menu_not_found'
+  | 'menu_section_not_found'
+  | 'menu_section_name_taken'
+  | 'menu_item_not_found'
+  | 'menu_item_already_in_section';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -62,4 +67,24 @@ export function invalidFloorLayout(details?: Record<string, unknown>): Applicati
 
 export function invalidServiceAction(details?: Record<string, unknown>): ApplicationError {
   return applicationError('invalid_service_action', 'Service action is invalid for the current table state.', details);
+}
+
+export function menuNotFound(menuId: string): ApplicationError {
+  return applicationError('menu_not_found', `Menu "${menuId}" was not found.`, { menuId });
+}
+
+export function menuSectionNotFound(sectionId: string): ApplicationError {
+  return applicationError('menu_section_not_found', `Menu section "${sectionId}" was not found.`, { sectionId });
+}
+
+export function menuSectionNameTaken(name: string): ApplicationError {
+  return applicationError('menu_section_name_taken', `A section named "${name}" already exists in this menu.`, { name });
+}
+
+export function menuItemNotFound(itemId: string): ApplicationError {
+  return applicationError('menu_item_not_found', `Menu item "${itemId}" was not found.`, { itemId });
+}
+
+export function menuItemAlreadyInSection(restaurantProductId: string): ApplicationError {
+  return applicationError('menu_item_already_in_section', `Product "${restaurantProductId}" is already in this section.`, { restaurantProductId });
 }

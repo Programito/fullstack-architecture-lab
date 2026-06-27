@@ -3,5 +3,6 @@ export interface MenuCategory {
   name: string;
   parentId?: string;
   sortOrder: number;
+  isVisible?: boolean;
 }
 

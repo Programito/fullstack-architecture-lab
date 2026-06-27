@@ -59,6 +59,9 @@ export class LoginPage {
   protected readonly loadingRole = signal<DemoRoleName | null>(null);
   protected readonly submitting = signal(false);
   protected readonly errorKey = signal('');
+  protected readonly seedLoading = signal(false);
+  protected readonly seedDone = signal(false);
+  protected readonly seedError = signal(false);
 
   protected readonly tabs = computed<TabsOption[]>(() => {
     this.activeTranslations();
@@ -179,6 +182,19 @@ export class LoginPage {
       .subscribe({
         next: (response) => this.completeLogin(response),
         error: () => this.errorKey.set('auth.errors.demoUnavailable'),
+      });
+  }
+
+  protected runSeed(): void {
+    if (this.seedLoading()) return;
+    this.seedLoading.set(true);
+    this.seedDone.set(false);
+    this.seedError.set(false);
+    this.api.triggerSeed()
+      .pipe(finalize(() => this.seedLoading.set(false)))
+      .subscribe({
+        next: () => this.seedDone.set(true),
+        error: () => this.seedError.set(true),
       });
   }
 

@@ -109,4 +109,8 @@ export class IdentityApiService {
   getDeveloperResources(): Observable<DeveloperResourcesDto> {
     return this.http.get<DeveloperResourcesDto>(`${this.authUrl}/developer-resources`);
   }
+
+  triggerSeed(): Observable<{ seeded: boolean }> {
+    return this.http.post<{ seeded: boolean }>(`${this.apiBaseUrl}/developer/seed`, {});
+  }
 }

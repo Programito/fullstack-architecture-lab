@@ -80,10 +80,41 @@ export type RestaurantMenuSection = {
 };
 
 export type RestaurantMenu = {
+  id: string;
   restaurantId: string;
   name: string;
   isActive: boolean;
   sections: RestaurantMenuSection[];
+};
+
+export type RestaurantProductSummary = {
+  id: string;
+  productId: string;
+  name: string;
+  displayName: string | null;
+  productType: 'simple' | 'combo' | 'platter';
+  priceCents: number;
+  currency: string;
+  isAvailable: boolean;
+  isVisible: boolean;
+};
+
+export type RestaurantMenuSectionView = {
+  id: string;
+  menuId: string;
+  name: string;
+  sortOrder: number;
+  isVisible: boolean;
+};
+
+export type RestaurantMenuItemView = {
+  id: string;
+  sectionId: string;
+  restaurantProductId: string;
+  displayNameOverride: string | null;
+  priceOverrideCents: number | null;
+  sortOrder: number;
+  isVisible: boolean;
 };
 
 export type RestaurantTableView = {

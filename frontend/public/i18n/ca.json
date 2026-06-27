@@ -73,6 +73,12 @@
     "errors": {
       "invalidCredentials": "No s'ha pogut iniciar la sessió. Revisa l'email i la contrasenya.",
       "demoUnavailable": "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquí a uns minuts."
+    },
+    "seed": {
+      "label": "Carregar dades de demostració",
+      "loading": "Carregant dades...",
+      "done": "Dades de demostració carregades correctament.",
+      "error": "No s'han pogut carregar les dades. Torna-ho a provar."
     }
   },
   "developer": {
@@ -556,6 +562,7 @@
       "searchLabel": "Buscar al catàleg",
       "searchPlaceholder": "Buscar producte, categoria, al·lergen o modificador",
       "clearSearch": "Netejar cerca del catàleg",
+      "categorySearch": "Cercar categoria",
       "categoryFilter": "Categoria",
       "allCategories": "Totes les categories",
       "availabilityFilter": "Disponibilitat",
@@ -583,7 +590,22 @@
       "noSoldOutProducts": "No hi ha productes esgotats.",
       "noModifiers": "Aquest producte no té modificadors.",
       "noResults": "No hi ha productes que coincideixin amb els filtres.",
-      "noSelection": "Selecciona un producte per revisar-ne el detall."
+      "noSelection": "Selecciona un producte per revisar-ne el detall.",
+      "closeDetail": "Tancar detall",
+      "productDetail": "Detall del producte",
+      "toggleAvailability": "Disponible",
+      "availabilityManagementDescription": "Activa o desactiva productes per al servei d'avui.",
+      "newSection": "Nova secció",
+      "sectionNameLabel": "Nom",
+      "sectionNamePlaceholder": "Nom de la secció",
+      "saveSection": "Desar",
+      "cancelSection": "Cancel·lar",
+      "sectionVisibilityLabel": "Visible a la carta",
+      "deleteSectionLabel": "Eliminar secció",
+      "deleteSectionTitle": "Eliminar secció",
+      "deleteSectionConfirm": "Eliminar la secció \"{{name}}\"? S'eliminaran també els ítems que conté.",
+      "confirmDelete": "Confirmar eliminació",
+      "cancelDelete": "Cancel·lar"
     },
     "customizer": {
       "title": "Personalitzar producte",

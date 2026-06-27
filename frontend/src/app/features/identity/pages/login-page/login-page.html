@@ -245,6 +245,34 @@
           }
         </form>
       }
+      <div class="login-page__seed">
+        <button
+          class="login-page__seed-btn"
+          type="button"
+          [disabled]="seedLoading()"
+          [attr.aria-busy]="seedLoading()"
+          (click)="runSeed()"
+        >
+          @if (seedLoading()) {
+            <span class="login-page__role-spinner" aria-hidden="true"></span>
+            {{ 'auth.seed.loading' | transloco }}
+          } @else {
+            <app-icon name="database" />
+            {{ 'auth.seed.label' | transloco }}
+          }
+        </button>
+
+        @if (seedDone()) {
+          <p class="login-page__seed-feedback login-page__seed-feedback--done" role="status">
+            {{ 'auth.seed.done' | transloco }}
+          </p>
+        }
+        @if (seedError()) {
+          <p class="login-page__seed-feedback login-page__seed-feedback--error" role="alert">
+            {{ 'auth.seed.error' | transloco }}
+          </p>
+        }
+      </div>
     </app-card>
 
     <div class="login-page__intro">

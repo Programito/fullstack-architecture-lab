@@ -19,6 +19,7 @@ export class Switch {
   readonly size = input<SwitchSize>('md');
   readonly checked = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
+  readonly labelClass = input('');
   readonly required = input(false, { transform: booleanAttribute });
 
   readonly checkedChange = output<boolean>();

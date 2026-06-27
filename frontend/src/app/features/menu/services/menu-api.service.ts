@@ -2,20 +2,25 @@ import { inject, Injectable } from '@angular/core';
 import { map, type Observable } from 'rxjs';
 
 import type {
+  MenuSectionAdminDto,
   RestaurantMenuDto,
   RestaurantMenuItemDto,
   RestaurantMenuModifierGroupDto,
+  RestaurantProductSummaryDto,
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../models/menu.models';
 import type { ProductCourse, ProductPreparationRoute } from '../models/product.model';
 
 export type MenuData = {
+  menuId: string;
   categories: MenuCategory[];
   products: Product[];
   modifierGroups: ModifierGroup[];
   comboProductDefinitions: ComboProductDefinition[];
 };
+
+export type { MenuSectionAdminDto, RestaurantProductSummaryDto };
 
 const RESTAURANT_ID = 'restaurant-mesaflow-centro';
 
@@ -30,6 +35,30 @@ export class MenuApiService {
   toggleAvailability(restaurantProductId: string, available: boolean): Observable<void> {
     return this.api.setMenuItemAvailability(RESTAURANT_ID, restaurantProductId, available);
   }
+
+  createSection(menuId: string, name: string, isVisible = true): Observable<MenuSectionAdminDto> {
+    return this.api.createMenuSection(RESTAURANT_ID, menuId, { name, isVisible });
+  }
+
+  updateSection(menuId: string, sectionId: string, data: { name?: string; isVisible?: boolean }): Observable<MenuSectionAdminDto> {
+    return this.api.updateMenuSection(RESTAURANT_ID, menuId, sectionId, data);
+  }
+
+  deleteSection(menuId: string, sectionId: string): Observable<void> {
+    return this.api.deleteMenuSection(RESTAURANT_ID, menuId, sectionId);
+  }
+
+  listProducts(): Observable<RestaurantProductSummaryDto[]> {
+    return this.api.listRestaurantProducts(RESTAURANT_ID);
+  }
+
+  addSectionItem(menuId: string, sectionId: string, restaurantProductId: string): Observable<void> {
+    return this.api.addMenuSectionItem(RESTAURANT_ID, menuId, sectionId, { restaurantProductId }).pipe(map(() => undefined));
+  }
+
+  removeSectionItem(menuId: string, sectionId: string, itemId: string): Observable<void> {
+    return this.api.removeMenuSectionItem(RESTAURANT_ID, menuId, sectionId, itemId);
+  }
 }
 
 function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
@@ -37,6 +66,7 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
     id: section.id,
     name: section.name,
     sortOrder: section.sortOrder ?? (index + 1) * 10,
+    isVisible: section.isVisible,
   }));
 
   const allItems = dto.sections.flatMap((section) =>
@@ -102,7 +132,7 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
       };
     });
 
-  return { categories, products, modifierGroups, comboProductDefinitions };
+  return { menuId: dto.id, categories, products, modifierGroups, comboProductDefinitions };
 }
 
 function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): Product {

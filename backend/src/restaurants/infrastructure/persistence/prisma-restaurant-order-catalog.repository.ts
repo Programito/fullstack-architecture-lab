@@ -129,6 +129,7 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
     if (!menu) return null;
 
     return {
+      id: menu.id,
       restaurantId: menu.restaurantId,
       name: menu.name,
       isActive: menu.isActive,

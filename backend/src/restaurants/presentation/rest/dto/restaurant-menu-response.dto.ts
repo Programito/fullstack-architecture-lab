@@ -85,13 +85,15 @@ class RestaurantMenuSectionResponseDto {
 }
 
 export class RestaurantMenuResponseDto {
+  @ApiProperty({ example: 'menu-abc123' }) id!: string;
   @ApiProperty({ example: 'restaurant-mesaflow-centro' }) restaurantId!: string;
   @ApiProperty({ example: 'Carta principal' }) name!: string;
   @ApiProperty({ example: true }) isActive!: boolean;
   @ApiProperty({ type: [RestaurantMenuSectionResponseDto] }) sections!: RestaurantMenuSectionResponseDto[];
 
-  static fromDomain(menu: RestaurantMenu): RestaurantMenuResponseDto {
+  static fromDomain(menu: RestaurantMenu & { id?: string }): RestaurantMenuResponseDto {
     return {
+      id: menu.id ?? '',
       restaurantId: menu.restaurantId,
       name: menu.name,
       isActive: menu.isActive,

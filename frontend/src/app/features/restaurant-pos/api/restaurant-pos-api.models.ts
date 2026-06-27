@@ -363,8 +363,45 @@ export type RestaurantMenuSectionDto = {
 };
 
 export type RestaurantMenuDto = {
+  id: string;
   restaurantId: string;
   name: string;
   isActive: boolean;
   sections: RestaurantMenuSectionDto[];
 };
+
+export type MenuSectionAdminDto = {
+  id: string;
+  menuId: string;
+  name: string;
+  sortOrder: number;
+  isVisible: boolean;
+};
+
+export type MenuItemAdminDto = {
+  id: string;
+  sectionId: string;
+  restaurantProductId: string;
+  displayNameOverride: string | null;
+  priceOverrideCents: number | null;
+  sortOrder: number;
+  isVisible: boolean;
+};
+
+export type RestaurantProductSummaryDto = {
+  id: string;
+  productId: string;
+  name: string;
+  displayName: string | null;
+  productType: 'simple' | 'combo' | 'platter';
+  priceCents: number;
+  currency: string;
+  isAvailable: boolean;
+  isVisible: boolean;
+};
+
+export type CreateMenuSectionRequest = { name: string; isVisible?: boolean };
+export type UpdateMenuSectionRequest = { name?: string; isVisible?: boolean };
+export type AddMenuSectionItemRequest = { restaurantProductId: string; displayNameOverride?: string; priceOverrideCents?: number };
+export type UpdateMenuSectionItemRequest = { displayNameOverride?: string | null; priceOverrideCents?: number | null; isVisible?: boolean };
+export type ReorderItemsRequest = { items: Array<{ id: string; sortOrder: number }> };
