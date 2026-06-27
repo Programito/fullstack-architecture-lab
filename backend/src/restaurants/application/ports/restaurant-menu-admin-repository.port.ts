@@ -1,8 +1,27 @@
-import type { RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import type { PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 
 export const RESTAURANT_MENU_ADMIN_REPOSITORY = Symbol('RESTAURANT_MENU_ADMIN_REPOSITORY');
 
 export type SortOrderItem = { id: string; sortOrder: number };
+
+export type CreateProductData = {
+  name: string;
+  description?: string;
+  course: ProductCourse;
+  preparationRoute: PreparationRoute;
+  priceCents: number;
+  currency: string;
+};
+
+export type UpdateProductData = {
+  name?: string;
+  description?: string | null;
+  course?: ProductCourse;
+  preparationRoute?: PreparationRoute;
+  priceCents?: number;
+  isAvailable?: boolean;
+  isVisible?: boolean;
+};
 
 export interface RestaurantMenuAdminRepository {
   findMenuById(restaurantId: string, menuId: string): Promise<{ id: string } | null>;
@@ -17,4 +36,8 @@ export interface RestaurantMenuAdminRepository {
   removeSectionItem(restaurantId: string, menuId: string, sectionId: string, itemId: string): Promise<boolean>;
   reorderSectionItems(restaurantId: string, menuId: string, sectionId: string, items: SortOrderItem[]): Promise<boolean>;
   listRestaurantProducts(restaurantId: string): Promise<RestaurantProductSummary[]>;
+  findRestaurantProductById(restaurantId: string, productId: string): Promise<RestaurantProductDetail | null>;
+  createProduct(restaurantId: string, data: CreateProductData): Promise<RestaurantProductDetail>;
+  updateProduct(restaurantId: string, productId: string, data: UpdateProductData): Promise<RestaurantProductDetail | null>;
+  deleteProduct(restaurantId: string, productId: string): Promise<boolean>;
 }

@@ -60,11 +60,18 @@ import { RemoveMenuSectionItemUseCase } from '../../application/use-cases/remove
 import { ReorderMenuSectionsUseCase } from '../../application/use-cases/reorder-menu-sections.use-case';
 import { ReorderMenuSectionItemsUseCase } from '../../application/use-cases/reorder-menu-section-items.use-case';
 import { ListRestaurantProductsUseCase } from '../../application/use-cases/list-restaurant-products.use-case';
+import { CreateRestaurantProductUseCase } from '../../application/use-cases/create-restaurant-product.use-case';
+import { UpdateRestaurantProductUseCase } from '../../application/use-cases/update-restaurant-product.use-case';
+import { DeleteRestaurantProductUseCase } from '../../application/use-cases/delete-restaurant-product.use-case';
+import { GetRestaurantProductUseCase } from '../../application/use-cases/get-restaurant-product.use-case';
 import { AddMenuSectionItemDto } from './dto/add-menu-section-item.dto';
 import { UpdateMenuSectionItemDto } from './dto/update-menu-section-item.dto';
 import { MenuItemResponseDto } from './dto/menu-item-response.dto';
 import { ReorderMenuItemsDto } from './dto/reorder-menu-items.dto';
 import { RestaurantProductSummaryResponseDto } from './dto/restaurant-product-summary-response.dto';
+import { CreateRestaurantProductDto } from './dto/create-restaurant-product.dto';
+import { UpdateRestaurantProductDto } from './dto/update-restaurant-product.dto';
+import { RestaurantProductDetailResponseDto } from './dto/restaurant-product-detail-response.dto';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -103,6 +110,10 @@ export class RestaurantsController {
     private readonly reorderMenuSections: ReorderMenuSectionsUseCase,
     private readonly reorderMenuSectionItems: ReorderMenuSectionItemsUseCase,
     private readonly listRestaurantProducts: ListRestaurantProductsUseCase,
+    private readonly getRestaurantProductUC: GetRestaurantProductUseCase,
+    private readonly createRestaurantProduct: CreateRestaurantProductUseCase,
+    private readonly updateRestaurantProduct: UpdateRestaurantProductUseCase,
+    private readonly deleteRestaurantProduct: DeleteRestaurantProductUseCase,
   ) {}
 
   @Get()
@@ -634,6 +645,80 @@ export class RestaurantsController {
   @Version('1')
   @ApiOkResponse({ type: RestaurantProductSummaryResponseDto, isArray: true })
   async restaurantProducts(@Param('id') id: string): Promise<RestaurantProductSummaryResponseDto[]> {
-    return unwrapResultOrThrow(await this.listRestaurantProducts.execute(id));
+    return unwrapResultOrThrow(await this.listRestaurantProducts.execute(id)).map(RestaurantProductSummaryResponseDto.from);
+  }
+
+  @Get(':id/products/:productId')
+  @Version('1')
+  @ApiOkResponse({ type: RestaurantProductDetailResponseDto })
+  @ApiNotFoundResponse()
+  async getRestaurantProduct(
+    @Param('id') id: string,
+    @Param('productId') productId: string,
+  ): Promise<RestaurantProductDetailResponseDto> {
+    const result = await this.getRestaurantProductUC.execute({ restaurantId: id, productId });
+    return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
+  }
+
+  @Post(':id/products')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: RestaurantProductDetailResponseDto })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  async createProduct(
+    @Param('id') id: string,
+    @Body() body: CreateRestaurantProductDto,
+  ): Promise<RestaurantProductDetailResponseDto> {
+    const result = await this.createRestaurantProduct.execute({
+      restaurantId: id,
+      name: body.name,
+      description: body.description,
+      course: body.course,
+      preparationRoute: body.preparationRoute,
+      priceCents: body.priceCents,
+      currency: body.currency,
+    });
+    return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
+  }
+
+  @Patch(':id/products/:productId')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: RestaurantProductDetailResponseDto })
+  @ApiNotFoundResponse()
+  @ApiUnauthorizedResponse()
+  async updateProduct(
+    @Param('id') id: string,
+    @Param('productId') productId: string,
+    @Body() body: UpdateRestaurantProductDto,
+  ): Promise<RestaurantProductDetailResponseDto> {
+    const result = await this.updateRestaurantProduct.execute({
+      restaurantId: id,
+      productId,
+      name: body.name,
+      description: body.description,
+      course: body.course,
+      preparationRoute: body.preparationRoute,
+      priceCents: body.priceCents,
+      isAvailable: body.isAvailable,
+      isVisible: body.isVisible,
+    });
+    return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
+  }
+
+  @Delete(':id/products/:productId')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse()
+  @ApiNotFoundResponse()
+  @ApiUnauthorizedResponse()
+  async deleteProduct(
+    @Param('id') id: string,
+    @Param('productId') productId: string,
+    @Res() res: HttpResponse,
+  ): Promise<void> {
+    unwrapResultOrThrow(await this.deleteRestaurantProduct.execute({ restaurantId: id, productId }));
+    res.status(HttpStatus.NO_CONTENT);
   }
 }

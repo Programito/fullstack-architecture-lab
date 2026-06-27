@@ -39,6 +39,25 @@ export interface ProductCustomizationPolicy {
   modifierGroupIds: string[];
 }
 
+export interface CreateProductInput {
+  name: string;
+  description?: string;
+  priceCents: number;
+  currency: string;
+  course: ProductCourse;
+  preparationRoute: ProductPreparationRoute;
+}
+
+export interface UpdateProductInput {
+  name?: string;
+  description?: string | null;
+  priceCents?: number;
+  course?: ProductCourse;
+  preparationRoute?: ProductPreparationRoute;
+  isAvailable?: boolean;
+  isVisible?: boolean;
+}
+
 export interface PlatterComponent {
   id: string;
   name: ProductName;

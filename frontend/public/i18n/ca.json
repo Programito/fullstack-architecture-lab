@@ -605,7 +605,16 @@
       "deleteSectionTitle": "Eliminar secció",
       "deleteSectionConfirm": "Eliminar la secció \"{{name}}\"? S'eliminaran també els ítems que conté.",
       "confirmDelete": "Confirmar eliminació",
-      "cancelDelete": "Cancel·lar"
+      "cancelDelete": "Cancel·lar",
+      "newProduct": "Nou producte",
+      "editProduct": "Editar producte",
+      "deleteProductTitle": "Eliminar producte",
+      "deleteProductDescription": "Eliminar «{{name}}»? Aquesta acció no es pot desfer.",
+      "confirmDeleteProduct": "Eliminar",
+      "cancelDeleteProduct": "Cancel·lar",
+      "noSection": "Sense secció",
+      "addToSection": "Afegir a secció",
+      "addToSectionTitle": "Afegir a secció"
     },
     "customizer": {
       "title": "Personalitzar producte",
@@ -624,6 +633,36 @@
       "close": "Tancar configuració de menú",
       "noValidProducts": "No hi ha productes disponibles per a aquest slot.",
       "invalidSelection": "Completa els slots obligatoris per afegir el menú."
+    },
+    "product": {
+      "form": {
+        "createTitle": "Nou producte",
+        "editTitle": "Editar producte",
+        "name": "Nom",
+        "namePlaceholder": "Nom del producte",
+        "description": "Descripció",
+        "descriptionPlaceholder": "Descripció opcional",
+        "price": "Preu (€)",
+        "course": "Servei",
+        "route": "Ruta de preparació",
+        "available": "Disponible",
+        "create": "Crear producte",
+        "save": "Guardar canvis",
+        "cancel": "Cancel·lar"
+      },
+      "success": {
+        "created": "Article creat correctament.",
+        "updated": "Article actualitzat correctament.",
+        "deleted": "Article eliminat correctament.",
+        "addedToSection": "Article afegit a la secció correctament."
+      },
+      "errors": {
+        "nameTaken": "Ja existeix un article amb aquest nom.",
+        "saveFailed": "No s'ha pogut guardar l'article.",
+        "deleteFailed": "No s'ha pogut eliminar l'article.",
+        "alreadyInSection": "L'article ja és a aquesta secció.",
+        "addToSectionFailed": "No s'ha pogut afegir l'article a la secció."
+      }
     }
   }
 }

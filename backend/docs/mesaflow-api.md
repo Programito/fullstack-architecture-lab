@@ -123,29 +123,48 @@ Endpoints de administración de secciones e ítems del menú. Requieren que exis
 - `PUT /api/v1/restaurants/:id/menus/:menuId/sections/:sectionId/items/reorder`
   Reordena los ítems dentro de una sección. Recibe `items: [{ id, sortOrder }]`.
 
-### Productos disponibles
+### Productos del restaurante
 
 - `GET /api/v1/restaurants/:id/products`
-  Devuelve el resumen de productos del restaurante para asignarlos a secciones del menú
-  (`RestaurantProductSummaryDto`: `id`, `name`, `available`, `basePrice`, `sku`).
+  Devuelve el resumen de todos los productos del restaurante (`RestaurantProductSummaryDto`: `id`,
+  `name`, `displayName`, `productType`, `course`, `preparationRoute`, `priceCents`, `isAvailable`,
+  `isVisible`). Incluye productos sin asignar a ninguna sección.
+
+- `GET /api/v1/restaurants/:id/products/:productId`
+  Devuelve el detalle completo de un producto (`RestaurantProductDetailDto`) con nombre, descripción,
+  precio, curso, ruta de preparación y disponibilidad.
+
+- `POST /api/v1/restaurants/:id/products`
+  Crea un nuevo producto en el catálogo del restaurante. Requiere autenticación. Devuelve
+  `RestaurantProductDetailDto`. Lanza `409` si ya existe un producto con el mismo nombre.
+
+- `PATCH /api/v1/restaurants/:id/products/:productId`
+  Actualiza campos del producto (`name`, `description`, `course`, `preparationRoute`, `priceCents`,
+  `isAvailable`). Requiere autenticación. Lanza `404` si el producto no existe.
+
+- `DELETE /api/v1/restaurants/:id/products/:productId`
+  Elimina el producto del catálogo. Requiere autenticación.
 
 ```mermaid
 flowchart TB
   Client["Frontend Angular\nMenuApiService"]
   Controller["RestaurantsController\n/api/v1/restaurants/:id"]
-  UseCases["Casos de uso\nCreateMenuSection\nUpdateMenuSection\nDeleteMenuSection\nAddMenuSectionItem\nUpdateMenuSectionItem\nRemoveMenuSectionItem\nReorderMenuSections\nReorderMenuSectionItems\nListRestaurantProducts"]
+  SectionUC["Casos de uso de sección\nCreateMenuSection\nUpdateMenuSection\nDeleteMenuSection\nAddMenuSectionItem\nRemoveMenuSectionItem\nReorderMenuSections\nReorderMenuSectionItems"]
+  ProductUC["Casos de uso de producto\nListRestaurantProducts\nGetRestaurantProduct\nCreateRestaurantProduct\nUpdateRestaurantProduct\nDeleteRestaurantProduct"]
   Repo["PrismaRestaurantMenuAdminRepository"]
-  DB["PostgreSQL\nmenu_sections\nmenu_items"]
+  DB["PostgreSQL\nmenu_sections · menu_items\nrestaurant_products · products"]
 
   Client -->|"HTTP CRUD"| Controller
-  Controller --> UseCases
-  UseCases --> Repo
+  Controller --> SectionUC
+  Controller --> ProductUC
+  SectionUC --> Repo
+  ProductUC --> Repo
   Repo --> DB
 ```
 
 ### Errores
 
-Los endpoints de admin de menú lanzan errores alineados con `application-error.mapper.ts`:
+Los endpoints de admin de menú y producto lanzan errores alineados con `application-error.mapper.ts`:
 
 | Código | HTTP | Descripción |
 |---|---|---|
@@ -154,6 +173,8 @@ Los endpoints de admin de menú lanzan errores alineados con `application-error.
 | `menu_section_name_taken` | 409 | Ya existe una sección con ese nombre |
 | `menu_item_not_found` | 404 | El ítem no existe en la sección |
 | `menu_item_already_in_section` | 409 | El producto ya está en la sección |
+| `restaurant_product_not_found` | 404 | El producto no existe en el restaurante |
+| `product_name_taken` | 409 | Ya existe un producto con ese nombre en la organización |
 
 ## Follow-up write endpoints
 

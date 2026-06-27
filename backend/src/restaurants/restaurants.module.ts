@@ -30,6 +30,10 @@ import { RemoveMenuSectionItemUseCase } from './application/use-cases/remove-men
 import { ReorderMenuSectionsUseCase } from './application/use-cases/reorder-menu-sections.use-case';
 import { ReorderMenuSectionItemsUseCase } from './application/use-cases/reorder-menu-section-items.use-case';
 import { ListRestaurantProductsUseCase } from './application/use-cases/list-restaurant-products.use-case';
+import { GetRestaurantProductUseCase } from './application/use-cases/get-restaurant-product.use-case';
+import { CreateRestaurantProductUseCase } from './application/use-cases/create-restaurant-product.use-case';
+import { UpdateRestaurantProductUseCase } from './application/use-cases/update-restaurant-product.use-case';
+import { DeleteRestaurantProductUseCase } from './application/use-cases/delete-restaurant-product.use-case';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
@@ -85,6 +89,10 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     ReorderMenuSectionsUseCase,
     ReorderMenuSectionItemsUseCase,
     ListRestaurantProductsUseCase,
+    GetRestaurantProductUseCase,
+    CreateRestaurantProductUseCase,
+    UpdateRestaurantProductUseCase,
+    DeleteRestaurantProductUseCase,
     {
       provide: RESTAURANT_READ_REPOSITORY,
       useExisting: DemoRestaurantReadRepository,
