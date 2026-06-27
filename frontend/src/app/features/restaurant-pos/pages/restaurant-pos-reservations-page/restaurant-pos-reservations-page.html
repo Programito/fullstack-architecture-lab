@@ -1,0 +1,325 @@
+<main class="theme-page min-h-dvh">
+  <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div class="min-w-0">
+        <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.reservations.eyebrow' | transloco }}</p>
+        <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.reservations.title' | transloco }}</h1>
+        <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.reservations.description' | transloco }}</p>
+        <button type="button" class="reservations-page__primary-button mt-4" (click)="openCreateReservation()">
+          {{ 'restaurantPos.reservations.create.open' | transloco }}
+        </button>
+      </div>
+
+      <div class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">
+            {{ 'restaurantPos.reservations.selectedDate' | transloco }}
+          </p>
+          @if (summary().pax > 0) {
+            <span class="reservations-page__pax-chip">
+              {{ summary().pax }} {{ 'restaurantPos.reservations.summaryPax' | transloco | lowercase }}
+            </span>
+          }
+        </div>
+        <div class="mt-3">
+          <app-date-navigator
+            [value]="selectedDate()"
+            (valueChange)="selectedDate.set($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 grid-cols-3 lg:p-6">
+    <button
+      type="button"
+      class="theme-panel reservations-page__summary-card rounded-2xl border p-4 shadow-sm text-left"
+      [class.reservations-page__summary-card--active]="highlightFilter() === 'all'"
+      (click)="highlightFilter.set('all')"
+    >
+      <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.summaryReservations' | transloco }}</p>
+      <p class="theme-title mt-2 text-2xl font-semibold">{{ summary().reservations }}</p>
+    </button>
+
+    <button
+      type="button"
+      class="theme-panel reservations-page__summary-card rounded-2xl border p-4 shadow-sm text-left"
+      [class.reservations-page__summary-card--active]="highlightFilter() === 'unassigned'"
+      (click)="setHighlightFilter('unassigned')"
+    >
+      <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.summaryUnassigned' | transloco }}</p>
+      <p class="theme-title mt-2 text-2xl font-semibold">{{ summary().unassigned }}</p>
+    </button>
+
+    <button
+      type="button"
+      class="theme-panel reservations-page__summary-card rounded-2xl border p-4 shadow-sm text-left"
+      [class.reservations-page__summary-card--active]="highlightFilter() === 'overdue'"
+      (click)="setHighlightFilter('overdue')"
+    >
+      <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.summaryOverdue' | transloco }}</p>
+      <p class="theme-title mt-2 text-2xl font-semibold">{{ summary().overdue }}</p>
+    </button>
+  </div>
+
+  <div class="mx-auto grid w-full max-w-7xl gap-4 px-4 pb-4 lg:grid-cols-[2fr_1fr_1fr] lg:px-6">
+    <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.searchLabel' | transloco }}</span>
+      <input
+        class="reservations-page__input"
+        [value]="searchQuery()"
+        [placeholder]="'restaurantPos.reservations.searchPlaceholder' | transloco"
+        [attr.aria-label]="'restaurantPos.reservations.searchLabel' | transloco"
+        (input)="updateSearchQuery(($any($event.target).value ?? '').toString())"
+      />
+    </label>
+
+    <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.statusFilter' | transloco }}</span>
+      <select
+        class="reservations-page__select"
+        [value]="statusFilter()"
+        [attr.aria-label]="'restaurantPos.reservations.statusFilter' | transloco"
+        (change)="statusFilter.set($any($event.target).value)"
+      >
+        <option value="all">{{ 'restaurantPos.reservations.statusAll' | transloco }}</option>
+        <option value="pending">{{ 'restaurantPos.reservations.status.pending' | transloco }}</option>
+        <option value="confirmed">{{ 'restaurantPos.reservations.status.confirmed' | transloco }}</option>
+        <option value="seated">{{ 'restaurantPos.reservations.status.seated' | transloco }}</option>
+        <option value="cancelled">{{ 'restaurantPos.reservations.status.cancelled' | transloco }}</option>
+        <option value="no_show">{{ 'restaurantPos.reservations.status.no_show' | transloco }}</option>
+      </select>
+    </label>
+
+    <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.serviceFilter' | transloco }}</span>
+      <select
+        class="reservations-page__select"
+        [value]="serviceFilter()"
+        [attr.aria-label]="'restaurantPos.reservations.serviceFilter' | transloco"
+        (change)="serviceFilter.set($any($event.target).value)"
+      >
+        <option value="all">{{ 'restaurantPos.reservations.serviceAll' | transloco }}</option>
+        <option value="lunch">{{ 'restaurantPos.reservations.serviceLunch' | transloco }}</option>
+        <option value="dinner">{{ 'restaurantPos.reservations.serviceDinner' | transloco }}</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="mx-auto flex w-full max-w-7xl justify-center px-4 py-16 lg:px-6">
+      <app-spinner [label]="'restaurantPos.reservations.loading' | transloco" />
+    </div>
+  } @else if (loadError()) {
+    <div class="mx-auto w-full max-w-7xl px-4 pb-4 lg:px-6">
+      <app-alert variant="danger" [role]="'alert'" [title]="'restaurantPos.reservations.loadError' | transloco">
+        <button type="button" class="reservations-page__secondary-button mt-3" (click)="retryLoad()">
+          {{ 'restaurantPos.reservations.retry' | transloco }}
+        </button>
+      </app-alert>
+    </div>
+  } @else if (dayReservations().length === 0) {
+    <div class="mx-auto w-full max-w-7xl px-4 pb-8 lg:px-6">
+      <app-empty-state
+        icon="event_note"
+        [title]="'restaurantPos.reservations.emptyDayTitle' | transloco"
+        [description]="'restaurantPos.reservations.emptyDayDescription' | transloco"
+      />
+    </div>
+  } @else {
+    <div class="mx-auto grid w-full max-w-7xl gap-4 px-4 pb-4 lg:grid-cols-2 lg:px-6">
+      @for (group of serviceGroups(); track group.labelKey) {
+        <section class="theme-panel rounded-2xl border p-4 shadow-sm" [attr.aria-label]="group.labelKey | transloco">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 class="theme-title text-lg font-semibold">{{ group.labelKey | transloco }}</h2>
+              <p class="theme-muted mt-1 text-sm">{{ group.descKey | transloco }}</p>
+            </div>
+            <span class="reservations-page__count">{{ group.reservations.length }}</span>
+          </div>
+
+          @if (group.reservations.length === 0) {
+            <p class="reservations-page__empty">{{ 'restaurantPos.reservations.empty' | transloco }}</p>
+          } @else {
+            <div class="reservations-page__list">
+              @for (reservation of group.reservations; track trackReservation($index, reservation)) {
+                <article
+                  class="reservations-page__card"
+                  [class.reservations-page__card--overdue]="reservation.isOverdue"
+                  [class.reservations-page__card--pending]="!reservation.isOverdue && reservation.status === 'pending'"
+                  [class.reservations-page__card--confirmed]="!reservation.isOverdue && reservation.status === 'confirmed'"
+                  [class.reservations-page__card--seated]="reservation.status === 'seated'"
+                >
+                  <div class="reservations-page__card-top">
+                    <p class="reservations-page__time">{{ reservation.timeLabel }}</p>
+                    <p class="reservations-page__status">{{ statusLabel(reservation.status) }}</p>
+                  </div>
+                  <div class="reservations-page__badges">
+                    @if (serviceStatusLabel(reservation); as serviceStatus) {
+                      <span class="reservations-page__badge reservations-page__badge--accent">{{ serviceStatus }}</span>
+                    }
+                    @if (countdownLabel(reservation); as countdown) {
+                      <span class="reservations-page__badge reservations-page__badge--countdown">{{ countdown }}</span>
+                    }
+                    @if (reservation.isUnassigned) {
+                      <span class="reservations-page__badge">{{ 'restaurantPos.reservations.unassignedBadge' | transloco }}</span>
+                    }
+                  </div>
+                  <h3 class="theme-title text-base font-semibold">{{ reservation.customerName }}</h3>
+                  @if (reservation.customerPhone) {
+                    <p class="theme-muted text-sm">{{ reservation.customerPhone }}</p>
+                  }
+                  <p class="theme-muted text-sm">
+                    {{ 'restaurantPos.reservations.partySize' | transloco: { count: reservation.partySize } }}
+                  </p>
+                  <p class="theme-muted text-sm">{{ reservation.tableLabel }}</p>
+                  @if (reservation.notes) {
+                    <p class="reservations-page__note">{{ reservation.notes }}</p>
+                  }
+                  @if (reservation.availableActions.length > 0) {
+                    <div class="reservations-page__actions">
+                      @for (action of reservation.availableActions; track action) {
+                        <button
+                          type="button"
+                          class="reservations-page__action-button"
+                          [disabled]="isActionLoading(reservation.id)"
+                          (click)="applyAction(action, reservation)"
+                        >
+                          @if (isActionLoading(reservation.id)) {
+                            <app-spinner size="sm" decorative />
+                          }
+                          {{ actionLabel(action) }}
+                        </button>
+                      }
+                    </div>
+                  }
+                  @if (actionError(reservation.id); as actionErrorText) {
+                    <p class="reservations-page__error">{{ actionErrorText }}</p>
+                  }
+                </article>
+              }
+            </div>
+          }
+        </section>
+      }
+    </div>
+  }
+</main>
+
+<!-- Diálogo de confirmación de acción destructiva -->
+<app-dialog
+  [open]="!!pendingAction()"
+  [title]="pendingActionTitle()"
+  [description]="pendingActionDescription()"
+  [showActions]="true"
+  [confirmLabel]="'restaurantPos.reservations.confirmDestructiveLabel' | transloco"
+  confirmVariant="danger"
+  (confirmed)="confirmPendingAction()"
+  (closed)="dismissPendingAction()"
+/>
+
+<!-- Diálogo de creación de reserva -->
+<app-dialog
+  [open]="creationOpen()"
+  size="lg"
+  [title]="'restaurantPos.reservations.create.title' | transloco"
+  [footerSummary]="selectedDateLabel()"
+  [showActions]="true"
+  [confirmLabel]="'restaurantPos.reservations.create.submit' | transloco"
+  [cancelLabel]="'restaurantPos.reservations.create.cancel' | transloco"
+  [confirmLoading]="creationSubmitting()"
+  [confirmDisabled]="creationSubmitting()"
+  (confirmed)="submitReservation()"
+  (closed)="closeCreateReservation()"
+>
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <label>
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.customerName' | transloco }}</span>
+      <input
+        class="reservations-page__input"
+        [value]="creationForm().customerNameSnapshot"
+        [attr.aria-label]="'restaurantPos.reservations.create.customerName' | transloco"
+        (input)="updateCreateField('customerNameSnapshot', ($any($event.target).value ?? '').toString())"
+      />
+    </label>
+
+    <label>
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.customerPhone' | transloco }}</span>
+      <input
+        class="reservations-page__input"
+        [value]="creationForm().customerPhoneSnapshot"
+        [attr.aria-label]="'restaurantPos.reservations.create.customerPhone' | transloco"
+        (input)="updateCreateField('customerPhoneSnapshot', ($any($event.target).value ?? '').toString())"
+      />
+    </label>
+
+    <label>
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.partySize' | transloco }}</span>
+      <input
+        type="number"
+        min="1"
+        class="reservations-page__input"
+        [value]="creationForm().partySize"
+        [attr.aria-label]="'restaurantPos.reservations.create.partySize' | transloco"
+        (input)="updateCreateField('partySize', +($any($event.target).value ?? 0))"
+      />
+    </label>
+
+    <label>
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.time' | transloco }}</span>
+      <input
+        type="time"
+        class="reservations-page__input"
+        [value]="creationForm().time"
+        [attr.aria-label]="'restaurantPos.reservations.create.time' | transloco"
+        (input)="updateCreateField('time', ($any($event.target).value ?? '').toString())"
+      />
+    </label>
+
+    <label>
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.duration' | transloco }}</span>
+      <input
+        type="number"
+        min="15"
+        step="15"
+        class="reservations-page__input"
+        [value]="creationForm().durationMinutes"
+        [attr.aria-label]="'restaurantPos.reservations.create.duration' | transloco"
+        (input)="updateCreateField('durationMinutes', +($any($event.target).value ?? 0))"
+      />
+    </label>
+
+    <label class="md:col-span-2 xl:col-span-3">
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.notes' | transloco }}</span>
+      <textarea
+        class="reservations-page__textarea"
+        [value]="creationForm().notes"
+        [attr.aria-label]="'restaurantPos.reservations.create.notes' | transloco"
+        (input)="updateCreateField('notes', ($any($event.target).value ?? '').toString())"
+      ></textarea>
+    </label>
+  </div>
+
+  @if (availableTables().length > 0) {
+    <div class="mt-4">
+      <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.tables' | transloco }}</p>
+      <div class="reservations-page__table-options mt-3">
+        @for (table of availableTables(); track table.id) {
+          <label class="reservations-page__table-option">
+            <input
+              type="checkbox"
+              [checked]="creationForm().tableIds.includes(table.id)"
+              (change)="toggleCreateTable(table.id, $any($event.target).checked)"
+            />
+            <span>{{ table.label }}</span>
+          </label>
+        }
+      </div>
+    </div>
+  }
+
+  @if (creationError(); as creationErrorText) {
+    <p class="reservations-page__error mt-4">{{ creationErrorText }}</p>
+  }
+</app-dialog>

@@ -186,4 +186,19 @@ export type RestaurantReservation = {
   status: 'pending' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
   notes: string | null;
   tableIds: string[];
+  tables: Array<{
+    id: string;
+    tableNumber: number;
+    name: string | null;
+  }>;
+};
+
+export type CreateRestaurantReservationInput = {
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  notes: string | null;
+  tableIds: string[];
 };

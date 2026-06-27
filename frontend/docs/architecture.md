@@ -454,11 +454,13 @@ features/restaurant-pos/
 
 ### Responsabilidades de la page
 
-- Cargar reservas del restaurante activo con `RestaurantPosApiService`.
+- Cargar reservas del restaurante activo con `RestaurantPosApiService`, pasando la fecha seleccionada.
+- Mostrar spinner durante la carga y alerta de error con botón de reintento si la carga falla.
 - Filtrar por fecha, estado, servicio y busqueda de cliente o telefono.
-- Derivar una agenda visual por servicios `Comidas` y `Cenas`.
+- Derivar una agenda visual por servicios con `serviceGroups` computed.
 - Calcular resumen superior: reservas, pax, sin mesa y reservas vencidas.
-- Mostrar acciones rapidas por reserva con estado de carga y error local.
+- Mostrar acciones rapidas por reserva con spinner de accion y error local.
+- Interceptar acciones destructivas (`cancel`, `no_show`) para pedir confirmacion antes de ejecutarlas.
 
 ### Contrato de API usado por frontend
 
@@ -466,7 +468,7 @@ features/restaurant-pos/
 
 | Metodo | Verbo | Ruta |
 |---|---|---|
-| `getRestaurantReservations` | GET | `/restaurants/:id/reservations` |
+| `getRestaurantReservations(restaurantId, date?)` | GET | `/restaurants/:id/reservations[?date=YYYY-MM-DD]` |
 | `createRestaurantReservation` | POST | `/restaurants/:id/reservations` |
 | `confirmRestaurantReservation` | PATCH | `/restaurants/:id/reservations/:reservationId/confirm` |
 | `seatRestaurantReservation` | PATCH | `/restaurants/:id/reservations/:reservationId/seat` |
@@ -514,15 +516,14 @@ type CreateRestaurantReservationRequest = {
 
 La page mantiene el estado de pantalla con `signal()` y deriva la agenda con `computed()`:
 
-- `selectedDate`
-- `searchQuery`
-- `statusFilter`
-- `serviceFilter`
-- `actionState`
-- `dayReservations`
-- `summary`
-- `lunchReservations`
-- `dinnerReservations`
+- `selectedDate` — fecha activa; cambiarla relanza la carga contra el backend con `?date=`
+- `loading` — activo mientras la peticion de reservas esta en vuelo
+- `loadError` — activo si la carga falla; habilita el boton de reintento
+- `searchQuery`, `statusFilter`, `serviceFilter` — filtros locales aplicados sobre la agenda cargada
+- `actionState` — mapa de `{ loading, error }` por `reservationId` para acciones en vuelo
+- `pendingAction` — reserva y accion pendiente de confirmacion destructiva; `null` si no hay dialogo abierto
+- `dayReservations`, `summary`, `lunchReservations`, `dinnerReservations` — derivados de las reservas
+- `serviceGroups` — computed que agrupa `lunchReservations` y `dinnerReservations` en un array iterable para evitar markup duplicado en el template
 
 La transformacion convierte cada `RestaurantReservationDto` en un item de agenda con:
 
@@ -532,6 +533,26 @@ La transformacion convierte cada `RestaurantReservationDto` en un item de agenda
 - `isOverdue`
 - `isUnassigned`
 - `availableActions`
+
+### Robustez y UX de la agenda
+
+```mermaid
+stateDiagram-v2
+  [*] --> Cargando : efecto inicial o cambio de fecha
+  Cargando --> Agenda : carga correcta
+  Cargando --> ErrorCarga : fallo de red
+  ErrorCarga --> Cargando : retryLoad()
+  Agenda --> DialogoDestructivo : cancel o no_show
+  DialogoDestructivo --> Agenda : dismissPendingAction()
+  DialogoDestructivo --> EjecucionAccion : confirmPendingAction()
+  EjecucionAccion --> Cargando : accion completada → recarga con fecha
+  EjecucionAccion --> Agenda : accion fallida → error local en la reserva
+```
+
+- La carga inicial y los reintentos usan `takeUntilDestroyed` para cancelar la suscripcion si el componente se destruye.
+- El estado `loading` muestra un `<app-spinner>` centrado; `loadError` muestra un `<app-alert variant="danger">` con boton de reintento.
+- Las acciones `cancel` y `no_show` abren un `<app-dialog>` de confirmacion antes de llamar a la API. `confirm` y `seat` se ejecutan directamente.
+- Mientras una accion esta en vuelo, el boton de esa reserva queda deshabilitado y muestra un `<app-spinner size="sm" decorative>` interior.
 
 ### Reglas UX de v0.0.2
 
@@ -565,10 +586,10 @@ sequenceDiagram
   Back-->>API: RestaurantReservationDto (201)
   API-->>Page: Observable<RestaurantReservationDto>
   Page->>Page: cerrar formulario + limpiar estado
-  Page->>API: getRestaurantReservations(restaurantId)
-  API->>Back: GET /restaurants/:id/reservations
+  Page->>API: getRestaurantReservations(restaurantId, selectedDate)
+  API->>Back: GET /restaurants/:id/reservations?date=YYYY-MM-DD
   Back-->>API: RestaurantReservationDto[]
-  API-->>Page: agenda recargada
+  API-->>Page: agenda recargada para la fecha activa
 ```
 
 Tras una creación correcta:

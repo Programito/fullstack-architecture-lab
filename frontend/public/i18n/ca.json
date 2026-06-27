@@ -149,6 +149,7 @@
       "service": "Servei",
       "menu": "Menú",
       "kitchen": "Cuina",
+      "reservations": "Reserves",
       "pos": "TPV restaurant",
       "navigation": "Navegació principal",
       "logout": "Tancar sessió",
@@ -369,6 +370,102 @@
       "freeTableConfirmDescription": "Aquesta acció buidarà la comanda i deixarà la taula lliure.",
       "confirmFreeTable": "Alliberar taula",
       "cancelFreeTable": "Mantenir taula"
+    },
+    "reservations": {
+      "eyebrow": "Llibre de sala",
+      "title": "Agenda de reserves",
+      "description": "Consulta les reserves del dia i organitza-les per servei abans d'obrir la sala.",
+      "selectedDate": "Data activa",
+      "dateLabel": "Selecciona una data",
+      "summaryReservations": "Reserves",
+      "summaryPax": "Pax",
+      "summaryUnassigned": "Sense taula",
+      "summaryOverdue": "Pendents",
+      "searchLabel": "Buscar reserva",
+      "searchPlaceholder": "Buscar per nom de client o telèfon",
+      "statusFilter": "Estat",
+      "statusAll": "Tots",
+      "serviceFilter": "Servei",
+      "serviceAll": "Tots",
+      "serviceLunch": "Dinars",
+      "serviceDinner": "Sopars",
+      "lunch": "Dinars",
+      "lunchDescription": "Reserves previstes per al servei del migdia.",
+      "dinner": "Sopars",
+      "dinnerDescription": "Reserves previstes per al servei del vespre.",
+      "partySize": "{{count}} comensals",
+      "empty": "No hi ha reserves per a aquest servei.",
+      "unassignedTable": "Sense taula assignada",
+      "unassignedBadge": "Sense taula",
+      "upcoming": "Pròxima",
+      "overdue": "Pendent",
+      "loading": "Carregant reserves",
+      "loadError": "No s'han pogut carregar les reserves. Comprova la connexió i torna-ho a intentar.",
+      "retry": "Tornar a intentar",
+      "confirmCancelTitle": "Cancel·lar reserva?",
+      "confirmCancelDescription": "La reserva quedarà cancel·lada i no es pot desfer.",
+      "confirmNoShowTitle": "No presentat?",
+      "confirmNoShowDescription": "Es registrarà que el client no s'ha presentat.",
+      "confirmDestructiveLabel": "Sí, continuar",
+      "previousDay": "Dia anterior",
+      "nextDay": "Dia següent",
+      "today": "Avui",
+      "countdownNow": "Ara",
+      "countdownMinutes": "En {{count}} min",
+      "emptyDayTitle": "Sense reserves per a aquest dia",
+      "emptyDayDescription": "No hi ha reserves registrades per a la data seleccionada.",
+      "actionError": "No s'ha pogut actualitzar la reserva.",
+      "actionSuccess": {
+        "confirm": {
+          "title": "Reserva confirmada",
+          "description": "La reserva ha passat a l'estat confirmada."
+        },
+        "seat": {
+          "title": "Client assegut",
+          "description": "La reserva ha passat a l'estat assegut."
+        },
+        "no_show": {
+          "title": "No presentat",
+          "description": "La reserva ha estat marcada com a no presentat."
+        },
+        "cancel": {
+          "title": "Reserva cancel·lada",
+          "description": "La reserva s'ha cancel·lat correctament."
+        }
+      },
+      "actions": {
+        "confirm": "Confirmar",
+        "seat": "Asseure",
+        "noShow": "No-show",
+        "cancel": "CancelÂ·lar"
+      },
+      "create": {
+        "open": "Nova reserva",
+        "title": "Crear reserva",
+        "customerName": "Client",
+        "customerPhone": "Telefon",
+        "partySize": "Comensals",
+        "time": "Hora",
+        "duration": "Duracio",
+        "notes": "Notes",
+        "tables": "Taules",
+        "submit": "Guardar reserva",
+        "cancel": "Tancar",
+        "error": "No s'ha pogut crear la reserva.",
+        "validation": {
+          "customerNameRequired": "Introdueix el nom del client.",
+          "partySizeRequired": "Indica com a minim un comensal.",
+          "timeRequired": "Indica una hora valida."
+        }
+      },
+      "status": {
+        "pending": "Pendent",
+        "confirmed": "Confirmada",
+        "seated": "Asseguda",
+        "cancelled": "Cancel·lada",
+        "no_show": "No show"
+      }
+    },
     },
     "kitchen": {
       "eyebrow": "Producció",

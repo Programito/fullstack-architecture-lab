@@ -88,9 +88,10 @@ Notas rápidas:
   Reorders and repositions existing floor elements inside the floor matrix. This is the first write
   endpoint for layout editing and keeps `restaurant_tables` separate from `floor_elements`.
 
-- `GET /api/v1/restaurants/:id/reservations`
+- `GET /api/v1/restaurants/:id/reservations?date=YYYY-MM-DD`
   Returns reservation projections with customer snapshots, linked table ids and enriched table
-  data ready for the front-of-house agenda.
+  data ready for the front-of-house agenda. The optional `date` query parameter filters results
+  to reservations whose `reservationAt` falls on the given calendar date (UTC prefix match).
 
 - `POST /api/v1/restaurants/:restaurantId/reservations`
   Creates one reservation with customer snapshots, party size, date/time, optional notes and
@@ -135,9 +136,11 @@ detail field:
 
 ### Reservation agenda contract
 
-`GET /api/v1/restaurants/:id/reservations` keeps `tableIds: string[]` for compatibility and adds a
-frontend-friendly `tables` collection so the POS can render labels such as `Mesa 1` or `Terraza 4`
-without extra joins.
+`GET /api/v1/restaurants/:id/reservations` accepts an optional `?date=YYYY-MM-DD` query parameter
+to scope the results to a specific calendar day (UTC prefix match on `reservationAt`). Without
+`date`, all reservations for the restaurant are returned. The response keeps `tableIds: string[]`
+for compatibility and adds a frontend-friendly `tables` collection so the POS can render labels
+such as `Mesa 1` or `Terraza 4` without extra joins.
 
 Response shape:
 

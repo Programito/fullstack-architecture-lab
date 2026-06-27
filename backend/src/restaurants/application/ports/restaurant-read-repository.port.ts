@@ -1,4 +1,5 @@
 import type {
+  CreateRestaurantReservationInput,
   RestaurantFloors,
   RestaurantMenu,
   RestaurantReservation,
@@ -13,7 +14,16 @@ export interface RestaurantReadRepository {
   listRestaurants(): Promise<RestaurantSummary[]>;
   findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null>;
   findFloorsByRestaurantId(restaurantId: string): Promise<RestaurantFloors | null>;
-  listReservationsByRestaurantId(restaurantId: string): Promise<RestaurantReservation[] | null>;
+  listReservationsByRestaurantId(restaurantId: string, date?: string): Promise<RestaurantReservation[] | null>;
+  createReservation(
+    restaurantId: string,
+    reservation: CreateRestaurantReservationInput,
+  ): Promise<RestaurantReservation | null>;
+  updateReservationStatus(
+    restaurantId: string,
+    reservationId: string,
+    status: RestaurantReservation['status'],
+  ): Promise<RestaurantReservation | null>;
   findServiceFloorByRestaurantId(restaurantId: string): Promise<ServiceFloorView | null>;
   findServicePointByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;
   findServicePointOrderByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointOrderView | null>;

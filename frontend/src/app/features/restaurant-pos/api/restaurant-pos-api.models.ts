@@ -160,6 +160,36 @@ export type ServicePointOrderDto = {
   }>;
 };
 
+export type RestaurantReservationTableDto = {
+  id: string;
+  tableNumber: number;
+  name: string | null;
+};
+
+export type RestaurantReservationDto = {
+  id: string;
+  customerId: string | null;
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  status: 'pending' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
+  notes: string | null;
+  tableIds: string[];
+  tables: RestaurantReservationTableDto[];
+};
+
+export type CreateRestaurantReservationRequest = {
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  notes: string | null;
+  tableIds: string[];
+};
+
 // ── Persistent order DTOs ──────────────────────────────────────────────────────
 
 export type OrderStatusDto = 'open' | 'pending_payment' | 'paid' | 'cancelled';

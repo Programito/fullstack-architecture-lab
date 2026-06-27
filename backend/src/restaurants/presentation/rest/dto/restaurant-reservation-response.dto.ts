@@ -3,6 +3,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { RestaurantReservation } from '../../../domain/restaurant-read.models';
 
 export class RestaurantReservationResponseDto {
+  @ApiProperty({ example: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }] })
+  tables!: Array<{ id: string; tableNumber: number; name: string | null }>;
+
   @ApiProperty({ example: 'reservation-demo-lunch' })
   id!: string;
 
@@ -34,6 +37,10 @@ export class RestaurantReservationResponseDto {
   tableIds!: string[];
 
   static fromDomain(reservation: RestaurantReservation): RestaurantReservationResponseDto {
-    return { ...reservation, tableIds: [...reservation.tableIds] };
+    return {
+      ...reservation,
+      tableIds: [...reservation.tableIds],
+      tables: reservation.tables.map((table) => ({ ...table })),
+    };
   }
 }

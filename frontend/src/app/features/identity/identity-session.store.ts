@@ -93,5 +93,5 @@ function isString(value: unknown): value is string {
 }
 
 function isPermissionName(value: unknown): value is PermissionName {
-  return value === 'service' || value === 'menu' || value === 'kitchen' || value === 'layout';
+  return value === 'service' || value === 'menu' || value === 'kitchen' || value === 'layout' || value === 'reservations';
 }

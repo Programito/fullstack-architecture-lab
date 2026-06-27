@@ -34,6 +34,8 @@ import { GetRestaurantProductUseCase } from './application/use-cases/get-restaur
 import { CreateRestaurantProductUseCase } from './application/use-cases/create-restaurant-product.use-case';
 import { UpdateRestaurantProductUseCase } from './application/use-cases/update-restaurant-product.use-case';
 import { DeleteRestaurantProductUseCase } from './application/use-cases/delete-restaurant-product.use-case';
+import { UpdateRestaurantReservationStatusUseCase } from './application/use-cases/update-restaurant-reservation-status.use-case';
+import { CreateRestaurantReservationUseCase } from './application/use-cases/create-restaurant-reservation.use-case';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
@@ -93,6 +95,8 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     CreateRestaurantProductUseCase,
     UpdateRestaurantProductUseCase,
     DeleteRestaurantProductUseCase,
+    CreateRestaurantReservationUseCase,
+    UpdateRestaurantReservationStatusUseCase,
     {
       provide: RESTAURANT_READ_REPOSITORY,
       useExisting: DemoRestaurantReadRepository,

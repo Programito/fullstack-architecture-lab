@@ -10,11 +10,14 @@ export type ApplicationErrorCode =
   | 'invalid_role_name'
   | 'task_not_found'
   | 'restaurant_not_found'
+  | 'reservation_not_found'
+  | 'invalid_reservation_creation'
   | 'table_not_found'
   | 'floor_not_found'
   | 'invalid_floor_element_layout'
   | 'invalid_floor_layout'
   | 'invalid_service_action'
+  | 'invalid_reservation_state'
   | 'invalid_order_configuration'
   | 'order_not_found'
   | 'order_line_not_found'
@@ -50,6 +53,10 @@ export function restaurantNotFound(restaurantId: string): ApplicationError {
   return applicationError('restaurant_not_found', `Restaurant "${restaurantId}" was not found.`, { restaurantId });
 }
 
+export function reservationNotFound(reservationId: string): ApplicationError {
+  return applicationError('reservation_not_found', `Reservation "${reservationId}" was not found.`, { reservationId });
+}
+
 export function tableNotFound(tableId: string): ApplicationError {
   return applicationError('table_not_found', `Table "${tableId}" was not found.`, { tableId });
 }
@@ -68,6 +75,14 @@ export function invalidFloorLayout(details?: Record<string, unknown>): Applicati
 
 export function invalidServiceAction(details?: Record<string, unknown>): ApplicationError {
   return applicationError('invalid_service_action', 'Service action is invalid for the current table state.', details);
+}
+
+export function invalidReservationState(details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_reservation_state', 'Reservation transition not allowed.', details);
+}
+
+export function invalidReservationCreation(details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_reservation_creation', 'Reservation creation is invalid.', details);
 }
 
 export function restaurantProductNotFound(productId: string): ApplicationError {

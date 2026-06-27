@@ -29,7 +29,7 @@ The shared role catalog is used by both the in-memory adapter and Prisma:
 
 - `admin`: full restaurant control
 - `manager`: shifts, discounts and cash register
-- `waiter`: tables and orders
+- `waiter`: tables, orders and reservations
 - `kitchen`: order preparation
 - `developer`: documentation, Storybook, architecture and technical demos
 
@@ -85,6 +85,11 @@ pnpm prisma:studio
 - `PATCH /api/v1/restaurants/:id/floors/:floorId`
 - `PUT /api/v1/restaurants/:id/floors/:floorId/elements/reorder`
 - `GET /api/v1/restaurants/:id/reservations`
+- `POST /api/v1/restaurants/:restaurantId/reservations`
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/confirm`
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/seat`
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/no-show`
+- `PATCH /api/v1/restaurants/:restaurantId/reservations/:reservationId/cancel`
 - `POST /api/v1/tasks`
 - `GET /api/v1/tasks`
 - `PATCH /api/v1/tasks/:id/complete`

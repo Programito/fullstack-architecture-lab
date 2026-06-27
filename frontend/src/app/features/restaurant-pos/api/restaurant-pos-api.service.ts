@@ -10,6 +10,7 @@ import type {
   CreateFloorElementRequest,
   CreateMenuSectionRequest,
   CreateRestaurantProductRequest,
+  CreateRestaurantReservationRequest,
   MenuItemAdminDto,
   MenuSectionAdminDto,
   OpenRestaurantOrderRequest,
@@ -19,6 +20,7 @@ import type {
   RestaurantFloorsDto,
   RestaurantMenuDto,
   RestaurantOrderDto,
+  RestaurantReservationDto,
   RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
   RestaurantSummaryDto,
@@ -63,6 +65,48 @@ export class RestaurantPosApiService {
 
   getRestaurantServicePointOrder(restaurantId: string, tableId: string): Observable<ServicePointOrderDto> {
     return this.http.get<ServicePointOrderDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/order`);
+  }
+
+  getRestaurantReservations(restaurantId: string, date?: string): Observable<RestaurantReservationDto[]> {
+    if (date) {
+      return this.http.get<RestaurantReservationDto[]>(`${this.restaurantsUrl}/${restaurantId}/reservations`, { params: { date } });
+    }
+    return this.http.get<RestaurantReservationDto[]>(`${this.restaurantsUrl}/${restaurantId}/reservations`);
+  }
+
+  createRestaurantReservation(
+    restaurantId: string,
+    request: CreateRestaurantReservationRequest,
+  ): Observable<RestaurantReservationDto> {
+    return this.http.post<RestaurantReservationDto>(`${this.restaurantsUrl}/${restaurantId}/reservations`, request);
+  }
+
+  confirmRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/confirm`,
+      {},
+    );
+  }
+
+  seatRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/seat`,
+      {},
+    );
+  }
+
+  markRestaurantReservationNoShow(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/no-show`,
+      {},
+    );
+  }
+
+  cancelRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/cancel`,
+      {},
+    );
   }
 
   occupyRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {

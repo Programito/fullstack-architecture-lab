@@ -21,6 +21,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_floor_element_layout':
     case 'invalid_floor_layout':
     case 'invalid_service_action':
+    case 'invalid_reservation_state':
+    case 'invalid_reservation_creation':
     case 'invalid_order_configuration':
       return new BadRequestException(error.message);
 
@@ -28,6 +30,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'role_not_found':
     case 'task_not_found':
     case 'restaurant_not_found':
+    case 'reservation_not_found':
     case 'table_not_found':
     case 'floor_not_found':
     case 'order_not_found':

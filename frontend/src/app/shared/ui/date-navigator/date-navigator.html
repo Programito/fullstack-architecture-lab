@@ -1,0 +1,30 @@
+<div class="date-navigator">
+  <button
+    type="button"
+    class="date-navigator__nav"
+    [attr.aria-label]="prevLabel()"
+    (click)="navigate(-1)"
+  >‹</button>
+
+  <app-date-picker
+    class="date-navigator__picker"
+    [value]="value()"
+    [dateFormat]="pickerDateFormat()"
+    (valueChange)="valueChange.emit($event)"
+  />
+
+  <button
+    type="button"
+    class="date-navigator__nav"
+    [attr.aria-label]="nextLabel()"
+    (click)="navigate(1)"
+  >›</button>
+
+  @if (showToday() && !isToday()) {
+    <button
+      type="button"
+      class="date-navigator__today"
+      (click)="goToToday()"
+    >{{ todayLabel() }}</button>
+  }
+</div>

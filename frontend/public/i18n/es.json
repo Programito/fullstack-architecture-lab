@@ -149,6 +149,7 @@
       "service": "Servicio",
       "menu": "Menú",
       "kitchen": "Cocina",
+      "reservations": "Reservas",
       "pos": "TPV restaurante",
       "navigation": "Navegación principal",
       "logout": "Cerrar sesión",
@@ -369,6 +370,101 @@
       "freeTableConfirmDescription": "Esta acción vaciará el pedido y dejará la mesa libre.",
       "confirmFreeTable": "Liberar mesa",
       "cancelFreeTable": "Mantener mesa"
+    },
+    "reservations": {
+      "eyebrow": "Libro de sala",
+      "title": "Agenda de reservas",
+      "description": "Consulta las reservas del día y organízalas por servicio antes de abrir sala.",
+      "selectedDate": "Fecha activa",
+      "dateLabel": "Selecciona una fecha",
+      "summaryReservations": "Reservas",
+      "summaryPax": "Pax",
+      "summaryUnassigned": "Sin mesa",
+      "summaryOverdue": "Pendientes",
+      "searchLabel": "Buscar reserva",
+      "searchPlaceholder": "Buscar por nombre de cliente o teléfono",
+      "statusFilter": "Estado",
+      "statusAll": "Todos",
+      "serviceFilter": "Servicio",
+      "serviceAll": "Todos",
+      "serviceLunch": "Comidas",
+      "serviceDinner": "Cenas",
+      "lunch": "Comidas",
+      "lunchDescription": "Reservas previstas para el servicio de mediodía.",
+      "dinner": "Cenas",
+      "dinnerDescription": "Reservas previstas para el servicio de noche.",
+      "partySize": "{{count}} comensales",
+      "empty": "No hay reservas para este servicio.",
+      "unassignedTable": "Sin mesa asignada",
+      "unassignedBadge": "Sin mesa",
+      "upcoming": "Próxima",
+      "overdue": "Pendiente",
+      "loading": "Cargando reservas",
+      "loadError": "No se han podido cargar las reservas. Comprueba la conexión e inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "confirmCancelTitle": "¿Cancelar reserva?",
+      "confirmCancelDescription": "La reserva quedará cancelada y no se puede deshacer.",
+      "confirmNoShowTitle": "¿No presentado?",
+      "confirmNoShowDescription": "Se registrará que el cliente no se presentó.",
+      "confirmDestructiveLabel": "Sí, continuar",
+      "previousDay": "Día anterior",
+      "nextDay": "Día siguiente",
+      "today": "Hoy",
+      "countdownNow": "Ahora",
+      "countdownMinutes": "En {{count}} min",
+      "emptyDayTitle": "Sin reservas para este día",
+      "emptyDayDescription": "No hay reservas registradas para la fecha seleccionada.",
+      "actionError": "No se ha podido actualizar la reserva.",
+      "actionSuccess": {
+        "confirm": {
+          "title": "Reserva confirmada",
+          "description": "La reserva ha pasado a estado confirmada."
+        },
+        "seat": {
+          "title": "Cliente sentado",
+          "description": "La reserva ha pasado a estado sentado."
+        },
+        "no_show": {
+          "title": "No presentado",
+          "description": "La reserva ha sido marcada como no presentado."
+        },
+        "cancel": {
+          "title": "Reserva cancelada",
+          "description": "La reserva ha sido cancelada correctamente."
+        }
+      },
+      "actions": {
+        "confirm": "Confirmar",
+        "seat": "Sentar",
+        "noShow": "No-show",
+        "cancel": "Cancelar"
+      },
+      "create": {
+        "open": "Nueva reserva",
+        "title": "Crear reserva",
+        "customerName": "Cliente",
+        "customerPhone": "Telefono",
+        "partySize": "Comensales",
+        "time": "Hora",
+        "duration": "Duracion",
+        "notes": "Notas",
+        "tables": "Mesas",
+        "submit": "Guardar reserva",
+        "cancel": "Cerrar",
+        "error": "No se ha podido crear la reserva.",
+        "validation": {
+          "customerNameRequired": "Introduce el nombre del cliente.",
+          "partySizeRequired": "Indica al menos un comensal.",
+          "timeRequired": "Indica una hora valida."
+        }
+      },
+      "status": {
+        "pending": "Pendiente",
+        "confirmed": "Confirmada",
+        "seated": "Sentada",
+        "cancelled": "Cancelada",
+        "no_show": "No show"
+      }
     },
     "kitchen": {
       "eyebrow": "Producción",

@@ -61,12 +61,13 @@ describe('RestaurantPosShellPage', () => {
   };
 
   it('renders only the allowed restaurant POS navigation items', async () => {
-    await renderPage(['service', 'layout']);
+    await renderPage(['service', 'layout', 'reservations']);
 
     expect(screen.getByRole('link', { name: /TPV restaurante/i })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: /Navegaci.n principal/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Servicio/i }).getAttribute('href')).toBe('/restaurant-pos/service');
     expect(screen.getByRole('link', { name: /Plano/i }).getAttribute('href')).toBe('/restaurant-pos/layout');
+    expect(screen.getByRole('link', { name: /Reservas/i }).getAttribute('href')).toBe('/restaurant-pos/reservations');
     expect(screen.queryByRole('link', { name: /MenÃº/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /Cocina/i })).toBeNull();
   });
