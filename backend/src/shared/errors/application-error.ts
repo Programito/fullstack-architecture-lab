@@ -30,7 +30,10 @@ export type ApplicationErrorCode =
   | 'menu_item_not_found'
   | 'menu_item_already_in_section'
   | 'product_name_taken'
-  | 'invalid_service_windows';
+  | 'invalid_service_windows'
+  | 'customer_not_found'
+  | 'customer_already_exists'
+  | 'invalid_customer';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -116,4 +119,16 @@ export function productNameTaken(name: string): ApplicationError {
 
 export function invalidServiceWindows(reason: string): ApplicationError {
   return applicationError('invalid_service_windows', `Service windows configuration is invalid: ${reason}.`, { reason });
+}
+
+export function customerNotFound(customerId: string): ApplicationError {
+  return applicationError('customer_not_found', `Customer "${customerId}" was not found.`, { customerId });
+}
+
+export function customerAlreadyExists(name: string): ApplicationError {
+  return applicationError('customer_already_exists', `A customer named "${name}" with the same contact already exists.`, { name });
+}
+
+export function invalidCustomer(reason: string): ApplicationError {
+  return applicationError('invalid_customer', `Customer data is invalid: ${reason}.`, { reason });
 }

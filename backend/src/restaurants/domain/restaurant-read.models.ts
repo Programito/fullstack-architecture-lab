@@ -217,3 +217,26 @@ export type UpdateServiceWindowInput = {
   startTime: string;
   endTime: string;
 };
+
+export type CustomerSummary = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  visitCount: number;
+  noShowCount: number;
+  cancelCount: number;
+  lateCount: number;
+};
+
+export type Customer = CustomerSummary & {
+  organizationId: string;
+  notes: string | null;
+};
+
+export type CreateCustomerInput = {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+};

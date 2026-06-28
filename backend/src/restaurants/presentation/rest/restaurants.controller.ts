@@ -79,6 +79,10 @@ import { ServiceWindowResponseDto } from './dto/service-window-response.dto';
 import { UpdateServiceWindowsDto } from './dto/update-service-windows.dto';
 import { GetRestaurantServiceWindowsUseCase } from '../../application/use-cases/get-restaurant-service-windows.use-case';
 import { UpdateRestaurantServiceWindowsUseCase } from '../../application/use-cases/update-restaurant-service-windows.use-case';
+import { SearchCustomersUseCase } from '../../application/use-cases/search-customers.use-case';
+import { CreateCustomerUseCase } from '../../application/use-cases/create-customer.use-case';
+import { CustomerSummaryResponseDto } from './dto/customer-summary-response.dto';
+import { CreateCustomerDto } from './dto/create-customer.dto';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -125,6 +129,8 @@ export class RestaurantsController {
     private readonly updateRestaurantReservationStatus: UpdateRestaurantReservationStatusUseCase,
     private readonly getRestaurantServiceWindowsUC: GetRestaurantServiceWindowsUseCase,
     private readonly updateRestaurantServiceWindowsUC: UpdateRestaurantServiceWindowsUseCase,
+    private readonly searchCustomersUC: SearchCustomersUseCase,
+    private readonly createCustomerUC: CreateCustomerUseCase,
   ) {}
 
   @Get()
@@ -862,5 +868,40 @@ export class RestaurantsController {
       await this.updateRestaurantServiceWindowsUC.execute({ restaurantId: id, windows: body.windows }),
     );
     return windows.map(ServiceWindowResponseDto.fromDomain);
+  }
+
+  @Get(':id/customers')
+  @Version('1')
+  @ApiOkResponse({ type: CustomerSummaryResponseDto, isArray: true })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  async searchCustomers(
+    @Param('id') id: string,
+    @Query('q') q: string = '',
+  ): Promise<CustomerSummaryResponseDto[]> {
+    const customers = unwrapResultOrThrow(await this.searchCustomersUC.execute({ restaurantId: id, q }));
+    return customers.map(CustomerSummaryResponseDto.fromDomain);
+  }
+
+  @Post(':id/customers')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: CustomerSummaryResponseDto })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse()
+  async createCustomer(
+    @Param('id') id: string,
+    @Body() body: CreateCustomerDto,
+  ): Promise<CustomerSummaryResponseDto> {
+    const customer = unwrapResultOrThrow(
+      await this.createCustomerUC.execute({
+        restaurantId: id,
+        name: body.name,
+        phone: body.phone ?? null,
+        email: body.email ?? null,
+        notes: body.notes ?? null,
+      }),
+    );
+    return CustomerSummaryResponseDto.fromDomain(customer);
   }
 }
