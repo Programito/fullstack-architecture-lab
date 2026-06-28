@@ -99,11 +99,19 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOkResponse({ type: UserResponseDto })
-  async me(@Req() request: AuthenticatedRequest): Promise<{ userId: string; roles: string[]; permissions: string[] }> {
+  async me(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<{
+    userId: string;
+    roles: string[];
+    permissions: string[];
+    scopes: { organizations: string[]; restaurants: string[] };
+  }> {
     return {
       userId: request.auth.userId,
       roles: request.auth.roles,
       permissions: request.auth.permissions,
+      scopes: request.auth.scopes,
     };
   }
 

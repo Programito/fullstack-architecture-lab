@@ -11,7 +11,16 @@ import { AUTH_SESSION_REPOSITORY, type AuthSessionRepository } from '../ports/au
 import { PASSWORD_HASHER, type PasswordHasher } from '../ports/password-hasher.port';
 import { PERMISSION_REPOSITORY, type PermissionRepository } from '../ports/permission-repository.port';
 import { ROLE_REPOSITORY, type RoleRepository } from '../ports/role-repository.port';
+import {
+  USER_ROLE_ASSIGNMENT_REPOSITORY,
+  type UserRoleAssignmentRepository,
+} from '../ports/user-role-assignment-repository.port';
 import { USER_REPOSITORY, type UserRepository } from '../ports/user-repository.port';
+
+export type AuthScopes = {
+  organizations: string[];
+  restaurants: string[];
+};
 
 export type AuthResult = {
   accessToken: string;
@@ -20,6 +29,7 @@ export type AuthResult = {
   user: User;
   permissions: string[];
   roles: string[];
+  scopes: AuthScopes;
 };
 
 @Injectable()
@@ -29,6 +39,7 @@ export class AuthService {
     @Inject(ROLE_REPOSITORY) private readonly roles: RoleRepository,
     @Inject(PERMISSION_REPOSITORY) private readonly permissions: PermissionRepository,
     @Inject(AUTH_SESSION_REPOSITORY) private readonly sessions: AuthSessionRepository,
+    @Inject(USER_ROLE_ASSIGNMENT_REPOSITORY) private readonly userRoleAssignments: UserRoleAssignmentRepository,
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
     private readonly tokens: AuthTokenService,
     private readonly config: ConfigService = { get: () => undefined } as unknown as ConfigService,
@@ -125,6 +136,11 @@ export class AuthService {
     )
       .filter((permission) => permission.enabled)
       .map((permission) => permission.name);
+    const assignments = await this.userRoleAssignments.findByUserId(user.id);
+    const scopes: AuthScopes = {
+      organizations: [...new Set(assignments.flatMap((assignment) => assignment.organizationId ? [assignment.organizationId] : []))],
+      restaurants: [...new Set(assignments.flatMap((assignment) => assignment.restaurantId ? [assignment.restaurantId] : []))],
+    };
 
     return {
       accessToken: await this.tokens.issueAccessToken(
@@ -132,12 +148,14 @@ export class AuthService {
         sessionId,
         activeRoles.map((role) => role.name),
         permissions,
+        scopes,
       ),
       refreshToken,
       accessExpiresIn: this.tokens.accessTtlSeconds,
       user,
       permissions,
       roles: activeRoles.map((role) => role.name),
+      scopes,
     };
   }
 }

@@ -22,6 +22,14 @@ export class AuthResponseDto {
   @ApiProperty({ type: [String], example: ['waiter'] })
   roles!: string[];
 
+  @ApiProperty({
+    example: { organizations: ['org-demo'], restaurants: ['restaurant-mesaflow-centro'] },
+  })
+  scopes!: {
+    organizations: string[];
+    restaurants: string[];
+  };
+
   static fromResult(result: AuthResult): AuthResponseDto {
     return {
       accessToken: result.accessToken,
@@ -30,6 +38,7 @@ export class AuthResponseDto {
       user: UserResponseDto.fromDomain(result.user),
       permissions: result.permissions,
       roles: result.roles,
+      scopes: result.scopes,
     };
   }
 }

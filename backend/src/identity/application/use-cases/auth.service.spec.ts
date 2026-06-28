@@ -9,6 +9,7 @@ import { InMemoryRoleRepository } from '../../infrastructure/persistence/in-memo
 import { InMemoryUserRepository } from '../../infrastructure/persistence/in-memory-user.repository';
 import { AuthTokenService } from '../../infrastructure/security/auth-token.service';
 import { Permission } from '../../domain/permission.entity';
+import type { UserRoleAssignmentRepository } from '../ports/user-role-assignment-repository.port';
 import type { PasswordHasher } from '../ports/password-hasher.port';
 import { AssignRolePermissionsUseCase } from './assign-role-permissions.use-case';
 import { AuthService } from './auth.service';
@@ -69,6 +70,26 @@ async function setup() {
   });
   if (isErr(userResult)) throw new Error('User setup failed.');
   const tokens = new AuthTokenService(new JwtService(), new TestConfig() as never);
+  const userRoleAssignments: UserRoleAssignmentRepository = {
+    findByUserId: async (userId) => [
+      {
+        id: 'ura-admin-org',
+        userId,
+        roleId: roleResult.value.id,
+        scopeType: 'organization',
+        organizationId: 'org-demo',
+        restaurantId: null,
+      },
+      {
+        id: 'ura-admin-restaurant',
+        userId,
+        roleId: roleResult.value.id,
+        scopeType: 'restaurant',
+        organizationId: 'org-demo',
+        restaurantId: 'restaurant-mesaflow-centro',
+      },
+    ],
+  };
   return {
     users,
     roles,
@@ -78,7 +99,17 @@ async function setup() {
     user: userResult.value,
     tokens,
     hasher,
-    auth: new AuthService(users, roles, permissions, sessions, hasher, tokens, new TestConfig() as never),
+    userRoleAssignments,
+    auth: new AuthService(
+      users,
+      roles,
+      permissions,
+      sessions,
+      userRoleAssignments,
+      hasher,
+      tokens,
+      new TestConfig() as never,
+    ),
   };
 }
 
@@ -132,6 +163,17 @@ describe('AuthService', () => {
     expect(payload.permissions).toEqual([]);
   });
 
+  it('returns organization and restaurant scopes from assignments', async () => {
+    const { auth } = await setup();
+
+    const login = await auth.login('admin@example.com', 'supersecret');
+
+    expect(login.scopes).toEqual({
+      organizations: ['org-demo'],
+      restaurants: ['restaurant-mesaflow-centro'],
+    });
+  });
+
   it('disabling a user invalidates sessions and re-enabling does not revive them', async () => {
     const { auth, users, sessions, user } = await setup();
     const login = await auth.login('admin@example.com', 'supersecret');
@@ -153,7 +195,7 @@ describe('AuthService', () => {
   });
 
   it('blocks demo login and refresh as soon as demo access is disabled', async () => {
-    const { users, roles, permissions, sessions, hasher, tokens, user } = await setup();
+    const { users, roles, permissions, sessions, hasher, tokens, user, userRoleAssignments } = await setup();
     user.setAccountType('demo');
     await users.save(user);
     const enabledAuth = new AuthService(
@@ -161,6 +203,7 @@ describe('AuthService', () => {
       roles,
       permissions,
       sessions,
+      userRoleAssignments,
       hasher,
       tokens,
       new TestConfig(true) as never,
@@ -171,6 +214,7 @@ describe('AuthService', () => {
       roles,
       permissions,
       sessions,
+      userRoleAssignments,
       hasher,
       tokens,
       new TestConfig(false) as never,

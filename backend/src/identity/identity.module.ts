@@ -31,6 +31,7 @@ import { InMemoryUserRepository } from './infrastructure/persistence/in-memory-u
 import { PrismaAuthSessionRepository } from './infrastructure/persistence/prisma-auth-session.repository';
 import { PrismaPermissionRepository } from './infrastructure/persistence/prisma-permission.repository';
 import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.repository';
+import { PrismaUserRoleAssignmentRepository } from './infrastructure/persistence/prisma-user-role-assignment.repository';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { InMemoryIdentitySeed } from './infrastructure/seed/in-memory-identity.seed';
 import { AuthTokenService } from './infrastructure/security/auth-token.service';
@@ -43,6 +44,8 @@ import { RolesController } from './presentation/rest/roles.controller';
 import { RolesGuard } from './presentation/rest/roles.guard';
 import { SessionsController } from './presentation/rest/sessions.controller';
 import { UsersController } from './presentation/rest/users.controller';
+import { USER_ROLE_ASSIGNMENT_REPOSITORY } from './application/ports/user-role-assignment-repository.port';
+import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persistence/in-memory-user-role-assignment.repository';
 
 @Module({
   imports: [JwtModule.register({})],
@@ -67,10 +70,12 @@ import { UsersController } from './presentation/rest/users.controller';
     SetPermissionEnabledUseCase,
     InMemoryUserRepository,
     InMemoryRoleRepository,
+    InMemoryUserRoleAssignmentRepository,
     InMemoryPermissionRepository,
     InMemoryAuthSessionRepository,
     PrismaUserRepository,
     PrismaRoleRepository,
+    PrismaUserRoleAssignmentRepository,
     PrismaPermissionRepository,
     PrismaAuthSessionRepository,
     BcryptPasswordHasher,
@@ -114,6 +119,15 @@ import { UsersController } from './presentation/rest/users.controller';
       ) => config.get<string>('IDENTITY_PERSISTENCE') === 'memory' ? memory : prisma,
     },
     {
+      provide: USER_ROLE_ASSIGNMENT_REPOSITORY,
+      inject: [ConfigService, InMemoryUserRoleAssignmentRepository, PrismaUserRoleAssignmentRepository],
+      useFactory: (
+        config: ConfigService,
+        memory: InMemoryUserRoleAssignmentRepository,
+        prisma: PrismaUserRoleAssignmentRepository,
+      ) => config.get<string>('IDENTITY_PERSISTENCE') === 'memory' ? memory : prisma,
+    },
+    {
       provide: PASSWORD_HASHER,
       useExisting: BcryptPasswordHasher,
     },
@@ -134,6 +148,7 @@ import { UsersController } from './presentation/rest/users.controller';
     ROLE_REPOSITORY,
     PERMISSION_REPOSITORY,
     AUTH_SESSION_REPOSITORY,
+    USER_ROLE_ASSIGNMENT_REPOSITORY,
   ],
 })
 export class IdentityModule {}
