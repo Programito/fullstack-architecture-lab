@@ -43,6 +43,7 @@ import { SearchCustomersUseCase } from './application/use-cases/search-customers
 import { CreateCustomerUseCase } from './application/use-cases/create-customer.use-case';
 import { CUSTOMER_REPOSITORY } from './application/ports/customer-repository.port';
 import { DemoCustomerRepository } from './infrastructure/demo-customer.repository';
+import { PrismaCustomerRepository } from './infrastructure/persistence/prisma-customer.repository';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
@@ -109,14 +110,14 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     UpdateRestaurantServiceWindowsUseCase,
     SearchCustomersUseCase,
     CreateCustomerUseCase,
-    DemoCustomerRepository,
+    PrismaCustomerRepository,
     {
       provide: DemoRestaurantReadRepository,
       useExisting: PrismaRestaurantReadRepository,
     },
     {
       provide: CUSTOMER_REPOSITORY,
-      useExisting: DemoCustomerRepository,
+      useExisting: PrismaCustomerRepository,
     },
     {
       provide: RESTAURANT_READ_REPOSITORY,

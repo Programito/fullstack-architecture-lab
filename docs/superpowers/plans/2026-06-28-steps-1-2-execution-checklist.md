@@ -37,6 +37,22 @@
   - `pnpm build` passes
   - `pnpm test:e2e -- app.e2e-spec.ts` passes
   - `pnpm test:integration -- prisma-restaurant-read.repository.integration-spec.ts` now loads the new repository and is blocked only by the missing Docker runtime for Testcontainers in this environment
+- Current Prisma read coverage in `PrismaRestaurantReadRepository`:
+  - `listRestaurants()`
+  - `findMenuByRestaurantId()`
+  - `findFloorsByRestaurantId()`
+  - `listReservationsByRestaurantId()`
+  - `findServiceFloorByRestaurantId()`
+  - `findServicePointByRestaurantId()`
+  - `findServicePointOrderByRestaurantId()`
+- Additional verification completed for the Prisma adapter:
+  - `pnpm test -- prisma-restaurant-read.repository.spec.ts`
+- Remaining work on the restaurant read migration:
+  - Implemented and wired `backend/src/restaurants/infrastructure/persistence/prisma-customer.repository.ts`
+  - Switched `CUSTOMER_REPOSITORY` from demo to Prisma
+  - `pnpm test -- prisma-customer.repository.spec.ts` passes
+  - Decide whether the demo fallback inside `PrismaRestaurantReadRepository` stays temporarily or is removed after Docker-backed integration coverage is available
+  - Run Docker-backed integration verification for `prisma-restaurant-read.repository.integration-spec.ts` when Testcontainers is available
 
 ## Guardrails
 
