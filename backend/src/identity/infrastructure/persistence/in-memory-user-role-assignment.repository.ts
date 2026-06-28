@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { UserRoleAssignmentRecord, UserRoleAssignmentRepository } from '../../application/ports/user-role-assignment-repository.port';
 import { DEMO_ACCOUNT_CATALOG } from '../../domain/demo-account-catalog';
 import type { RoleName } from '../../domain/role-catalog';
-import { InMemoryUserRepository } from './in-memory-user.repository';
-import { InMemoryRoleRepository } from './in-memory-role.repository';
+import { ROLE_REPOSITORY, type RoleRepository } from '../../application/ports/role-repository.port';
+import { USER_REPOSITORY, type UserRepository } from '../../application/ports/user-repository.port';
 
 const DEMO_ORGANIZATION_ID = 'org-demo';
 const DEMO_RESTAURANT_ID = 'restaurant-mesaflow-centro';
@@ -12,8 +12,8 @@ const DEMO_RESTAURANT_ID = 'restaurant-mesaflow-centro';
 @Injectable()
 export class InMemoryUserRoleAssignmentRepository implements UserRoleAssignmentRepository {
   constructor(
-    private readonly users: InMemoryUserRepository,
-    private readonly roles: InMemoryRoleRepository,
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+    @Inject(ROLE_REPOSITORY) private readonly roles: RoleRepository,
   ) {}
 
   async findByUserId(userId: string): Promise<UserRoleAssignmentRecord[]> {

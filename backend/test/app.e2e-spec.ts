@@ -156,6 +156,7 @@ describe('App e2e', () => {
   });
 
   it('lists demo restaurants and returns their menu, floors, and reservations through versioned read endpoints', async () => {
+    const login = await createAndLoginAdmin(app);
     const restaurantsResponse = await request(app.getHttpServer()).get('/api/v1/restaurants').expect(200);
 
     expect(restaurantsResponse.body).toEqual([
@@ -168,7 +169,10 @@ describe('App e2e', () => {
     ]);
 
     const [restaurant] = restaurantsResponse.body;
-    const menuResponse = await request(app.getHttpServer()).get(`/api/v1/restaurants/${restaurant.id}/menu`).expect(200);
+    const menuResponse = await request(app.getHttpServer())
+      .get(`/api/v1/restaurants/${restaurant.id}/menu`)
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
     expect(menuResponse.body).toMatchObject({
       restaurantId: 'restaurant-mesaflow-centro',
       name: 'Carta principal',
@@ -184,7 +188,10 @@ describe('App e2e', () => {
       ]),
     );
 
-    const floorsResponse = await request(app.getHttpServer()).get(`/api/v1/restaurants/${restaurant.id}/floors`).expect(200);
+    const floorsResponse = await request(app.getHttpServer())
+      .get(`/api/v1/restaurants/${restaurant.id}/floors`)
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
     expect(floorsResponse.body).toMatchObject({
       restaurantId: 'restaurant-mesaflow-centro',
       tables: expect.arrayContaining([
@@ -204,8 +211,6 @@ describe('App e2e', () => {
       ]),
     );
 
-    const login = await createAndLoginAdmin(app);
-
     const reservationsResponse = await request(app.getHttpServer())
       .get(`/api/v1/restaurants/${restaurant.id}/reservations`)
       .set('Authorization', `Bearer ${login.body.accessToken}`)
@@ -222,9 +227,15 @@ describe('App e2e', () => {
   });
 
   it('returns 404 for unknown restaurant read endpoints', async () => {
-    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/menu').expect(404);
-    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/floors').expect(404);
     const login = await createAndLoginAdmin(app);
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/missing/menu')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/missing/floors')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(403);
     await request(app.getHttpServer())
       .get('/api/v1/restaurants/missing/reservations')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
@@ -232,6 +243,7 @@ describe('App e2e', () => {
   });
 
   it('reorders floor elements within a restaurant floor matrix', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
       .send({
@@ -257,6 +269,7 @@ describe('App e2e', () => {
 
     const floorsResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/floors')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
     const updatedElements = floorsResponse.body.floors[0].elements;
     expect(updatedElements.find((element: { id: string }) => element.id === 'floor-element-2')).toMatchObject({
@@ -300,6 +313,7 @@ describe('App e2e', () => {
   });
 
   it('updates floor metadata for the restaurant matrix', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main')
       .send({
@@ -323,6 +337,7 @@ describe('App e2e', () => {
 
     const floorsResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/floors')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
     expect(floorsResponse.body.floors[0]).toMatchObject({
       id: 'floor-main',
@@ -345,6 +360,7 @@ describe('App e2e', () => {
   });
 
   it('creates a new floor element inside the restaurant matrix', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
       .send({
@@ -377,6 +393,7 @@ describe('App e2e', () => {
 
     const floorsResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/floors')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
     expect(floorsResponse.body.floors[0].elements).toEqual(
       expect.arrayContaining([
@@ -604,8 +621,10 @@ describe('App e2e', () => {
   });
 
   it('returns the operational service floor for one restaurant', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(response.body).toEqual(
@@ -628,8 +647,10 @@ describe('App e2e', () => {
   });
 
   it('returns one service point detail by table id', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(response.body).toEqual(
@@ -651,8 +672,10 @@ describe('App e2e', () => {
   });
 
   it('returns the active order detail for a service point', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/order')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(response.body).toEqual(
@@ -669,8 +692,10 @@ describe('App e2e', () => {
   });
 
   it('returns order null when the service point exists but has no open order', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/order')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(response.body).toEqual({
@@ -680,6 +705,7 @@ describe('App e2e', () => {
   });
 
   it('occupies one free service point and returns the updated detail', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
       .expect(201);
@@ -701,6 +727,7 @@ describe('App e2e', () => {
 
     const detailAfterOccupy = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(detailAfterOccupy.body.table).toEqual(
@@ -718,6 +745,7 @@ describe('App e2e', () => {
   });
 
   it('sends one service point order to kitchen and persists the updated statuses', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/send-to-kitchen')
       .expect(201);
@@ -733,6 +761,7 @@ describe('App e2e', () => {
 
     const orderResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/order')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(orderResponse.body.order).toEqual(
@@ -756,6 +785,7 @@ describe('App e2e', () => {
   });
 
   it('marks one service point order as served and persists the updated statuses', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/mark-served')
       .expect(201);
@@ -771,6 +801,7 @@ describe('App e2e', () => {
 
     const orderResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/order')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
 
     expect(orderResponse.body.order).toEqual(
@@ -794,6 +825,7 @@ describe('App e2e', () => {
   });
 
   it('charges one service point and persists the paid status', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2/charge')
       .expect(201);
@@ -809,11 +841,13 @@ describe('App e2e', () => {
 
     const detailResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
     expect(detailResponse.body.table).toEqual(expect.objectContaining({ id: 'table-2', status: 'paid' }));
 
     const orderResponse = await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2/order')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
     expect(orderResponse.body).toEqual({
       order: null,
@@ -1263,6 +1297,30 @@ describe('App e2e with in-memory identity seed', () => {
 
     await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
+  });
+
+  it('rejects service-floor access when the token lacks restaurant scope', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(403);
+  });
+
+  it('allows service-floor access when the token has restaurant scope', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
   });

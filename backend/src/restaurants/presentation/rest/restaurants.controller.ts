@@ -145,7 +145,10 @@ export class RestaurantsController {
 
   @Get(':id/menu')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantMenuResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
   async menu(@Param('id') id: string): Promise<RestaurantMenuResponseDto> {
     return RestaurantMenuResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantMenu.execute(id)));
@@ -167,7 +170,10 @@ export class RestaurantsController {
 
   @Get(':id/floors')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantFloorsResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
   async floors(@Param('id') id: string): Promise<RestaurantFloorsResponseDto> {
     return RestaurantFloorsResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantFloors.execute(id)));
@@ -175,7 +181,10 @@ export class RestaurantsController {
 
   @Get(':id/service-floor')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: ServiceFloorResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
   async serviceFloor(@Param('id') id: string): Promise<ServiceFloorResponseDto> {
     return ServiceFloorResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServiceFloor.execute(id)));
@@ -183,7 +192,10 @@ export class RestaurantsController {
 
   @Get(':id/service-points/:tableId')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: ServicePointDetailResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
   async servicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
     return ServicePointDetailResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServicePoint.execute(id, tableId)));
@@ -191,7 +203,10 @@ export class RestaurantsController {
 
   @Get(':id/service-points/:tableId/order')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: ServicePointOrderResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
   async servicePointOrder(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointOrderResponseDto> {
     return ServicePointOrderResponseDto.fromDomain(unwrapResultOrThrow(await this.getRestaurantServicePointOrder.execute(id, tableId)));
