@@ -28,6 +28,10 @@ export class RestaurantAccessGuard implements CanActivate {
       return true;
     }
 
+    if (request.auth.scopes.organizations.length > 0) {
+      return true;
+    }
+
     throw new ForbiddenException('Restaurant access is not allowed for this user.');
   }
 }
