@@ -317,15 +317,80 @@
   (closed)="closeCreateReservation()"
 >
   <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <label>
-      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.customerName' | transloco }}</span>
-      <input
-        class="reservations-page__input"
-        [value]="creationForm().customerNameSnapshot"
-        [attr.aria-label]="'restaurantPos.reservations.create.customerName' | transloco"
-        (input)="updateCreateField('customerNameSnapshot', ($any($event.target).value ?? '').toString())"
-      />
-    </label>
+    <!-- Autocomplete de cliente -->
+    <div class="relative md:col-span-2">
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">
+        {{ 'restaurantPos.reservations.create.customer' | transloco }}
+      </span>
+
+      @if (selectedCustomer(); as customer) {
+        <div class="reservations-page__selected-customer">
+          <div class="min-w-0 flex-1">
+            <p class="theme-title text-sm font-semibold truncate">{{ customer.name }}</p>
+            @if (customer.phone) {
+              <p class="theme-muted text-xs">{{ customer.phone }}</p>
+            }
+            @if (customer.noShowCount > 0) {
+              <span class="reservations-page__badge reservations-page__badge--warning">
+                {{ 'restaurantPos.reservations.create.customerNoShows' | transloco: { count: customer.noShowCount } }}
+              </span>
+            }
+          </div>
+          <button
+            type="button"
+            class="reservations-page__link-button shrink-0"
+            (click)="clearCustomerSelection()"
+          >{{ 'restaurantPos.reservations.create.customerChange' | transloco }}</button>
+        </div>
+      } @else {
+        <div class="relative">
+          <input
+            class="reservations-page__input"
+            [value]="creationForm().customerNameSnapshot"
+            [placeholder]="'restaurantPos.reservations.create.customerSearchPlaceholder' | transloco"
+            [attr.aria-label]="'restaurantPos.reservations.create.customer' | transloco"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="customerSearchOpen()"
+            autocomplete="off"
+            (input)="onCustomerSearchInput(($any($event.target).value ?? '').toString())"
+            (blur)="onCustomerSearchBlur()"
+            (focus)="onCustomerSearchFocus()"
+          />
+          @if (customerSearchLoading()) {
+            <div class="reservations-page__customer-loading">
+              <app-spinner size="sm" decorative />
+            </div>
+          }
+          @if (customerSearchOpen()) {
+            <div class="reservations-page__customer-results" role="listbox">
+              @for (customer of customerSearchResults(); track customer.id) {
+                <button
+                  type="button"
+                  class="reservations-page__customer-result"
+                  role="option"
+                  (mousedown)="selectCustomer(customer)"
+                >
+                  <span class="min-w-0 flex-1 text-left">
+                    <span class="theme-title block truncate text-sm font-semibold">{{ customer.name }}</span>
+                    @if (customer.phone) {
+                      <span class="theme-muted text-xs">{{ customer.phone }}</span>
+                    }
+                  </span>
+                  @if (customer.visitCount > 0) {
+                    <span class="reservations-page__badge">{{ customer.visitCount }}×</span>
+                  }
+                  @if (customer.noShowCount > 0) {
+                    <span class="reservations-page__badge reservations-page__badge--warning">
+                      {{ customer.noShowCount }} NS
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
 
     <label>
       <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.customerPhone' | transloco }}</span>

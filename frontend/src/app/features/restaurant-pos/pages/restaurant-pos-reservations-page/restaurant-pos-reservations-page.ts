@@ -1,8 +1,8 @@
 import { LowerCasePipe } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { map, timer } from 'rxjs';
+import { Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, timer } from 'rxjs';
 
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { DateNavigator } from '../../../../shared/ui/date-navigator/date-navigator';
@@ -11,7 +11,7 @@ import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
-import type { CreateRestaurantReservationRequest, RestaurantReservationDto, ServiceWindowDto } from '../../api/restaurant-pos-api.models';
+import type { CreateRestaurantReservationRequest, CustomerSummaryDto, RestaurantReservationDto, ServiceWindowDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosReservationsStore } from './restaurant-pos-reservations.store';
 import type { ReservationAction } from './restaurant-pos-reservations.store';
@@ -22,6 +22,7 @@ type ReservationStatusFilter = 'all' | RestaurantReservationDto['status'];
 type ReservationServiceFilter = 'all' | ReservationServiceBucket;
 type ReservationHighlightFilter = 'all' | 'unassigned' | 'overdue';
 type ReservationCreateForm = {
+  customerId: string | null;
   customerNameSnapshot: string;
   customerPhoneSnapshot: string;
   partySize: number;
@@ -60,6 +61,8 @@ export class RestaurantPosReservationsPage {
   private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly transloco = inject(TranslocoService);
   private readonly store = inject(RestaurantPosReservationsStore);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly customerSearch$ = new Subject<string>();
 
   // ── Reloj reactivo (actualiza isUpcoming/isOverdue cada 30 s) ────────────
   private readonly nowMs = toSignal(timer(0, 30_000).pipe(map(() => Date.now())), { initialValue: Date.now() });
@@ -83,6 +86,12 @@ export class RestaurantPosReservationsPage {
   protected readonly creationForm = signal<ReservationCreateForm>(createReservationFormState());
   protected readonly capacityWarningOpen = signal(false);
   private readonly pendingSubmitRequest = signal<CreateRestaurantReservationRequest | null>(null);
+
+  // ── Estado del autocomplete de cliente ──────────────────────────────────────
+  protected readonly selectedCustomer = signal<CustomerSummaryDto | null>(null);
+  protected readonly customerSearchResults = signal<CustomerSummaryDto[]>([]);
+  protected readonly customerSearchOpen = signal(false);
+  protected readonly customerSearchLoading = signal(false);
 
   // ── Señales derivadas ────────────────────────────────────────────────────
   protected readonly activeRestaurant = this.restaurantContext.activeRestaurant;
@@ -184,6 +193,23 @@ export class RestaurantPosReservationsPage {
         this.serviceTab.set(windows[0]!.id);
       }
     });
+
+    // Búsqueda de clientes con debounce
+    this.customerSearch$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap((q) => {
+        const restaurant = this.restaurantContext.activeRestaurant();
+        if (!restaurant) return of([]);
+        this.customerSearchLoading.set(true);
+        return this.api.searchCustomers(restaurant.id, q).pipe(catchError(() => of([])));
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((results: CustomerSummaryDto[]) => {
+      this.customerSearchLoading.set(false);
+      this.customerSearchResults.set(results);
+      this.customerSearchOpen.set(results.length > 0);
+    });
   }
 
   protected trackReservation(_: number, reservation: ReservationAgendaItem): string {
@@ -243,6 +269,45 @@ export class RestaurantPosReservationsPage {
     this.capacityWarningOpen.set(false);
     this.pendingSubmitRequest.set(null);
     this.serviceTab.set(this.serviceWindows()[0]?.id ?? '');
+    this.selectedCustomer.set(null);
+    this.customerSearchResults.set([]);
+    this.customerSearchOpen.set(false);
+  }
+
+  protected onCustomerSearchInput(value: string): void {
+    this.updateCreateField('customerNameSnapshot', value);
+    this.updateCreateField('customerId', null);
+    this.selectedCustomer.set(null);
+    if (value.trim().length >= 2) {
+      this.customerSearch$.next(value.trim());
+    } else {
+      this.customerSearchResults.set([]);
+      this.customerSearchOpen.set(false);
+    }
+  }
+
+  protected onCustomerSearchBlur(): void {
+    setTimeout(() => this.customerSearchOpen.set(false), 150);
+  }
+
+  protected onCustomerSearchFocus(): void {
+    if (this.customerSearchResults().length > 0) this.customerSearchOpen.set(true);
+  }
+
+  protected selectCustomer(customer: CustomerSummaryDto): void {
+    this.selectedCustomer.set(customer);
+    this.updateCreateField('customerId', customer.id);
+    this.updateCreateField('customerNameSnapshot', customer.name);
+    this.updateCreateField('customerPhoneSnapshot', customer.phone ?? '');
+    this.customerSearchOpen.set(false);
+    this.customerSearchResults.set([]);
+  }
+
+  protected clearCustomerSelection(): void {
+    this.selectedCustomer.set(null);
+    this.updateCreateField('customerId', null);
+    this.updateCreateField('customerNameSnapshot', '');
+    this.updateCreateField('customerPhoneSnapshot', '');
   }
 
   protected readonly defaultServiceWindowRows: ServiceWindowEditRow[] = [
@@ -471,7 +536,7 @@ export class RestaurantPosReservationsPage {
 }
 
 function createReservationFormState(): ReservationCreateForm {
-  return { customerNameSnapshot: '', customerPhoneSnapshot: '', partySize: 2, time: '13:30', durationMinutes: 90, notes: '', tableIds: [] };
+  return { customerId: null, customerNameSnapshot: '', customerPhoneSnapshot: '', partySize: 2, time: '13:30', durationMinutes: 90, notes: '', tableIds: [] };
 }
 
 function formatIsoDate(value: Date): string {

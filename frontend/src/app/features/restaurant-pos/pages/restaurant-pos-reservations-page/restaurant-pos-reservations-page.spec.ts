@@ -54,6 +54,7 @@ describe('RestaurantPosReservationsPage', () => {
       | 'seatRestaurantReservation'
       | 'markRestaurantReservationNoShow'
       | 'cancelRestaurantReservation'
+      | 'searchCustomers'
   > => {
     const reservations: RestaurantReservationDto[] = [
       {
@@ -109,6 +110,7 @@ describe('RestaurantPosReservationsPage', () => {
       getRestaurantReservations: vi.fn(() => of(reservations)),
       getRestaurantServiceWindows: vi.fn(() => of(demoServiceWindows)),
       updateRestaurantServiceWindows: vi.fn(() => of(demoServiceWindows)),
+      searchCustomers: vi.fn(() => of([])),
       createRestaurantReservation: vi.fn(() => of(createReservationDto())),
       confirmRestaurantReservation: vi.fn(() => of(updateReservationStatus(reservations[1]!, 'confirmed'))),
       seatRestaurantReservation: vi.fn(() => of(updateReservationStatus(reservations[0]!, 'seated'))),

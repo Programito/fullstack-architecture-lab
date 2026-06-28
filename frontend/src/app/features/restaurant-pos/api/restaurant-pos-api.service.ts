@@ -7,10 +7,12 @@ import type {
   AddMenuSectionItemRequest,
   AddRestaurantOrderLineRequest,
   CancelRestaurantOrderLineRequest,
+  CreateCustomerRequest,
   CreateFloorElementRequest,
   CreateMenuSectionRequest,
   CreateRestaurantProductRequest,
   CreateRestaurantReservationRequest,
+  CustomerSummaryDto,
   MenuItemAdminDto,
   MenuSectionAdminDto,
   OpenRestaurantOrderRequest,
@@ -264,5 +266,13 @@ export class RestaurantPosApiService {
 
   updateRestaurantServiceWindows(restaurantId: string, body: UpdateServiceWindowsRequest): Observable<ServiceWindowDto[]> {
     return this.http.put<ServiceWindowDto[]>(`${this.restaurantsUrl}/${restaurantId}/service-windows`, body);
+  }
+
+  searchCustomers(restaurantId: string, q: string): Observable<CustomerSummaryDto[]> {
+    return this.http.get<CustomerSummaryDto[]>(`${this.restaurantsUrl}/${restaurantId}/customers`, { params: { q } });
+  }
+
+  createCustomer(restaurantId: string, body: CreateCustomerRequest): Observable<CustomerSummaryDto> {
+    return this.http.post<CustomerSummaryDto>(`${this.restaurantsUrl}/${restaurantId}/customers`, body);
   }
 }

@@ -475,6 +475,26 @@ export type AddMenuSectionItemRequest = { restaurantProductId: string; displayNa
 export type UpdateMenuSectionItemRequest = { displayNameOverride?: string | null; priceOverrideCents?: number | null; isVisible?: boolean };
 export type ReorderItemsRequest = { items: Array<{ id: string; sortOrder: number }> };
 
+// ── Customers ────────────────────────────────────────────────────────────────
+
+export type CustomerSummaryDto = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  visitCount: number;
+  noShowCount: number;
+  cancelCount: number;
+  lateCount: number;
+};
+
+export type CreateCustomerRequest = {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+};
+
 // ── Service Windows ──────────────────────────────────────────────────────────
 
 export type ServiceWindowDto = {
