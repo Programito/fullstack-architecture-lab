@@ -8,6 +8,7 @@ import { PASSWORD_HASHER, type PasswordHasher } from '../src/identity/applicatio
 import { ROLE_REPOSITORY } from '../src/identity/application/ports/role-repository.port';
 import { USER_REPOSITORY } from '../src/identity/application/ports/user-repository.port';
 import { ROLE_CATALOG } from '../src/identity/domain/role-catalog';
+import { Role } from '../src/identity/domain/role.entity';
 import { InMemoryRoleRepository } from '../src/identity/infrastructure/persistence/in-memory-role.repository';
 import { InMemoryUserRepository } from '../src/identity/infrastructure/persistence/in-memory-user.repository';
 import { InMemoryAuthSessionRepository } from '../src/identity/infrastructure/persistence/in-memory-auth-session.repository';
@@ -31,11 +32,21 @@ class TestPasswordHasher implements PasswordHasher {
   }
 }
 
+let e2eRoleRepository: InMemoryRoleRepository | null = null;
+
 async function createAndLoginAdmin(app: INestApplication) {
-  const roleResponse = await request(app.getHttpServer())
-    .post('/api/v1/roles')
-    .send({ name: 'admin' })
-    .expect(201);
+  if (!e2eRoleRepository) {
+    throw new Error('Expected e2e role repository to be initialized.');
+  }
+
+  const permissionsResponse = await request(app.getHttpServer())
+    .get('/api/v1/permissions')
+    .expect(200);
+  const adminRole = Role.create({
+    name: 'admin',
+    permissionIds: permissionsResponse.body.map((permission: { id: string }) => permission.id),
+  });
+  await e2eRoleRepository.save(adminRole);
 
   await request(app.getHttpServer())
     .post('/api/v1/users')
@@ -44,7 +55,7 @@ async function createAndLoginAdmin(app: INestApplication) {
       firstName: 'Admin',
       lastName: 'User',
       password: 'supersecret',
-      roleIds: [roleResponse.body.id],
+      roleIds: [adminRole.id],
     })
     .expect(201);
 
@@ -72,6 +83,7 @@ describe('App e2e', () => {
     taskRepository = new InMemoryTaskRepository();
     userRepository = new InMemoryUserRepository();
     roleRepository = new InMemoryRoleRepository();
+    e2eRoleRepository = roleRepository;
     eventBus = new InMemoryEventBus();
 
     const moduleFixture = await Test.createTestingModule({
@@ -246,6 +258,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         elements: [
           { id: 'floor-element-1', x: 2, y: 2, width: 2, height: 2, sortOrder: 2 },
@@ -280,8 +293,10 @@ describe('App e2e', () => {
   });
 
   it('allows reordering a floor element to the first grid column using zero-based coordinates', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         elements: [{ id: 'floor-element-5', x: 0, y: 7, width: 3, height: 1, sortOrder: 5 }],
       })
@@ -299,13 +314,16 @@ describe('App e2e', () => {
   });
 
   it('returns 404 for missing floor reorder target and 400 for invalid payload', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing/elements/reorder')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({ elements: [] })
       .expect(404);
 
     await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         elements: [{ id: 'floor-element-1', x: -1, y: 1, width: 0, height: 2, sortOrder: 1 }],
       })
@@ -316,6 +334,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         name: 'Sala principal renovada',
         rows: 14,
@@ -348,13 +367,16 @@ describe('App e2e', () => {
   });
 
   it('returns 404 for missing floor metadata target and 400 for invalid floor dimensions', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({ name: 'Nueva sala', rows: 10, columns: 10 })
       .expect(404);
 
     await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({ name: '', rows: 0, columns: 0 })
       .expect(400);
   });
@@ -363,6 +385,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         type: 'blocked',
         label: 'Zona temporal',
@@ -407,8 +430,10 @@ describe('App e2e', () => {
   });
 
   it('creates a restaurant table when the new floor element is a table', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         type: 'table',
         label: 'M8',
@@ -451,8 +476,10 @@ describe('App e2e', () => {
   });
 
   it('rejects creating a floor element that overlaps another element', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         type: 'blocked',
         label: 'Zona solapada',
@@ -466,8 +493,10 @@ describe('App e2e', () => {
   });
 
   it('updates one floor element size through a dedicated endpoint', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         label: 'Mesa terraza 1',
         x: 1,
@@ -507,8 +536,10 @@ describe('App e2e', () => {
   });
 
   it('rejects updating a floor element into an overlapping position', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         label: 'Mesa solapada',
         x: 5,
@@ -522,8 +553,10 @@ describe('App e2e', () => {
   });
 
   it('accepts a floor element anchored at the first grid column using frontend zero-based coordinates', async () => {
+    const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         type: 'blocked',
         label: 'Esquina',
@@ -554,8 +587,10 @@ describe('App e2e', () => {
   });
 
   it('returns 404 for missing floor create target and 400 for invalid element payload', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/missing/elements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         type: 'blocked',
         label: 'Zona temporal',
@@ -569,6 +604,7 @@ describe('App e2e', () => {
 
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         type: 'blocked',
         label: '',
@@ -582,8 +618,10 @@ describe('App e2e', () => {
   });
 
   it('returns 404 for missing floor element update target and 400 for invalid element update payload', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/missing')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         label: 'Bar',
         x: 1,
@@ -596,6 +634,7 @@ describe('App e2e', () => {
 
     await request(app.getHttpServer())
       .patch('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/floor-element-1')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         label: '',
         x: -1,
@@ -609,8 +648,10 @@ describe('App e2e', () => {
   });
 
   it('rejects reordering a floor element into an overlapping position', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .put('/api/v1/restaurants/restaurant-mesaflow-centro/floors/floor-main/elements/reorder')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({
         elements: [
           { id: 'floor-element-1', x: 5, y: 1, width: 2, height: 2, sortOrder: 1 },
@@ -708,6 +749,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
 
     expect(response.body).toEqual(
@@ -739,8 +781,10 @@ describe('App e2e', () => {
   });
 
   it('returns 404 when occupying a missing service point', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/missing/occupy')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(404);
   });
 
@@ -748,6 +792,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/send-to-kitchen')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
 
     expect(response.body).toEqual(
@@ -779,8 +824,10 @@ describe('App e2e', () => {
   });
 
   it('returns 400 when sending to kitchen without pending lines', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/send-to-kitchen')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(400);
   });
 
@@ -788,6 +835,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/mark-served')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
 
     expect(response.body).toEqual(
@@ -819,8 +867,10 @@ describe('App e2e', () => {
   });
 
   it('returns 400 when marking served without active lines', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/mark-served')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(400);
   });
 
@@ -828,6 +878,7 @@ describe('App e2e', () => {
     const login = await createAndLoginAdmin(app);
     const response = await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-2/charge')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
 
     expect(response.body).toEqual(
@@ -856,24 +907,31 @@ describe('App e2e', () => {
   });
 
   it('returns 400 when charging a free service point', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/charge')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(400);
   });
 
   it('returns 400 when charging an occupied service point without an amount', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
 
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/charge')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(400);
   });
 
   it('returns 400 when charging an already paid service point', async () => {
+    const login = await createAndLoginAdmin(app);
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-1/charge')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(400);
   });
 
@@ -1323,5 +1381,29 @@ describe('App e2e with in-memory identity seed', () => {
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
+  });
+
+  it('rejects occupying a table for developer demo without restaurant scope', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(403);
+  });
+
+  it('allows waiter demo to occupy a table inside its restaurant scope', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(201);
   });
 });

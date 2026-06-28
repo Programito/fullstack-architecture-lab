@@ -5,6 +5,7 @@ type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
 import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { ChargeRestaurantServicePointUseCase } from '../../application/use-cases/charge-restaurant-service-point.use-case';
@@ -214,7 +215,9 @@ export class RestaurantsController {
 
   @Post(':id/service-points/:tableId/orders')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: RestaurantOrderResponseDto, description: 'Order opened (201) or existing active order returned (200).' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Table not found.' })
@@ -240,7 +243,9 @@ export class RestaurantsController {
 
   @Post(':id/orders/:orderId/lines')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: RestaurantOrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Order or product not found.' })
@@ -268,7 +273,9 @@ export class RestaurantsController {
 
   @Patch(':id/orders/:orderId/lines/:lineId')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantOrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Order or line not found.' })
@@ -294,7 +301,9 @@ export class RestaurantsController {
 
   @Delete(':id/orders/:orderId/lines/:lineId')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantOrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Order or line not found.' })
@@ -312,7 +321,9 @@ export class RestaurantsController {
 
   @Post(':id/orders/:orderId/lines/:lineId/cancel')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantOrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Order or line not found.' })
@@ -337,7 +348,9 @@ export class RestaurantsController {
 
   @Patch(':id/orders/:orderId/lines/:lineId/status')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('kitchen')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantOrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Order or line not found.' })
@@ -357,7 +370,9 @@ export class RestaurantsController {
 
   @Post(':id/orders/:orderId/payments')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: RestaurantOrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Order not found.' })
@@ -376,6 +391,9 @@ export class RestaurantsController {
 
   @Post(':id/service-points/:tableId/occupy')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
   async occupyServicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
@@ -386,6 +404,9 @@ export class RestaurantsController {
 
   @Post(':id/service-points/:tableId/send-to-kitchen')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('kitchen')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point has no pending lines to send.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
@@ -397,6 +418,9 @@ export class RestaurantsController {
 
   @Post(':id/service-points/:tableId/mark-served')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('kitchen')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point has no active lines to mark as served.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
@@ -408,6 +432,9 @@ export class RestaurantsController {
 
   @Post(':id/service-points/:tableId/charge')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point cannot be charged in its current state.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
@@ -419,7 +446,9 @@ export class RestaurantsController {
 
   @Post(':id/service-points/:tableId/free')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('service')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
@@ -431,6 +460,9 @@ export class RestaurantsController {
 
   @Post(':id/floors/:floorId/elements')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('layout')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: RestaurantFloorsResponseDto })
   @ApiBadRequestResponse({ description: 'Floor element layout is invalid.' })
   @ApiNotFoundResponse({ description: 'Restaurant or floor not found.' })
@@ -460,6 +492,9 @@ export class RestaurantsController {
 
   @Patch(':id/floors/:floorId/elements/:elementId')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('layout')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantFloorsResponseDto })
   @ApiBadRequestResponse({ description: 'Floor element layout is invalid.' })
   @ApiNotFoundResponse({ description: 'Restaurant, floor, or floor element not found.' })
@@ -489,6 +524,9 @@ export class RestaurantsController {
 
   @Patch(':id/floors/:floorId')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('layout')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantFloorsResponseDto })
   @ApiBadRequestResponse({ description: 'Floor layout is invalid.' })
   @ApiNotFoundResponse({ description: 'Restaurant or floor not found.' })
@@ -512,6 +550,9 @@ export class RestaurantsController {
 
   @Put(':id/floors/:floorId/elements/reorder')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('layout')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantFloorsResponseDto })
   @ApiBadRequestResponse({ description: 'Floor element layout is invalid.' })
   @ApiNotFoundResponse({ description: 'Restaurant or floor not found.' })
