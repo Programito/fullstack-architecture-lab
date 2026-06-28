@@ -3,140 +3,316 @@ import { describe, expect, it, vi } from 'vitest';
 import { invalidReservationCreation, invalidReservationState, restaurantNotFound } from '../../../shared/errors/application-error';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import type { RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
+import type { RestaurantServiceWindowsRepository } from '../ports/restaurant-service-windows-repository.port';
+import type { RestaurantReservation, ServiceWindow, UpdateServiceWindowInput } from '../../domain/restaurant-read.models';
 import { CreateRestaurantReservationUseCase } from './create-restaurant-reservation.use-case';
 
-const RESERVATION_AT = '2026-06-28T13:30:00.000Z';
+class InMemoryReservationReadRepository implements Partial<RestaurantReadRepository> {
+  private reservations: RestaurantReservation[] = [];
+  private tableCapacities: Map<string, number> = new Map();
+  private restaurantExists = true;
 
-function makeReservation() {
-  return {
-    id: 'reservation-created',
-    customerId: null,
-    customerNameSnapshot: 'Laura Gomez',
-    customerPhoneSnapshot: '+34 600 111 222',
-    partySize: 2,
-    reservationAt: RESERVATION_AT,
-    durationMinutes: 90,
-    status: 'pending' as const,
-    notes: 'Ventana',
-    tableIds: ['table-1'],
-    tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
-  };
+  seed(reservations: RestaurantReservation[], tableCapacities: Map<string, number> = new Map(), restaurantExists = true): void {
+    this.reservations = reservations;
+    this.tableCapacities = tableCapacities;
+    this.restaurantExists = restaurantExists;
+  }
+
+  async listRestaurants(): Promise<[]> { return []; }
+  async findMenuByRestaurantId(): Promise<null> { return null; }
+  async findFloorsByRestaurantId(): Promise<null> { return null; }
+  async listReservationsByRestaurantId(): Promise<[]> { return []; }
+
+  async findConflictingReservations(_restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]> {
+    return this.reservations
+      .filter((r) => {
+        if (r.status === 'cancelled' || r.status === 'no_show') return false;
+        if (!r.tableIds.includes(tableId)) return false;
+        const rStart = new Date(r.reservationAt);
+        const rEnd = new Date(rStart.getTime() + r.durationMinutes * 60 * 1000);
+        return rStart < endTime && rEnd > startTime;
+      })
+      .map((r) => r.id);
+  }
+
+  async findTableCapacity(_restaurantId: string, tableId: string): Promise<number | null> {
+    return this.tableCapacities.get(tableId) ?? null;
+  }
+
+  async createReservation(
+    _restaurantId: string,
+    input: {
+      customerNameSnapshot: string;
+      partySize: number;
+      reservationAt: string;
+      durationMinutes: number;
+      notes: string | null;
+      tableIds: string[];
+      customerPhoneSnapshot: string | null;
+    },
+  ): Promise<RestaurantReservation | null> {
+    if (!this.restaurantExists) return null;
+    const reservation: RestaurantReservation = {
+      id: `res-${Date.now()}`,
+      customerId: null,
+      customerNameSnapshot: input.customerNameSnapshot,
+      customerPhoneSnapshot: input.customerPhoneSnapshot,
+      partySize: input.partySize,
+      reservationAt: input.reservationAt,
+      durationMinutes: input.durationMinutes,
+      status: 'pending',
+      notes: input.notes,
+      tableIds: input.tableIds,
+      tables: [],
+    };
+    this.reservations.push(reservation);
+    return reservation;
+  }
+
+  async updateReservationStatus(): Promise<null> { return null; }
+  async findServiceFloorByRestaurantId(): Promise<null> { return null; }
+  async findServicePointByRestaurantId(): Promise<null> { return null; }
+  async findServicePointOrderByRestaurantId(): Promise<null> { return null; }
+  async occupyServicePoint(): Promise<null> { return null; }
+  async sendServicePointOrderToKitchen(): Promise<null> { return null; }
+  async markServicePointOrderServed(): Promise<null> { return null; }
+  async chargeServicePoint(): Promise<null> { return null; }
+  async setServicePointStatus(): Promise<null> { return null; }
+  async reorderFloorElements(): Promise<null> { return null; }
+  async updateFloor(): Promise<null> { return null; }
+  async updateFloorElement(): Promise<null> { return null; }
+  async createFloorElement(): Promise<null> { return null; }
+  async updateServiceOrderLineStatus(): Promise<null> { return null; }
 }
 
-function makeRepository(): RestaurantReadRepository {
-  return {
-    listRestaurants: vi.fn(),
-    findMenuByRestaurantId: vi.fn(),
-    findFloorsByRestaurantId: vi.fn(),
-    listReservationsByRestaurantId: vi.fn(),
-    createReservation: vi.fn(),
-    updateReservationStatus: vi.fn(),
-    findServiceFloorByRestaurantId: vi.fn(),
-    findServicePointByRestaurantId: vi.fn(),
-    findServicePointOrderByRestaurantId: vi.fn(),
-    occupyServicePoint: vi.fn(),
-    sendServicePointOrderToKitchen: vi.fn(),
-    markServicePointOrderServed: vi.fn(),
-    chargeServicePoint: vi.fn(),
-    setServicePointStatus: vi.fn(),
-    reorderFloorElements: vi.fn(),
-    updateFloor: vi.fn(),
-    updateFloorElement: vi.fn(),
-    updateServiceOrderLineStatus: vi.fn(),
-    createFloorElement: vi.fn(),
-  };
+class InMemoryServiceWindowsRepository implements RestaurantServiceWindowsRepository {
+  private windows: ServiceWindow[] | null = null;
+
+  seed(windows: ServiceWindow[] | null): void {
+    this.windows = windows;
+  }
+
+  async findServiceWindowsByRestaurantId(_restaurantId: string): Promise<ServiceWindow[] | null> {
+    return this.windows;
+  }
+
+  async updateServiceWindows(_restaurantId: string, inputs: UpdateServiceWindowInput[]): Promise<ServiceWindow[]> {
+    this.windows = inputs.map((w, i) => ({ id: `sw-${i}`, restaurantId: 'r1', name: w.name, startTime: w.startTime, endTime: w.endTime, sortOrder: i }));
+    return this.windows;
+  }
 }
+
+function makeUseCase(readRepo: InMemoryReservationReadRepository, serviceWindowsRepo: InMemoryServiceWindowsRepository) {
+  return new CreateRestaurantReservationUseCase(
+    readRepo as unknown as RestaurantReadRepository,
+    serviceWindowsRepo,
+  );
+}
+
+const FUTURE_ISO = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+const PAST_ISO = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
 describe('CreateRestaurantReservationUseCase', () => {
-  it('creates one reservation with snapshots and optional table ids', async () => {
-    const repository = makeRepository();
-    vi.mocked(repository.createReservation).mockResolvedValue(makeReservation());
-    const useCase = new CreateRestaurantReservationUseCase(repository);
+  it('validates input: empty customer name', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+    const useCase = makeUseCase(readRepo, windowsRepo);
 
     const result = await useCase.execute({
-      restaurantId: 'restaurant-mesaflow-centro',
-      customerNameSnapshot: ' Laura Gomez ',
-      customerPhoneSnapshot: ' +34 600 111 222 ',
+      restaurantId: 'r1',
+      customerNameSnapshot: '  ',
+      customerPhoneSnapshot: null,
       partySize: 2,
-      reservationAt: RESERVATION_AT,
-      durationMinutes: 90,
-      notes: ' Ventana ',
-      tableIds: ['table-1'],
-    });
-
-    expect(result).toEqual({ ok: true, value: makeReservation() });
-    expect(repository.createReservation).toHaveBeenCalledWith('restaurant-mesaflow-centro', {
-      customerNameSnapshot: 'Laura Gomez',
-      customerPhoneSnapshot: '+34 600 111 222',
-      partySize: 2,
-      reservationAt: RESERVATION_AT,
-      durationMinutes: 90,
-      notes: 'Ventana',
-      tableIds: ['table-1'],
-    });
-  });
-
-  it('returns restaurant_not_found when the restaurant does not exist', async () => {
-    const repository = makeRepository();
-    vi.mocked(repository.createReservation).mockResolvedValue(null);
-    const useCase = new CreateRestaurantReservationUseCase(repository);
-
-    const result = await useCase.execute({
-      restaurantId: 'missing',
-      customerNameSnapshot: 'Laura Gomez',
-      customerPhoneSnapshot: '+34 600 111 222',
-      partySize: 2,
-      reservationAt: RESERVATION_AT,
+      reservationAt: FUTURE_ISO,
       durationMinutes: 90,
       notes: null,
       tableIds: [],
     });
 
-    expect(result).toEqual({ ok: false, error: restaurantNotFound('missing') });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('invalid_reservation_creation');
   });
 
-  it('rejects party size lower than 1', async () => {
-    const repository = makeRepository();
-    const useCase = new CreateRestaurantReservationUseCase(repository);
+  it('rejects reservations in the past', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
 
-    const result = await useCase.execute({
-      restaurantId: 'restaurant-mesaflow-centro',
-      customerNameSnapshot: 'Laura Gomez',
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Carlos',
       customerPhoneSnapshot: null,
-      partySize: 0,
-      reservationAt: RESERVATION_AT,
+      partySize: 2,
+      reservationAt: PAST_ISO,
       durationMinutes: 90,
       notes: null,
       tableIds: [],
     });
 
-    expect(result).toEqual({
-      ok: false,
-      error: invalidReservationCreation({ reason: 'invalid_party_size' }),
-    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('reservation_in_past');
   });
 
-  it('returns repository application errors such as invalid table ownership', async () => {
-    const repository = makeRepository();
-    vi.mocked(repository.createReservation).mockRejectedValue(
-      new ApplicationErrorException(invalidReservationState({ reason: 'invalid_table_ids' })),
-    );
-    const useCase = new CreateRestaurantReservationUseCase(repository);
+  it('rejects when table capacity is insufficient', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    readRepo.seed([], new Map([['table-1', 2]]));
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
 
-    const result = await useCase.execute({
-      restaurantId: 'restaurant-mesaflow-centro',
-      customerNameSnapshot: 'Laura Gomez',
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Laura',
       customerPhoneSnapshot: null,
-      partySize: 2,
-      reservationAt: RESERVATION_AT,
+      partySize: 5,
+      reservationAt: FUTURE_ISO,
       durationMinutes: 90,
       notes: null,
-      tableIds: ['missing-table'],
+      tableIds: ['table-1'],
     });
 
-    expect(result).toEqual({
-      ok: false,
-      error: invalidReservationState({ reason: 'invalid_table_ids' }),
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('insufficient_table_capacity');
+  });
+
+  it('rejects when there is a conflicting reservation on the same table', async () => {
+    const conflictingRes: RestaurantReservation = {
+      id: 'existing-res',
+      customerId: null,
+      customerNameSnapshot: 'Existing Guest',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 120,
+      status: 'confirmed',
+      notes: null,
+      tableIds: ['table-1'],
+      tables: [],
+    };
+    const readRepo = new InMemoryReservationReadRepository();
+    readRepo.seed([conflictingRes]);
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'New Guest',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 90,
+      notes: null,
+      tableIds: ['table-1'],
     });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('reservation_conflict');
+  });
+
+  it('rejects when reservation falls outside all service windows', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed([{ id: 'sw-1', restaurantId: 'r1', name: 'Comidas', startTime: '12:00', endTime: '16:00', sortOrder: 0 }]);
+
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Midnight Guest',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 90,
+      notes: null,
+      tableIds: [],
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('outside_service_hours');
+  });
+
+  it('skips service window validation when no windows are configured', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed([]);
+
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Night Owl',
+      customerPhoneSnapshot: null,
+      partySize: 1,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 30,
+      notes: null,
+      tableIds: [],
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('creates a reservation when all validations pass with service windows', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    readRepo.seed([], new Map([['table-1', 4]]));
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Ana Lopez',
+      customerPhoneSnapshot: '+34 600 000 000',
+      partySize: 2,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 90,
+      notes: 'Mesa tranquila',
+      tableIds: ['table-1'],
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.customerNameSnapshot).toBe('Ana Lopez');
+      expect(result.value.partySize).toBe(2);
+    }
+  });
+
+  it('returns restaurantNotFound if repository returns null', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    readRepo.seed([], new Map(), false);
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'nonexistent',
+      customerNameSnapshot: 'Ghost',
+      customerPhoneSnapshot: null,
+      partySize: 1,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 60,
+      notes: null,
+      tableIds: [],
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('restaurant_not_found');
+  });
+
+  it('propagates ApplicationErrorException from repository', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    readRepo.createReservation = async () => {
+      throw new ApplicationErrorException(invalidReservationState({ reason: 'test' }));
+    };
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+
+    const result = await makeUseCase(readRepo, windowsRepo).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Err Guest',
+      customerPhoneSnapshot: null,
+      partySize: 1,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 60,
+      notes: null,
+      tableIds: [],
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('invalid_reservation_state');
   });
 });

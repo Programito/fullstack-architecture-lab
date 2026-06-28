@@ -1,6 +1,7 @@
 ﻿import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
 import { RestaurantPosStore } from './restaurant-pos.store';
+import { RestaurantOrderStore } from './restaurant-order.store';
 
 describe('RestaurantPosStore', () => {
   let store: RestaurantPosStore;
@@ -161,7 +162,7 @@ describe('RestaurantPosStore', () => {
 
   it('derives service info for a selected table even when its order is missing', () => {
     store.selectTable('table-1');
-    (store as unknown as { _ordersByTable: { set: (orders: Record<string, never>) => void } })._ordersByTable.set({});
+    (TestBed.inject(RestaurantOrderStore) as unknown as { _ordersByTable: { set: (orders: Record<string, never>) => void } })._ordersByTable.set({});
 
     expect(store.selectedServiceInfo()).toEqual(
       expect.objectContaining({

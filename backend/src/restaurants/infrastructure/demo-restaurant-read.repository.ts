@@ -385,8 +385,10 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     return structuredClone(updated);
   }
 
-  async listRestaurants(): Promise<RestaurantSummary[]> {
-    return this.restaurants.map((restaurant) => ({ ...restaurant }));
+  async listRestaurants(restaurantIds: string[]): Promise<RestaurantSummary[]> {
+    const all = this.restaurants.map((restaurant) => ({ ...restaurant }));
+    if (restaurantIds.length === 0) return all;
+    return all.filter((r) => restaurantIds.includes(r.id));
   }
 
   async findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null> {
@@ -404,6 +406,26 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     if (!reservations) return null;
     const sorted = structuredClone(reservations).sort((left, right) => left.reservationAt.localeCompare(right.reservationAt));
     return date ? sorted.filter((r) => r.reservationAt.startsWith(date)) : sorted;
+  }
+
+  async findConflictingReservations(restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]> {
+    const reservations = new Map(this.reservations).get(restaurantId) ?? [];
+    return reservations
+      .filter((r) => {
+        if (r.status === 'cancelled' || r.status === 'no_show') return false;
+        if (!r.tableIds.includes(tableId)) return false;
+        const rStart = new Date(r.reservationAt);
+        const rEnd = new Date(rStart.getTime() + r.durationMinutes * 60 * 1000);
+        return rStart < endTime && rEnd > startTime;
+      })
+      .map((r) => r.id);
+  }
+
+  async findTableCapacity(restaurantId: string, tableId: string): Promise<number | null> {
+    const floorsResult = await this.findFloorsByRestaurantId(restaurantId);
+    if (!floorsResult) return null;
+    const table = floorsResult.tables.find((t) => t.id === tableId);
+    return table?.capacity ?? null;
   }
 
   async createReservation(

@@ -598,6 +598,119 @@ Tras una creación correcta:
 - se limpia el estado local
 - se recarga la agenda diaria
 
+## Estado del POS: tres stores especializados
+
+El estado del punto de venta está dividido en tres stores con responsabilidades distintas.
+`RestaurantPosStore` actúa como coordinador/fachada y es el único punto de inyección para
+los componentes y páginas existentes.
+
+```mermaid
+flowchart LR
+  PosStore["RestaurantPosStore\n(coordinador / fachada)\n_selectedTableId, _mode, _errorMessage"]
+  FloorStore["RestaurantFloorStore\n(grid + elementos + mesas)\n_gridRows, _gridColumns\n_floorElements, _restaurantTables"]
+  OrderStore["RestaurantOrderStore\n(pedidos + cocina + productos)\n_ordersByTable, _backendProducts"]
+
+  PosStore --> FloorStore
+  PosStore --> OrderStore
+  OrderStore --> FloorStore
+```
+
+### `RestaurantFloorStore`
+
+Archivo: `state/restaurant-floor.store.ts` (~250 líneas)
+
+Propietario de la geometría del restaurante:
+
+| Signal | Tipo | Descripción |
+|---|---|---|
+| `_gridRows`, `_gridColumns` | `number` | Dimensiones del grid de plano |
+| `_activeFloorId`, `_activeFloorName` | `string \| null` | Sala activa |
+| `_floorElements` | `FloorElement[]` | Elementos del plano (mesas, bar, cocina) |
+| `_restaurantTables` | `RestaurantTable[]` | Mesas con capacidad y estado |
+
+Los métodos que pueden fallar (p. ej. `removeRow`, `setGridSize`, `addFloorElement`) devuelven
+`boolean` en lugar de escribir en un signal de error. `RestaurantPosStore` traduce el `false`
+a un mensaje de error visible.
+
+`deleteFloorElement` devuelve `string | null` (el `tableId` eliminado) para que el coordinador
+pueda limpiar el pedido y la selección asociados.
+
+### `RestaurantOrderStore`
+
+Archivo: `state/restaurant-order.store.ts` (~630 líneas)
+
+Propietario de pedidos y lógica de cocina. Inyecta `RestaurantFloorStore` para actualizar
+el estado de la mesa (`updateTable`) cuando cambia un pedido:
+
+| Signal | Tipo | Descripción |
+|---|---|---|
+| `_ordersByTable` | `OrdersByTable` | Pedidos activos por `tableId` |
+| `_backendProducts` | `Product[] \| null` | Productos del backend (sobreescribe el mock si se hidrata) |
+
+Los métodos de mutación de pedido reciben `tableId` explícito en lugar de leer `_selectedTableId`
+internamente. Esto desacopla la lógica de pedido de la selección activa.
+
+Computeds de cocina y preparación (`kitchenTickets`, `kitchenBoardColumns`,
+`preparationBoardColumns`, `servedPreparationCards`) viven aquí porque requieren tanto
+`_ordersByTable` como `restaurantTables()` del store de suelo.
+
+### `RestaurantPosStore` (coordinador)
+
+Archivo: `state/restaurant-pos.store.ts` (~435 líneas)
+
+Propietario de la selección y el estado de UI transversal:
+
+| Signal | Tipo | Descripción |
+|---|---|---|
+| `_selectedTableId` | `string \| null` | Mesa seleccionada actualmente |
+| `_mode` | `PosMode` | `operation` o `design` |
+| `_errorMessage` | `string \| null` | Clave i18n del último error |
+
+Expone todos los signals de suelo y pedido como delegados directos (`readonly gridRows = this.floor.gridRows`). Los métodos «selected*» resuelven el `tableId` activo y delegan al order store pasándolo explícitamente.
+
+### Flujo de datos
+
+```mermaid
+sequenceDiagram
+  participant UI as Componente / Page
+  participant Pos as RestaurantPosStore
+  participant Floor as RestaurantFloorStore
+  participant Order as RestaurantOrderStore
+
+  UI->>Pos: addProductToSelectedTable('product-1')
+  Pos->>Order: addProductToTable(selectedTableId, 'product-1')
+  Order->>Floor: updateTable(tableId, { status: 'occupied', total })
+  Floor-->>Pos: restaurantTables() actualizado
+  Order-->>Pos: ordersByTable() actualizado
+  Pos-->>UI: selectedOrder(), selectedServiceInfo() actualizados
+```
+
+### Regla de frontera
+
+- Los componentes y páginas inyectan **solo** `RestaurantPosStore`; no inyectan los stores internos.
+- Los specs de `RestaurantPosStore` pueden acceder a `TestBed.inject(RestaurantOrderStore)` o
+  `TestBed.inject(RestaurantFloorStore)` para manipular estado privado cuando el API público no
+  lo expone directamente (p. ej. vaciar `_ordersByTable` para probar el caso «sin pedido»).
+
+## Restaurante activo
+
+`MenuApiService` lee el restaurante activo desde `RestaurantContextStore` en lugar de usar un
+ID hardcodeado:
+
+```ts
+private get restaurantId(): string {
+  const id = this.context.activeRestaurant()?.id;
+  if (!id) throw new Error('No active restaurant');
+  return id;
+}
+```
+
+Todos los métodos de `MenuApiService` usan `this.restaurantId`. Si no hay restaurante activo,
+lanzan en tiempo de ejecución antes de hacer ninguna llamada HTTP.
+
+`RestaurantContextStore.load()` hace auto-selección si el usuario tiene acceso a un único
+restaurante. La shell page es responsable de llamar a `load()` al inicializar.
+
 ## Documentación
 
 Usa esta carpeta para arquitectura frontend, estrategia de testing y notas técnicas del producto.

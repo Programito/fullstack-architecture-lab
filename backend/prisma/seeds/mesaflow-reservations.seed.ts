@@ -30,87 +30,53 @@ export async function seedMesaFlowReservationsDemo(prisma: PrismaClient): Promis
   });
   const tableIdByNumber = new Map(tables.map((table) => [table.tableNumber, table.id]));
 
-  const laura = await prisma.customer.upsert({
-    where: {
-      organizationId_name: {
+  const laura =
+    (await prisma.customer.findFirst({ where: { organizationId: organization.id, name: 'Laura Gomez' } })) ??
+    (await prisma.customer.create({
+      data: {
         organizationId: organization.id,
         name: 'Laura Gomez',
+        phone: '+34 600 111 222',
+        email: 'laura.gomez@example.com',
+        notes: 'Prefiere terraza si hay disponibilidad.',
       },
-    },
-    update: {
-      phone: '+34 600 111 222',
-      email: 'laura.gomez@example.com',
-      notes: 'Prefiere terraza si hay disponibilidad.',
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Laura Gomez',
-      phone: '+34 600 111 222',
-      email: 'laura.gomez@example.com',
-      notes: 'Prefiere terraza si hay disponibilidad.',
-    },
-  });
+    }));
 
-  const diego = await prisma.customer.upsert({
-    where: {
-      organizationId_name: {
+  const diego =
+    (await prisma.customer.findFirst({ where: { organizationId: organization.id, name: 'Diego Martin' } })) ??
+    (await prisma.customer.create({
+      data: {
         organizationId: organization.id,
         name: 'Diego Martin',
+        phone: '+34 600 333 444',
+        email: 'diego.martin@example.com',
+        notes: 'Reserva habitual para grupos.',
       },
-    },
-    update: {
-      phone: '+34 600 333 444',
-      email: 'diego.martin@example.com',
-      notes: 'Reserva habitual para grupos.',
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Diego Martin',
-      phone: '+34 600 333 444',
-      email: 'diego.martin@example.com',
-      notes: 'Reserva habitual para grupos.',
-    },
-  });
-  const ana = await prisma.customer.upsert({
-    where: {
-      organizationId_name: {
+    }));
+
+  const ana =
+    (await prisma.customer.findFirst({ where: { organizationId: organization.id, name: 'Ana Ruiz' } })) ??
+    (await prisma.customer.create({
+      data: {
         organizationId: organization.id,
         name: 'Ana Ruiz',
+        phone: '+34 600 555 666',
+        email: 'ana.ruiz@example.com',
+        notes: 'Llega con carrito y necesita acceso comodo.',
       },
-    },
-    update: {
-      phone: '+34 600 555 666',
-      email: 'ana.ruiz@example.com',
-      notes: 'Llega con carrito y necesita acceso comodo.',
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Ana Ruiz',
-      phone: '+34 600 555 666',
-      email: 'ana.ruiz@example.com',
-      notes: 'Llega con carrito y necesita acceso comodo.',
-    },
-  });
-  const sergio = await prisma.customer.upsert({
-    where: {
-      organizationId_name: {
+    }));
+
+  const sergio =
+    (await prisma.customer.findFirst({ where: { organizationId: organization.id, name: 'Sergio Lopez' } })) ??
+    (await prisma.customer.create({
+      data: {
         organizationId: organization.id,
         name: 'Sergio Lopez',
+        phone: '+34 600 777 888',
+        email: 'sergio.lopez@example.com',
+        notes: 'Suele avisar tarde si no viene.',
       },
-    },
-    update: {
-      phone: '+34 600 777 888',
-      email: 'sergio.lopez@example.com',
-      notes: 'Suele avisar tarde si no viene.',
-    },
-    create: {
-      organizationId: organization.id,
-      name: 'Sergio Lopez',
-      phone: '+34 600 777 888',
-      email: 'sergio.lopez@example.com',
-      notes: 'Suele avisar tarde si no viene.',
-    },
-  });
+    }));
 
   const lunchReservation = await prisma.reservation.upsert({
     where: { id: RESERVATION_LUNCH_ID },

@@ -7,18 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Task {
-  id          String     @id @default(uuid())
-  title       String
-  description String?
-  status      TaskStatus @default(PENDING)
-  createdAt   DateTime   @default(now())
-  completedAt DateTime?
-  updatedAt   DateTime   @updatedAt
-
-  @@map("tasks")
-}
-
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -173,11 +161,28 @@ model Restaurant {
   tables          RestaurantTable[]
   orders          Order[]
   reservations    Reservation[]
+  serviceWindows  RestaurantServiceWindow[]
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
   @@unique([organizationId, name])
   @@map("restaurants")
+}
+
+model RestaurantServiceWindow {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  startTime    String
+  endTime      String
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId])
+  @@map("restaurant_service_windows")
 }
 
 model TaxRate {
@@ -640,11 +645,6 @@ model ReservationTable {
 
   @@id([reservationId, tableId])
   @@map("reservation_tables")
-}
-
-enum TaskStatus {
-  PENDING
-  COMPLETED
 }
 
 enum AccountType {

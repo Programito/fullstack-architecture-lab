@@ -51,21 +51,22 @@ export class AuthGuard implements CanActivate {
       if (session?.enabled) await this.sessions.disableAllForUser(payload.sub);
       throw new UnauthorizedException('User or session is disabled.');
     }
-    const activeRoles = (await this.roles.findManyByIds(user.roleIds)).filter((role) => role.enabled);
+    const assignments = await this.userRoleAssignments.findByUserId(user.id);
+    const assignedRoleIds = [...new Set(assignments.map((a) => a.roleId))];
+    const activeRoles = (await this.roles.findManyByIds(assignedRoleIds)).filter((role) => role.enabled);
     const activePermissions = (
       await this.permissions.findManyByIds(activeRoles.flatMap((role) => role.permissionIds))
     )
       .filter((permission) => permission.enabled)
       .map((permission) => permission.name);
-    const assignments = await this.userRoleAssignments.findByUserId(user.id);
     request.auth = {
       userId: user.id,
       sessionId: session.id,
       roles: activeRoles.map((role) => role.name),
       permissions: activePermissions,
       scopes: {
-        organizations: [...new Set(assignments.flatMap((assignment) => assignment.organizationId ? [assignment.organizationId] : []))],
-        restaurants: [...new Set(assignments.flatMap((assignment) => assignment.restaurantId ? [assignment.restaurantId] : []))],
+        organizations: [...new Set(assignments.flatMap((a) => (a.organizationId ? [a.organizationId] : [])))],
+        restaurants: [...new Set(assignments.flatMap((a) => (a.restaurantId ? [a.restaurantId] : [])))],
       },
     };
     return true;

@@ -16,21 +16,53 @@ agrupados en lugar de un `<input type="time">` libre.
 
 ```mermaid
 flowchart LR
-  Controller["RestaurantsController\nGET / PUT service-windows"]
+  Controller["RestaurantServiceController\nGET / PUT service-windows"]
   GetUC["GetRestaurantServiceWindowsUseCase"]
   UpdateUC["UpdateRestaurantServiceWindowsUseCase"]
   Port["RESTAURANT_SERVICE_WINDOWS_REPOSITORY"]
-  Demo["DemoRestaurantReadRepository"]
+  Prisma["PrismaRestaurantServiceWindowsRepository\n(runtime)"]
+  InMemory["InMemoryRestaurantServiceWindowsRepository\n(tests de caso de uso)"]
 
   Controller --> GetUC
   Controller --> UpdateUC
   GetUC --> Port
   UpdateUC --> Port
-  Port --> Demo
+  Port -->|runtime| Prisma
+  Port -.->|specs| InMemory
 ```
 
 El puerto `RESTAURANT_SERVICE_WINDOWS_REPOSITORY` es independiente de `RESTAURANT_READ_REPOSITORY`
-para no romper los mocks de los 25+ specs existentes que implementan la interfaz de lectura.
+para no romper los mocks de los specs existentes que implementan la interfaz de lectura.
+
+Cada puerto tiene dos adaptadores alineados:
+
+| Adaptador | Uso | Archivo |
+|---|---|---|
+| `PrismaRestaurantServiceWindowsRepository` | Runtime y tests de integración | `infrastructure/persistence/prisma-restaurant-service-windows.repository.ts` |
+| `InMemoryRestaurantServiceWindowsRepository` | Specs de casos de uso (sin BD) | `infrastructure/in-memory-restaurant-service-windows.repository.ts` |
+
+### Modelo Prisma
+
+```prisma
+model RestaurantServiceWindow {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  startTime    String
+  endTime      String
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId])
+  @@map("restaurant_service_windows")
+}
+```
+
+`updateServiceWindows` borra y recrea todas las franjas del restaurante en una transacción
+(`$transaction`) para garantizar atomicidad y evitar franjas huérfanas.
 
 ## Domain Model
 
@@ -138,7 +170,7 @@ flowchart TD
   HTTP["PUT body"]
   DTO["UpdateServiceWindowsDto\n@Matches HH:MM en cada item"]
   UC["UpdateRestaurantServiceWindowsUseCase\nvalidacion semantica"]
-  Repo["DemoRestaurantReadRepository\nupdateServiceWindows()"]
+  Repo["PrismaRestaurantServiceWindowsRepository\nupdateServiceWindows()"]
 
   HTTP --> DTO
   DTO -- "formato invalido → 400 ValidationPipe" --> HTTP
@@ -155,14 +187,16 @@ La validacion de formato `HH:MM` se hace dos veces por diseno:
 
 ## Datos demo
 
-El adaptador `DemoRestaurantReadRepository` inicializa el restaurante demo con dos franjas:
+El seed `mesaflow-service-windows.seed.ts` inserta las franjas iniciales si el restaurante demo
+no tiene ninguna (idempotente):
 
-| id | name | startTime | endTime | sortOrder |
-|---|---|---|---|---|
-| `sw-lunch` | Comidas | 12:00 | 16:30 | 1 |
-| `sw-dinner` | Cenas | 20:00 | 23:30 | 2 |
+| name | startTime | endTime | sortOrder |
+|---|---|---|---|
+| Comidas | 12:00 | 16:30 | 0 |
+| Cenas | 20:00 | 23:30 | 1 |
 
-`reset()` restaura estos valores, por lo que los tests e2e parten siempre del estado inicial.
+Los tests e2e que necesiten un estado limpio deben re-ejecutar el seed antes del test o usar
+`InMemoryRestaurantServiceWindowsRepository` con `seed()` para aislar el estado.
 
 ## Tests
 
