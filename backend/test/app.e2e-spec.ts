@@ -31,6 +31,29 @@ class TestPasswordHasher implements PasswordHasher {
   }
 }
 
+async function createAndLoginAdmin(app: INestApplication) {
+  const roleResponse = await request(app.getHttpServer())
+    .post('/api/v1/roles')
+    .send({ name: 'admin' })
+    .expect(201);
+
+  await request(app.getHttpServer())
+    .post('/api/v1/users')
+    .send({
+      email: 'admin@example.com',
+      firstName: 'Admin',
+      lastName: 'User',
+      password: 'supersecret',
+      roleIds: [roleResponse.body.id],
+    })
+    .expect(201);
+
+  return request(app.getHttpServer())
+    .post('/api/v1/auth/login')
+    .send({ email: 'admin@example.com', password: 'supersecret' })
+    .expect(200);
+}
+
 describe('App e2e', () => {
   let app: INestApplication;
   let taskRepository: InMemoryTaskRepository;
@@ -181,8 +204,11 @@ describe('App e2e', () => {
       ]),
     );
 
+    const login = await createAndLoginAdmin(app);
+
     const reservationsResponse = await request(app.getHttpServer())
       .get(`/api/v1/restaurants/${restaurant.id}/reservations`)
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
     expect(reservationsResponse.body).toEqual(
       expect.arrayContaining([
@@ -198,7 +224,11 @@ describe('App e2e', () => {
   it('returns 404 for unknown restaurant read endpoints', async () => {
     await request(app.getHttpServer()).get('/api/v1/restaurants/missing/menu').expect(404);
     await request(app.getHttpServer()).get('/api/v1/restaurants/missing/floors').expect(404);
-    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/reservations').expect(404);
+    const login = await createAndLoginAdmin(app);
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/missing/reservations')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(403);
   });
 
   it('reorders floor elements within a restaurant floor matrix', async () => {
@@ -1002,6 +1032,10 @@ describe('App e2e', () => {
         userId: login.body.user.id,
         roles: ['admin'],
         permissions: ['service', 'menu', 'kitchen', 'layout', 'reservations'],
+        scopes: {
+          organizations: ['org-demo'],
+          restaurants: ['restaurant-mesaflow-centro'],
+        },
       });
 
     const refresh = await request(app.getHttpServer())
@@ -1205,6 +1239,30 @@ describe('App e2e with in-memory identity seed', () => {
 
     await request(app.getHttpServer())
       .get('/api/v1/auth/developer-resources')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
+  });
+
+  it('rejects reservations access when the token lacks restaurant scope', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(403);
+  });
+
+  it('allows reservations access when the token has restaurant scope', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
   });

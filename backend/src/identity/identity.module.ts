@@ -40,6 +40,7 @@ import { AuthController } from './presentation/rest/auth.controller';
 import { AuthGuard } from './presentation/rest/auth.guard';
 import { PermissionsController } from './presentation/rest/permissions.controller';
 import { PermissionsGuard } from './presentation/rest/permissions.guard';
+import { RestaurantAccessGuard } from './presentation/rest/restaurant-access.guard';
 import { RolesController } from './presentation/rest/roles.controller';
 import { RolesGuard } from './presentation/rest/roles.guard';
 import { SessionsController } from './presentation/rest/sessions.controller';
@@ -57,6 +58,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
     AuthGuard,
     RolesGuard,
     PermissionsGuard,
+    RestaurantAccessGuard,
     CreateUserUseCase,
     ListUsersUseCase,
     AssignUserRolesUseCase,
@@ -143,6 +145,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
   exports: [
     DeveloperAccessService,
     AuthGuard,
+    RestaurantAccessGuard,
     AuthTokenService,
     USER_REPOSITORY,
     ROLE_REPOSITORY,

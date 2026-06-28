@@ -5,6 +5,8 @@ type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
+import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
+import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { ChargeRestaurantServicePointUseCase } from '../../application/use-cases/charge-restaurant-service-point.use-case';
 import { GetRestaurantFloorsUseCase } from '../../application/use-cases/get-restaurant-floors.use-case';
 import { GetRestaurantMenuUseCase } from '../../application/use-cases/get-restaurant-menu.use-case';
@@ -510,8 +512,11 @@ export class RestaurantsController {
 
   @Get(':id/reservations')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantReservationResponseDto, isArray: true })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async reservations(@Param('id') id: string, @Query('date') date?: string): Promise<RestaurantReservationResponseDto[]> {
     const reservations = unwrapResultOrThrow(await this.listRestaurantReservations.execute(id, date));
     return reservations.map(RestaurantReservationResponseDto.fromDomain);
@@ -519,9 +524,12 @@ export class RestaurantsController {
 
   @Post(':id/reservations')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: RestaurantReservationResponseDto })
   @ApiBadRequestResponse({ description: 'Reservation creation is invalid.' })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async createReservation(
     @Param('id') restaurantId: string,
     @Body() body: CreateRestaurantReservationDto,
@@ -544,6 +552,8 @@ export class RestaurantsController {
 
   @Patch(':id/reservations/:reservationId/confirm')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantReservationResponseDto })
   @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
   @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
@@ -564,6 +574,8 @@ export class RestaurantsController {
 
   @Patch(':id/reservations/:reservationId/seat')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantReservationResponseDto })
   @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
   @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
@@ -584,6 +596,8 @@ export class RestaurantsController {
 
   @Patch(':id/reservations/:reservationId/no-show')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantReservationResponseDto })
   @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
   @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
@@ -604,6 +618,8 @@ export class RestaurantsController {
 
   @Patch(':id/reservations/:reservationId/cancel')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantReservationResponseDto })
   @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
   @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })

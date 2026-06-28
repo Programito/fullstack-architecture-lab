@@ -164,11 +164,16 @@ describe('AuthService', () => {
   });
 
   it('returns organization and restaurant scopes from assignments', async () => {
-    const { auth } = await setup();
+    const { auth, tokens } = await setup();
 
     const login = await auth.login('admin@example.com', 'supersecret');
 
     expect(login.scopes).toEqual({
+      organizations: ['org-demo'],
+      restaurants: ['restaurant-mesaflow-centro'],
+    });
+    const payload = await tokens.verifyAccessToken(login.accessToken);
+    expect(payload.scopes).toEqual({
       organizations: ['org-demo'],
       restaurants: ['restaurant-mesaflow-centro'],
     });
