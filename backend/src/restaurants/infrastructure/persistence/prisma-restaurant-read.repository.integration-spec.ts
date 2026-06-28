@@ -43,7 +43,7 @@ describe('PrismaRestaurantReadRepository', () => {
   });
 
   it('lists the seeded demo restaurant', async () => {
-    const restaurants = await repository.listRestaurants();
+    const restaurants = await repository.listRestaurants([]);
 
     expect(restaurants).toEqual(
       expect.arrayContaining([

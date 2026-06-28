@@ -16,7 +16,6 @@ import type {
   TableShape,
 } from '../models/restaurant-pos.models';
 import type { ComboSlotSelection } from '../../menu/models/menu.models';
-import { MOCK_ORDERS_BY_TABLE } from './restaurant-pos.mock-data';
 import { RestaurantFloorStore } from './restaurant-floor.store';
 import { RestaurantOrderStore } from './restaurant-order.store';
 

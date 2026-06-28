@@ -470,7 +470,7 @@ describe('RestaurantPosStore', () => {
     store.selectTable('table-1');
     store.addCustomizedProductToSelectedTable('product-1', ['extra-bacon']);
 
-    expect(store.ordersByTable()['table-1'].lines).toEqual([]);
+    expect(store.ordersByTable()['table-1']?.lines ?? []).toEqual([]);
     expect(store.errorMessage()).toBe('restaurantPos.errors.productUnavailable');
   });
 
@@ -502,7 +502,7 @@ describe('RestaurantPosStore', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-4');
 
-    expect(store.ordersByTable()['table-1'].lines).toEqual([]);
+    expect(store.ordersByTable()['table-1']?.lines ?? []).toEqual([]);
     expect(store.errorMessage()).toBe('restaurantPos.errors.productUnavailable');
   });
 

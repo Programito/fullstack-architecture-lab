@@ -21,7 +21,6 @@ import type {
   Product,
   TableOrder,
 } from '../models/restaurant-pos.models';
-import { MOCK_ORDERS_BY_TABLE } from './restaurant-pos.mock-data';
 import { RestaurantFloorStore } from './restaurant-floor.store';
 
 const COURSE_SERVICE_ORDER: OrderCourse[] = ['drinks', 'starter', 'main', 'dessert', 'other'];
@@ -39,7 +38,7 @@ export class RestaurantOrderStore {
   private readonly menuPricing = inject(MenuPricingService);
   private readonly menuValidation = inject(MenuValidationService);
 
-  private readonly _ordersByTable = signal<OrdersByTable>(structuredClone(MOCK_ORDERS_BY_TABLE));
+  private readonly _ordersByTable = signal<OrdersByTable>({});
   private readonly _backendProducts = signal<Product[] | null>(null);
 
   readonly ordersByTable = this._ordersByTable.asReadonly();
