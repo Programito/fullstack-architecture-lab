@@ -11,8 +11,8 @@ export class ListRestaurantReservationsUseCase {
     @Inject(RESTAURANT_READ_REPOSITORY) private readonly restaurants: RestaurantReadRepository,
   ) {}
 
-  async execute(restaurantId: string): Promise<Result<RestaurantReservation[], ApplicationError>> {
-    const reservations = await this.restaurants.listReservationsByRestaurantId(restaurantId);
+  async execute(restaurantId: string, date?: string): Promise<Result<RestaurantReservation[], ApplicationError>> {
+    const reservations = await this.restaurants.listReservationsByRestaurantId(restaurantId, date);
     return reservations ? ok(reservations) : err(restaurantNotFound(restaurantId));
   }
 }

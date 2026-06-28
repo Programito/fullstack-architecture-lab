@@ -21,7 +21,8 @@ describe('seedMesaFlowDemo', () => {
     );
     const restaurantMenuUpsert = vi.fn().mockResolvedValue({ id: 'menu-main' });
     const menuSectionUpsert = vi.fn().mockImplementation(async () => ({ id: `section-${++sectionSeq}` }));
-    const menuItemUpsert = vi.fn().mockResolvedValue(undefined);
+    const menuItemDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
+    const menuItemCreate = vi.fn().mockResolvedValue(undefined);
     const modifierGroupUpsert = vi.fn().mockImplementation(async () => ({ id: `group-${++modifierGroupSeq}` }));
     const modifierOptionUpsert = vi.fn().mockResolvedValue(undefined);
     const restaurantProductModifierGroupUpsert = vi.fn().mockResolvedValue(undefined);
@@ -38,7 +39,7 @@ describe('seedMesaFlowDemo', () => {
       restaurantProduct: { upsert: restaurantProductUpsert },
       restaurantMenu: { upsert: restaurantMenuUpsert },
       menuSection: { upsert: menuSectionUpsert },
-      menuItem: { upsert: menuItemUpsert },
+      menuItem: { deleteMany: menuItemDeleteMany, create: menuItemCreate },
       modifierGroup: { upsert: modifierGroupUpsert },
       modifierOption: { upsert: modifierOptionUpsert },
       restaurantProductModifierGroup: { upsert: restaurantProductModifierGroupUpsert },
@@ -67,7 +68,25 @@ describe('seedMesaFlowDemo', () => {
 
     // 8 menu sections
     expect(menuSectionUpsert).toHaveBeenCalledTimes(8);
-    expect(menuItemUpsert).toHaveBeenCalled();
+    expect(menuItemDeleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          menuSectionId: {
+            in: expect.arrayContaining([
+              'section-1',
+              'section-2',
+              'section-3',
+              'section-4',
+              'section-5',
+              'section-6',
+              'section-7',
+              'section-8',
+            ]),
+          },
+        },
+      }),
+    );
+    expect(menuItemCreate).toHaveBeenCalled();
 
     // 7 modifier groups: burger-extras, burger-remove, burger-point, drink-size, coffee-options, platter-remove, platter-extras
     expect(modifierGroupUpsert).toHaveBeenCalledTimes(7);

@@ -1,2 +1,10 @@
-<router-outlet />
+<div class="app-layout">
+  <main class="app-layout__content">
+    <router-outlet />
+  </main>
+
+  <footer class="app-layout__footer" aria-label="Frontend version">
+    <span>{{ version }}</span>
+  </footer>
+</div>
 <app-toast-viewport position="top-right" />

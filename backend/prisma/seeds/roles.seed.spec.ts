@@ -13,6 +13,7 @@ describe('seedRoles', () => {
       { id: 'permission-menu', name: 'menu' },
       { id: 'permission-kitchen', name: 'kitchen' },
       { id: 'permission-layout', name: 'layout' },
+      { id: 'permission-reservations', name: 'reservations' },
     ]);
     const rolePermissionDeleteMany = vi.fn().mockResolvedValue(undefined);
     const rolePermissionCreateMany = vi.fn().mockResolvedValue(undefined);
@@ -37,5 +38,13 @@ describe('seedRoles', () => {
         },
       });
     }
+
+    expect(rolePermissionCreateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([
+          { roleId: 'role-0', permissionId: 'permission-reservations' },
+        ]),
+      }),
+    );
   });
 });

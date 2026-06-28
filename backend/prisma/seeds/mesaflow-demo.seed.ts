@@ -213,7 +213,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     create: { menuId: menu.id, name: 'Menús', sortOrder: 8, isVisible: true },
   });
 
-  for (const item of [
+  const menuItems = [
     { sectionId: drinksSection.id, productName: 'Coca-Cola', sortOrder: 1 },
     { sectionId: drinksSection.id, productName: 'Agua mineral', sortOrder: 2 },
     { sectionId: drinksSection.id, productName: 'Cerveza', sortOrder: 3 },
@@ -237,18 +237,21 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     { sectionId: coffeeSection.id, productName: 'Cafe solo', sortOrder: 1 },
     { sectionId: coffeeSection.id, productName: 'Cafe con leche', sortOrder: 2 },
     { sectionId: menusSection.id, productName: 'Menu Classic Burger', sortOrder: 1 },
-  ]) {
+  ];
+
+  await prisma.menuItem.deleteMany({
+    where: {
+      menuSectionId: {
+        in: [...new Set(menuItems.map((item) => item.sectionId))],
+      },
+    },
+  });
+
+  for (const item of menuItems) {
     const restaurantProductId = saleIdByProductName.get(item.productName);
     if (!restaurantProductId) throw new Error(`Missing restaurant product for "${item.productName}".`);
-    await prisma.menuItem.upsert({
-      where: {
-        menuSectionId_restaurantProductId: {
-          menuSectionId: item.sectionId,
-          restaurantProductId,
-        },
-      },
-      update: { sortOrder: item.sortOrder, isVisible: true },
-      create: {
+    await prisma.menuItem.create({
+      data: {
         menuSectionId: item.sectionId,
         restaurantProductId,
         sortOrder: item.sortOrder,

@@ -10,11 +10,14 @@ export type ApplicationErrorCode =
   | 'invalid_role_name'
   | 'task_not_found'
   | 'restaurant_not_found'
+  | 'reservation_not_found'
+  | 'invalid_reservation_creation'
   | 'table_not_found'
   | 'floor_not_found'
   | 'invalid_floor_element_layout'
   | 'invalid_floor_layout'
   | 'invalid_service_action'
+  | 'invalid_reservation_state'
   | 'invalid_order_configuration'
   | 'order_not_found'
   | 'order_line_not_found'
@@ -26,7 +29,11 @@ export type ApplicationErrorCode =
   | 'menu_section_name_taken'
   | 'menu_item_not_found'
   | 'menu_item_already_in_section'
-  | 'product_name_taken';
+  | 'product_name_taken'
+  | 'invalid_service_windows'
+  | 'customer_not_found'
+  | 'customer_already_exists'
+  | 'invalid_customer';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -50,6 +57,10 @@ export function restaurantNotFound(restaurantId: string): ApplicationError {
   return applicationError('restaurant_not_found', `Restaurant "${restaurantId}" was not found.`, { restaurantId });
 }
 
+export function reservationNotFound(reservationId: string): ApplicationError {
+  return applicationError('reservation_not_found', `Reservation "${reservationId}" was not found.`, { reservationId });
+}
+
 export function tableNotFound(tableId: string): ApplicationError {
   return applicationError('table_not_found', `Table "${tableId}" was not found.`, { tableId });
 }
@@ -68,6 +79,14 @@ export function invalidFloorLayout(details?: Record<string, unknown>): Applicati
 
 export function invalidServiceAction(details?: Record<string, unknown>): ApplicationError {
   return applicationError('invalid_service_action', 'Service action is invalid for the current table state.', details);
+}
+
+export function invalidReservationState(details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_reservation_state', 'Reservation transition not allowed.', details);
+}
+
+export function invalidReservationCreation(details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_reservation_creation', 'Reservation creation is invalid.', details);
 }
 
 export function restaurantProductNotFound(productId: string): ApplicationError {
@@ -96,4 +115,20 @@ export function menuItemAlreadyInSection(restaurantProductId: string): Applicati
 
 export function productNameTaken(name: string): ApplicationError {
   return applicationError('product_name_taken', `A product named "${name}" already exists in this organization.`, { name });
+}
+
+export function invalidServiceWindows(reason: string): ApplicationError {
+  return applicationError('invalid_service_windows', `Service windows configuration is invalid: ${reason}.`, { reason });
+}
+
+export function customerNotFound(customerId: string): ApplicationError {
+  return applicationError('customer_not_found', `Customer "${customerId}" was not found.`, { customerId });
+}
+
+export function customerAlreadyExists(name: string): ApplicationError {
+  return applicationError('customer_already_exists', `A customer named "${name}" with the same contact already exists.`, { name });
+}
+
+export function invalidCustomer(reason: string): ApplicationError {
+  return applicationError('invalid_customer', `Customer data is invalid: ${reason}.`, { reason });
 }

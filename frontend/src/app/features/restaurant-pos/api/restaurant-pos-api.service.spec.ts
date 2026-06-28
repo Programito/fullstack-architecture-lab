@@ -217,6 +217,149 @@ describe('RestaurantPosApiService', () => {
     http.verify();
   });
 
+  it('loads reservations for one restaurant', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.getRestaurantReservations('restaurant-mesaflow-centro').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/reservations');
+    expect(request.request.method).toBe('GET');
+    request.flush([
+      {
+        id: 'reservation-demo-lunch',
+        customerId: 'customer-laura',
+        customerNameSnapshot: 'Laura Gomez',
+        customerPhoneSnapshot: '+34 600 111 222',
+        partySize: 2,
+        reservationAt: '2026-06-21T13:30:00.000Z',
+        durationMinutes: 90,
+        status: 'confirmed',
+        notes: 'Mesa tranquila.',
+        tableIds: ['table-1'],
+        tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+      },
+    ]);
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'reservation-demo-lunch',
+        tableIds: ['table-1'],
+        tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+      }),
+    ]);
+    http.verify();
+  });
+
+  it('loads reservations filtered by date when date is provided', () => {
+    const { service, http } = setup();
+
+    service.getRestaurantReservations('restaurant-mesaflow-centro', '2026-06-27').subscribe();
+
+    const request = http.expectOne(
+      '/api/v1/restaurants/restaurant-mesaflow-centro/reservations?date=2026-06-27',
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('date')).toBe('2026-06-27');
+    request.flush([]);
+    http.verify();
+  });
+
+  it('creates one reservation for a restaurant', () => {
+    const { service, http } = setup();
+
+    service
+      .createRestaurantReservation('restaurant-mesaflow-centro', {
+        customerNameSnapshot: 'Marina Soler',
+        customerPhoneSnapshot: '+34 600 777 888',
+        partySize: 4,
+        reservationAt: '2026-06-28T11:30:00.000Z',
+        durationMinutes: 90,
+        notes: 'Ventana',
+        tableIds: ['table-1'],
+      })
+      .subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/reservations');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      customerNameSnapshot: 'Marina Soler',
+      customerPhoneSnapshot: '+34 600 777 888',
+      partySize: 4,
+      reservationAt: '2026-06-28T11:30:00.000Z',
+      durationMinutes: 90,
+      notes: 'Ventana',
+      tableIds: ['table-1'],
+    });
+    request.flush({});
+    http.verify();
+  });
+
+  it('patches confirm for one reservation', () => {
+    const { service, http } = setup();
+
+    service.confirmRestaurantReservation('restaurant-mesaflow-centro', 'reservation-demo-group').subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/reservations/reservation-demo-group/confirm');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      id: 'reservation-demo-group',
+      customerId: 'customer-diego',
+      customerNameSnapshot: 'Diego Martin',
+      customerPhoneSnapshot: '+34 600 333 444',
+      partySize: 8,
+      reservationAt: '2026-06-21T21:00:00.000Z',
+      durationMinutes: 120,
+      status: 'confirmed',
+      notes: 'Grupo de cena de empresa.',
+      tableIds: ['table-3', 'table-4'],
+      tables: [
+        { id: 'table-3', tableNumber: 3, name: 'Mesa 3' },
+        { id: 'table-4', tableNumber: 4, name: 'Mesa 4' },
+      ],
+    });
+    http.verify();
+  });
+
+  it('patches seat for one reservation', () => {
+    const { service, http } = setup();
+
+    service.seatRestaurantReservation('restaurant-mesaflow-centro', 'reservation-demo-group').subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/reservations/reservation-demo-group/seat');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({});
+    request.flush({});
+    http.verify();
+  });
+
+  it('patches no-show for one reservation', () => {
+    const { service, http } = setup();
+
+    service.markRestaurantReservationNoShow('restaurant-mesaflow-centro', 'reservation-demo-group').subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/reservations/reservation-demo-group/no-show');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({});
+    request.flush({});
+    http.verify();
+  });
+
+  it('patches cancel for one reservation', () => {
+    const { service, http } = setup();
+
+    service.cancelRestaurantReservation('restaurant-mesaflow-centro', 'reservation-demo-group').subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/reservations/reservation-demo-group/cancel');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({});
+    request.flush({});
+    http.verify();
+  });
+
   it('posts occupy for one service point', () => {
     const { service, http } = setup();
     let result: unknown;

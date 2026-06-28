@@ -34,6 +34,15 @@ import { GetRestaurantProductUseCase } from './application/use-cases/get-restaur
 import { CreateRestaurantProductUseCase } from './application/use-cases/create-restaurant-product.use-case';
 import { UpdateRestaurantProductUseCase } from './application/use-cases/update-restaurant-product.use-case';
 import { DeleteRestaurantProductUseCase } from './application/use-cases/delete-restaurant-product.use-case';
+import { UpdateRestaurantReservationStatusUseCase } from './application/use-cases/update-restaurant-reservation-status.use-case';
+import { CreateRestaurantReservationUseCase } from './application/use-cases/create-restaurant-reservation.use-case';
+import { GetRestaurantServiceWindowsUseCase } from './application/use-cases/get-restaurant-service-windows.use-case';
+import { UpdateRestaurantServiceWindowsUseCase } from './application/use-cases/update-restaurant-service-windows.use-case';
+import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from './application/ports/restaurant-service-windows-repository.port';
+import { SearchCustomersUseCase } from './application/use-cases/search-customers.use-case';
+import { CreateCustomerUseCase } from './application/use-cases/create-customer.use-case';
+import { CUSTOMER_REPOSITORY } from './application/ports/customer-repository.port';
+import { DemoCustomerRepository } from './infrastructure/demo-customer.repository';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
@@ -93,8 +102,23 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     CreateRestaurantProductUseCase,
     UpdateRestaurantProductUseCase,
     DeleteRestaurantProductUseCase,
+    CreateRestaurantReservationUseCase,
+    UpdateRestaurantReservationStatusUseCase,
+    GetRestaurantServiceWindowsUseCase,
+    UpdateRestaurantServiceWindowsUseCase,
+    SearchCustomersUseCase,
+    CreateCustomerUseCase,
+    DemoCustomerRepository,
+    {
+      provide: CUSTOMER_REPOSITORY,
+      useExisting: DemoCustomerRepository,
+    },
     {
       provide: RESTAURANT_READ_REPOSITORY,
+      useExisting: DemoRestaurantReadRepository,
+    },
+    {
+      provide: RESTAURANT_SERVICE_WINDOWS_REPOSITORY,
       useExisting: DemoRestaurantReadRepository,
     },
     {

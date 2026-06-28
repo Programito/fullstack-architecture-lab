@@ -149,6 +149,7 @@
       "service": "Service",
       "menu": "Menu",
       "kitchen": "Kitchen",
+      "reservations": "Reservations",
       "pos": "Restaurant POS",
       "navigation": "Primary navigation",
       "logout": "Sign out",
@@ -369,6 +370,127 @@
       "freeTableConfirmDescription": "This action will clear the order and leave the table free.",
       "confirmFreeTable": "Free table",
       "cancelFreeTable": "Keep table"
+    },
+    "reservations": {
+      "eyebrow": "Front-of-house book",
+      "title": "Reservations agenda",
+      "description": "Review the day's reservations and organize them by service before opening the dining room.",
+      "selectedDate": "Active date",
+      "dateLabel": "Select a date",
+      "summaryReservations": "Reservations",
+      "summaryPax": "Pax",
+      "summaryUnassigned": "Unassigned",
+      "summaryOverdue": "Overdue",
+      "searchLabel": "Search reservation",
+      "searchPlaceholder": "Search by guest or phone",
+      "statusFilter": "Status",
+      "statusAll": "All",
+      "serviceFilter": "Service",
+      "serviceAll": "All",
+      "serviceLunch": "Lunch",
+      "serviceDinner": "Dinner",
+      "lunch": "Lunch",
+      "lunchDescription": "Reservations expected for the midday service.",
+      "dinner": "Dinner",
+      "dinnerDescription": "Reservations expected for the evening service.",
+      "partySize": "{{count}} guests",
+      "empty": "No reservations for this service.",
+      "unassignedTable": "No table assigned",
+      "unassignedBadge": "No table",
+      "upcoming": "Upcoming",
+      "overdue": "Overdue",
+      "loading": "Loading reservations",
+      "loadError": "Reservations could not be loaded. Check your connection and try again.",
+      "retry": "Retry",
+      "confirmCancelTitle": "Cancel reservation?",
+      "confirmCancelDescription": "The reservation will be cancelled and cannot be undone.",
+      "confirmNoShowTitle": "Mark as no-show?",
+      "confirmNoShowDescription": "The customer will be marked as not shown up.",
+      "confirmDestructiveLabel": "Yes, continue",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "today": "Today",
+      "countdownNow": "Now",
+      "countdownMinutes": "In {{count}} min",
+      "emptyDayTitle": "No reservations for this day",
+      "emptyDayDescription": "There are no reservations recorded for the selected date.",
+      "actionError": "The reservation could not be updated.",
+      "actionSuccess": {
+        "confirm": {
+          "title": "Reservation confirmed",
+          "description": "The reservation has been moved to confirmed."
+        },
+        "seat": {
+          "title": "Guest seated",
+          "description": "The reservation has been moved to seated."
+        },
+        "no_show": {
+          "title": "No-show recorded",
+          "description": "The reservation has been marked as no-show."
+        },
+        "cancel": {
+          "title": "Reservation cancelled",
+          "description": "The reservation has been cancelled successfully."
+        }
+      },
+      "actions": {
+        "confirm": "Confirm",
+        "seat": "Seat",
+        "noShow": "No-show",
+        "cancel": "Cancel"
+      },
+      "create": {
+        "open": "New reservation",
+        "title": "Create reservation",
+        "customerName": "Guest",
+        "customerPhone": "Phone",
+        "partySize": "Guests",
+        "time": "Time",
+        "duration": "Duration",
+        "notes": "Notes",
+        "tables": "Tables",
+        "timeSlots": "Arrival time",
+        "editServiceWindows": "Edit windows",
+        "customer": "Customer",
+        "customerSearchPlaceholder": "Search by name or phone...",
+        "customerChange": "Change",
+        "customerNoShows": "{{ count }} no-show",
+        "submit": "Save reservation",
+        "cancel": "Close",
+        "error": "The reservation could not be created.",
+        "validation": {
+          "customerNameRequired": "Enter the guest name.",
+          "partySizeRequired": "Enter at least one guest.",
+          "timeRequired": "Enter a valid time."
+        },
+        "capacityHint": "Total capacity of selected tables: {{count}} seats.",
+        "capacityWarning": {
+          "title": "Group exceeds table capacity",
+          "description": "You indicated {{partySize}} guests but the selected tables have a capacity of {{capacity}}. You can continue anyway or review your selection.",
+          "confirm": "Continue anyway",
+          "cancel": "Review selection"
+        }
+      },
+      "serviceWindowsDialog": {
+        "title": "Service windows",
+        "save": "Save windows",
+        "addWindow": "Add window",
+        "removeWindow": "Remove window",
+        "windowName": "Name",
+        "windowStart": "Start",
+        "windowEnd": "End",
+        "errorAtLeastOne": "At least one service window is required.",
+        "useDefaults": "Restore default windows",
+        "defaultLunch": "Lunch",
+        "defaultDinner": "Dinner"
+      },
+      "status": {
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "seated": "Seated",
+        "cancelled": "Cancelled",
+        "no_show": "No show"
+      }
     },
     "kitchen": {
       "eyebrow": "Production",

@@ -2,12 +2,18 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
+import { invalidReservationCreation, invalidReservationState } from '../../shared/errors/application-error';
+import { ApplicationErrorException } from '../../shared/errors/application-error-exception';
 import type { RestaurantReadRepository } from '../application/ports/restaurant-read-repository.port';
+import type { RestaurantServiceWindowsRepository } from '../application/ports/restaurant-service-windows-repository.port';
 import type {
+  CreateRestaurantReservationInput,
   RestaurantFloors,
   RestaurantMenu,
   RestaurantReservation,
   RestaurantSummary,
+  ServiceWindow,
+  UpdateServiceWindowInput,
 } from '../domain/restaurant-read.models';
 import type { OrderLineStatus, RestaurantOrderView } from '../domain/restaurant-order.models';
 import { deriveServicePhase, getServiceDurationMinutes } from '../domain/service-phase';
@@ -121,6 +127,7 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
         status: 'confirmed',
         notes: 'Mesa tranquila.',
         tableIds: ['table-1'],
+        tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
       },
       {
         id: 'reservation-demo-group',
@@ -133,6 +140,10 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
         status: 'pending',
         notes: 'Grupo de cena de empresa.',
         tableIds: ['table-3', 'table-4'],
+        tables: [
+          { id: 'table-3', tableNumber: 3, name: 'Mesa 3' },
+          { id: 'table-4', tableNumber: 4, name: 'Mesa 4' },
+        ],
       },
     ],
   ],
@@ -321,14 +332,25 @@ const INITIAL_TABLE_SERVICE_STATE = new Map<string, Record<string, DemoTableServ
   ],
 ]);
 
+const INITIAL_SERVICE_WINDOWS = new Map<string, ServiceWindow[]>([
+  [
+    DEMO_RESTAURANT_ID,
+    [
+      { id: 'sw-lunch', restaurantId: DEMO_RESTAURANT_ID, name: 'Comidas', startTime: '12:00', endTime: '16:30', sortOrder: 1 },
+      { id: 'sw-dinner', restaurantId: DEMO_RESTAURANT_ID, name: 'Cenas', startTime: '20:00', endTime: '23:30', sortOrder: 2 },
+    ],
+  ],
+]);
+
 @Injectable()
-export class DemoRestaurantReadRepository implements RestaurantReadRepository {
+export class DemoRestaurantReadRepository implements RestaurantReadRepository, RestaurantServiceWindowsRepository {
   private restaurants = structuredClone(INITIAL_RESTAURANTS);
   private menus = structuredClone([...INITIAL_MENUS.entries()]) as Array<[string, RestaurantMenu]>;
   private floors = structuredClone([...INITIAL_FLOORS.entries()]) as Array<[string, RestaurantFloors]>;
   private reservations = structuredClone([...INITIAL_RESERVATIONS.entries()]) as Array<[string, RestaurantReservation[]]>;
   private serviceOrders = structuredClone([...INITIAL_SERVICE_ORDERS.entries()]) as Array<[string, DemoOrder[]]>;
   private tableStates = structuredClone([...INITIAL_TABLE_SERVICE_STATE.entries()]) as Array<[string, Record<string, DemoTableServiceState>]>;
+  private serviceWindows = structuredClone([...INITIAL_SERVICE_WINDOWS.entries()]) as Array<[string, ServiceWindow[]]>;
 
   reset(): void {
     this.restaurants = structuredClone(INITIAL_RESTAURANTS);
@@ -337,6 +359,30 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
     this.reservations = structuredClone([...INITIAL_RESERVATIONS.entries()]) as Array<[string, RestaurantReservation[]]>;
     this.serviceOrders = structuredClone([...INITIAL_SERVICE_ORDERS.entries()]) as Array<[string, DemoOrder[]]>;
     this.tableStates = structuredClone([...INITIAL_TABLE_SERVICE_STATE.entries()]) as Array<[string, Record<string, DemoTableServiceState>]>;
+    this.serviceWindows = structuredClone([...INITIAL_SERVICE_WINDOWS.entries()]) as Array<[string, ServiceWindow[]]>;
+  }
+
+  async findServiceWindowsByRestaurantId(restaurantId: string): Promise<ServiceWindow[] | null> {
+    const windows = new Map(this.serviceWindows).get(restaurantId);
+    return windows ? structuredClone(windows) : null;
+  }
+
+  async updateServiceWindows(restaurantId: string, windows: UpdateServiceWindowInput[]): Promise<ServiceWindow[] | null> {
+    const windowsMap = new Map(this.serviceWindows);
+    if (!windowsMap.has(restaurantId)) return null;
+
+    const updated: ServiceWindow[] = windows.map((w, index) => ({
+      id: `sw-${restaurantId}-${index + 1}`,
+      restaurantId,
+      name: w.name,
+      startTime: w.startTime,
+      endTime: w.endTime,
+      sortOrder: index + 1,
+    }));
+
+    windowsMap.set(restaurantId, updated);
+    this.serviceWindows = [...windowsMap.entries()];
+    return structuredClone(updated);
   }
 
   async listRestaurants(): Promise<RestaurantSummary[]> {
@@ -353,9 +399,90 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
     return floors ? structuredClone(floors) : null;
   }
 
-  async listReservationsByRestaurantId(restaurantId: string): Promise<RestaurantReservation[] | null> {
+  async listReservationsByRestaurantId(restaurantId: string, date?: string): Promise<RestaurantReservation[] | null> {
     const reservations = new Map(this.reservations).get(restaurantId);
-    return reservations ? structuredClone(reservations) : null;
+    if (!reservations) return null;
+    const sorted = structuredClone(reservations).sort((left, right) => left.reservationAt.localeCompare(right.reservationAt));
+    return date ? sorted.filter((r) => r.reservationAt.startsWith(date)) : sorted;
+  }
+
+  async createReservation(
+    restaurantId: string,
+    reservation: CreateRestaurantReservationInput,
+  ): Promise<RestaurantReservation | null> {
+    const reservationsMap = new Map(this.reservations);
+    const reservations = reservationsMap.get(restaurantId);
+    if (!reservations) return null;
+
+    const floors = new Map(this.floors).get(restaurantId);
+    const tables = floors?.tables ?? [];
+    const selectedTables = reservation.tableIds.map((tableId) => tables.find((table) => table.id === tableId) ?? null);
+
+    if (selectedTables.some((table) => table === null)) {
+      throw new ApplicationErrorException(
+        invalidReservationCreation({
+          reason: 'invalid_table_ids',
+          restaurantId,
+          tableIds: reservation.tableIds,
+        }),
+      );
+    }
+
+    const created: RestaurantReservation = {
+      id: `reservation-${randomUUID()}`,
+      customerId: null,
+      customerNameSnapshot: reservation.customerNameSnapshot,
+      customerPhoneSnapshot: reservation.customerPhoneSnapshot,
+      partySize: reservation.partySize,
+      reservationAt: reservation.reservationAt,
+      durationMinutes: reservation.durationMinutes,
+      status: 'pending',
+      notes: reservation.notes,
+      tableIds: reservation.tableIds,
+      tables: selectedTables.map((table) => ({
+        id: table!.id,
+        tableNumber: table!.tableNumber,
+        name: table!.name,
+      })),
+    };
+
+    reservations.push(created);
+    reservations.sort((left, right) => left.reservationAt.localeCompare(right.reservationAt));
+    reservationsMap.set(restaurantId, reservations);
+    this.reservations = [...reservationsMap.entries()];
+
+    return structuredClone(created);
+  }
+
+  async updateReservationStatus(
+    restaurantId: string,
+    reservationId: string,
+    status: RestaurantReservation['status'],
+  ): Promise<RestaurantReservation | null> {
+    const reservationsMap = new Map(this.reservations);
+    const reservations = reservationsMap.get(restaurantId);
+    if (!reservations) return null;
+
+    const reservationIndex = reservations.findIndex((reservation) => reservation.id === reservationId);
+    if (reservationIndex < 0) return null;
+
+    const reservation = reservations[reservationIndex]!;
+    if (!canTransitionReservationStatus(reservation.status, status)) {
+      throw new ApplicationErrorException(
+        invalidReservationState({
+          restaurantId,
+          reservationId,
+          from: reservation.status,
+          to: status,
+        }),
+      );
+    }
+
+    reservations[reservationIndex] = { ...reservation, status };
+    reservationsMap.set(restaurantId, reservations);
+    this.reservations = [...reservationsMap.entries()];
+
+    return structuredClone(reservations[reservationIndex]!);
   }
 
   async findServiceFloorByRestaurantId(restaurantId: string): Promise<ServiceFloorView | null> {
@@ -980,4 +1107,23 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
   private isOccupiedStatus(status: ServiceTableStatus): boolean {
     return status !== 'free' && status !== 'reserved';
   }
+}
+
+function canTransitionReservationStatus(
+  currentStatus: RestaurantReservation['status'],
+  nextStatus: RestaurantReservation['status'],
+): boolean {
+  if (currentStatus === nextStatus) {
+    return true;
+  }
+
+  if (currentStatus === 'pending') {
+    return nextStatus === 'confirmed' || nextStatus === 'cancelled';
+  }
+
+  if (currentStatus === 'confirmed') {
+    return nextStatus === 'seated' || nextStatus === 'no_show' || nextStatus === 'cancelled';
+  }
+
+  return false;
 }

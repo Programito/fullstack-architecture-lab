@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 type HttpResponse = { status(code: number): HttpResponse };
@@ -63,6 +63,7 @@ import { ListRestaurantProductsUseCase } from '../../application/use-cases/list-
 import { CreateRestaurantProductUseCase } from '../../application/use-cases/create-restaurant-product.use-case';
 import { UpdateRestaurantProductUseCase } from '../../application/use-cases/update-restaurant-product.use-case';
 import { DeleteRestaurantProductUseCase } from '../../application/use-cases/delete-restaurant-product.use-case';
+import { UpdateRestaurantReservationStatusUseCase } from '../../application/use-cases/update-restaurant-reservation-status.use-case';
 import { GetRestaurantProductUseCase } from '../../application/use-cases/get-restaurant-product.use-case';
 import { AddMenuSectionItemDto } from './dto/add-menu-section-item.dto';
 import { UpdateMenuSectionItemDto } from './dto/update-menu-section-item.dto';
@@ -72,6 +73,16 @@ import { RestaurantProductSummaryResponseDto } from './dto/restaurant-product-su
 import { CreateRestaurantProductDto } from './dto/create-restaurant-product.dto';
 import { UpdateRestaurantProductDto } from './dto/update-restaurant-product.dto';
 import { RestaurantProductDetailResponseDto } from './dto/restaurant-product-detail-response.dto';
+import { CreateRestaurantReservationDto } from './dto/create-restaurant-reservation.dto';
+import { CreateRestaurantReservationUseCase } from '../../application/use-cases/create-restaurant-reservation.use-case';
+import { ServiceWindowResponseDto } from './dto/service-window-response.dto';
+import { UpdateServiceWindowsDto } from './dto/update-service-windows.dto';
+import { GetRestaurantServiceWindowsUseCase } from '../../application/use-cases/get-restaurant-service-windows.use-case';
+import { UpdateRestaurantServiceWindowsUseCase } from '../../application/use-cases/update-restaurant-service-windows.use-case';
+import { SearchCustomersUseCase } from '../../application/use-cases/search-customers.use-case';
+import { CreateCustomerUseCase } from '../../application/use-cases/create-customer.use-case';
+import { CustomerSummaryResponseDto } from './dto/customer-summary-response.dto';
+import { CreateCustomerDto } from './dto/create-customer.dto';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -114,6 +125,12 @@ export class RestaurantsController {
     private readonly createRestaurantProduct: CreateRestaurantProductUseCase,
     private readonly updateRestaurantProduct: UpdateRestaurantProductUseCase,
     private readonly deleteRestaurantProduct: DeleteRestaurantProductUseCase,
+    private readonly createRestaurantReservation: CreateRestaurantReservationUseCase,
+    private readonly updateRestaurantReservationStatus: UpdateRestaurantReservationStatusUseCase,
+    private readonly getRestaurantServiceWindowsUC: GetRestaurantServiceWindowsUseCase,
+    private readonly updateRestaurantServiceWindowsUC: UpdateRestaurantServiceWindowsUseCase,
+    private readonly searchCustomersUC: SearchCustomersUseCase,
+    private readonly createCustomerUC: CreateCustomerUseCase,
   ) {}
 
   @Get()
@@ -495,9 +512,114 @@ export class RestaurantsController {
   @Version('1')
   @ApiOkResponse({ type: RestaurantReservationResponseDto, isArray: true })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
-  async reservations(@Param('id') id: string): Promise<RestaurantReservationResponseDto[]> {
-    const reservations = unwrapResultOrThrow(await this.listRestaurantReservations.execute(id));
+  async reservations(@Param('id') id: string, @Query('date') date?: string): Promise<RestaurantReservationResponseDto[]> {
+    const reservations = unwrapResultOrThrow(await this.listRestaurantReservations.execute(id, date));
     return reservations.map(RestaurantReservationResponseDto.fromDomain);
+  }
+
+  @Post(':id/reservations')
+  @Version('1')
+  @ApiCreatedResponse({ type: RestaurantReservationResponseDto })
+  @ApiBadRequestResponse({ description: 'Reservation creation is invalid.' })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  async createReservation(
+    @Param('id') restaurantId: string,
+    @Body() body: CreateRestaurantReservationDto,
+  ): Promise<RestaurantReservationResponseDto> {
+    return RestaurantReservationResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.createRestaurantReservation.execute({
+          restaurantId,
+          customerNameSnapshot: body.customerNameSnapshot,
+          customerPhoneSnapshot: body.customerPhoneSnapshot ?? null,
+          partySize: body.partySize,
+          reservationAt: body.reservationAt,
+          durationMinutes: body.durationMinutes ?? 90,
+          notes: body.notes ?? null,
+          tableIds: body.tableIds ?? [],
+        }),
+      ),
+    );
+  }
+
+  @Patch(':id/reservations/:reservationId/confirm')
+  @Version('1')
+  @ApiOkResponse({ type: RestaurantReservationResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
+  @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
+  async confirmReservation(
+    @Param('id') restaurantId: string,
+    @Param('reservationId') reservationId: string,
+  ): Promise<RestaurantReservationResponseDto> {
+    return RestaurantReservationResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.updateRestaurantReservationStatus.execute({
+          restaurantId,
+          reservationId,
+          status: 'confirmed',
+        }),
+      ),
+    );
+  }
+
+  @Patch(':id/reservations/:reservationId/seat')
+  @Version('1')
+  @ApiOkResponse({ type: RestaurantReservationResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
+  @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
+  async seatReservation(
+    @Param('id') restaurantId: string,
+    @Param('reservationId') reservationId: string,
+  ): Promise<RestaurantReservationResponseDto> {
+    return RestaurantReservationResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.updateRestaurantReservationStatus.execute({
+          restaurantId,
+          reservationId,
+          status: 'seated',
+        }),
+      ),
+    );
+  }
+
+  @Patch(':id/reservations/:reservationId/no-show')
+  @Version('1')
+  @ApiOkResponse({ type: RestaurantReservationResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
+  @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
+  async markReservationNoShow(
+    @Param('id') restaurantId: string,
+    @Param('reservationId') reservationId: string,
+  ): Promise<RestaurantReservationResponseDto> {
+    return RestaurantReservationResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.updateRestaurantReservationStatus.execute({
+          restaurantId,
+          reservationId,
+          status: 'no_show',
+        }),
+      ),
+    );
+  }
+
+  @Patch(':id/reservations/:reservationId/cancel')
+  @Version('1')
+  @ApiOkResponse({ type: RestaurantReservationResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant or reservation not found.' })
+  @ApiBadRequestResponse({ description: 'Reservation transition not allowed.' })
+  async cancelReservation(
+    @Param('id') restaurantId: string,
+    @Param('reservationId') reservationId: string,
+  ): Promise<RestaurantReservationResponseDto> {
+    return RestaurantReservationResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.updateRestaurantReservationStatus.execute({
+          restaurantId,
+          reservationId,
+          status: 'cancelled',
+        }),
+      ),
+    );
   }
 
   @Post(':id/menus/:menuId/sections')
@@ -720,5 +842,66 @@ export class RestaurantsController {
   ): Promise<void> {
     unwrapResultOrThrow(await this.deleteRestaurantProduct.execute({ restaurantId: id, productId }));
     res.status(HttpStatus.NO_CONTENT);
+  }
+
+  @Get(':id/service-windows')
+  @Version('1')
+  @ApiOkResponse({ type: ServiceWindowResponseDto, isArray: true })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  async getServiceWindows(@Param('id') id: string): Promise<ServiceWindowResponseDto[]> {
+    const windows = unwrapResultOrThrow(await this.getRestaurantServiceWindowsUC.execute(id));
+    return windows.map(ServiceWindowResponseDto.fromDomain);
+  }
+
+  @Put(':id/service-windows')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: ServiceWindowResponseDto, isArray: true })
+  @ApiBadRequestResponse({ description: 'Invalid service windows configuration.' })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  async updateServiceWindows(
+    @Param('id') id: string,
+    @Body() body: UpdateServiceWindowsDto,
+  ): Promise<ServiceWindowResponseDto[]> {
+    const windows = unwrapResultOrThrow(
+      await this.updateRestaurantServiceWindowsUC.execute({ restaurantId: id, windows: body.windows }),
+    );
+    return windows.map(ServiceWindowResponseDto.fromDomain);
+  }
+
+  @Get(':id/customers')
+  @Version('1')
+  @ApiOkResponse({ type: CustomerSummaryResponseDto, isArray: true })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  async searchCustomers(
+    @Param('id') id: string,
+    @Query('q') q: string = '',
+  ): Promise<CustomerSummaryResponseDto[]> {
+    const customers = unwrapResultOrThrow(await this.searchCustomersUC.execute({ restaurantId: id, q }));
+    return customers.map(CustomerSummaryResponseDto.fromDomain);
+  }
+
+  @Post(':id/customers')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: CustomerSummaryResponseDto })
+  @ApiBadRequestResponse()
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse()
+  async createCustomer(
+    @Param('id') id: string,
+    @Body() body: CreateCustomerDto,
+  ): Promise<CustomerSummaryResponseDto> {
+    const customer = unwrapResultOrThrow(
+      await this.createCustomerUC.execute({
+        restaurantId: id,
+        name: body.name,
+        phone: body.phone ?? null,
+        email: body.email ?? null,
+        notes: body.notes ?? null,
+      }),
+    );
+    return CustomerSummaryResponseDto.fromDomain(customer);
   }
 }

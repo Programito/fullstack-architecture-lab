@@ -983,6 +983,7 @@ describe('App e2e', () => {
       'kitchen',
       'layout',
       'menu',
+      'reservations',
       'service',
     ]);
 
@@ -991,7 +992,7 @@ describe('App e2e', () => {
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({ permissionIds: permissions.body.map((permission: { id: string }) => permission.id) })
       .expect(200);
-    expect(assignPermissions.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'service']);
+    expect(assignPermissions.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'reservations', 'service']);
 
     await request(app.getHttpServer())
       .get('/api/v1/auth/me')
@@ -1000,7 +1001,7 @@ describe('App e2e', () => {
       .expect({
         userId: login.body.user.id,
         roles: ['admin'],
-        permissions: ['service', 'menu', 'kitchen', 'layout'],
+        permissions: ['service', 'menu', 'kitchen', 'layout', 'reservations'],
       });
 
     const refresh = await request(app.getHttpServer())
@@ -1008,7 +1009,7 @@ describe('App e2e', () => {
       .set('Cookie', firstCookie)
       .expect(200);
     expect(refresh.body.accessToken).not.toBe(login.body.accessToken);
-    expect(refresh.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'service']);
+    expect(refresh.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'reservations', 'service']);
 
     const sessions = await request(app.getHttpServer())
       .get('/api/v1/sessions')
@@ -1026,6 +1027,94 @@ describe('App e2e', () => {
       .get('/api/v1/auth/me')
       .set('Authorization', `Bearer ${refresh.body.accessToken}`)
       .expect(401);
+  });
+
+  it('returns the default service windows for the demo restaurant', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-windows')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'Comidas', startTime: '12:00', endTime: '16:30', sortOrder: 1 }),
+        expect.objectContaining({ name: 'Cenas', startTime: '20:00', endTime: '23:30', sortOrder: 2 }),
+      ]),
+    );
+  });
+
+  it('returns 404 when fetching service windows for an unknown restaurant', async () => {
+    await request(app.getHttpServer()).get('/api/v1/restaurants/missing/service-windows').expect(404);
+  });
+
+  it('updates service windows with valid data and requires authentication', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .send({ email: 'staff@mesaflow.app', firstName: 'Staff', lastName: 'User', password: 'StaffSecret123!' })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'staff@mesaflow.app', password: 'StaffSecret123!' })
+      .expect(200);
+
+    const accessToken: string = loginResponse.body.accessToken;
+    const restaurantId = 'restaurant-mesaflow-centro';
+
+    const updateResponse = await request(app.getHttpServer())
+      .put(`/api/v1/restaurants/${restaurantId}/service-windows`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        windows: [
+          { name: 'Almuerzo', startTime: '13:00', endTime: '17:00' },
+          { name: 'Noche', startTime: '21:00', endTime: '23:00' },
+        ],
+      })
+      .expect(200);
+
+    expect(updateResponse.body).toEqual([
+      expect.objectContaining({ name: 'Almuerzo', startTime: '13:00', endTime: '17:00', sortOrder: 1 }),
+      expect.objectContaining({ name: 'Noche', startTime: '21:00', endTime: '23:00', sortOrder: 2 }),
+    ]);
+
+    const getResponse = await request(app.getHttpServer())
+      .get(`/api/v1/restaurants/${restaurantId}/service-windows`)
+      .expect(200);
+
+    expect(getResponse.body).toEqual(updateResponse.body);
+  });
+
+  it('returns 401 when updating service windows without authentication', async () => {
+    await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/service-windows')
+      .send({ windows: [{ name: 'Comidas', startTime: '12:00', endTime: '16:30' }] })
+      .expect(401);
+  });
+
+  it('returns 400 for invalid service windows payload', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .send({ email: 'staff@mesaflow.app', firstName: 'Staff', lastName: 'User', password: 'StaffSecret123!' })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'staff@mesaflow.app', password: 'StaffSecret123!' })
+      .expect(200);
+
+    const accessToken: string = loginResponse.body.accessToken;
+    const restaurantId = 'restaurant-mesaflow-centro';
+
+    await request(app.getHttpServer())
+      .put(`/api/v1/restaurants/${restaurantId}/service-windows`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ windows: [{ name: 'Comidas', startTime: '25:00', endTime: '30:00' }] })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .put(`/api/v1/restaurants/${restaurantId}/service-windows`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ windows: [{ name: 'Comidas', startTime: '16:30', endTime: '12:00' }] })
+      .expect(400);
   });
 });
 
@@ -1081,6 +1170,7 @@ describe('App e2e with in-memory identity seed', () => {
       'kitchen',
       'layout',
       'menu',
+      'reservations',
       'service',
     ]);
     expect(rolesResponse.body.map((role: { name: string }) => role.name).sort()).toEqual(
@@ -1089,6 +1179,7 @@ describe('App e2e with in-memory identity seed', () => {
     expect(rolesResponse.body.find((role: { name: string; permissions: string[] }) => role.name === 'waiter')?.permissions).toEqual([
       'service',
       'layout',
+      'reservations',
     ]);
     expect(usersResponse.body).toHaveLength(8);
     expect(usersResponse.body.find((user: { email: string }) => user.email === 'admin@example.com')).toMatchObject({

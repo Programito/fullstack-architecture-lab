@@ -1,0 +1,370 @@
+:host {
+  display: block;
+}
+
+.reservations-page__input,
+.reservations-page__select,
+.reservations-page__textarea {
+  width: 100%;
+  margin-top: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 92%, transparent);
+  color: var(--ui-title, #0f172a);
+  padding: 0.75rem 0.875rem;
+}
+
+.reservations-page__textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.reservations-page__primary-button,
+.reservations-page__secondary-button {
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.reservations-page__primary-button {
+  border: 1px solid color-mix(in srgb, var(--ui-primary, #0891b2) 60%, transparent);
+  background: color-mix(in srgb, var(--ui-primary, #0891b2) 92%, white 8%);
+  color: white;
+}
+
+.reservations-page__secondary-button {
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 90%, transparent);
+  color: var(--ui-title, #0f172a);
+}
+
+.reservations-page__primary-button:disabled,
+.reservations-page__secondary-button:disabled {
+  opacity: 0.6;
+}
+
+.reservations-page__create-panel {
+  box-shadow: 0 24px 60px -34px color-mix(in srgb, var(--ui-primary, #0891b2) 35%, transparent);
+}
+
+.reservations-page__table-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.reservations-page__table-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  border-radius: 999px;
+  padding: 0.5rem 0.875rem;
+  color: var(--ui-title, #0f172a);
+}
+
+.reservations-page__count {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 85%, var(--ui-primary, #0891b2) 15%);
+  color: var(--ui-title, #0f172a);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.reservations-page__list {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.reservations-page__card {
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 70%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 88%, transparent);
+  padding: 1rem;
+  box-shadow: 0 16px 40px -28px color-mix(in srgb, var(--ui-primary, #0891b2) 40%, transparent);
+}
+
+.reservations-page__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.reservations-page__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.reservations-page__badge {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ui-text-muted, #64748b);
+}
+
+.reservations-page__badge--accent {
+  background: color-mix(in srgb, var(--ui-primary, #0891b2) 12%, transparent);
+  color: var(--ui-title, #0f172a);
+}
+
+.reservations-page__time {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ui-title, #0f172a);
+}
+
+.reservations-page__status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted, #64748b);
+}
+
+.reservations-page__note {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed color-mix(in srgb, var(--ui-border, #cbd5e1) 65%, transparent);
+  font-size: 0.875rem;
+  color: var(--ui-text, #334155);
+}
+
+.reservations-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.reservations-page__action-button {
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 90%, transparent);
+  color: var(--ui-title, #0f172a);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.reservations-page__action-button:disabled {
+  opacity: 0.6;
+}
+
+
+.reservations-page__pax-chip {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 85%, transparent);
+  color: var(--ui-text-muted, #64748b);
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.reservations-page__summary-card {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.reservations-page__summary-card:hover:not(.reservations-page__summary-card--active) {
+  border-color: var(--ui-border-strong, #94a3b8);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 80%, var(--ui-primary, #0891b2) 20%);
+}
+
+.reservations-page__summary-card--active {
+  border-color: var(--ui-primary, #0891b2);
+  background: color-mix(in srgb, var(--ui-primary, #0891b2) 10%, var(--ui-surface, #fff) 90%);
+}
+
+.reservations-page__card--overdue {
+  border-left: 3px solid color-mix(in srgb, var(--ui-danger, #dc2626) 70%, transparent);
+  background: color-mix(in srgb, var(--ui-danger, #dc2626) 4%, var(--ui-surface, #ffffff) 96%);
+}
+
+.reservations-page__card--pending {
+  border-left: 3px solid color-mix(in srgb, #d97706 60%, transparent);
+}
+
+.reservations-page__card--confirmed {
+  border-left: 3px solid color-mix(in srgb, var(--ui-primary, #0891b2) 60%, transparent);
+}
+
+.reservations-page__card--seated {
+  border-left: 3px solid color-mix(in srgb, #16a34a 60%, transparent);
+}
+
+.reservations-page__badge--countdown {
+  background: color-mix(in srgb, #d97706 12%, transparent);
+  color: #92400e;
+  border-color: color-mix(in srgb, #d97706 30%, transparent);
+}
+
+.reservations-page__table-capacity {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ui-text-muted, #64748b);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 75%, var(--ui-primary, #0891b2) 25%);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.reservations-page__time-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.reservations-page__time-slot {
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  border-radius: 999px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ui-title, #0f172a);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 90%, transparent);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.reservations-page__time-slot:hover:not(.reservations-page__time-slot--selected) {
+  border-color: var(--ui-border-strong, #94a3b8);
+  background: color-mix(in srgb, var(--ui-surface, #ffffff) 80%, var(--ui-primary, #0891b2) 20%);
+}
+
+.reservations-page__time-slot--selected {
+  border-color: var(--ui-primary, #0891b2);
+  background: color-mix(in srgb, var(--ui-primary, #0891b2) 15%, var(--ui-surface, #fff) 85%);
+  color: var(--ui-title, #0f172a);
+}
+
+.reservations-page__error {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #b91c1c;
+}
+
+.reservations-page__empty {
+  min-height: 11rem;
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, var(--ui-border, #cbd5e1) 70%, transparent);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  text-align: center;
+  color: var(--ui-text-muted, #64748b);
+}
+
+.reservations-page__link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-primary, #0891b2);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.reservations-page__link-button:hover {
+  opacity: 0.75;
+}
+
+.reservations-page__link-button--muted {
+  color: var(--ui-text-muted, #64748b);
+}
+
+.reservations-page__sw-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.reservations-page__icon-button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  border-radius: 999px;
+  background: none;
+  color: var(--ui-text-muted, #64748b);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.reservations-page__icon-button:hover {
+  border-color: var(--ui-danger, #dc2626);
+  color: var(--ui-danger, #dc2626);
+}
+
+.reservations-page__selected-customer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ui-primary, #0891b2) 40%, transparent);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--ui-primary, #0891b2) 6%, var(--ui-surface, #ffffff) 94%);
+  padding: 0.625rem 0.875rem;
+}
+
+.reservations-page__badge--warning {
+  background: color-mix(in srgb, var(--ui-danger, #dc2626) 10%, transparent);
+  color: #b91c1c;
+  border-color: color-mix(in srgb, var(--ui-danger, #dc2626) 25%, transparent);
+}
+
+.reservations-page__customer-loading {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.reservations-page__customer-results {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 75%, transparent);
+  border-radius: 0.875rem;
+  background: var(--ui-surface, #ffffff);
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, #0f172a 18%, transparent);
+  overflow: hidden;
+}
+
+.reservations-page__customer-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.reservations-page__customer-result:hover {
+  background: color-mix(in srgb, var(--ui-primary, #0891b2) 6%, var(--ui-surface, #ffffff) 94%);
+}
+
+.reservations-page__customer-result + .reservations-page__customer-result {
+  border-top: 1px solid color-mix(in srgb, var(--ui-border, #cbd5e1) 60%, transparent);
+}

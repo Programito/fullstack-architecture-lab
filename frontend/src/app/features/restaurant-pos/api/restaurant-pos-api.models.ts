@@ -160,6 +160,36 @@ export type ServicePointOrderDto = {
   }>;
 };
 
+export type RestaurantReservationTableDto = {
+  id: string;
+  tableNumber: number;
+  name: string | null;
+};
+
+export type RestaurantReservationDto = {
+  id: string;
+  customerId: string | null;
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  status: 'pending' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
+  notes: string | null;
+  tableIds: string[];
+  tables: RestaurantReservationTableDto[];
+};
+
+export type CreateRestaurantReservationRequest = {
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  notes: string | null;
+  tableIds: string[];
+};
+
 // ── Persistent order DTOs ──────────────────────────────────────────────────────
 
 export type OrderStatusDto = 'open' | 'pending_payment' | 'paid' | 'cancelled';
@@ -444,3 +474,38 @@ export type UpdateMenuSectionRequest = { name?: string; isVisible?: boolean };
 export type AddMenuSectionItemRequest = { restaurantProductId: string; displayNameOverride?: string; priceOverrideCents?: number };
 export type UpdateMenuSectionItemRequest = { displayNameOverride?: string | null; priceOverrideCents?: number | null; isVisible?: boolean };
 export type ReorderItemsRequest = { items: Array<{ id: string; sortOrder: number }> };
+
+// ── Customers ────────────────────────────────────────────────────────────────
+
+export type CustomerSummaryDto = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  visitCount: number;
+  noShowCount: number;
+  cancelCount: number;
+  lateCount: number;
+};
+
+export type CreateCustomerRequest = {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+};
+
+// ── Service Windows ──────────────────────────────────────────────────────────
+
+export type ServiceWindowDto = {
+  id: string;
+  restaurantId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  sortOrder: number;
+};
+
+export type UpdateServiceWindowsRequest = {
+  windows: Array<{ name: string; startTime: string; endTime: string }>;
+};

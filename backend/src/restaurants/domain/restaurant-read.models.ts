@@ -186,4 +186,57 @@ export type RestaurantReservation = {
   status: 'pending' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
   notes: string | null;
   tableIds: string[];
+  tables: Array<{
+    id: string;
+    tableNumber: number;
+    name: string | null;
+  }>;
+};
+
+export type CreateRestaurantReservationInput = {
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  notes: string | null;
+  tableIds: string[];
+};
+
+export type ServiceWindow = {
+  id: string;
+  restaurantId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  sortOrder: number;
+};
+
+export type UpdateServiceWindowInput = {
+  name: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type CustomerSummary = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  visitCount: number;
+  noShowCount: number;
+  cancelCount: number;
+  lateCount: number;
+};
+
+export type Customer = CustomerSummary & {
+  organizationId: string;
+  notes: string | null;
+};
+
+export type CreateCustomerInput = {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
 };

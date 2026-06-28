@@ -21,13 +21,18 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_floor_element_layout':
     case 'invalid_floor_layout':
     case 'invalid_service_action':
+    case 'invalid_reservation_state':
+    case 'invalid_reservation_creation':
     case 'invalid_order_configuration':
+    case 'invalid_service_windows':
+    case 'invalid_customer':
       return new BadRequestException(error.message);
 
     case 'user_not_found':
     case 'role_not_found':
     case 'task_not_found':
     case 'restaurant_not_found':
+    case 'reservation_not_found':
     case 'table_not_found':
     case 'floor_not_found':
     case 'order_not_found':
@@ -36,6 +41,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'menu_not_found':
     case 'menu_section_not_found':
     case 'menu_item_not_found':
+    case 'customer_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':
@@ -44,6 +50,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'menu_section_name_taken':
     case 'menu_item_already_in_section':
     case 'product_name_taken':
+    case 'customer_already_exists':
       return new ConflictException(error.message);
 
     case 'payment_exceeds_balance':

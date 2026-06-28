@@ -172,3 +172,35 @@ pnpm build-storybook
 
 Ejecuta tests enfocados durante TDD y amplia la verificacion antes de cerrar cambios compartidos o
 de mayor riesgo.
+
+## Reservas operativas v0.0.2
+
+La agenda de reservas combina lectura enriquecida, filtros de pantalla y acciones PATCH por
+reserva. Conviene cubrir la frontera en tres niveles:
+
+- `restaurant-pos-api.service.spec.ts` para verificar las rutas REST de `confirm`, `seat`,
+  `no-show` y `cancel`.
+- `restaurant-pos-reservations-page.spec.ts` para proteger render, filtros, busqueda, acciones por
+  estado, refresh tras mutacion y error visual por reserva.
+- Tests backend del caso de uso y del repositorio demo para validar transiciones permitidas y
+  rechazadas.
+
+Escenarios recomendados en frontend:
+
+- Render de agenda diaria agrupada por `Comidas` y `Cenas`.
+- Resumen superior con total de reservas y pax.
+- Reserva sin mesa con badge visible.
+- Apertura del formulario `Nueva reserva`.
+- Conversión correcta de fecha local + hora al `reservationAt` enviado al backend.
+- Filtro por estado y servicio.
+- Busqueda por nombre o telefono.
+- Acciones visibles segun `pending` o `confirmed`.
+- Creación correcta y recarga posterior de la agenda.
+- Recarga de la agenda tras una accion exitosa.
+- Mensaje de error cuando falla una accion PATCH.
+- Mensaje de error cuando falla la creacion.
+
+Al escribir estos tests, evita queries demasiado genericas porque algunos textos se repiten entre
+filtros y tarjetas, por ejemplo `Comidas`, `Cenas` o `Confirmada`. Prefiere `getByRole` con
+`heading`, `region` o `within(...)` para apuntar a la seccion correcta y mantener los specs
+estables cuando la UI gane mas filtros o badges.

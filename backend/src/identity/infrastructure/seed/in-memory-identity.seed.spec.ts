@@ -104,7 +104,7 @@ describe('InMemoryIdentitySeed', () => {
       PERMISSION_CATALOG.map((permission) => permission.name).sort(),
     );
     expect(roleResult.value.map((role) => role.name).sort()).toEqual(ROLE_CATALOG.map((role) => role.name).sort());
-    expect(roleResult.value.find((role) => role.name === 'waiter')?.permissionIds).toHaveLength(2);
+    expect(roleResult.value.find((role) => role.name === 'waiter')?.permissionIds).toHaveLength(3);
     expect(userResult.value.map((user) => user.email)).toEqual([
       'admin@mesaflow.demo',
       'manager@mesaflow.demo',

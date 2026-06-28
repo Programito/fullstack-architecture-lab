@@ -7,9 +7,12 @@ import type {
   AddMenuSectionItemRequest,
   AddRestaurantOrderLineRequest,
   CancelRestaurantOrderLineRequest,
+  CreateCustomerRequest,
   CreateFloorElementRequest,
   CreateMenuSectionRequest,
   CreateRestaurantProductRequest,
+  CreateRestaurantReservationRequest,
+  CustomerSummaryDto,
   MenuItemAdminDto,
   MenuSectionAdminDto,
   OpenRestaurantOrderRequest,
@@ -19,18 +22,21 @@ import type {
   RestaurantFloorsDto,
   RestaurantMenuDto,
   RestaurantOrderDto,
+  RestaurantReservationDto,
   RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
   RestaurantSummaryDto,
   ServiceFloorDto,
   ServicePointDetailDto,
   ServicePointOrderDto,
+  ServiceWindowDto,
   UpdateFloorElementRequest,
   UpdateFloorRequest,
   UpdateMenuSectionItemRequest,
   UpdateMenuSectionRequest,
   UpdateRestaurantOrderLineRequest,
   UpdateRestaurantProductRequest,
+  UpdateServiceWindowsRequest,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -63,6 +69,48 @@ export class RestaurantPosApiService {
 
   getRestaurantServicePointOrder(restaurantId: string, tableId: string): Observable<ServicePointOrderDto> {
     return this.http.get<ServicePointOrderDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/order`);
+  }
+
+  getRestaurantReservations(restaurantId: string, date?: string): Observable<RestaurantReservationDto[]> {
+    if (date) {
+      return this.http.get<RestaurantReservationDto[]>(`${this.restaurantsUrl}/${restaurantId}/reservations`, { params: { date } });
+    }
+    return this.http.get<RestaurantReservationDto[]>(`${this.restaurantsUrl}/${restaurantId}/reservations`);
+  }
+
+  createRestaurantReservation(
+    restaurantId: string,
+    request: CreateRestaurantReservationRequest,
+  ): Observable<RestaurantReservationDto> {
+    return this.http.post<RestaurantReservationDto>(`${this.restaurantsUrl}/${restaurantId}/reservations`, request);
+  }
+
+  confirmRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/confirm`,
+      {},
+    );
+  }
+
+  seatRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/seat`,
+      {},
+    );
+  }
+
+  markRestaurantReservationNoShow(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/no-show`,
+      {},
+    );
+  }
+
+  cancelRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {
+    return this.http.patch<RestaurantReservationDto>(
+      `${this.restaurantsUrl}/${restaurantId}/reservations/${reservationId}/cancel`,
+      {},
+    );
   }
 
   occupyRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
@@ -210,5 +258,21 @@ export class RestaurantPosApiService {
 
   reorderMenuSectionItems(restaurantId: string, menuId: string, sectionId: string, body: ReorderItemsRequest): Observable<void> {
     return this.http.put<void>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}/items/reorder`, body);
+  }
+
+  getRestaurantServiceWindows(restaurantId: string): Observable<ServiceWindowDto[]> {
+    return this.http.get<ServiceWindowDto[]>(`${this.restaurantsUrl}/${restaurantId}/service-windows`);
+  }
+
+  updateRestaurantServiceWindows(restaurantId: string, body: UpdateServiceWindowsRequest): Observable<ServiceWindowDto[]> {
+    return this.http.put<ServiceWindowDto[]>(`${this.restaurantsUrl}/${restaurantId}/service-windows`, body);
+  }
+
+  searchCustomers(restaurantId: string, q: string): Observable<CustomerSummaryDto[]> {
+    return this.http.get<CustomerSummaryDto[]>(`${this.restaurantsUrl}/${restaurantId}/customers`, { params: { q } });
+  }
+
+  createCustomer(restaurantId: string, body: CreateCustomerRequest): Observable<CustomerSummaryDto> {
+    return this.http.post<CustomerSummaryDto>(`${this.restaurantsUrl}/${restaurantId}/customers`, body);
   }
 }
