@@ -29,7 +29,8 @@ export type ApplicationErrorCode =
   | 'menu_section_name_taken'
   | 'menu_item_not_found'
   | 'menu_item_already_in_section'
-  | 'product_name_taken';
+  | 'product_name_taken'
+  | 'invalid_service_windows';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -111,4 +112,8 @@ export function menuItemAlreadyInSection(restaurantProductId: string): Applicati
 
 export function productNameTaken(name: string): ApplicationError {
   return applicationError('product_name_taken', `A product named "${name}" already exists in this organization.`, { name });
+}
+
+export function invalidServiceWindows(reason: string): ApplicationError {
+  return applicationError('invalid_service_windows', `Service windows configuration is invalid: ${reason}.`, { reason });
 }

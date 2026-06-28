@@ -202,3 +202,18 @@ export type CreateRestaurantReservationInput = {
   notes: string | null;
   tableIds: string[];
 };
+
+export type ServiceWindow = {
+  id: string;
+  restaurantId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  sortOrder: number;
+};
+
+export type UpdateServiceWindowInput = {
+  name: string;
+  startTime: string;
+  endTime: string;
+};

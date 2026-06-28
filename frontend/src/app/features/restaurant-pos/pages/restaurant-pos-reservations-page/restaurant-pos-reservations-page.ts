@@ -8,13 +8,15 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 import { DateNavigator } from '../../../../shared/ui/date-navigator/date-navigator';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
+import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
-import type { RestaurantReservationDto } from '../../api/restaurant-pos-api.models';
+import type { CreateRestaurantReservationRequest, RestaurantReservationDto, ServiceWindowDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosReservationsStore } from './restaurant-pos-reservations.store';
 import type { ReservationAction } from './restaurant-pos-reservations.store';
 
+type ServiceWindowEditRow = { name: string; startTime: string; endTime: string };
 type ReservationServiceBucket = 'lunch' | 'dinner';
 type ReservationStatusFilter = 'all' | RestaurantReservationDto['status'];
 type ReservationServiceFilter = 'all' | ReservationServiceBucket;
@@ -48,7 +50,7 @@ type ReservationAgendaItem = {
 
 @Component({
   selector: 'app-restaurant-pos-reservations-page',
-  imports: [Alert, DateNavigator, Dialog, EmptyState, LowerCasePipe, Spinner, TranslocoPipe],
+  imports: [Alert, DateNavigator, Dialog, EmptyState, LowerCasePipe, SegmentedControl, Spinner, TranslocoPipe],
   providers: [RestaurantPosReservationsStore],
   templateUrl: './restaurant-pos-reservations-page.html',
   styleUrl: './restaurant-pos-reservations-page.css',
@@ -79,15 +81,50 @@ export class RestaurantPosReservationsPage {
   protected readonly creationSubmitting = signal(false);
   protected readonly creationError = signal<string | null>(null);
   protected readonly creationForm = signal<ReservationCreateForm>(createReservationFormState());
+  protected readonly capacityWarningOpen = signal(false);
+  private readonly pendingSubmitRequest = signal<CreateRestaurantReservationRequest | null>(null);
 
   // ── Señales derivadas ────────────────────────────────────────────────────
   protected readonly activeRestaurant = this.restaurantContext.activeRestaurant;
+  private readonly serviceWindows = this.store.serviceWindows;
+  protected readonly serviceWindowsSaving = this.store.serviceWindowsSaving;
+  protected readonly serviceTab = signal<string>('');
+  protected readonly serviceTabOptions = computed<SegmentedControlOption[]>(() =>
+    this.serviceWindows().map((w) => ({ label: w.name, value: w.id })),
+  );
+  protected readonly activeSlots = computed(() => {
+    const windows = this.serviceWindows();
+    const active = windows.find((w) => w.id === this.serviceTab()) ?? windows[0];
+    return active ? generateTimeSlots(active.startTime, active.endTime) : [];
+  });
+
+  // ── Estado del dialog de edición de franjas ──────────────────────────────
+  protected readonly serviceWindowsEditOpen = signal(false);
+  protected readonly serviceWindowsEditRows = signal<ServiceWindowEditRow[]>([]);
+  protected readonly serviceWindowsEditError = signal<string | null>(null);
+
   protected readonly availableTables = computed(() =>
     this.restaurantFloors()?.tables.map((table) => ({
       id: table.id,
       label: table.name || `Mesa ${table.tableNumber}`,
+      capacity: table.capacity,
     })) ?? [],
   );
+  protected readonly selectedTablesCapacity = computed(() => {
+    const selectedIds = this.creationForm().tableIds;
+    if (selectedIds.length === 0) return null;
+    return this.availableTables()
+      .filter((t) => selectedIds.includes(t.id))
+      .reduce((total, t) => total + t.capacity, 0);
+  });
+  protected readonly capacityWarningDescription = computed(() => {
+    const capacity = this.selectedTablesCapacity();
+    if (capacity === null) return '';
+    return this.transloco.translate('restaurantPos.reservations.create.capacityWarning.description', {
+      partySize: this.creationForm().partySize,
+      capacity,
+    });
+  });
   protected readonly selectedDateLabel = computed(() =>
     new Intl.DateTimeFormat(this.transloco.getActiveLang(), {
       weekday: 'long',
@@ -125,11 +162,12 @@ export class RestaurantPosReservationsPage {
   constructor() {
     this.restaurantContext.load();
 
-    // Floors solo se recargan cuando cambia el restaurante (no al cambiar fecha)
+    // Floors y service windows solo se recargan cuando cambia el restaurante
     effect(() => {
       const restaurant = this.restaurantContext.activeRestaurant();
       if (!restaurant) { this.store.clearData(); return; }
       this.store.loadFloors(restaurant.id);
+      this.store.loadServiceWindows(restaurant.id);
     });
 
     // Reservas se recargan cuando cambia restaurante O fecha
@@ -137,6 +175,14 @@ export class RestaurantPosReservationsPage {
       const restaurant = this.restaurantContext.activeRestaurant();
       if (!restaurant) return;
       this.store.loadReservations(restaurant.id, this.selectedDate());
+    });
+
+    // Inicializa el tab activo al primer servicio cuando llegan las franjas
+    effect(() => {
+      const windows = this.serviceWindows();
+      if (windows.length > 0 && !windows.some((w) => w.id === this.serviceTab())) {
+        this.serviceTab.set(windows[0]!.id);
+      }
     });
   }
 
@@ -194,6 +240,61 @@ export class RestaurantPosReservationsPage {
     this.creationSubmitting.set(false);
     this.creationError.set(null);
     this.creationForm.set(createReservationFormState());
+    this.capacityWarningOpen.set(false);
+    this.pendingSubmitRequest.set(null);
+    this.serviceTab.set(this.serviceWindows()[0]?.id ?? '');
+  }
+
+  protected readonly defaultServiceWindowRows: ServiceWindowEditRow[] = [
+    { name: this.transloco.translate('restaurantPos.reservations.serviceWindowsDialog.defaultLunch'), startTime: '12:00', endTime: '16:30' },
+    { name: this.transloco.translate('restaurantPos.reservations.serviceWindowsDialog.defaultDinner'), startTime: '20:00', endTime: '23:00' },
+  ];
+
+  protected openServiceWindowsEdit(): void {
+    this.serviceWindowsEditRows.set(
+      this.serviceWindows().map((w) => ({ name: w.name, startTime: w.startTime, endTime: w.endTime })),
+    );
+    this.serviceWindowsEditError.set(null);
+    this.serviceWindowsEditOpen.set(true);
+  }
+
+  protected useDefaultServiceWindows(): void {
+    this.serviceWindowsEditRows.set([...this.defaultServiceWindowRows]);
+    this.serviceWindowsEditError.set(null);
+  }
+
+  protected closeServiceWindowsEdit(): void {
+    this.serviceWindowsEditOpen.set(false);
+    this.serviceWindowsEditError.set(null);
+  }
+
+  protected addServiceWindowRow(): void {
+    this.serviceWindowsEditRows.update((rows) => [...rows, { name: '', startTime: '12:00', endTime: '16:00' }]);
+  }
+
+  protected removeServiceWindowRow(index: number): void {
+    this.serviceWindowsEditRows.update((rows) => rows.filter((_, i) => i !== index));
+  }
+
+  protected updateServiceWindowRow(index: number, field: keyof ServiceWindowEditRow, value: string): void {
+    this.serviceWindowsEditRows.update((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
+    );
+  }
+
+  protected saveServiceWindows(): void {
+    const restaurant = this.activeRestaurant();
+    if (!restaurant) return;
+    const rows = this.serviceWindowsEditRows();
+    if (rows.length === 0) {
+      this.serviceWindowsEditError.set(this.transloco.translate('restaurantPos.reservations.serviceWindowsDialog.errorAtLeastOne'));
+      return;
+    }
+    this.store.updateServiceWindows(
+      restaurant.id,
+      { windows: rows.map((r) => ({ name: r.name, startTime: r.startTime, endTime: r.endTime })) },
+      () => this.closeServiceWindowsEdit(),
+    );
   }
 
   protected updateCreateField<K extends keyof ReservationCreateForm>(
@@ -247,14 +348,39 @@ export class RestaurantPosReservationsPage {
     const request = this.buildCreateReservationRequest();
     if (!request) return;
 
+    const capacity = this.selectedTablesCapacity();
+    if (capacity !== null && request.partySize > capacity) {
+      this.pendingSubmitRequest.set(request);
+      this.capacityWarningOpen.set(true);
+      return;
+    }
+
+    this.doCreateReservation(restaurant.id, request);
+  }
+
+  protected confirmCapacityWarning(): void {
+    const restaurant = this.activeRestaurant();
+    const request = this.pendingSubmitRequest();
+    if (!restaurant || !request) return;
+    this.capacityWarningOpen.set(false);
+    this.pendingSubmitRequest.set(null);
+    this.doCreateReservation(restaurant.id, request);
+  }
+
+  protected dismissCapacityWarning(): void {
+    this.capacityWarningOpen.set(false);
+    this.pendingSubmitRequest.set(null);
+  }
+
+  private doCreateReservation(restaurantId: string, request: CreateRestaurantReservationRequest): void {
     this.creationSubmitting.set(true);
     this.creationError.set(null);
 
-    this.api.createRestaurantReservation(restaurant.id, request).subscribe({
+    this.api.createRestaurantReservation(restaurantId, request).subscribe({
       next: () => {
         this.creationSubmitting.set(false);
         this.closeCreateReservation();
-        this.store.loadReservations(restaurant.id, this.selectedDate());
+        this.store.loadReservations(restaurantId, this.selectedDate());
       },
       error: () => {
         this.creationSubmitting.set(false);
@@ -402,4 +528,19 @@ function buildLocalReservationDateTime(selectedDate: string, time: string): stri
   const [hours, minutes] = time.split(':').map(Number);
   if ([year, month, day, hours, minutes].some((v) => Number.isNaN(v))) return null;
   return new Date(year!, (month ?? 1) - 1, day ?? 1, hours!, minutes!, 0, 0).toISOString();
+}
+
+function generateTimeSlots(startTime: string, endTime: string, stepMinutes = 30): string[] {
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  if ([startH, startM, endH, endM].some((v) => Number.isNaN(v))) return [];
+  const startTotal = startH! * 60 + startM!;
+  const endTotal = endH! * 60 + endM!;
+  const slots: string[] = [];
+  for (let t = startTotal; t <= endTotal; t += stepMinutes) {
+    const h = Math.floor(t / 60);
+    const m = t % 60;
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  }
+  return slots;
 }

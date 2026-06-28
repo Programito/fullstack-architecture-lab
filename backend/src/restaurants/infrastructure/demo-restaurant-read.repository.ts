@@ -5,12 +5,15 @@ import { Injectable } from '@nestjs/common';
 import { invalidReservationCreation, invalidReservationState } from '../../shared/errors/application-error';
 import { ApplicationErrorException } from '../../shared/errors/application-error-exception';
 import type { RestaurantReadRepository } from '../application/ports/restaurant-read-repository.port';
+import type { RestaurantServiceWindowsRepository } from '../application/ports/restaurant-service-windows-repository.port';
 import type {
   CreateRestaurantReservationInput,
   RestaurantFloors,
   RestaurantMenu,
   RestaurantReservation,
   RestaurantSummary,
+  ServiceWindow,
+  UpdateServiceWindowInput,
 } from '../domain/restaurant-read.models';
 import type { OrderLineStatus, RestaurantOrderView } from '../domain/restaurant-order.models';
 import { deriveServicePhase, getServiceDurationMinutes } from '../domain/service-phase';
@@ -329,14 +332,25 @@ const INITIAL_TABLE_SERVICE_STATE = new Map<string, Record<string, DemoTableServ
   ],
 ]);
 
+const INITIAL_SERVICE_WINDOWS = new Map<string, ServiceWindow[]>([
+  [
+    DEMO_RESTAURANT_ID,
+    [
+      { id: 'sw-lunch', restaurantId: DEMO_RESTAURANT_ID, name: 'Comidas', startTime: '12:00', endTime: '16:30', sortOrder: 1 },
+      { id: 'sw-dinner', restaurantId: DEMO_RESTAURANT_ID, name: 'Cenas', startTime: '20:00', endTime: '23:30', sortOrder: 2 },
+    ],
+  ],
+]);
+
 @Injectable()
-export class DemoRestaurantReadRepository implements RestaurantReadRepository {
+export class DemoRestaurantReadRepository implements RestaurantReadRepository, RestaurantServiceWindowsRepository {
   private restaurants = structuredClone(INITIAL_RESTAURANTS);
   private menus = structuredClone([...INITIAL_MENUS.entries()]) as Array<[string, RestaurantMenu]>;
   private floors = structuredClone([...INITIAL_FLOORS.entries()]) as Array<[string, RestaurantFloors]>;
   private reservations = structuredClone([...INITIAL_RESERVATIONS.entries()]) as Array<[string, RestaurantReservation[]]>;
   private serviceOrders = structuredClone([...INITIAL_SERVICE_ORDERS.entries()]) as Array<[string, DemoOrder[]]>;
   private tableStates = structuredClone([...INITIAL_TABLE_SERVICE_STATE.entries()]) as Array<[string, Record<string, DemoTableServiceState>]>;
+  private serviceWindows = structuredClone([...INITIAL_SERVICE_WINDOWS.entries()]) as Array<[string, ServiceWindow[]]>;
 
   reset(): void {
     this.restaurants = structuredClone(INITIAL_RESTAURANTS);
@@ -345,6 +359,30 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository {
     this.reservations = structuredClone([...INITIAL_RESERVATIONS.entries()]) as Array<[string, RestaurantReservation[]]>;
     this.serviceOrders = structuredClone([...INITIAL_SERVICE_ORDERS.entries()]) as Array<[string, DemoOrder[]]>;
     this.tableStates = structuredClone([...INITIAL_TABLE_SERVICE_STATE.entries()]) as Array<[string, Record<string, DemoTableServiceState>]>;
+    this.serviceWindows = structuredClone([...INITIAL_SERVICE_WINDOWS.entries()]) as Array<[string, ServiceWindow[]]>;
+  }
+
+  async findServiceWindowsByRestaurantId(restaurantId: string): Promise<ServiceWindow[] | null> {
+    const windows = new Map(this.serviceWindows).get(restaurantId);
+    return windows ? structuredClone(windows) : null;
+  }
+
+  async updateServiceWindows(restaurantId: string, windows: UpdateServiceWindowInput[]): Promise<ServiceWindow[] | null> {
+    const windowsMap = new Map(this.serviceWindows);
+    if (!windowsMap.has(restaurantId)) return null;
+
+    const updated: ServiceWindow[] = windows.map((w, index) => ({
+      id: `sw-${restaurantId}-${index + 1}`,
+      restaurantId,
+      name: w.name,
+      startTime: w.startTime,
+      endTime: w.endTime,
+      sortOrder: index + 1,
+    }));
+
+    windowsMap.set(restaurantId, updated);
+    this.serviceWindows = [...windowsMap.entries()];
+    return structuredClone(updated);
   }
 
   async listRestaurants(): Promise<RestaurantSummary[]> {

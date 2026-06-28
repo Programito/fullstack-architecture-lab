@@ -5,10 +5,16 @@ import { vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { ToastService } from '../../../../shared/ui/toast/toast';
 import type { RestaurantFloorsDto, RestaurantReservationDto } from '../../api/restaurant-pos-api.models';
+import type { ServiceWindowDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantPosReservationsPage } from './restaurant-pos-reservations-page';
 
 describe('RestaurantPosReservationsPage', () => {
+  function todayAt(hours: number, minutes: number): string {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes, 0, 0).toISOString();
+  }
+
   const updateReservationStatus = (
     reservation: RestaurantReservationDto,
     status: RestaurantReservationDto['status'],
@@ -23,7 +29,7 @@ describe('RestaurantPosReservationsPage', () => {
     customerNameSnapshot: 'Marina Soler',
     customerPhoneSnapshot: '+34 600 777 888',
     partySize: 4,
-    reservationAt: new Date(2026, 5, 27, 13, 30, 0, 0).toISOString(),
+    reservationAt: todayAt(13, 30),
     durationMinutes: 90,
     status: 'pending',
     notes: 'Ventana',
@@ -31,11 +37,18 @@ describe('RestaurantPosReservationsPage', () => {
     tables: [{ id: 'table-2', tableNumber: 2, name: 'Mesa 2' }],
   });
 
+  const demoServiceWindows: ServiceWindowDto[] = [
+    { id: 'sw-lunch', restaurantId: 'restaurant-mesaflow-centro', name: 'Comidas', startTime: '12:00', endTime: '16:30', sortOrder: 1 },
+    { id: 'sw-dinner', restaurantId: 'restaurant-mesaflow-centro', name: 'Cenas', startTime: '20:00', endTime: '23:30', sortOrder: 2 },
+  ];
+
   const createApiMock = (): Pick<
     RestaurantPosApiService,
       | 'listRestaurants'
       | 'getRestaurantFloors'
       | 'getRestaurantReservations'
+      | 'getRestaurantServiceWindows'
+      | 'updateRestaurantServiceWindows'
       | 'createRestaurantReservation'
       | 'confirmRestaurantReservation'
       | 'seatRestaurantReservation'
@@ -49,7 +62,7 @@ describe('RestaurantPosReservationsPage', () => {
         customerNameSnapshot: 'Laura Gomez',
         customerPhoneSnapshot: '+34 600 111 222',
         partySize: 2,
-        reservationAt: '2026-06-27T13:30:00.000Z',
+        reservationAt: todayAt(13, 30),
         durationMinutes: 90,
         status: 'confirmed',
         notes: 'Mesa tranquila.',
@@ -62,7 +75,7 @@ describe('RestaurantPosReservationsPage', () => {
         customerNameSnapshot: 'Diego Martin',
         customerPhoneSnapshot: '+34 600 333 444',
         partySize: 8,
-        reservationAt: '2026-06-27T20:30:00.000Z',
+        reservationAt: todayAt(20, 30),
         durationMinutes: 120,
         status: 'pending',
         notes: 'Grupo de cena de empresa.',
@@ -94,6 +107,8 @@ describe('RestaurantPosReservationsPage', () => {
       ),
       getRestaurantFloors: vi.fn(() => of(floors)),
       getRestaurantReservations: vi.fn(() => of(reservations)),
+      getRestaurantServiceWindows: vi.fn(() => of(demoServiceWindows)),
+      updateRestaurantServiceWindows: vi.fn(() => of(demoServiceWindows)),
       createRestaurantReservation: vi.fn(() => of(createReservationDto())),
       confirmRestaurantReservation: vi.fn(() => of(updateReservationStatus(reservations[1]!, 'confirmed'))),
       seatRestaurantReservation: vi.fn(() => of(updateReservationStatus(reservations[0]!, 'seated'))),
@@ -165,7 +180,7 @@ describe('RestaurantPosReservationsPage', () => {
           customerNameSnapshot: 'Diego Martin',
           customerPhoneSnapshot: '+34 600 333 444',
           partySize: 8,
-          reservationAt: '2026-06-27T20:30:00.000Z',
+          reservationAt: todayAt(20, 30),
           durationMinutes: 120,
           status: 'pending',
           notes: 'Grupo de cena de empresa.',
@@ -180,7 +195,7 @@ describe('RestaurantPosReservationsPage', () => {
           customerNameSnapshot: 'Diego Martin',
           customerPhoneSnapshot: '+34 600 333 444',
           partySize: 8,
-          reservationAt: '2026-06-27T20:30:00.000Z',
+          reservationAt: todayAt(20, 30),
           durationMinutes: 120,
           status: 'confirmed',
           notes: 'Grupo de cena de empresa.',
@@ -210,6 +225,8 @@ describe('RestaurantPosReservationsPage', () => {
         }),
       ),
       getRestaurantReservations: vi.fn(() => of(reservationsByCall.shift() ?? [])),
+      getRestaurantServiceWindows: vi.fn(() => of(demoServiceWindows)),
+      updateRestaurantServiceWindows: vi.fn(() => of(demoServiceWindows)),
       createRestaurantReservation: vi.fn(() => of(createReservationDto())),
       confirmRestaurantReservation: vi.fn(() =>
         of({
@@ -218,7 +235,7 @@ describe('RestaurantPosReservationsPage', () => {
           customerNameSnapshot: 'Diego Martin',
           customerPhoneSnapshot: '+34 600 333 444',
           partySize: 8,
-          reservationAt: '2026-06-27T20:30:00.000Z',
+          reservationAt: todayAt(20, 30),
           durationMinutes: 120,
           status: 'confirmed' as const,
           notes: 'Grupo de cena de empresa.',
@@ -282,8 +299,8 @@ describe('RestaurantPosReservationsPage', () => {
     fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
     fireEvent.input(screen.getByLabelText('Telefono'), { target: { value: '+34 600 777 888' } });
     fireEvent.input(screen.getByLabelText('Comensales'), { target: { value: '4' } });
-    fireEvent.input(screen.getByLabelText('Hora'), { target: { value: '13:30' } });
-    fireEvent.click(screen.getByLabelText('Mesa 2'));
+    fireEvent.click(screen.getByRole('button', { name: '13:30' }));
+    fireEvent.click(screen.getByLabelText('Mesa 2', { exact: false }));
     fireEvent.input(screen.getByLabelText('Notas'), { target: { value: 'Ventana' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar reserva' }));
 
@@ -291,7 +308,7 @@ describe('RestaurantPosReservationsPage', () => {
       customerNameSnapshot: 'Marina Soler',
       customerPhoneSnapshot: '+34 600 777 888',
       partySize: 4,
-      reservationAt: new Date(2026, 5, 27, 13, 30, 0, 0).toISOString(),
+      reservationAt: todayAt(13, 30),
       durationMinutes: 90,
       notes: 'Ventana',
       tableIds: ['table-2'],
@@ -478,7 +495,6 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
     fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
-    fireEvent.input(screen.getByLabelText('Hora'), { target: { value: '13:30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar reserva' }));
 
     expect(await screen.findByText('No se ha podido crear la reserva.')).toBeTruthy();
@@ -579,5 +595,22 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.getByLabelText('Cliente')).toBeTruthy();
+  });
+
+  it('shows time slot chips based on the service windows from the API', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+
+    // Comidas 12:00–16:30 → should have these chip buttons
+    expect(screen.getByRole('button', { name: '12:00' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '13:30' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '16:30' })).toBeTruthy();
   });
 });

@@ -449,6 +449,8 @@
         "duration": "Duration",
         "notes": "Notes",
         "tables": "Tables",
+        "timeSlots": "Arrival time",
+        "editServiceWindows": "Edit windows",
         "submit": "Save reservation",
         "cancel": "Close",
         "error": "The reservation could not be created.",
@@ -456,7 +458,27 @@
           "customerNameRequired": "Enter the guest name.",
           "partySizeRequired": "Enter at least one guest.",
           "timeRequired": "Enter a valid time."
+        },
+        "capacityHint": "Total capacity of selected tables: {{count}} seats.",
+        "capacityWarning": {
+          "title": "Group exceeds table capacity",
+          "description": "You indicated {{partySize}} guests but the selected tables have a capacity of {{capacity}}. You can continue anyway or review your selection.",
+          "confirm": "Continue anyway",
+          "cancel": "Review selection"
         }
+      },
+      "serviceWindowsDialog": {
+        "title": "Service windows",
+        "save": "Save windows",
+        "addWindow": "Add window",
+        "removeWindow": "Remove window",
+        "windowName": "Name",
+        "windowStart": "Start",
+        "windowEnd": "End",
+        "errorAtLeastOne": "At least one service window is required.",
+        "useDefaults": "Restore default windows",
+        "defaultLunch": "Lunch",
+        "defaultDinner": "Dinner"
       },
       "status": {
         "pending": "Pending",

@@ -4,7 +4,7 @@ import { TranslocoService } from '@jsverse/transloco';
 
 import { ToastService } from '../../../../shared/ui/toast/toast';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
-import type { RestaurantFloorsDto, RestaurantReservationDto } from '../../api/restaurant-pos-api.models';
+import type { RestaurantFloorsDto, RestaurantReservationDto, ServiceWindowDto, UpdateServiceWindowsRequest } from '../../api/restaurant-pos-api.models';
 
 export type ReservationAction = 'confirm' | 'seat' | 'no_show' | 'cancel';
 
@@ -18,15 +18,19 @@ export class RestaurantPosReservationsStore {
   // ── Señales privadas (estado interno mutable) ────────────────────────────
   private readonly _reservations = signal<RestaurantReservationDto[]>([]);
   private readonly _restaurantFloors = signal<RestaurantFloorsDto | null>(null);
+  private readonly _serviceWindows = signal<ServiceWindowDto[]>([]);
   private readonly _loading = signal(false);
   private readonly _loadError = signal(false);
+  private readonly _serviceWindowsSaving = signal(false);
   private readonly _actionState = signal<Record<string, { loading: boolean; error: string | null }>>({});
 
   // ── Señales públicas readonly (contratos de la vista) ────────────────────
   readonly reservations = this._reservations.asReadonly();
   readonly restaurantFloors = this._restaurantFloors.asReadonly();
+  readonly serviceWindows = this._serviceWindows.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly loadError = this._loadError.asReadonly();
+  readonly serviceWindowsSaving = this._serviceWindowsSaving.asReadonly();
   readonly actionState = this._actionState.asReadonly();
 
   // ── Consultas ────────────────────────────────────────────────────────────
@@ -66,9 +70,40 @@ export class RestaurantPosReservationsStore {
       });
   }
 
+  loadServiceWindows(restaurantId: string): void {
+    this.api
+      .getRestaurantServiceWindows(restaurantId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((windows) => {
+        this._serviceWindows.set(windows);
+      });
+  }
+
+  updateServiceWindows(
+    restaurantId: string,
+    body: UpdateServiceWindowsRequest,
+    onSuccess: () => void,
+  ): void {
+    this._serviceWindowsSaving.set(true);
+    this.api
+      .updateRestaurantServiceWindows(restaurantId, body)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (windows) => {
+          this._serviceWindows.set(windows);
+          this._serviceWindowsSaving.set(false);
+          onSuccess();
+        },
+        error: () => {
+          this._serviceWindowsSaving.set(false);
+        },
+      });
+  }
+
   clearData(): void {
     this._reservations.set([]);
     this._restaurantFloors.set(null);
+    this._serviceWindows.set([]);
   }
 
   executeAction(action: ReservationAction, restaurantId: string, reservationId: string, date?: string): void {

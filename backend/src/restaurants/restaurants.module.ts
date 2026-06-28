@@ -36,6 +36,9 @@ import { UpdateRestaurantProductUseCase } from './application/use-cases/update-r
 import { DeleteRestaurantProductUseCase } from './application/use-cases/delete-restaurant-product.use-case';
 import { UpdateRestaurantReservationStatusUseCase } from './application/use-cases/update-restaurant-reservation-status.use-case';
 import { CreateRestaurantReservationUseCase } from './application/use-cases/create-restaurant-reservation.use-case';
+import { GetRestaurantServiceWindowsUseCase } from './application/use-cases/get-restaurant-service-windows.use-case';
+import { UpdateRestaurantServiceWindowsUseCase } from './application/use-cases/update-restaurant-service-windows.use-case';
+import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from './application/ports/restaurant-service-windows-repository.port';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
@@ -97,8 +100,14 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     DeleteRestaurantProductUseCase,
     CreateRestaurantReservationUseCase,
     UpdateRestaurantReservationStatusUseCase,
+    GetRestaurantServiceWindowsUseCase,
+    UpdateRestaurantServiceWindowsUseCase,
     {
       provide: RESTAURANT_READ_REPOSITORY,
+      useExisting: DemoRestaurantReadRepository,
+    },
+    {
+      provide: RESTAURANT_SERVICE_WINDOWS_REPOSITORY,
       useExisting: DemoRestaurantReadRepository,
     },
     {

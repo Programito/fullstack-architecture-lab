@@ -449,6 +449,8 @@
         "duration": "Duracio",
         "notes": "Notes",
         "tables": "Taules",
+        "timeSlots": "Hora d'arribada",
+        "editServiceWindows": "Editar franges",
         "submit": "Guardar reserva",
         "cancel": "Tancar",
         "error": "No s'ha pogut crear la reserva.",
@@ -456,7 +458,27 @@
           "customerNameRequired": "Introdueix el nom del client.",
           "partySizeRequired": "Indica com a minim un comensal.",
           "timeRequired": "Indica una hora valida."
+        },
+        "capacityHint": "Capacitat total de les taules seleccionades: {{count}} places.",
+        "capacityWarning": {
+          "title": "El grup supera la capacitat de les taules",
+          "description": "Has indicat {{partySize}} comensals pero les taules seleccionades tenen capacitat per a {{capacity}}. Pots continuar igualment o revisar la seleccio.",
+          "confirm": "Continuar igualment",
+          "cancel": "Revisar seleccio"
         }
+      },
+      "serviceWindowsDialog": {
+        "title": "Franges de servei",
+        "save": "Guardar franges",
+        "addWindow": "Afegir franja",
+        "removeWindow": "Eliminar franja",
+        "windowName": "Nom",
+        "windowStart": "Inici",
+        "windowEnd": "Fi",
+        "errorAtLeastOne": "Cal tenir com a minim una franja de servei.",
+        "useDefaults": "Restaurar valors predeterminats",
+        "defaultLunch": "Dinars",
+        "defaultDinner": "Sopars"
       },
       "status": {
         "pending": "Pendent",

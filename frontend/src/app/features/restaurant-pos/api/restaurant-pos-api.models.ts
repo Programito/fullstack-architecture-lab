@@ -474,3 +474,18 @@ export type UpdateMenuSectionRequest = { name?: string; isVisible?: boolean };
 export type AddMenuSectionItemRequest = { restaurantProductId: string; displayNameOverride?: string; priceOverrideCents?: number };
 export type UpdateMenuSectionItemRequest = { displayNameOverride?: string | null; priceOverrideCents?: number | null; isVisible?: boolean };
 export type ReorderItemsRequest = { items: Array<{ id: string; sortOrder: number }> };
+
+// ── Service Windows ──────────────────────────────────────────────────────────
+
+export type ServiceWindowDto = {
+  id: string;
+  restaurantId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  sortOrder: number;
+};
+
+export type UpdateServiceWindowsRequest = {
+  windows: Array<{ name: string; startTime: string; endTime: string }>;
+};

@@ -75,6 +75,10 @@ import { UpdateRestaurantProductDto } from './dto/update-restaurant-product.dto'
 import { RestaurantProductDetailResponseDto } from './dto/restaurant-product-detail-response.dto';
 import { CreateRestaurantReservationDto } from './dto/create-restaurant-reservation.dto';
 import { CreateRestaurantReservationUseCase } from '../../application/use-cases/create-restaurant-reservation.use-case';
+import { ServiceWindowResponseDto } from './dto/service-window-response.dto';
+import { UpdateServiceWindowsDto } from './dto/update-service-windows.dto';
+import { GetRestaurantServiceWindowsUseCase } from '../../application/use-cases/get-restaurant-service-windows.use-case';
+import { UpdateRestaurantServiceWindowsUseCase } from '../../application/use-cases/update-restaurant-service-windows.use-case';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -119,6 +123,8 @@ export class RestaurantsController {
     private readonly deleteRestaurantProduct: DeleteRestaurantProductUseCase,
     private readonly createRestaurantReservation: CreateRestaurantReservationUseCase,
     private readonly updateRestaurantReservationStatus: UpdateRestaurantReservationStatusUseCase,
+    private readonly getRestaurantServiceWindowsUC: GetRestaurantServiceWindowsUseCase,
+    private readonly updateRestaurantServiceWindowsUC: UpdateRestaurantServiceWindowsUseCase,
   ) {}
 
   @Get()
@@ -830,5 +836,31 @@ export class RestaurantsController {
   ): Promise<void> {
     unwrapResultOrThrow(await this.deleteRestaurantProduct.execute({ restaurantId: id, productId }));
     res.status(HttpStatus.NO_CONTENT);
+  }
+
+  @Get(':id/service-windows')
+  @Version('1')
+  @ApiOkResponse({ type: ServiceWindowResponseDto, isArray: true })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  async getServiceWindows(@Param('id') id: string): Promise<ServiceWindowResponseDto[]> {
+    const windows = unwrapResultOrThrow(await this.getRestaurantServiceWindowsUC.execute(id));
+    return windows.map(ServiceWindowResponseDto.fromDomain);
+  }
+
+  @Put(':id/service-windows')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ type: ServiceWindowResponseDto, isArray: true })
+  @ApiBadRequestResponse({ description: 'Invalid service windows configuration.' })
+  @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  async updateServiceWindows(
+    @Param('id') id: string,
+    @Body() body: UpdateServiceWindowsDto,
+  ): Promise<ServiceWindowResponseDto[]> {
+    const windows = unwrapResultOrThrow(
+      await this.updateRestaurantServiceWindowsUC.execute({ restaurantId: id, windows: body.windows }),
+    );
+    return windows.map(ServiceWindowResponseDto.fromDomain);
   }
 }

@@ -596,31 +596,37 @@ model Customer {
   phone          String?
   email          String?
   notes          String?
+  visitCount     Int           @default(0)
+  noShowCount    Int           @default(0)
+  cancelCount    Int           @default(0)
+  lateCount      Int           @default(0)
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   reservations   Reservation[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  @@unique([organizationId, name])
+  @@unique([organizationId, name, phone])
+  @@unique([organizationId, email])
   @@map("customers")
 }
 
 model Reservation {
-  id                   String              @id @default(uuid())
-  restaurantId         String
-  customerId           String?
-  customerNameSnapshot String
+  id                    String              @id @default(uuid())
+  restaurantId          String
+  customerId            String?
+  customerNameSnapshot  String
   customerPhoneSnapshot String?
-  partySize            Int
-  reservationAt        DateTime
-  durationMinutes      Int
-  status               ReservationStatus   @default(pending)
-  notes                String?
-  restaurant           Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  customer             Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  tables               ReservationTable[]
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  partySize             Int
+  reservationAt         DateTime
+  durationMinutes       Int
+  status                ReservationStatus   @default(pending)
+  arrivedLate           Boolean?
+  notes                 String?
+  restaurant            Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer              Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  tables                ReservationTable[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
 
   @@index([restaurantId, reservationAt, status])
   @@map("reservations")

@@ -449,6 +449,8 @@
         "duration": "Duracion",
         "notes": "Notas",
         "tables": "Mesas",
+        "timeSlots": "Hora de llegada",
+        "editServiceWindows": "Editar franjas",
         "submit": "Guardar reserva",
         "cancel": "Cerrar",
         "error": "No se ha podido crear la reserva.",
@@ -456,7 +458,27 @@
           "customerNameRequired": "Introduce el nombre del cliente.",
           "partySizeRequired": "Indica al menos un comensal.",
           "timeRequired": "Indica una hora valida."
+        },
+        "capacityHint": "Capacidad total de las mesas seleccionadas: {{count}} plazas.",
+        "capacityWarning": {
+          "title": "El grupo supera la capacidad de las mesas",
+          "description": "Has indicado {{partySize}} comensales pero las mesas seleccionadas tienen capacidad para {{capacity}}. Puedes continuar igualmente o revisar la seleccion.",
+          "confirm": "Continuar igualmente",
+          "cancel": "Revisar seleccion"
         }
+      },
+      "serviceWindowsDialog": {
+        "title": "Franjas de servicio",
+        "save": "Guardar franjas",
+        "addWindow": "Añadir franja",
+        "removeWindow": "Eliminar franja",
+        "windowName": "Nombre",
+        "windowStart": "Inicio",
+        "windowEnd": "Fin",
+        "errorAtLeastOne": "Debe haber al menos una franja de servicio.",
+        "useDefaults": "Restaurar valores predeterminados",
+        "defaultLunch": "Comidas",
+        "defaultDinner": "Cenas"
       },
       "status": {
         "pending": "Pendiente",

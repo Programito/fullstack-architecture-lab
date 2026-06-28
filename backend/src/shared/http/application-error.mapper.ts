@@ -24,6 +24,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_reservation_state':
     case 'invalid_reservation_creation':
     case 'invalid_order_configuration':
+    case 'invalid_service_windows':
       return new BadRequestException(error.message);
 
     case 'user_not_found':

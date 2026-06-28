@@ -27,12 +27,14 @@ import type {
   ServiceFloorDto,
   ServicePointDetailDto,
   ServicePointOrderDto,
+  ServiceWindowDto,
   UpdateFloorElementRequest,
   UpdateFloorRequest,
   UpdateMenuSectionItemRequest,
   UpdateMenuSectionRequest,
   UpdateRestaurantOrderLineRequest,
   UpdateRestaurantProductRequest,
+  UpdateServiceWindowsRequest,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -254,5 +256,13 @@ export class RestaurantPosApiService {
 
   reorderMenuSectionItems(restaurantId: string, menuId: string, sectionId: string, body: ReorderItemsRequest): Observable<void> {
     return this.http.put<void>(`${this.restaurantsUrl}/${restaurantId}/menus/${menuId}/sections/${sectionId}/items/reorder`, body);
+  }
+
+  getRestaurantServiceWindows(restaurantId: string): Observable<ServiceWindowDto[]> {
+    return this.http.get<ServiceWindowDto[]>(`${this.restaurantsUrl}/${restaurantId}/service-windows`);
+  }
+
+  updateRestaurantServiceWindows(restaurantId: string, body: UpdateServiceWindowsRequest): Observable<ServiceWindowDto[]> {
+    return this.http.put<ServiceWindowDto[]>(`${this.restaurantsUrl}/${restaurantId}/service-windows`, body);
   }
 }
