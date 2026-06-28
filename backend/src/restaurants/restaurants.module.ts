@@ -55,6 +55,7 @@ import { RegisterRestaurantOrderPaymentUseCase } from './application/use-cases/r
 import { DemoRestaurantReadRepository } from './infrastructure/demo-restaurant-read.repository';
 import { PrismaRestaurantOrderCatalogRepository } from './infrastructure/persistence/prisma-restaurant-order-catalog.repository';
 import { PrismaRestaurantOrderRepository } from './infrastructure/persistence/prisma-restaurant-order.repository';
+import { PrismaRestaurantReadRepository } from './infrastructure/persistence/prisma-restaurant-read.repository';
 import { RestaurantsController } from './presentation/rest/restaurants.controller';
 
 @Module({
@@ -85,7 +86,7 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     ReorderFloorElementsUseCase,
     UpdateFloorElementUseCase,
     UpdateRestaurantFloorUseCase,
-    DemoRestaurantReadRepository,
+    PrismaRestaurantReadRepository,
     PrismaRestaurantOrderCatalogRepository,
     PrismaRestaurantOrderRepository,
     PrismaRestaurantMenuAdminRepository,
@@ -110,12 +111,16 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     CreateCustomerUseCase,
     DemoCustomerRepository,
     {
+      provide: DemoRestaurantReadRepository,
+      useExisting: PrismaRestaurantReadRepository,
+    },
+    {
       provide: CUSTOMER_REPOSITORY,
       useExisting: DemoCustomerRepository,
     },
     {
       provide: RESTAURANT_READ_REPOSITORY,
-      useExisting: DemoRestaurantReadRepository,
+      useExisting: PrismaRestaurantReadRepository,
     },
     {
       provide: RESTAURANT_SERVICE_WINDOWS_REPOSITORY,

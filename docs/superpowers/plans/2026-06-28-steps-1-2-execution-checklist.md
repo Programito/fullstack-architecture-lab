@@ -22,6 +22,22 @@
   - `b4815cf` `feat: expose scoped auth assignments`
   - `e3c33b4` `feat: enforce reservation scoped access`
 
+## Execution status (2026-06-28)
+
+- Done: Task 1 completed in commit `7197b56` `feat: scope restaurant read endpoints`
+- Done: Task 2 completed in commit `a572638` `feat: scope restaurant operational writes`
+- Verified:
+  - `pnpm test:e2e -- app.e2e-spec.ts`
+  - `pnpm build`
+- In progress: Task 3, defining Prisma runtime expectations for restaurant list and reservations reads before swapping providers
+- Task 3 kickoff evidence:
+  - Created `backend/src/restaurants/infrastructure/persistence/prisma-restaurant-read.repository.integration-spec.ts`
+  - Implemented `backend/src/restaurants/infrastructure/persistence/prisma-restaurant-read.repository.ts`
+  - Switched `RESTAURANT_READ_REPOSITORY` to the Prisma-backed adapter while preserving demo behavior for the remaining methods through delegation/fallback
+  - `pnpm build` passes
+  - `pnpm test:e2e -- app.e2e-spec.ts` passes
+  - `pnpm test:integration -- prisma-restaurant-read.repository.integration-spec.ts` now loads the new repository and is blocked only by the missing Docker runtime for Testcontainers in this environment
+
 ## Guardrails
 
 - Keep `DEMO_ACCOUNT_CATALOG`, `demo-users.seed.ts`, and demo login working.
