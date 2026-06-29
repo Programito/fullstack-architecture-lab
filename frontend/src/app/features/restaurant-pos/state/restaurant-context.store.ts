@@ -24,6 +24,10 @@ export class RestaurantContextStore {
     () => !this._isLoading() && this._restaurants().length === 0 && this._loadError() === null,
   );
 
+  setActiveRestaurantId(id: string): void {
+    this._activeRestaurantId.set(id);
+  }
+
   load(): void {
     if (this._isLoading()) {
       return;

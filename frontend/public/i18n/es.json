@@ -108,7 +108,12 @@
     "loading": "Cargando usuarios...",
     "empty": "No hay usuarios disponibles.",
     "confirmRevocation": "El cambio puede cerrar las sesiones activas de este usuario.",
-    "types": { "regular": "Regular", "demo": "Demo", "system": "Sistema", "test": "Pruebas" }
+    "types": {
+      "regular": "Regular",
+      "demo": "Demo",
+      "system": "Sistema",
+      "test": "Pruebas"
+    }
   },
   "languageSelect": {
     "label": "Idioma",
@@ -168,7 +173,8 @@
       "selectTableFirst": "Selecciona una mesa primero.",
       "productUnavailable": "El producto no está disponible.",
       "cannotPlaceElement": "No se puede colocar el elemento aquí.",
-      "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz."
+      "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz.",
+      "addLineFailed": "No se pudo añadir el producto. Revisa el estado de la mesa."
     },
     "layout": {
       "title": "Plano del restaurante",
@@ -638,6 +644,10 @@
       "entrance": "Entrada",
       "blockedArea": "Zona bloqueada",
       "stool": "Taburete"
+    },
+    "selector": {
+      "title": "Selecciona un restaurante",
+      "description": "Elige el restaurante en el que quieres trabajar."
     }
   },
   "menu": {

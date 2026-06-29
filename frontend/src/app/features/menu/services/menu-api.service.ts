@@ -12,6 +12,7 @@ import type {
   UpdateRestaurantProductRequest,
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
+import { RestaurantContextStore } from '../../restaurant-pos/state/restaurant-context.store';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../models/menu.models';
 import type { ProductCourse, ProductPreparationRoute } from '../models/product.model';
 
@@ -25,58 +26,63 @@ export type MenuData = {
 
 export type { CreateRestaurantProductRequest, MenuSectionAdminDto, RestaurantProductDetailDto, RestaurantProductSummaryDto, UpdateRestaurantProductRequest };
 
-const RESTAURANT_ID = 'restaurant-mesaflow-centro';
-
 @Injectable({ providedIn: 'root' })
 export class MenuApiService {
   private readonly api = inject(RestaurantPosApiService);
+  private readonly context = inject(RestaurantContextStore);
+
+  private get restaurantId(): string {
+    const id = this.context.activeRestaurant()?.id;
+    if (!id) throw new Error('No active restaurant');
+    return id;
+  }
 
   getMenu(): Observable<MenuData> {
-    return this.api.getRestaurantMenu(RESTAURANT_ID).pipe(map(mapApiMenuToMenuData));
+    return this.api.getRestaurantMenu(this.restaurantId).pipe(map(mapApiMenuToMenuData));
   }
 
   toggleAvailability(restaurantProductId: string, available: boolean): Observable<void> {
-    return this.api.setMenuItemAvailability(RESTAURANT_ID, restaurantProductId, available);
+    return this.api.setMenuItemAvailability(this.restaurantId, restaurantProductId, available);
   }
 
   createSection(menuId: string, name: string, isVisible = true): Observable<MenuSectionAdminDto> {
-    return this.api.createMenuSection(RESTAURANT_ID, menuId, { name, isVisible });
+    return this.api.createMenuSection(this.restaurantId, menuId, { name, isVisible });
   }
 
   updateSection(menuId: string, sectionId: string, data: { name?: string; isVisible?: boolean }): Observable<MenuSectionAdminDto> {
-    return this.api.updateMenuSection(RESTAURANT_ID, menuId, sectionId, data);
+    return this.api.updateMenuSection(this.restaurantId, menuId, sectionId, data);
   }
 
   deleteSection(menuId: string, sectionId: string): Observable<void> {
-    return this.api.deleteMenuSection(RESTAURANT_ID, menuId, sectionId);
+    return this.api.deleteMenuSection(this.restaurantId, menuId, sectionId);
   }
 
   listProducts(): Observable<RestaurantProductSummaryDto[]> {
-    return this.api.listRestaurantProducts(RESTAURANT_ID);
+    return this.api.listRestaurantProducts(this.restaurantId);
   }
 
   addSectionItem(menuId: string, sectionId: string, restaurantProductId: string): Observable<void> {
-    return this.api.addMenuSectionItem(RESTAURANT_ID, menuId, sectionId, { restaurantProductId }).pipe(map(() => undefined));
+    return this.api.addMenuSectionItem(this.restaurantId, menuId, sectionId, { restaurantProductId }).pipe(map(() => undefined));
   }
 
   removeSectionItem(menuId: string, sectionId: string, itemId: string): Observable<void> {
-    return this.api.removeMenuSectionItem(RESTAURANT_ID, menuId, sectionId, itemId);
+    return this.api.removeMenuSectionItem(this.restaurantId, menuId, sectionId, itemId);
   }
 
   getProduct(productId: string): Observable<RestaurantProductDetailDto> {
-    return this.api.getRestaurantProduct(RESTAURANT_ID, productId);
+    return this.api.getRestaurantProduct(this.restaurantId, productId);
   }
 
   createProduct(data: CreateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
-    return this.api.createRestaurantProduct(RESTAURANT_ID, data);
+    return this.api.createRestaurantProduct(this.restaurantId, data);
   }
 
   updateProduct(productId: string, data: UpdateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
-    return this.api.updateRestaurantProduct(RESTAURANT_ID, productId, data);
+    return this.api.updateRestaurantProduct(this.restaurantId, productId, data);
   }
 
   deleteProduct(productId: string): Observable<void> {
-    return this.api.deleteRestaurantProduct(RESTAURANT_ID, productId);
+    return this.api.deleteRestaurantProduct(this.restaurantId, productId);
   }
 }
 

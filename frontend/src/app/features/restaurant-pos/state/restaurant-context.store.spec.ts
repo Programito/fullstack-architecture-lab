@@ -88,6 +88,34 @@ describe('RestaurantContextStore', () => {
     expect(store.loadError()).toBeNull();
   });
 
+  it('allows manually setting the active restaurant when multiple are available', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        RestaurantContextStore,
+        {
+          provide: RestaurantPosApiService,
+          useValue: {
+            listRestaurants: () =>
+              of([
+                { id: 'restaurant-1', name: 'Centro', displayName: 'Centro', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
+                { id: 'restaurant-2', name: 'Norte', displayName: 'Norte', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
+              ]),
+          },
+        },
+      ],
+    });
+
+    const store = TestBed.inject(RestaurantContextStore);
+    store.load();
+
+    expect(store.activeRestaurant()).toBeNull();
+
+    store.setActiveRestaurantId('restaurant-2');
+
+    expect(store.activeRestaurant()?.id).toBe('restaurant-2');
+    expect(store.activeRestaurant()?.name).toBe('Norte');
+  });
+
   it('stores a load error when the request fails', () => {
     TestBed.configureTestingModule({
       providers: [

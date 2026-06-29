@@ -76,6 +76,28 @@
   </aside>
 
   <div class="min-w-0">
-    <router-outlet />
+    @if (needsRestaurantSelection()) {
+      <div class="flex min-h-dvh flex-col items-center justify-center gap-6 p-8">
+        <div class="w-full max-w-sm text-center">
+          <h1 class="theme-title text-xl font-semibold">{{ 'restaurantPos.selector.title' | transloco }}</h1>
+          <p class="theme-body mt-1 text-sm">{{ 'restaurantPos.selector.description' | transloco }}</p>
+        </div>
+        <ul class="w-full max-w-sm space-y-2" role="list">
+          @for (restaurant of restaurantContext.restaurants(); track restaurant.id) {
+            <li>
+              <button
+                class="theme-panel w-full rounded-lg border px-4 py-3 text-left text-sm font-medium shadow-sm transition hover:bg-(--ui-surface-hover) focus-visible:outline-2 focus-visible:outline-cyan-500"
+                type="button"
+                (click)="selectRestaurant(restaurant.id)"
+              >
+                {{ restaurant.displayName ?? restaurant.name }}
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    } @else {
+      <router-outlet />
+    }
   </div>
 </div>

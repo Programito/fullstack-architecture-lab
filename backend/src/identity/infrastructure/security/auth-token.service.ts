@@ -10,6 +10,10 @@ export type AuthTokenPayload = {
   sid: string;
   roles?: string[];
   permissions?: string[];
+  scopes?: {
+    organizations: string[];
+    restaurants: string[];
+  };
   type: TokenType;
   jti: string;
   iss?: string;
@@ -38,9 +42,15 @@ export class AuthTokenService {
     this.absoluteRefreshTtlSeconds = positiveNumber(config, 'JWT_REFRESH_ABSOLUTE_TTL_SECONDS', 2592000);
   }
 
-  issueAccessToken(userId: string, sessionId: string, roles: string[], permissions: string[]): Promise<string> {
+  issueAccessToken(
+    userId: string,
+    sessionId: string,
+    roles: string[],
+    permissions: string[],
+    scopes: { organizations: string[]; restaurants: string[] },
+  ): Promise<string> {
     return this.sign(
-      { sub: userId, sid: sessionId, roles, permissions, type: 'access', jti: randomUUID() },
+      { sub: userId, sid: sessionId, roles, permissions, scopes, type: 'access', jti: randomUUID() },
       'access',
     );
   }

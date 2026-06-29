@@ -53,14 +53,26 @@ export async function seedDemoUsers(prisma: PrismaClient): Promise<void> {
     await prisma.userRole.deleteMany({ where: { userId: user.id } });
     await prisma.userRole.create({ data: { userId: user.id, roleId } });
     await prisma.userRoleAssignment.deleteMany({ where: { userId: user.id } });
+    const isOrgRole = account.role === 'admin' || account.role === 'manager';
     await prisma.userRoleAssignment.createMany({
       data: [
+        ...(isOrgRole
+          ? [
+              {
+                userId: user.id,
+                roleId,
+                scopeType: 'organization' as const,
+                organizationId: organization.id,
+                restaurantId: null,
+              },
+            ]
+          : []),
         {
           userId: user.id,
           roleId,
-          scopeType: account.role === 'admin' || account.role === 'manager' ? 'organization' : 'restaurant',
+          scopeType: 'restaurant' as const,
           organizationId: organization.id,
-          restaurantId: account.role === 'admin' || account.role === 'manager' ? null : restaurant.id,
+          restaurantId: restaurant.id,
         },
       ],
     });

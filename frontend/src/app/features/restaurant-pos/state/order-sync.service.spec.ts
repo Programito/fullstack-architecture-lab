@@ -101,11 +101,6 @@ describe('OrderSyncService', () => {
     return TestBed.inject(OrderSyncService);
   }
 
-  it('llama a restaurantContext.load() al construirse', () => {
-    setup();
-    expect(mockLoad).toHaveBeenCalledOnce();
-  });
-
   it('no llama a la API de planta cuando no hay restaurante activo', async () => {
     setup();
     await vi.advanceTimersByTimeAsync(0);

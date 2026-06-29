@@ -13,7 +13,8 @@ describe('seedMesaFlowReservationsDemo', () => {
       { id: 'table-3', tableNumber: 3 },
       { id: 'table-4', tableNumber: 4 },
     ]);
-    const customerUpsert = vi
+    const customerFindFirst = vi.fn().mockResolvedValue(null);
+    const customerCreate = vi
       .fn()
       .mockResolvedValueOnce({ id: 'customer-laura', name: 'Laura Gomez', phone: '+34 600 111 222' })
       .mockResolvedValueOnce({ id: 'customer-diego', name: 'Diego Martin', phone: '+34 600 333 444' })
@@ -31,21 +32,25 @@ describe('seedMesaFlowReservationsDemo', () => {
       organization: { findUnique: organizationFindUnique },
       restaurant: { findFirst: restaurantFindFirst },
       restaurantTable: { findMany: restaurantTableFindMany },
-      customer: { upsert: customerUpsert },
+      customer: { findFirst: customerFindFirst, create: customerCreate },
       reservation: { upsert: reservationUpsert },
       reservationTable: { deleteMany: reservationTableDeleteMany, createMany: reservationTableCreateMany },
     } as unknown as PrismaClient;
 
     await seedMesaFlowReservationsDemo(prisma);
 
-    expect(customerUpsert).toHaveBeenCalledWith(
+    expect(customerFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          organizationId_name: {
-            organizationId: 'org-demo',
-            name: 'Laura Gomez',
-          },
-        },
+        where: { organizationId: 'org-demo', name: 'Laura Gomez' },
+      }),
+    );
+    expect(customerCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organizationId: 'org-demo',
+          name: 'Laura Gomez',
+          email: 'laura.gomez@example.com',
+        }),
       }),
     );
     expect(reservationUpsert).toHaveBeenCalledWith(

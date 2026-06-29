@@ -5,6 +5,7 @@ import {
   RESTAURANT_POS_DEFAULT_SECTION,
   RESTAURANT_POS_SECTIONS,
   restaurantPosSectionGuard,
+  restaurantScopeGuard,
 } from './features/restaurant-pos/restaurant-pos.routes';
 import { adminGuard, anonymousOnlyGuard, authenticatedGuard, developerGuard } from './features/identity/auth.guards';
 
@@ -38,7 +39,7 @@ export const routes: Routes = [
       ...RESTAURANT_POS_SECTIONS.map(({ path, loadComponent, requiredPermission }) => ({
         path,
         loadComponent,
-        canActivate: [restaurantPosSectionGuard],
+        canActivate: [restaurantPosSectionGuard, restaurantScopeGuard],
         data: { requiredPermission },
       })),
       {

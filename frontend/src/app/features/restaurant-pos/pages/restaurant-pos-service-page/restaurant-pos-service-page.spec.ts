@@ -4,13 +4,14 @@ import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
+import { OrderWriteService } from '../../state/order-write.service';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 
 describe('RestaurantPosServicePage', () => {
   const createRestaurantPosApiMock = (): Pick<
     RestaurantPosApiService,
-    'listRestaurants' | 'getRestaurantServiceFloor' | 'getRestaurantServicePoint' | 'getRestaurantServicePointOrder' | 'occupyRestaurantServicePoint' | 'sendRestaurantServicePointToKitchen' | 'markRestaurantServicePointServed' | 'chargeRestaurantServicePoint' | 'freeRestaurantServicePoint'
+    'listRestaurants' | 'getRestaurantMenu' | 'getRestaurantServiceFloor' | 'getRestaurantServicePoint' | 'getRestaurantServicePointOrder' | 'occupyRestaurantServicePoint' | 'sendRestaurantServicePointToKitchen' | 'markRestaurantServicePointServed' | 'chargeRestaurantServicePoint' | 'freeRestaurantServicePoint'
   > => {
     const tableStatuses = new Map<string, 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'paid'>([
       ['table-1', 'free'],
@@ -79,6 +80,15 @@ describe('RestaurantPosServicePage', () => {
           isActive: true,
         },
       ]),
+    ),
+    getRestaurantMenu: vi.fn(() =>
+      of({
+        id: 'menu-1',
+        restaurantId: 'restaurant-mesaflow-centro',
+        name: 'Carta',
+        isActive: true,
+        sections: [],
+      }),
     ),
     getRestaurantServiceFloor: vi.fn(() =>
       of({
@@ -437,6 +447,7 @@ describe('RestaurantPosServicePage', () => {
       providers: [
         ...(storage ? [...i18n.providers, { provide: KEY_VALUE_STORAGE, useValue: storage }] : [...i18n.providers]),
         { provide: RestaurantPosApiService, useValue: apiMock },
+        OrderWriteService,
       ],
     });
 

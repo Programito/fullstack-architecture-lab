@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 
 import { IdentitySessionStore } from '../identity/identity-session.store';
 import type { PermissionName } from '../identity/models/permission.model';
+import { RestaurantContextStore } from './state/restaurant-context.store';
 
 export type RestaurantPosSectionPath = 'service' | 'menu' | 'kitchen' | 'layout' | 'reservations';
 
@@ -83,4 +84,20 @@ export const restaurantPosSectionGuard: CanActivateFn = (
     return true;
   }
   return router.parseUrl(firstAllowedRestaurantPosUrl(identity.permissions()));
+};
+
+export const restaurantScopeGuard: CanActivateFn = (): boolean | UrlTree => {
+  const router = inject(Router);
+  const identity = inject(IdentitySessionStore);
+  const restaurantContext = inject(RestaurantContextStore);
+
+  const activeRestaurant = restaurantContext.activeRestaurant();
+  if (!activeRestaurant) return true;
+
+  const scopes = identity.scopes();
+  if (scopes.organizations.length > 0) return true;
+  if (scopes.restaurants.length === 0) return true;
+  if (scopes.restaurants.includes(activeRestaurant.id)) return true;
+
+  return router.parseUrl(`/${RESTAURANT_POS_ACCESS_URL}`);
 };

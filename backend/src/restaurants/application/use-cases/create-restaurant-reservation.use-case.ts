@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import {
+  insufficientTableCapacity,
   invalidReservationCreation,
+  outsideServiceHours,
+  reservationConflict,
+  reservationInPast,
   restaurantNotFound,
   type ApplicationError,
 } from '../../../shared/errors/application-error';
@@ -9,6 +13,10 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { err, ok, type Result } from '../../../shared/result/result';
 import type { CreateRestaurantReservationInput, RestaurantReservation } from '../../domain/restaurant-read.models';
 import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
+import {
+  RESTAURANT_SERVICE_WINDOWS_REPOSITORY,
+  type RestaurantServiceWindowsRepository,
+} from '../ports/restaurant-service-windows-repository.port';
 
 type CreateRestaurantReservationCommand = {
   restaurantId: string;
@@ -18,6 +26,7 @@ type CreateRestaurantReservationCommand = {
 export class CreateRestaurantReservationUseCase {
   constructor(
     @Inject(RESTAURANT_READ_REPOSITORY) private readonly restaurants: RestaurantReadRepository,
+    @Inject(RESTAURANT_SERVICE_WINDOWS_REPOSITORY) private readonly serviceWindows: RestaurantServiceWindowsRepository,
   ) {}
 
   async execute(
@@ -35,8 +44,42 @@ export class CreateRestaurantReservationUseCase {
       return err(invalidReservationCreation({ reason: 'invalid_duration' }));
     }
 
-    if (Number.isNaN(new Date(command.reservationAt).getTime())) {
+    const startTime = new Date(command.reservationAt);
+    if (Number.isNaN(startTime.getTime())) {
       return err(invalidReservationCreation({ reason: 'invalid_reservation_at' }));
+    }
+
+    if (startTime <= new Date()) {
+      return err(reservationInPast());
+    }
+
+    const endTime = new Date(startTime.getTime() + command.durationMinutes * 60 * 1000);
+
+    for (const tableId of command.tableIds) {
+      const capacity = await this.restaurants.findTableCapacity(command.restaurantId, tableId);
+      if (capacity !== null && command.partySize > capacity) {
+        return err(insufficientTableCapacity(tableId, command.partySize, capacity));
+      }
+
+      const conflicts = await this.restaurants.findConflictingReservations(
+        command.restaurantId,
+        tableId,
+        startTime,
+        endTime,
+      );
+      if (conflicts.length > 0) {
+        return err(reservationConflict(tableId));
+      }
+    }
+
+    const windows = await this.serviceWindows.findServiceWindowsByRestaurantId(command.restaurantId);
+    if (windows !== null && windows.length > 0) {
+      const startHHMM = toHHMM(startTime);
+      const endHHMM = toHHMM(endTime);
+      const fitsWindow = windows.some((w) => startHHMM >= w.startTime && endHHMM <= w.endTime);
+      if (!fitsWindow) {
+        return err(outsideServiceHours());
+      }
     }
 
     try {
@@ -59,4 +102,8 @@ export class CreateRestaurantReservationUseCase {
       throw error;
     }
   }
+}
+
+function toHHMM(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }

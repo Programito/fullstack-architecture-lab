@@ -42,7 +42,7 @@ import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from './application/ports/resta
 import { SearchCustomersUseCase } from './application/use-cases/search-customers.use-case';
 import { CreateCustomerUseCase } from './application/use-cases/create-customer.use-case';
 import { CUSTOMER_REPOSITORY } from './application/ports/customer-repository.port';
-import { DemoCustomerRepository } from './infrastructure/demo-customer.repository';
+import { PrismaCustomerRepository } from './infrastructure/persistence/prisma-customer.repository';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
@@ -52,14 +52,31 @@ import { CancelRestaurantOrderLineUseCase } from './application/use-cases/cancel
 import { UpdateRestaurantOrderLineStatusUseCase } from './application/use-cases/update-restaurant-order-line-status.use-case';
 import { FreeRestaurantServicePointUseCase } from './application/use-cases/free-restaurant-service-point.use-case';
 import { RegisterRestaurantOrderPaymentUseCase } from './application/use-cases/register-restaurant-order-payment.use-case';
-import { DemoRestaurantReadRepository } from './infrastructure/demo-restaurant-read.repository';
 import { PrismaRestaurantOrderCatalogRepository } from './infrastructure/persistence/prisma-restaurant-order-catalog.repository';
 import { PrismaRestaurantOrderRepository } from './infrastructure/persistence/prisma-restaurant-order.repository';
+import { PrismaRestaurantReadRepository } from './infrastructure/persistence/prisma-restaurant-read.repository';
+import { PrismaRestaurantServiceWindowsRepository } from './infrastructure/persistence/prisma-restaurant-service-windows.repository';
 import { RestaurantsController } from './presentation/rest/restaurants.controller';
+import { RestaurantMenuController } from './presentation/rest/restaurant-menu.controller';
+import { RestaurantOrderController } from './presentation/rest/restaurant-order.controller';
+import { RestaurantFloorController } from './presentation/rest/restaurant-floor.controller';
+import { RestaurantReservationsController } from './presentation/rest/restaurant-reservations.controller';
+import { RestaurantProductsController } from './presentation/rest/restaurant-products.controller';
+import { RestaurantCustomersController } from './presentation/rest/restaurant-customers.controller';
+import { RestaurantServiceController } from './presentation/rest/restaurant-service.controller';
 
 @Module({
   imports: [IdentityModule],
-  controllers: [RestaurantsController],
+  controllers: [
+    RestaurantsController,
+    RestaurantMenuController,
+    RestaurantOrderController,
+    RestaurantFloorController,
+    RestaurantReservationsController,
+    RestaurantProductsController,
+    RestaurantCustomersController,
+    RestaurantServiceController,
+  ],
   providers: [
     ListRestaurantsUseCase,
     GetRestaurantMenuUseCase,
@@ -85,10 +102,12 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     ReorderFloorElementsUseCase,
     UpdateFloorElementUseCase,
     UpdateRestaurantFloorUseCase,
-    DemoRestaurantReadRepository,
+    PrismaRestaurantReadRepository,
     PrismaRestaurantOrderCatalogRepository,
     PrismaRestaurantOrderRepository,
     PrismaRestaurantMenuAdminRepository,
+    PrismaCustomerRepository,
+    PrismaRestaurantServiceWindowsRepository,
     CreateMenuSectionUseCase,
     UpdateMenuSectionUseCase,
     DeleteMenuSectionUseCase,
@@ -108,18 +127,17 @@ import { RestaurantsController } from './presentation/rest/restaurants.controlle
     UpdateRestaurantServiceWindowsUseCase,
     SearchCustomersUseCase,
     CreateCustomerUseCase,
-    DemoCustomerRepository,
     {
       provide: CUSTOMER_REPOSITORY,
-      useExisting: DemoCustomerRepository,
+      useExisting: PrismaCustomerRepository,
     },
     {
       provide: RESTAURANT_READ_REPOSITORY,
-      useExisting: DemoRestaurantReadRepository,
+      useExisting: PrismaRestaurantReadRepository,
     },
     {
       provide: RESTAURANT_SERVICE_WINDOWS_REPOSITORY,
-      useExisting: DemoRestaurantReadRepository,
+      useExisting: PrismaRestaurantServiceWindowsRepository,
     },
     {
       provide: RESTAURANT_ORDER_CATALOG_REPOSITORY,

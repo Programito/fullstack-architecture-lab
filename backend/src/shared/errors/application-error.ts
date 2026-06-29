@@ -33,7 +33,11 @@ export type ApplicationErrorCode =
   | 'invalid_service_windows'
   | 'customer_not_found'
   | 'customer_already_exists'
-  | 'invalid_customer';
+  | 'invalid_customer'
+  | 'reservation_conflict'
+  | 'reservation_in_past'
+  | 'insufficient_table_capacity'
+  | 'outside_service_hours';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -131,4 +135,20 @@ export function customerAlreadyExists(name: string): ApplicationError {
 
 export function invalidCustomer(reason: string): ApplicationError {
   return applicationError('invalid_customer', `Customer data is invalid: ${reason}.`, { reason });
+}
+
+export function reservationConflict(tableId: string): ApplicationError {
+  return applicationError('reservation_conflict', `Table "${tableId}" already has an active reservation in this time slot.`, { tableId });
+}
+
+export function reservationInPast(): ApplicationError {
+  return applicationError('reservation_in_past', 'Reservation date must be in the future.');
+}
+
+export function insufficientTableCapacity(tableId: string, required: number, available: number): ApplicationError {
+  return applicationError('insufficient_table_capacity', `Table "${tableId}" has capacity for ${available} but ${required} guests are requested.`, { tableId, required, available });
+}
+
+export function outsideServiceHours(): ApplicationError {
+  return applicationError('outside_service_hours', 'Reservation does not fall within any active service window.');
 }

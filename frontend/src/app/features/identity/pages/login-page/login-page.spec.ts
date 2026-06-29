@@ -31,6 +31,7 @@ describe('LoginPage', () => {
     expiresIn: 900,
     roles: ['developer'],
     permissions: [],
+    scopes: { organizations: [], restaurants: [] },
     user: {
       id: 'user-1',
       email: 'developer@mesaflow.demo',

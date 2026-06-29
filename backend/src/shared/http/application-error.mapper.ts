@@ -51,9 +51,13 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'menu_item_already_in_section':
     case 'product_name_taken':
     case 'customer_already_exists':
+    case 'reservation_conflict':
       return new ConflictException(error.message);
 
     case 'payment_exceeds_balance':
+    case 'reservation_in_past':
+    case 'insufficient_table_capacity':
+    case 'outside_service_hours':
       return new UnprocessableEntityException(error.message);
 
     default:

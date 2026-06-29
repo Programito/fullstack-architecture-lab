@@ -32,6 +32,7 @@ Ejecutar desde `frontend/` o `backend/` según el área que se cambie.
 
 ```bash
 pnpm test -- --watch=false
+pnpm test -- --watch=false --reporter=verbose path/to/file.spec.ts   # spec concreto
 pnpm test:e2e
 pnpm storybook
 pnpm build
@@ -44,6 +45,8 @@ pnpm build-storybook
 pnpm dev
 pnpm build
 pnpm test
+pnpm test -- path/to/file.spec.ts                 # spec concreto
+pnpm test -- -t "nombre del test"                 # filtro por nombre
 pnpm test:integration   # requiere Docker (Testcontainers)
 pnpm test:e2e
 pnpm prisma:generate
@@ -51,6 +54,11 @@ pnpm prisma:migrate     # genera migración local
 pnpm prisma:deploy      # aplica migraciones comprometidas
 pnpm prisma:seed
 ```
+
+Convención de archivos de test backend:
+- Unitarios/aplicación: `*.spec.ts`
+- Integración (Testcontainers): `*.integration-spec.ts`
+- E2E (Supertest): en carpeta `test/` con config `vitest.e2e.config.ts`
 
 No ejecutar servidores Angular ni Storybook ocultos en segundo plano. Mantenerlos visibles para ver errores.
 
@@ -114,6 +122,19 @@ Escribir tests alrededor de comportamiento visible: roles, etiquetas, texto, val
 ---
 
 ## Frontend Angular
+
+### Jerarquía de stores del POS
+
+```
+RestaurantContextStore         — lista de restaurantes + restaurante activo (carga desde API)
+RestaurantPosStore             — facade principal; delega en:
+  ├─ RestaurantFloorStore      — plano de sala, elementos, mesas
+  └─ RestaurantOrderStore      — pedidos por mesa, líneas, cocina, pagos
+```
+
+`RestaurantOrderStore` usa `MenuMockService` como fallback de productos si `hydrateProducts()` no se ha llamado con datos reales del backend. Las mutaciones de líneas de pedido (addProduct, increaseOrderLine, etc.) actualmente son solo locales.
+
+`RestaurantContextStore` auto-selecciona el restaurante si solo hay uno. Si hay varios, `activeRestaurant` es `null` hasta que se llame a `setActiveRestaurantId()` (método aún no implementado — actualmente no existe selector de restaurante).
 
 ### Directrices
 
@@ -225,6 +246,29 @@ src/shared/                    # preocupaciones transversales (Prisma, eventos, 
 Preferir extender un módulo existente (`identity`, `tasks`, `restaurants`) antes de crear un módulo nuevo. Al crear un módulo nuevo, reflejar la estructura existente.
 
 Módulos actuales: `health`, `identity`, `tasks`, `restaurants`.
+
+### Guards y autorización
+
+Los guards se encadenan en orden en los controladores:
+
+```
+AuthGuard → RestaurantAccessGuard → PermissionsGuard
+```
+
+- **`AuthGuard`**: valida JWT Bearer, carga usuario + sesión + roles/permisos + scopes en `request.auth`. Los scopes se extraen de `UserRoleAssignment` (campo `organizationId` o `restaurantId`).
+- **`RestaurantAccessGuard`**: activado por el decorador `@RequireRestaurantScope()`. Comprueba `request.auth.scopes.restaurants` o si hay alguna organización en scope. **Limitación conocida:** con scope de organización permite acceso a cualquier restaurante sin verificar que el restaurante pertenezca a esa organización.
+- **`PermissionsGuard`**: activado por `@RequirePermissions(...permissions)`. Comprueba permisos globales del usuario, no ligados a scope.
+- **`RolesGuard`**: activado por `@RequireRoles(...)`. Comprueba roles globales.
+
+Patrón habitual en controladores de restaurante:
+
+```typescript
+@UseGuards(AuthGuard, RestaurantAccessGuard)
+@RequireRestaurantScope()
+@RequirePermissions('orders')
+```
+
+La respuesta de autenticación (`AuthResponseDto` backend) incluye `scopes: { organizations: string[]; restaurants: string[] }`. El modelo frontend `AuthResponseDto` en `identity-api.models.ts` **aún no incluye el campo `scopes`** y `IdentitySessionStore` tampoco lo persiste.
 
 ### Directrices NestJS
 

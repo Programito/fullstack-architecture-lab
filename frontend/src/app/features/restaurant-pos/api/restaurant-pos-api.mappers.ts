@@ -1,5 +1,7 @@
-import type { ServiceFloorDto, ServicePhaseCourseDto, ServicePointOrderDto } from './restaurant-pos-api.models';
-import type { FloorElement, RestaurantTable, TableStatus } from '../models/restaurant-pos.models';
+import type { RestaurantMenuDto, ServiceFloorDto, ServicePhaseCourseDto, ServicePointOrderDto } from './restaurant-pos-api.models';
+import type { ComboProductDefinition } from '../../menu/models/combo.model';
+import type { ModifierGroup } from '../../menu/models/modifier-group.model';
+import type { FloorElement, Product, RestaurantTable, TableStatus } from '../models/restaurant-pos.models';
 
 export function formatOpenDuration(value: string | null | undefined): string {
   if (!value) return '0m';
@@ -81,6 +83,97 @@ export function mapServiceFloor(serviceFloor: ServiceFloorDto): {
       );
     }),
   };
+}
+
+export function mapRestaurantMenuToProducts(menu: RestaurantMenuDto): Product[] {
+  return menu.sections.flatMap((section) =>
+    section.items.map((item) => ({
+      id: item.restaurantProductId ?? item.id,
+      ...(item.restaurantProductId ? { restaurantProductId: item.restaurantProductId } : {}),
+      name: item.name,
+      ...(item.description ? { description: item.description } : {}),
+      categoryId: section.id,
+      category: section.name,
+      basePrice: item.priceCents / 100,
+      price: item.priceCents / 100,
+      available: item.isAvailable,
+      course: (item.defaultCourse ?? 'other') as Product['course'],
+      type: item.productType,
+      modifierGroupIds: item.modifierGroups.map((g) => g.id),
+      preparationPolicy: mapPreparationRoute(item.preparationRoute),
+      ...(item.comboDefinition ? { comboDefinitionId: item.comboDefinition.id } : {}),
+    })),
+  );
+}
+
+export function mapRestaurantMenuModifierGroups(menu: RestaurantMenuDto): ModifierGroup[] {
+  const seen = new Set<string>();
+  return menu.sections.flatMap((section) =>
+    section.items.flatMap((item) =>
+      item.modifierGroups
+        .filter((g) => {
+          if (seen.has(g.id)) return false;
+          seen.add(g.id);
+          return true;
+        })
+        .map((g) => ({
+          id: g.id,
+          name: g.name,
+          type: g.selectionType as ModifierGroup['type'],
+          required: g.isRequired,
+          minSelections: g.minSelections,
+          maxSelections: g.maxSelections,
+          options: g.options.map((o) => ({
+            id: o.id,
+            name: o.name,
+            priceDelta: o.priceDeltaCents / 100,
+          })),
+        })),
+    ),
+  );
+}
+
+export function mapRestaurantMenuComboDefinitions(menu: RestaurantMenuDto): ComboProductDefinition[] {
+  return menu.sections.flatMap((section) =>
+    section.items
+      .filter((item) => item.productType === 'combo' && item.comboDefinition !== null)
+      .map((item) => {
+        const def = item.comboDefinition!;
+        return {
+          productId: item.restaurantProductId ?? item.id,
+          pricingMode: 'base_plus_supplements' as const,
+          slots: def.slots.map((slot) => ({
+            id: slot.id,
+            name: slot.name,
+            required: slot.isRequired,
+            minSelections: slot.minSelections,
+            maxSelections: slot.maxSelections,
+            allowedProductIds: slot.options.map((o) => o.restaurantProductId),
+            defaultProductId: slot.options.find((o) => o.isAvailable)?.restaurantProductId,
+          })),
+          supplements: def.slots.flatMap((slot) =>
+            slot.options
+              .filter((o) => o.supplementPriceCents > 0)
+              .map((o) => ({ slotId: slot.id, productId: o.restaurantProductId, supplementPrice: o.supplementPriceCents / 100 })),
+          ),
+        };
+      }),
+  );
+}
+
+function mapPreparationRoute(route?: string): Product['preparationPolicy'] {
+  switch (route) {
+    case 'bar':
+      return { route: 'bar', requiresReadyBeforeServe: false };
+    case 'direct':
+      return { route: 'direct', requiresReadyBeforeServe: false };
+    case 'cold_station':
+      return { route: 'cold_station', requiresReadyBeforeServe: true };
+    case 'dessert_station':
+      return { route: 'dessert_station', requiresReadyBeforeServe: true };
+    default:
+      return { route: 'kitchen', requiresReadyBeforeServe: true };
+  }
 }
 
 export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {

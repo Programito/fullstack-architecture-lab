@@ -12,14 +12,16 @@ import {
   RESTAURANT_POS_BASE_PATH,
   RESTAURANT_POS_SECTIONS,
 } from '../../restaurant-pos.routes';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { OrderSyncService } from '../../state/order-sync.service';
+import { OrderWriteService } from '../../state/order-write.service';
 
 @Component({
   selector: 'app-restaurant-pos-shell-page',
   imports: [ColorModeMenu, Icon, LanguageSelect, RouterLink, RouterLinkActive, RouterOutlet, TranslocoPipe],
   templateUrl: './restaurant-pos-shell-page.html',
   styleUrl: './restaurant-pos-shell-page.css',
-  providers: [OrderSyncService],
+  providers: [OrderSyncService, OrderWriteService],
   host: {
     '[class.restaurant-pos-shell-page--logging-out]': 'loggingOut()',
   },
@@ -28,6 +30,7 @@ export class RestaurantPosShellPage {
   private readonly identity = inject(IdentitySessionStore);
   private readonly api = inject(IdentityApiService);
   private readonly router = inject(Router);
+  protected readonly restaurantContext = inject(RestaurantContextStore);
   // injecting starts the polling for the whole feature lifetime
   private readonly _orderSync = inject(OrderSyncService);
   private readonly logoutTransitionMs = 180;
@@ -46,6 +49,21 @@ export class RestaurantPosShellPage {
   });
   protected readonly isAdmin = computed(() => this.identity.hasRole('admin'));
   protected readonly loggingOut = signal(false);
+  protected readonly needsRestaurantSelection = computed(
+    () =>
+      !this.restaurantContext.isLoading() &&
+      this.restaurantContext.multipleRestaurants() &&
+      !this.restaurantContext.activeRestaurant(),
+  );
+
+  constructor() {
+    this.restaurantContext.load();
+  }
+
+  protected selectRestaurant(id: string): void {
+    this.restaurantContext.setActiveRestaurantId(id);
+    void this.router.navigateByUrl(this.defaultPath());
+  }
 
   protected logout(): void {
     if (this.loggingOut()) return;

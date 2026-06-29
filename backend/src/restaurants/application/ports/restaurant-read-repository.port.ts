@@ -11,10 +11,12 @@ import type { ServiceFloorView, ServicePointDetailView, ServicePointOrderView } 
 export const RESTAURANT_READ_REPOSITORY = Symbol('RESTAURANT_READ_REPOSITORY');
 
 export interface RestaurantReadRepository {
-  listRestaurants(): Promise<RestaurantSummary[]>;
+  listRestaurants(restaurantIds: string[]): Promise<RestaurantSummary[]>;
   findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null>;
   findFloorsByRestaurantId(restaurantId: string): Promise<RestaurantFloors | null>;
   listReservationsByRestaurantId(restaurantId: string, date?: string): Promise<RestaurantReservation[] | null>;
+  findConflictingReservations(restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]>;
+  findTableCapacity(restaurantId: string, tableId: string): Promise<number | null>;
   createReservation(
     restaurantId: string,
     reservation: CreateRestaurantReservationInput,

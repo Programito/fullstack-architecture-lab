@@ -536,17 +536,27 @@ export class MenuMockService {
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   private readonly _availabilityOverrides = signal<Map<string, boolean>>(new Map());
+  private readonly _backendModifierGroups = signal<ModifierGroup[] | null>(null);
+  private readonly _backendComboDefinitions = signal<ComboProductDefinition[] | null>(null);
 
   readonly locale = computed<AppLocale>(() => this.toSupportedLocale(this.activeLang()));
   readonly categories = computed(() => localizeMenuCategories(this.locale()));
-  readonly modifierGroups = computed(() => localizeModifierGroups(this.locale()));
+  readonly modifierGroups = computed(() => this._backendModifierGroups() ?? localizeModifierGroups(this.locale()));
   readonly products = computed(() => {
     const base = localizeMenuProducts(this.locale());
     const overrides = this._availabilityOverrides();
     if (overrides.size === 0) return base;
     return base.map((p) => (overrides.has(p.id) ? { ...p, available: overrides.get(p.id)! } : p));
   });
-  readonly comboProductDefinitions = computed(() => localizeComboProductDefinitions(this.locale()));
+  readonly comboProductDefinitions = computed(() => this._backendComboDefinitions() ?? localizeComboProductDefinitions(this.locale()));
+
+  hydrateModifierGroups(groups: ModifierGroup[]): void {
+    this._backendModifierGroups.set(groups);
+  }
+
+  hydrateComboDefinitions(defs: ComboProductDefinition[]): void {
+    this._backendComboDefinitions.set(defs);
+  }
 
   toggleAvailability(productId: string): void {
     const current = this.products().find((p) => p.id === productId);

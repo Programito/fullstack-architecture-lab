@@ -108,7 +108,12 @@
     "loading": "Loading users...",
     "empty": "No users are available.",
     "confirmRevocation": "This change may close the user's active sessions.",
-    "types": { "regular": "Regular", "demo": "Demo", "system": "System", "test": "Test" }
+    "types": {
+      "regular": "Regular",
+      "demo": "Demo",
+      "system": "System",
+      "test": "Test"
+    }
   },
   "languageSelect": {
     "label": "Language",
@@ -168,7 +173,8 @@
       "selectTableFirst": "Select a table first.",
       "productUnavailable": "Product is unavailable.",
       "cannotPlaceElement": "Cannot place the element here.",
-      "cannotResizeGrid": "Cannot resize the layout because some elements would be outside the grid."
+      "cannotResizeGrid": "Cannot resize the layout because some elements would be outside the grid.",
+      "addLineFailed": "Could not add the product. Check the table status."
     },
     "layout": {
       "title": "Restaurant layout",
@@ -638,6 +644,10 @@
       "entrance": "Entrance",
       "blockedArea": "Blocked area",
       "stool": "Stool"
+    },
+    "selector": {
+      "title": "Select a restaurant",
+      "description": "Choose the restaurant you want to work in."
     }
   },
   "menu": {

@@ -567,6 +567,10 @@ const TEST_TRANSLATIONS = {
         blockedArea: 'Zona bloqueada',
         stool: 'Taburete',
       },
+      selector: {
+        title: 'Selecciona un restaurante',
+        description: 'Elige el restaurante en el que quieres trabajar.',
+      },
     },
     menu: {
       course: {
@@ -1171,6 +1175,10 @@ const TEST_TRANSLATIONS = {
         error: 'Error',
         cancel: 'Cancel',
       },
+      selector: {
+        title: 'Select a restaurant',
+        description: 'Choose the restaurant you want to work in.',
+      },
     },
     menu: {
       course: {
@@ -1558,6 +1566,10 @@ const TEST_TRANSLATIONS = {
           cancelled: 'Cancel·lada',
           no_show: 'No show',
         },
+      },
+      selector: {
+        title: 'Selecciona un restaurant',
+        description: 'Tria el restaurant en el qual vols treballar.',
       },
     },
     menu: {

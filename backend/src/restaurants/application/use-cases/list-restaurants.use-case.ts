@@ -10,7 +10,7 @@ export class ListRestaurantsUseCase {
     @Inject(RESTAURANT_READ_REPOSITORY) private readonly restaurants: RestaurantReadRepository,
   ) {}
 
-  async execute(): Promise<Result<RestaurantSummary[], never>> {
-    return ok(await this.restaurants.listRestaurants());
+  async execute(restaurantIds: string[]): Promise<Result<RestaurantSummary[], never>> {
+    return ok(await this.restaurants.listRestaurants(restaurantIds));
   }
 }

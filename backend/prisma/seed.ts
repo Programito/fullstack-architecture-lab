@@ -4,6 +4,7 @@ import { seedMesaFlowDemo } from './seeds/mesaflow-demo.seed';
 import { seedMesaFlowLayoutDemo } from './seeds/mesaflow-layout.seed';
 import { seedMesaFlowOrdersDemo } from './seeds/mesaflow-orders.seed';
 import { seedMesaFlowReservationsDemo } from './seeds/mesaflow-reservations.seed';
+import { seedMesaFlowServiceWindowsDemo } from './seeds/mesaflow-service-windows.seed';
 import { seedPermissions } from './seeds/permissions.seed';
 import { seedRoles } from './seeds/roles.seed';
 import { seedDemoUsers } from './seeds/demo-users.seed';
@@ -18,6 +19,7 @@ async function main(): Promise<void> {
   await seedMesaFlowLayoutDemo(prisma);
   await seedMesaFlowOrdersDemo(prisma);
   await seedMesaFlowReservationsDemo(prisma);
+  await seedMesaFlowServiceWindowsDemo(prisma);
 }
 
 main()
