@@ -152,13 +152,17 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
 type DemoOrderLine = {
   id: string;
   productName: string;
+  productType: 'simple' | 'combo' | 'platter';
   quantity: number;
   unitPriceCents: number;
   subtotalCents: number;
   status: ServiceOrderLineStatus;
   course: Exclude<ServicePhaseCourse, 'mixed' | 'none'>;
+  preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   kitchenNote: string | null;
   updatedAt: string;
+  modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
+  comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
 };
 
 type DemoOrder = {
@@ -198,24 +202,36 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
           {
             id: 'line-burger',
             productName: 'Hamburguesa craft',
+            productType: 'simple',
             quantity: 1,
             unitPriceCents: 1350,
             subtotalCents: 1350,
             status: 'preparing',
             course: 'mains',
+            preparationRoute: 'kitchen',
             kitchenNote: 'Sin cebolla',
             updatedAt: '2026-06-21T12:20:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
           {
             id: 'line-combo',
             productName: 'Menu Classic Burger',
+            productType: 'combo',
             quantity: 1,
             unitPriceCents: 1590,
             subtotalCents: 1590,
             status: 'pending',
-            course: 'drinks',
+            course: 'mains',
+            preparationRoute: 'kitchen',
             kitchenNote: null,
             updatedAt: '2026-06-21T12:24:00.000Z',
+            modifiers: [],
+            comboSlots: [
+              { slotName: 'Hamburguesa', selectedProductName: 'Classic Burger', supplementPriceCents: 0, quantity: 1 },
+              { slotName: 'Bebida', selectedProductName: 'Agua mineral', supplementPriceCents: 0, quantity: 1 },
+              { slotName: 'Acompañamiento', selectedProductName: 'Patatas fritas', supplementPriceCents: 0, quantity: 1 },
+            ],
           },
         ],
       },
@@ -233,24 +249,32 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
           {
             id: 'line-bar-beer-1',
             productName: 'Cerveza',
+            productType: 'simple',
             quantity: 2,
             unitPriceCents: 350,
             subtotalCents: 700,
             status: 'served',
             course: 'drinks',
+            preparationRoute: 'bar',
             kitchenNote: null,
             updatedAt: '2026-06-21T12:05:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
           {
             id: 'line-bar-coffee',
             productName: 'Cafe solo',
+            productType: 'simple',
             quantity: 1,
             unitPriceCents: 180,
             subtotalCents: 180,
             status: 'served',
             course: 'drinks',
+            preparationRoute: 'bar',
             kitchenNote: null,
             updatedAt: '2026-06-21T12:08:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
         ],
       },
@@ -268,24 +292,32 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
           {
             id: 'line-group-nachos',
             productName: 'Nachos caseros',
+            productType: 'simple',
             quantity: 1,
             unitPriceCents: 990,
             subtotalCents: 990,
             status: 'served',
             course: 'starters',
+            preparationRoute: 'kitchen',
             kitchenNote: null,
             updatedAt: '2026-06-21T11:55:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
           {
             id: 'line-group-dessert',
             productName: 'Tarta de queso',
+            productType: 'simple',
             quantity: 2,
             unitPriceCents: 470,
             subtotalCents: 940,
             status: 'served',
             course: 'desserts',
+            preparationRoute: 'dessert_station',
             kitchenNote: null,
             updatedAt: '2026-06-21T11:58:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
         ],
       },
@@ -303,13 +335,17 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
           {
             id: 'line-paid-burger',
             productName: 'Hamburguesa craft',
+            productType: 'simple',
             quantity: 1,
             unitPriceCents: 1190,
             subtotalCents: 1190,
             status: 'served',
             course: 'mains',
+            preparationRoute: 'kitchen',
             kitchenNote: null,
             updatedAt: '2026-06-21T11:25:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
         ],
       },
@@ -631,13 +667,17 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
       lines: activeOrder.lines.map((line) => ({
         id: line.id,
         productName: line.productName,
+        productType: line.productType,
         quantity: line.quantity,
         unitPriceCents: line.unitPriceCents,
         subtotalCents: line.subtotalCents,
         status: line.status,
         course: line.course,
+        preparationRoute: line.preparationRoute,
         kitchenNote: line.kitchenNote,
         updatedAt: line.updatedAt,
+        modifiers: line.modifiers,
+        comboSlots: line.comboSlots,
       })),
     };
   }

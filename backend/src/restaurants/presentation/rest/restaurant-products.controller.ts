@@ -5,6 +5,9 @@ type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
+import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
+import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { ListRestaurantProductsUseCase } from '../../application/use-cases/list-restaurant-products.use-case';
 import { GetRestaurantProductUseCase } from '../../application/use-cases/get-restaurant-product.use-case';
 import { CreateRestaurantProductUseCase } from '../../application/use-cases/create-restaurant-product.use-case';
@@ -28,15 +31,21 @@ export class RestaurantProductsController {
 
   @Get(':id/products')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantProductSummaryResponseDto, isArray: true })
+  @ApiUnauthorizedResponse()
   async restaurantProducts(@Param('id') id: string): Promise<RestaurantProductSummaryResponseDto[]> {
     return unwrapResultOrThrow(await this.listRestaurantProducts.execute(id)).map(RestaurantProductSummaryResponseDto.from);
   }
 
   @Get(':id/products/:productId')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantProductDetailResponseDto })
   @ApiNotFoundResponse()
+  @ApiUnauthorizedResponse()
   async getRestaurantProduct(
     @Param('id') id: string,
     @Param('productId') productId: string,
@@ -46,7 +55,9 @@ export class RestaurantProductsController {
 
   @Post(':id/products')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: RestaurantProductDetailResponseDto })
   @ApiBadRequestResponse()
   @ApiUnauthorizedResponse()
@@ -68,7 +79,9 @@ export class RestaurantProductsController {
 
   @Patch(':id/products/:productId')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: RestaurantProductDetailResponseDto })
   @ApiNotFoundResponse()
   @ApiUnauthorizedResponse()
@@ -93,7 +106,9 @@ export class RestaurantProductsController {
 
   @Delete(':id/products/:productId')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse()
   @ApiNotFoundResponse()
   @ApiUnauthorizedResponse()

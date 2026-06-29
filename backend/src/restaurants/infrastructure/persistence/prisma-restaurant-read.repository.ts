@@ -509,42 +509,64 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
     restaurantId: string,
     tableId: string,
   ): Promise<ServicePointOrderView | null> {
-    const [floors, activeOrders] = await Promise.all([
-      this.findFloorsByRestaurantId(restaurantId),
-      this.findActiveOrdersByRestaurantId(restaurantId),
-    ]);
-
+    const floors = await this.findFloorsByRestaurantId(restaurantId);
     if (!floors || !floors.tables.some((candidate) => candidate.id === tableId)) {
       return null;
     }
 
-    const activeOrder = activeOrders.find((order) => order.tableId === tableId) ?? null;
-    if (!activeOrder) {
+    const order = await this.prisma.order.findFirst({
+      where: { restaurantId, tableId, status: { in: ['open', 'pending_payment'] } },
+      include: {
+        lines: {
+          orderBy: { updatedAt: 'asc' },
+          include: {
+            modifiers: true,
+            comboSlots: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
       return { order: null, lines: [] };
     }
 
     return {
       order: {
-        id: activeOrder.id,
-        tableId: activeOrder.tableId ?? tableId,
-        status: this.mapServiceOrderStatus(activeOrder.status),
-        openedAt: activeOrder.createdAt.toISOString(),
-        updatedAt: activeOrder.updatedAt.toISOString(),
-        subtotalCents: activeOrder.subtotalCents,
-        taxCents: activeOrder.taxCents,
-        totalCents: activeOrder.totalCents,
-        currency: activeOrder.currency,
+        id: order.id,
+        tableId: order.tableId ?? tableId,
+        status: this.mapServiceOrderStatus(order.status),
+        openedAt: order.createdAt.toISOString(),
+        updatedAt: order.updatedAt.toISOString(),
+        subtotalCents: order.subtotalCents,
+        taxCents: order.taxCents,
+        totalCents: order.totalCents,
+        currency: order.currency,
       },
-      lines: activeOrder.lines.map((line) => ({
+      lines: order.lines.map((line) => ({
         id: line.id,
         productName: line.productNameSnapshot,
+        productType: line.productTypeSnapshot as 'simple' | 'combo' | 'platter',
         quantity: line.quantity,
         unitPriceCents: line.unitPriceCents,
         subtotalCents: line.subtotalCents,
         status: line.status as ServiceOrderLineStatus,
         course: this.mapServiceCourse(line.courseSnapshot),
+        preparationRoute: line.preparationRouteSnapshot as ServicePointOrderView['lines'][number]['preparationRoute'],
         kitchenNote: line.kitchenNote,
         updatedAt: line.updatedAt.toISOString(),
+        modifiers: line.modifiers.map((m) => ({
+          groupName: m.groupNameSnapshot,
+          optionName: m.optionNameSnapshot,
+          priceDeltaCents: m.priceDeltaCents,
+          quantity: m.quantity,
+        })),
+        comboSlots: line.comboSlots.map((s) => ({
+          slotName: s.slotNameSnapshot,
+          selectedProductName: s.selectedProductNameSnapshot,
+          supplementPriceCents: s.supplementPriceCents,
+          quantity: s.quantity,
+        })),
       })),
     };
   }

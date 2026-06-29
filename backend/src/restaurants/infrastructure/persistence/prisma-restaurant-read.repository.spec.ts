@@ -334,6 +334,53 @@ describe('PrismaRestaurantReadRepository', () => {
   it('loads the active service point order from Prisma', async () => {
     process.env.DATABASE_URL = 'postgresql://demo';
 
+    const demoOrder = {
+      id: 'order-demo-service',
+      tableId: 'table-3',
+      status: 'open',
+      currency: 'EUR',
+      subtotalCents: 2940,
+      taxCents: 509,
+      totalCents: 2940,
+      guestCount: 2,
+      createdAt: new Date('2026-06-21T12:00:00.000Z'),
+      updatedAt: new Date('2026-06-21T12:25:00.000Z'),
+      lines: [
+        {
+          id: 'line-burger',
+          productNameSnapshot: 'Hamburguesa craft',
+          productTypeSnapshot: 'simple',
+          courseSnapshot: 'main',
+          preparationRouteSnapshot: 'kitchen',
+          quantity: 1,
+          unitPriceCents: 1350,
+          subtotalCents: 1350,
+          status: 'preparing',
+          kitchenNote: 'Sin cebolla',
+          updatedAt: new Date('2026-06-21T12:20:00.000Z'),
+          modifiers: [],
+          comboSlots: [],
+        },
+        {
+          id: 'line-combo',
+          productNameSnapshot: 'Menu Classic Burger',
+          productTypeSnapshot: 'combo',
+          courseSnapshot: 'main',
+          preparationRouteSnapshot: 'kitchen',
+          quantity: 1,
+          unitPriceCents: 1590,
+          subtotalCents: 1590,
+          status: 'pending',
+          kitchenNote: null,
+          updatedAt: new Date('2026-06-21T12:24:00.000Z'),
+          modifiers: [],
+          comboSlots: [
+            { slotNameSnapshot: 'Hamburguesa', selectedProductNameSnapshot: 'Classic Burger', supplementPriceCents: 0, quantity: 1 },
+          ],
+        },
+      ],
+    };
+
     const repository = new PrismaRestaurantReadRepository({
       restaurant: {
         findUnique: vi.fn().mockResolvedValue({ id: 'restaurant-mesaflow-centro' }),
@@ -345,43 +392,8 @@ describe('PrismaRestaurantReadRepository', () => {
         findMany: vi.fn().mockResolvedValue([{ id: 'table-3', tableNumber: 3, name: 'Mesa 3', capacity: 6, isActive: true }]),
       },
       order: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            id: 'order-demo-service',
-            tableId: 'table-3',
-            status: 'open',
-            currency: 'EUR',
-            subtotalCents: 2940,
-            taxCents: 509,
-            totalCents: 2940,
-            createdAt: new Date('2026-06-21T12:00:00.000Z'),
-            updatedAt: new Date('2026-06-21T12:25:00.000Z'),
-            lines: [
-              {
-                id: 'line-burger',
-                productNameSnapshot: 'Hamburguesa craft',
-                quantity: 1,
-                unitPriceCents: 1350,
-                subtotalCents: 1350,
-                status: 'preparing',
-                courseSnapshot: 'main',
-                kitchenNote: 'Sin cebolla',
-                updatedAt: new Date('2026-06-21T12:20:00.000Z'),
-              },
-              {
-                id: 'line-combo',
-                productNameSnapshot: 'Menu Classic Burger',
-                quantity: 1,
-                unitPriceCents: 1590,
-                subtotalCents: 1590,
-                status: 'pending',
-                courseSnapshot: 'main',
-                kitchenNote: null,
-                updatedAt: new Date('2026-06-21T12:24:00.000Z'),
-              },
-            ],
-          },
-        ]),
+        findMany: vi.fn().mockResolvedValue([demoOrder]),
+        findFirst: vi.fn().mockResolvedValue(demoOrder),
       },
     } as never);
 
@@ -399,14 +411,21 @@ describe('PrismaRestaurantReadRepository', () => {
         expect.objectContaining({
           id: 'line-burger',
           productName: 'Hamburguesa craft',
+          productType: 'simple',
+          preparationRoute: 'kitchen',
           status: 'preparing',
           course: 'mains',
+          modifiers: [],
+          comboSlots: [],
         }),
         expect.objectContaining({
           id: 'line-combo',
           productName: 'Menu Classic Burger',
+          productType: 'combo',
+          preparationRoute: 'kitchen',
           status: 'pending',
           course: 'mains',
+          comboSlots: [expect.objectContaining({ slotName: 'Hamburguesa', selectedProductName: 'Classic Burger' })],
         }),
       ],
     });

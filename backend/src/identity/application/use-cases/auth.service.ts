@@ -68,7 +68,9 @@ export class AuthService {
     if (!user?.enabled || user.accountType !== 'demo') {
       throw new UnauthorizedException('Demo account is not available.');
     }
-    const roles = await this.roles.findManyByIds(user.roleIds);
+    const assignments = await this.userRoleAssignments.findByUserId(user.id);
+    const assignedRoleIds = [...new Set(assignments.map((a) => a.roleId))];
+    const roles = await this.roles.findManyByIds(assignedRoleIds);
     if (!roles.some((candidate) => candidate.enabled && candidate.name === role)) {
       throw new UnauthorizedException('Demo account role is not available.');
     }
@@ -130,13 +132,14 @@ export class AuthService {
   }
 
   private async createResult(user: User, sessionId: string, refreshToken: string): Promise<AuthResult> {
-    const activeRoles = (await this.roles.findManyByIds(user.roleIds)).filter((role) => role.enabled);
+    const assignments = await this.userRoleAssignments.findByUserId(user.id);
+    const assignedRoleIds = [...new Set(assignments.map((a) => a.roleId))];
+    const activeRoles = (await this.roles.findManyByIds(assignedRoleIds)).filter((role) => role.enabled);
     const permissions = (
       await this.permissions.findManyByIds(activeRoles.flatMap((role) => role.permissionIds))
     )
       .filter((permission) => permission.enabled)
       .map((permission) => permission.name);
-    const assignments = await this.userRoleAssignments.findByUserId(user.id);
     const scopes: AuthScopes = {
       organizations: [...new Set(assignments.flatMap((assignment) => assignment.organizationId ? [assignment.organizationId] : []))],
       restaurants: [...new Set(assignments.flatMap((assignment) => assignment.restaurantId ? [assignment.restaurantId] : []))],

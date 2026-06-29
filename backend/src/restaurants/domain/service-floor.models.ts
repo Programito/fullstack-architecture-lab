@@ -81,6 +81,22 @@ export type ServicePointDetailView = {
   };
 };
 
+export type ServicePointOrderLineView = {
+  id: string;
+  productName: string;
+  productType: 'simple' | 'combo' | 'platter';
+  quantity: number;
+  unitPriceCents: number;
+  subtotalCents: number;
+  status: ServiceOrderLineStatus;
+  course: ServicePhaseCourse;
+  preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  kitchenNote: string | null;
+  updatedAt: string;
+  modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
+  comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
+};
+
 export type ServicePointOrderView = {
   order: {
     id: string;
@@ -93,15 +109,5 @@ export type ServicePointOrderView = {
     totalCents: number;
     currency: string;
   } | null;
-  lines: Array<{
-    id: string;
-    productName: string;
-    quantity: number;
-    unitPriceCents: number;
-    subtotalCents: number;
-    status: ServiceOrderLineStatus;
-    course: ServicePhaseCourse;
-    kitchenNote: string | null;
-    updatedAt: string;
-  }>;
+  lines: ServicePointOrderLineView[];
 };

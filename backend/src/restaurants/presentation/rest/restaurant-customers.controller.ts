@@ -3,6 +3,9 @@ import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkRe
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
+import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
+import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { SearchCustomersUseCase } from '../../application/use-cases/search-customers.use-case';
 import { CreateCustomerUseCase } from '../../application/use-cases/create-customer.use-case';
 import { CustomerSummaryResponseDto } from './dto/customer-summary-response.dto';
@@ -18,8 +21,11 @@ export class RestaurantCustomersController {
 
   @Get(':id/customers')
   @Version('1')
+  @UseGuards(AuthGuard, RestaurantAccessGuard)
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: CustomerSummaryResponseDto, isArray: true })
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })
+  @ApiUnauthorizedResponse()
   async searchCustomers(
     @Param('id') id: string,
     @Query('q') q: string = '',
@@ -30,7 +36,9 @@ export class RestaurantCustomersController {
 
   @Post(':id/customers')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('reservations')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: CustomerSummaryResponseDto })
   @ApiBadRequestResponse()
   @ApiNotFoundResponse({ description: 'Restaurant not found.' })

@@ -5,6 +5,7 @@ type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
 import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { GetRestaurantMenuUseCase } from '../../application/use-cases/get-restaurant-menu.use-case';
@@ -56,7 +57,9 @@ export class RestaurantMenuController {
 
   @Patch(':id/products/:restaurantProductId/availability')
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ description: 'Availability updated.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Product not found in this restaurant.' })
@@ -70,9 +73,13 @@ export class RestaurantMenuController {
 
   @Post(':id/menus/:menuId/sections')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: MenuSectionResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid section data.' })
   @ApiNotFoundResponse({ description: 'Menu not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async createSection(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -85,8 +92,12 @@ export class RestaurantMenuController {
 
   @Patch(':id/menus/:menuId/sections/:sectionId')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: MenuSectionResponseDto })
   @ApiNotFoundResponse({ description: 'Section not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async updateSection(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -100,8 +111,12 @@ export class RestaurantMenuController {
 
   @Delete(':id/menus/:menuId/sections/:sectionId')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ description: 'Section deleted.' })
   @ApiNotFoundResponse({ description: 'Section not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async deleteSection(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -114,9 +129,13 @@ export class RestaurantMenuController {
 
   @Post(':id/menus/:menuId/sections/:sectionId/items')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiCreatedResponse({ type: MenuItemResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid item data.' })
   @ApiNotFoundResponse({ description: 'Section not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async addSectionItem(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -137,8 +156,12 @@ export class RestaurantMenuController {
 
   @Patch(':id/menus/:menuId/sections/:sectionId/items/:itemId')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ type: MenuItemResponseDto })
   @ApiNotFoundResponse({ description: 'Item not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async updateSectionItem(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -161,8 +184,12 @@ export class RestaurantMenuController {
 
   @Delete(':id/menus/:menuId/sections/:sectionId/items/:itemId')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ description: 'Item removed.' })
   @ApiNotFoundResponse({ description: 'Item not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async removeSectionItem(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -176,8 +203,12 @@ export class RestaurantMenuController {
 
   @Put(':id/menus/:menuId/sections/reorder')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ description: 'Sections reordered.' })
   @ApiNotFoundResponse({ description: 'Menu not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async reorderSections(
     @Param('id') id: string,
     @Param('menuId') menuId: string,
@@ -190,8 +221,12 @@ export class RestaurantMenuController {
 
   @Put(':id/menus/:menuId/sections/:sectionId/items/reorder')
   @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
   @ApiOkResponse({ description: 'Items reordered.' })
   @ApiNotFoundResponse({ description: 'Section not found.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async reorderItems(
     @Param('id') id: string,
     @Param('menuId') menuId: string,

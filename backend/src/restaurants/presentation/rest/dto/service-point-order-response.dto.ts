@@ -1,6 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import type { ServicePointOrderView } from '../../../domain/service-floor.models';
+import type { ServicePointOrderLineView, ServicePointOrderView } from '../../../domain/service-floor.models';
+
+class ServicePointOrderModifierResponseDto {
+  @ApiProperty() groupName!: string;
+  @ApiProperty() optionName!: string;
+  @ApiProperty() priceDeltaCents!: number;
+  @ApiProperty() quantity!: number;
+}
+
+class ServicePointOrderComboSlotResponseDto {
+  @ApiProperty() slotName!: string;
+  @ApiProperty() selectedProductName!: string;
+  @ApiProperty() supplementPriceCents!: number;
+  @ApiProperty() quantity!: number;
+}
 
 class ServicePointOrderInfoResponseDto {
   @ApiProperty({ example: 'order-demo-service' })
@@ -38,6 +52,9 @@ class ServicePointOrderLineResponseDto {
   @ApiProperty({ example: 'Hamburguesa craft' })
   productName!: string;
 
+  @ApiProperty({ enum: ['simple', 'combo', 'platter'] })
+  productType!: ServicePointOrderLineView['productType'];
+
   @ApiProperty({ example: 1 })
   quantity!: number;
 
@@ -48,16 +65,25 @@ class ServicePointOrderLineResponseDto {
   subtotalCents!: number;
 
   @ApiProperty({ enum: ['pending', 'sent_to_kitchen', 'preparing', 'ready', 'picked_up', 'served', 'cancelled'] })
-  status!: ServicePointOrderView['lines'][number]['status'];
+  status!: ServicePointOrderLineView['status'];
 
   @ApiProperty({ enum: ['drinks', 'starters', 'mains', 'desserts', 'mixed', 'none'] })
-  course!: ServicePointOrderView['lines'][number]['course'];
+  course!: ServicePointOrderLineView['course'];
+
+  @ApiProperty({ enum: ['direct', 'bar', 'kitchen', 'cold_station', 'dessert_station'] })
+  preparationRoute!: ServicePointOrderLineView['preparationRoute'];
 
   @ApiPropertyOptional({ example: 'Sin cebolla', nullable: true })
   kitchenNote!: string | null;
 
   @ApiProperty({ example: '2026-06-21T12:20:00.000Z' })
   updatedAt!: string;
+
+  @ApiProperty({ type: [ServicePointOrderModifierResponseDto] })
+  modifiers!: ServicePointOrderModifierResponseDto[];
+
+  @ApiProperty({ type: [ServicePointOrderComboSlotResponseDto] })
+  comboSlots!: ServicePointOrderComboSlotResponseDto[];
 }
 
 export class ServicePointOrderResponseDto {

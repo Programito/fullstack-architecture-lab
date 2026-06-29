@@ -1382,4 +1382,99 @@ describe('App e2e with in-memory identity seed', () => {
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
   });
+
+  it('returns 401 when fetching products without authentication', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/products')
+      .expect(401);
+  });
+
+  it('returns 401 when fetching a single product without authentication', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/products/any-product')
+      .expect(401);
+  });
+
+  it('returns 401 when fetching customers without authentication', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/customers')
+      .expect(401);
+  });
+
+  it('returns 401 when creating a menu section without authentication', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/menus/any-menu/sections')
+      .send({ name: 'Sección test', isVisible: true })
+      .expect(401);
+  });
+
+  it('returns 401 when updating a menu section without authentication', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/menus/any-menu/sections/any-section')
+      .send({ name: 'Sección test' })
+      .expect(401);
+  });
+
+  it('returns 401 when deleting a menu section without authentication', async () => {
+    await request(app.getHttpServer())
+      .delete('/api/v1/restaurants/restaurant-mesaflow-centro/menus/any-menu/sections/any-section')
+      .expect(401);
+  });
+
+  it('returns 401 when reordering menu sections without authentication', async () => {
+    await request(app.getHttpServer())
+      .put('/api/v1/restaurants/restaurant-mesaflow-centro/menus/any-menu/sections/reorder')
+      .send({ items: [] })
+      .expect(401);
+  });
+
+  it('returns 403 when a waiter tries to create a menu section (no menu permission)', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/menus/any-menu/sections')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({ name: 'Sección test', isVisible: true })
+      .expect(403);
+  });
+
+  it('returns 403 when a waiter tries to update menu item availability (no menu permission)', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/restaurants/restaurant-mesaflow-centro/products/any-product/availability')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({ available: true })
+      .expect(403);
+  });
+
+  it('allows admin to fetch restaurant products', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'admin' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/products')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
+  });
+
+  it('allows admin to fetch restaurant customers', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'admin' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/customers')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
+  });
 });
