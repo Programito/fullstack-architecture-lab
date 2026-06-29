@@ -135,6 +135,22 @@ export type ServiceOrderStatusDto = 'open' | 'sent_to_kitchen' | 'served' | 'pay
 
 export type ServiceOrderLineStatusDto = 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
 
+export type ServicePointOrderLineDto = {
+  id: string;
+  productName: string;
+  productType: 'simple' | 'combo' | 'platter';
+  quantity: number;
+  unitPriceCents: number;
+  subtotalCents: number;
+  status: ServiceOrderLineStatusDto;
+  course: ServicePhaseCourseDto;
+  preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  kitchenNote: string | null;
+  updatedAt: string;
+  modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
+  comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
+};
+
 export type ServicePointOrderDto = {
   order: {
     id: string;
@@ -147,17 +163,7 @@ export type ServicePointOrderDto = {
     totalCents: number;
     currency: string;
   } | null;
-  lines: Array<{
-    id: string;
-    productName: string;
-    quantity: number;
-    unitPriceCents: number;
-    subtotalCents: number;
-    status: ServiceOrderLineStatusDto;
-    course: ServicePhaseCourseDto;
-    kitchenNote: string | null;
-    updatedAt: string;
-  }>;
+  lines: ServicePointOrderLineDto[];
 };
 
 export type RestaurantReservationTableDto = {

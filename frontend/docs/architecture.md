@@ -172,8 +172,10 @@ El flujo operativo queda así:
 3. Un producto con modificadores abre `ProductCustomizerDialog`.
 4. Un combo abre `ComboCustomizerDialog`, carga selecciones por defecto y permite cambiar productos
    disponibles por slot.
-5. Confirmar un producto usa `addCustomizedProductToSelectedTable(productId, selectedModifierOptionIds, kitchenNote?)`.
-6. Confirmar un combo usa `addConfiguredComboToSelectedTable(comboProductId, slotSelections)`.
+5. Confirmar un producto usa `OrderWriteService.addProduct(productId)` para simples, o
+   `OrderWriteService.addCustomizedProduct(productId, optionIds, kitchenNote)` para productos con
+   modificadores.
+6. Confirmar un combo usa `OrderWriteService.addCombo(comboProductId, slotSelections)`.
 7. La store mergea líneas con la misma `configurationSignature`; distintas notas, modificadores o
    selecciones de combo
    generan líneas separadas.
@@ -701,15 +703,15 @@ flowchart LR
   Shell["RestaurantPosShellPage\nllamada a load()"]
   Context["RestaurantContextStore\nrestaurants, activeRestaurant\nmultipleRestaurants"]
   API["RestaurantPosApiService\nlistRestaurants()"]
-  Selector["Selector overlay\n(si multipleRestaurants y sin activo)"]
+  Selector["Selector overlay\nsi multipleRestaurants y sin activo"]
   POS["POS operativo"]
 
-  Shell -->|load()| Context
+  Shell -->|"load()"| Context
   Context --> API
   API --> Context
   Context -->|1 restaurante| POS
   Context -->|varios| Selector
-  Selector -->|setActiveRestaurantId()| Context
+  Selector -->|"setActiveRestaurantId()"| Context
   Context -->|activo resuelto| POS
 ```
 
@@ -791,35 +793,58 @@ en ellos, redirige a `/access`.
 
 ## Escritura de pedidos: `OrderWriteService`
 
-`OrderWriteService` es el puente entre las mutaciones locales del store y la API del backend.
-Implementa actualización optimista: primero actualiza el store, luego sincroniza con el backend
-y, si falla, recarga la planta para corregir el estado visual.
+`OrderWriteService` es el puente entre la UI y la API del backend para añadir productos a un pedido.
+Implementa un despacho en tres ramas según si el producto existe en el catálogo y si tiene ID de backend:
+
+```mermaid
+flowchart TD
+  Call["addProduct / addCustomizedProduct / addCombo"]
+  Found{Producto encontrado en store.products?}
+  HasId{Tiene restaurantProductId?}
+  Backend["Flujo backend-first\nAPI → hidratar store"]
+  Local["Mutación local\nen store (modo demo)"]
+  Noop["No hace nada"]
+
+  Call --> Found
+  Found -- no --> Noop
+  Found -- sí --> HasId
+  HasId -- sí --> Backend
+  HasId -- no --> Local
+```
+
+**Flujo backend-first** (producto real con ID de backend):
 
 ```mermaid
 sequenceDiagram
   participant UI as Componente
   participant Svc as OrderWriteService
-  participant Store as RestaurantPosStore
   participant API as RestaurantPosApiService
+  participant Store as RestaurantPosStore
 
   UI->>Svc: addProduct(productId)
-  Svc->>Store: addProductToSelectedTable(productId)
-  Svc->>API: addRestaurantOrderLine(...) [si hay restaurantProductId]
-  alt pedido existente
-    API->>API: POST /orders/:orderId/lines
-  else sin pedido
-    API->>API: POST /service-points/:tableId/orders
-    API->>API: POST /orders/:newId/lines
+  alt sin pedido abierto
+    Svc->>API: openRestaurantOrder(restaurantId, tableId, 1)
+    API-->>Svc: RestaurantOrderDto (orderId nuevo)
   end
+  Svc->>API: addRestaurantOrderLine(restaurantId, orderId, request)
+  API-->>Svc: RestaurantOrderDto
+  Svc->>API: getRestaurantServicePointOrder(restaurantId, tableId)
   API-->>Svc: ServicePointOrderDto
   Svc->>Store: hydrateServicePointOrder(tableId, mapped)
-  alt error
+  alt error en la llamada
     Svc->>Store: reportApiError('restaurantPos.errors.addLineFailed')
+    Svc->>API: getRestaurantServicePointOrder(restaurantId, tableId)
+    API-->>Svc: ServicePointOrderDto
+    Svc->>Store: hydrateServicePointOrder(tableId, mapped)
     Svc->>API: getRestaurantServiceFloor(restaurantId)
     API-->>Svc: ServiceFloorDto
     Svc->>Store: hydrateServiceFloor(mapped)
   end
 ```
+
+**Modo demo** (producto sin `restaurantProductId`, catálogo desde `MenuMockService`):
+la mutación se aplica solo en el store sin llamada al backend. El estado visual es inmediato
+pero no persiste en base de datos.
 
 ### Métodos públicos
 
@@ -831,15 +856,17 @@ sequenceDiagram
 
 ### Reglas de frontera
 
-- Si el producto no tiene `restaurantProductId` (mock sin ID backend), aplica solo la mutación
-  local del store y no llama a la API.
-- Si no hay restaurante activo o mesa seleccionada, no hace nada.
-- Cuando ya hay un pedido abierto en el store (`selectedOrder().id`), llama directamente a
-  `addRestaurantOrderLine`. Si no, abre el pedido primero con `openRestaurantOrder`.
-- En caso de error la planta se recarga desde el backend para que el estado visual sea consistente
-  con el servidor, aunque la actualización optimista ya se aplicó en el store.
-- `OrderWriteService` es un provider a nivel de componente (inyectado en la shell); no es
-  `providedIn: 'root'` para que cada instancia de la shell tenga su propio contexto.
+- Si el producto no se encuentra en `store.products()`, no hace nada (ID desconocido).
+- Si el producto está en el store pero no tiene `restaurantProductId` (modo demo / catálogo mock),
+  aplica la mutación local directamente sin llamar a la API.
+- Con `restaurantProductId` presente, el store solo se actualiza cuando llega la respuesta del
+  servidor; no hay actualización optimista previa.
+- Cuando ya existe pedido abierto en el store (`selectedOrder().id`), llama directamente a
+  `addRestaurantOrderLine`. Si no, primero abre el pedido con `openRestaurantOrder`.
+- Si no hay restaurante activo o mesa seleccionada, no hace nada (guarda interna en `syncOrderLine`).
+- En caso de error recarga el pedido del punto de servicio Y la planta desde el backend para
+  restaurar un estado visual consistente con el servidor.
+- `OrderWriteService` es un provider a nivel de módulo o shell; no es `providedIn: 'root'`.
 
 ## Documentación
 

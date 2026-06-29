@@ -176,6 +176,11 @@ function mapPreparationRoute(route?: string): Product['preparationPolicy'] {
   }
 }
 
+function mapPreparationPolicy(preparationRoute: string): { route: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station'; requiresReadyBeforeServe: boolean } {
+  const requiresReady = preparationRoute !== 'direct' && preparationRoute !== 'bar';
+  return { route: preparationRoute as 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station', requiresReadyBeforeServe: requiresReady };
+}
+
 export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
   if (!serviceOrder.order) return null;
 
@@ -189,26 +194,41 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
       const unitPrice = line.unitPriceCents / 100;
       const subtotal = line.subtotalCents / 100;
       const course = mapServiceCourse(line.course);
-      const preparationRoute = course === 'drinks' ? ('bar' as const) : ('kitchen' as const);
 
       return {
         id: line.id,
         productSnapshot: {
           productId: `service-product:${line.id}`,
           productName: line.productName,
-          productType: 'simple' as const,
+          productType: line.productType,
           basePrice: unitPrice,
           course,
-          preparationPolicy: {
-            route: preparationRoute,
-            requiresReadyBeforeServe: course !== 'drinks',
-          },
+          preparationPolicy: mapPreparationPolicy(line.preparationRoute),
         },
         productId: `service-product:${line.id}`,
         productName: line.productName,
         quantity: line.quantity,
         basePrice: unitPrice,
-        selectedModifiers: [],
+        selectedModifiers: line.modifiers.map((m) => ({
+          groupId: m.groupName,
+          groupName: m.groupName,
+          optionId: m.optionName,
+          name: m.optionName,
+          priceDelta: m.priceDeltaCents / 100,
+          type: 'single' as const,
+        })),
+        selectedComboSlots: line.comboSlots.map((s) => ({
+          slotId: s.slotName,
+          slotName: s.slotName,
+          selectedProducts: [{
+            productId: s.selectedProductName,
+            productName: s.selectedProductName,
+            productType: 'simple' as const,
+            course: 'other' as const,
+            preparationPolicy: { route: 'direct' as const, requiresReadyBeforeServe: false },
+            supplementPrice: s.supplementPriceCents / 100,
+          }],
+        })),
         ...(line.kitchenNote ? { kitchenNote: line.kitchenNote, note: line.kitchenNote } : {}),
         unitPrice,
         subtotal,

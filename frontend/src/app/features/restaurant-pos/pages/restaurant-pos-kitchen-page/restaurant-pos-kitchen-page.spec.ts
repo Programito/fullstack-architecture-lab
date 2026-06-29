@@ -95,7 +95,7 @@ describe('RestaurantPosKitchenPage', () => {
 
     const mockOrder: ServicePointOrderDto = {
       order: { id: 'order-api-1', tableId: 'table-api-1', status: 'open', openedAt: '', updatedAt: '', subtotalCents: 1000, taxCents: 0, totalCents: 1000, currency: 'EUR' },
-      lines: [{ id: 'line-api-1', productName: 'Arroz con bogavante', quantity: 2, unitPriceCents: 2400, subtotalCents: 4800, status: 'sent_to_kitchen', course: 'mains', kitchenNote: null, updatedAt: '' }],
+      lines: [{ id: 'line-api-1', productName: 'Arroz con bogavante', productType: 'simple', preparationRoute: 'kitchen', quantity: 2, unitPriceCents: 2400, subtotalCents: 4800, status: 'sent_to_kitchen', course: 'mains', kitchenNote: null, updatedAt: '', modifiers: [], comboSlots: [] }],
     };
 
     const { fixture } = await renderKitchenPage();

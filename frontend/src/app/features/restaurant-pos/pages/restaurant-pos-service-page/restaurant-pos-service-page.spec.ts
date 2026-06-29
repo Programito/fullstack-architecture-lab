@@ -28,7 +28,7 @@ describe('RestaurantPosServicePage', () => {
         order: {
           id: string;
           tableId: string;
-          status: 'open' | 'sent_to_kitchen' | 'served';
+          status: 'open' | 'sent_to_kitchen' | 'served' | 'payment_pending' | 'paid';
           openedAt: string;
           updatedAt: string;
           subtotalCents: number;
@@ -39,13 +39,17 @@ describe('RestaurantPosServicePage', () => {
         lines: Array<{
           id: string;
           productName: string;
+          productType: 'simple' | 'combo' | 'platter';
+          preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
           quantity: number;
           unitPriceCents: number;
           subtotalCents: number;
-          status: 'pending' | 'sent_to_kitchen';
-          course: 'mains';
-          kitchenNote: null;
+          status: 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
+          course: 'drinks' | 'starters' | 'mains' | 'desserts' | 'mixed' | 'none';
+          kitchenNote: string | null;
           updatedAt: string;
+          modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
+          comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
         }>;
       }
     >([
@@ -255,13 +259,17 @@ describe('RestaurantPosServicePage', () => {
           {
             id: 'line-table-1-burger',
             productName: 'Hamburguesa craft',
+            productType: 'simple' as const,
+            preparationRoute: 'kitchen' as const,
             quantity: 1,
             unitPriceCents: 1250,
             subtotalCents: 1250,
-            status: 'sent_to_kitchen',
-            course: 'mains',
+            status: 'sent_to_kitchen' as const,
+            course: 'mains' as const,
             kitchenNote: null,
             updatedAt: '2026-06-22T10:00:00.000Z',
+            modifiers: [],
+            comboSlots: [],
           },
         ],
       });

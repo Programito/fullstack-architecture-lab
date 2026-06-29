@@ -17,18 +17,33 @@ export class OrderWriteService {
   private readonly menu = inject(MenuMockService);
 
   addProduct(productId: string): void {
-    this.store.addProductToSelectedTable(productId);
-    this.syncLineToBackend(productId, [], null);
+    const product = this.store.products().find((p) => p.id === productId);
+    if (!product) return;
+    if (product.restaurantProductId) {
+      this.syncLineToBackend(productId, [], null);
+    } else {
+      this.store.addProductToSelectedTable(productId);
+    }
   }
 
   addCustomizedProduct(productId: string, modifierOptionIds: string[], kitchenNote: string): void {
-    this.store.addCustomizedProductToSelectedTable(productId, modifierOptionIds, kitchenNote);
-    this.syncLineToBackend(productId, modifierOptionIds, kitchenNote.trim() || null);
+    const product = this.store.products().find((p) => p.id === productId);
+    if (!product) return;
+    if (product.restaurantProductId) {
+      this.syncLineToBackend(productId, modifierOptionIds, kitchenNote.trim() || null);
+    } else {
+      this.store.addCustomizedProductToSelectedTable(productId, modifierOptionIds, kitchenNote);
+    }
   }
 
   addCombo(comboProductId: string, slotSelections: ComboSlotSelection[]): void {
-    this.store.addConfiguredComboToSelectedTable(comboProductId, slotSelections);
-    this.syncComboToBackend(comboProductId, slotSelections);
+    const product = this.store.products().find((p) => p.id === comboProductId);
+    if (!product) return;
+    if (product.restaurantProductId) {
+      this.syncComboToBackend(comboProductId, slotSelections);
+    } else {
+      this.store.addConfiguredComboToSelectedTable(comboProductId, slotSelections);
+    }
   }
 
   private syncLineToBackend(
@@ -89,6 +104,9 @@ export class OrderWriteService {
       },
       error: () => {
         this.store.reportApiError('restaurantPos.errors.addLineFailed');
+        this.api.getRestaurantServicePointOrder(restaurant.id, tableId).subscribe((serviceOrder) => {
+          this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
+        });
         this.api.getRestaurantServiceFloor(restaurant.id).subscribe((serviceFloor) => {
           this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
         });

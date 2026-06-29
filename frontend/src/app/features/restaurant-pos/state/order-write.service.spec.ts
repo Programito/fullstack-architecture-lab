@@ -142,10 +142,10 @@ describe('OrderWriteService', () => {
   }
 
   describe('addProduct', () => {
-    it('aplica la actualización optimista en el store inmediatamente', () => {
+    it('no actualiza el store localmente antes de recibir respuesta del servidor', () => {
       const service = setup();
       service.addProduct('product-1');
-      expect(mockAddProductToSelectedTable).toHaveBeenCalledWith('product-1');
+      expect(mockAddProductToSelectedTable).not.toHaveBeenCalled();
     });
 
     it('no llama a la API cuando el producto no tiene restaurantProductId', () => {
@@ -205,11 +205,13 @@ describe('OrderWriteService', () => {
       expect(mockHydrateServicePointOrder).toHaveBeenCalledWith(TABLE_ID, expect.anything());
     });
 
-    it('muestra error y recarga la planta cuando addRestaurantOrderLine falla', () => {
+    it('muestra error, recarga el pedido y la planta cuando addRestaurantOrderLine falla', () => {
       mockAddRestaurantOrderLine.mockReturnValue(throwError(() => new Error('network error')));
       const service = setup();
       service.addProduct('product-1');
       expect(mockReportApiError).toHaveBeenCalledWith('restaurantPos.errors.addLineFailed');
+      expect(mockGetRestaurantServicePointOrder).toHaveBeenCalledWith('r-1', TABLE_ID);
+      expect(mockHydrateServicePointOrder).toHaveBeenCalled();
       expect(mockGetRestaurantServiceFloor).toHaveBeenCalledWith('r-1');
       expect(mockHydrateServiceFloor).toHaveBeenCalled();
     });
@@ -225,10 +227,10 @@ describe('OrderWriteService', () => {
   });
 
   describe('addCustomizedProduct', () => {
-    it('aplica la actualización optimista en el store con las opciones de modificador', () => {
+    it('no actualiza el store localmente antes de recibir respuesta del servidor', () => {
       const service = setup();
       service.addCustomizedProduct('product-1', ['opt-medium'], 'sin sal');
-      expect(mockAddCustomizedProductToSelectedTable).toHaveBeenCalledWith('product-1', ['opt-medium'], 'sin sal');
+      expect(mockAddCustomizedProductToSelectedTable).not.toHaveBeenCalled();
     });
 
     it('incluye los modificadores en la petición al backend cuando coinciden con el grupo del producto', () => {
@@ -330,13 +332,10 @@ describe('OrderWriteService', () => {
       preparationPolicy: { route: 'bar' as const, requiresReadyBeforeServe: false },
     };
 
-    it('aplica la actualización optimista en el store para un combo', () => {
+    it('no actualiza el store localmente antes de recibir respuesta del servidor', () => {
       const service = setup();
       service.addCombo('combo-1', [{ slotId: 'slot-1', selectedProductIds: ['product-3'] }]);
-      expect(mockAddConfiguredComboToSelectedTable).toHaveBeenCalledWith(
-        'combo-1',
-        [{ slotId: 'slot-1', selectedProductIds: ['product-3'] }],
-      );
+      expect(mockAddConfiguredComboToSelectedTable).not.toHaveBeenCalled();
     });
 
     it('no llama a la API cuando el combo no tiene restaurantProductId', () => {
