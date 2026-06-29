@@ -1,54 +1,54 @@
-# fullstack-architecture-lab
+# MesaFlow POS
 
-Laboratorio full stack para practicar una arquitectura moderna con frontend Angular y backend NestJS. El proyecto combina una base de interfaz reutilizable, documentacion de componentes, pruebas automatizadas y una API versionada preparada para evolucionar.
+TPV full-stack de restaurante desarrollado como proyecto de fin de máster. Frontend Angular con arquitectura signal-first y backend NestJS con arquitectura limpia.
 
 ## Stack
 
-- **Frontend:** Angular, Tailwind CSS, Transloco, Storybook, Vitest, Testing Library y Playwright.
-- **Backend:** NestJS, Prisma, PostgreSQL, Swagger, Vitest, Supertest y Testcontainers.
-- **Herramientas:** pnpm, TypeScript y Docker para levantar PostgreSQL cuando sea necesario.
+- **Frontend:** Angular 21 (standalone, signals), Tailwind CSS, Transloco (es/en/ca), Storybook, Vitest, Testing Library y Playwright.
+- **Backend:** NestJS 11, Prisma, PostgreSQL, Swagger, Vitest, Supertest y Testcontainers.
+- **Herramientas:** pnpm, TypeScript y Docker.
 
 ## Estructura
 
 ```txt
 .
-+-- frontend/   # Aplicacion Angular, UI compartida, Storybook y e2e
-`-- backend/    # API NestJS, casos de uso, dominio, Prisma y tests
++-- frontend/   # Angular, UI compartida, Storybook y e2e
+`-- backend/    # NestJS, arquitectura limpia, Prisma y tests
 ```
+
+## Funcionalidades implementadas
+
+- **Sala:** plano interactivo con mesas y taburetes, selección y estado en tiempo real.
+- **Pedido:** añadir productos simples, con modificadores, combos y notas de cocina. Flujo backend-first: el store solo se actualiza con la respuesta del servidor.
+- **Cocina:** board de preparación con columnas Pendiente / Preparándose / Preparado.
+- **Servicio:** enviar a cocina, marcar como servido, cobrar y liberar mesa.
+- **Menú:** gestión de categorías, productos y disponibilidad. Productos con grupos de modificadores, combos con slots configurables y precios por suplemento.
+- **Reservas:** agenda diaria con filtros, acciones rápidas y alta manual.
+- **Identidad:** autenticación JWT con roles, permisos granulares y scopes por restaurante u organización.
+- **Internacionalización:** español, inglés y catalán con Transloco.
+- **Tema:** modo claro y oscuro con tokens CSS semánticos `--ui-*`.
 
 ## Requisitos
 
-- Node.js compatible con Angular 21 y NestJS 11.
+- Node.js 20 o superior.
 - pnpm 11.2.2 o superior.
-- Docker, opcional, para ejecutar PostgreSQL localmente o pruebas de integracion con Testcontainers.
+- Docker (opcional) para PostgreSQL local y tests de integración con Testcontainers.
 
-## Instalacion
-
-Instala las dependencias de cada aplicacion por separado:
+## Instalación
 
 ```bash
-cd frontend
-pnpm install
+cd frontend && pnpm install
+cd backend  && pnpm install
 ```
 
-```bash
-cd backend
-pnpm install
-```
-
-## Ejecucion en desarrollo
+## Ejecución en desarrollo
 
 ### Frontend
 
 ```bash
 cd frontend
 pnpm start
-```
-
-La aplicacion estara disponible en:
-
-```txt
-http://localhost:4200
+# http://localhost:4200
 ```
 
 ### Backend
@@ -56,23 +56,11 @@ http://localhost:4200
 ```bash
 cd backend
 pnpm dev
-```
-
-La API estara disponible en:
-
-```txt
-http://localhost:3000
-```
-
-La documentación interactiva de la API requiere una sesión con rol `developer`:
-
-```txt
-http://localhost:3000/developer/api-docs/
+# http://localhost:3000
+# Docs (requiere rol developer): http://localhost:3000/developer/api-docs/
 ```
 
 ## Variables de entorno del backend
-
-El backend incluye un archivo de ejemplo en `backend/.env.example`.
 
 ```bash
 cd backend
@@ -87,39 +75,28 @@ PORT=3000
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/proyecto?schema=public"
 FRONTEND_ORIGIN="http://localhost:4200"
 IDENTITY_MEMORY_SEED=true
-IDENTITY_MEMORY_SEED_COUNT=10
-IDENTITY_MEMORY_SEED_RANDOM=false
-IDENTITY_MEMORY_SEED_VALUE=12345
 ```
 
-El backend puede arrancar con adaptadores en memoria para desarrollo local. PostgreSQL queda preparado para cuando se necesite persistencia con Prisma.
+Con `IDENTITY_MEMORY_SEED=true` el backend arranca sin PostgreSQL usando adaptadores en memoria.
 
 ## Base de datos local
-
-Para levantar PostgreSQL con Docker:
 
 ```bash
 cd backend
 docker compose up -d
-```
-
-Comandos utiles de Prisma:
-
-```bash
 pnpm prisma:generate
 pnpm prisma:migrate
-pnpm prisma:studio
+pnpm prisma:seed
 ```
 
-## Comandos utiles
+## Comandos útiles
 
 ### Frontend
 
 ```bash
-pnpm start
-pnpm test -- --watch=false
-pnpm test:e2e
-pnpm storybook
+pnpm test -- --watch=false   # tests unitarios
+pnpm test:e2e                # Playwright
+pnpm storybook               # http://localhost:6006
 pnpm build
 pnpm build-storybook
 ```
@@ -127,37 +104,15 @@ pnpm build-storybook
 ### Backend
 
 ```bash
-pnpm dev
+pnpm test                 # unitarios y aplicación
+pnpm test:e2e             # Supertest
+pnpm test:integration     # Testcontainers (requiere Docker)
 pnpm build
-pnpm test
-pnpm test:e2e
-pnpm test:integration
-```
-
-## Storybook
-
-Los componentes reutilizables del frontend viven en:
-
-```txt
-frontend/src/app/shared/ui/
-```
-
-Para revisar el catalogo visual:
-
-```bash
-cd frontend
-pnpm storybook
-```
-
-Storybook se sirve por defecto en:
-
-```txt
-http://localhost:6006
 ```
 
 ## Tests
 
-- **Frontend:** Vitest, Testing Library y Playwright.
-- **Backend:** Vitest para unitarios, Supertest para e2e y Testcontainers para integracion.
+- **Frontend:** Vitest + Testing Library (componentes) y Playwright (e2e).
+- **Backend:** Vitest (unitarios/aplicación), Supertest (e2e) y Testcontainers (integración Prisma).
 
-Ejecuta los comandos desde `frontend/` o `backend/` segun corresponda.
+Ejecuta los comandos desde `frontend/` o `backend/` según corresponda.
