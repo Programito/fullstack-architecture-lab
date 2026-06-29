@@ -1,6 +1,6 @@
 # MesaFlow POS
 
-TPV full-stack de restaurante desarrollado como proyecto de fin de máster. Frontend Angular con arquitectura signal-first y backend NestJS con arquitectura limpia.
+TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y backend NestJS con arquitectura limpia.
 
 ## Stack
 
