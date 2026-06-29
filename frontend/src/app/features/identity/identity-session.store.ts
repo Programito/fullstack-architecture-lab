@@ -6,11 +6,17 @@ import type { AuthResponseDto } from './api/identity-api.models';
 
 const STORAGE_KEY = 'identity.session';
 
+export type SessionScopes = {
+  organizations: string[];
+  restaurants: string[];
+};
+
 export type IdentitySessionSnapshot = {
   userId: string | null;
   roles: string[];
   permissions: PermissionName[];
   accessToken: string | null;
+  scopes: SessionScopes;
 };
 
 const EMPTY_SESSION: IdentitySessionSnapshot = {
@@ -18,6 +24,7 @@ const EMPTY_SESSION: IdentitySessionSnapshot = {
   roles: [],
   permissions: [],
   accessToken: null,
+  scopes: { organizations: [], restaurants: [] },
 };
 
 @Injectable({
@@ -30,6 +37,7 @@ export class IdentitySessionStore {
   readonly session = this.sessionState.asReadonly();
   readonly roles = computed(() => this.sessionState().roles);
   readonly permissions = computed(() => this.sessionState().permissions);
+  readonly scopes = computed(() => this.sessionState().scopes);
   readonly isAuthenticated = computed(() => Boolean(this.sessionState().userId));
 
   hasPermission(permission: PermissionName): boolean {
@@ -46,6 +54,7 @@ export class IdentitySessionStore {
       roles: response.roles,
       permissions: response.permissions,
       accessToken: response.accessToken,
+      scopes: response.scopes ?? { organizations: [], restaurants: [] },
     });
   }
 
@@ -55,6 +64,10 @@ export class IdentitySessionStore {
       roles: [...new Set(session.roles)],
       permissions: [...new Set(session.permissions)],
       accessToken: session.accessToken,
+      scopes: {
+        organizations: Array.isArray(session.scopes?.organizations) ? [...new Set(session.scopes.organizations)] : [],
+        restaurants: Array.isArray(session.scopes?.restaurants) ? [...new Set(session.scopes.restaurants)] : [],
+      },
     };
     this.sessionState.set(normalized);
     this.storage.setItem(STORAGE_KEY, JSON.stringify(normalized));
@@ -73,6 +86,7 @@ export class IdentitySessionStore {
 
     try {
       const parsed = JSON.parse(rawValue) as Partial<IdentitySessionSnapshot>;
+      const rawScopes = parsed.scopes as { organizations?: unknown; restaurants?: unknown } | undefined;
       return {
         userId: typeof parsed.userId === 'string' ? parsed.userId : null,
         roles: Array.isArray(parsed.roles) ? [...new Set(parsed.roles.filter(isString))] : [],
@@ -80,6 +94,10 @@ export class IdentitySessionStore {
           ? [...new Set(parsed.permissions.filter(isPermissionName))]
           : [],
         accessToken: typeof parsed.accessToken === 'string' ? parsed.accessToken : null,
+        scopes: {
+          organizations: Array.isArray(rawScopes?.organizations) ? rawScopes.organizations.filter(isString) : [],
+          restaurants: Array.isArray(rawScopes?.restaurants) ? rawScopes.restaurants.filter(isString) : [],
+        },
       };
     } catch {
       this.storage.removeItem(STORAGE_KEY);

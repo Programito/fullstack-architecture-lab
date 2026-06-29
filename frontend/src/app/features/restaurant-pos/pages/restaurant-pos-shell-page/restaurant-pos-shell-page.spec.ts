@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen } from '@testing-library/angular';
 import { Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { MemoryKeyValueStorage, KEY_VALUE_STORAGE } from '../../../../shared/utils/storage/key-value-storage';
@@ -11,6 +11,31 @@ import { IdentitySessionStore } from '../../../identity/identity-session.store';
 import { RESTAURANT_POS_SECTIONS } from '../../restaurant-pos.routes';
 import { RestaurantPosShellPage } from './restaurant-pos-shell-page';
 import { IdentityApiService } from '../../../identity/api/identity-api.service';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
+
+const API_MOCK = new Proxy({}, { get: () => () => EMPTY }) as RestaurantPosApiService;
+
+const RESTAURANT_A = { id: 'r-a', name: 'MesaFlow Centro', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
+const RESTAURANT_B = { id: 'r-b', name: 'MesaFlow Norte', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
+
+function makeContextMock(opts: {
+  restaurants?: typeof RESTAURANT_A[];
+  activeRestaurant?: typeof RESTAURANT_A | null;
+  isLoading?: boolean;
+} = {}) {
+  const restaurants = opts.restaurants ?? [RESTAURANT_A];
+  const activeRestaurant = opts.activeRestaurant !== undefined ? opts.activeRestaurant : RESTAURANT_A;
+  const isLoading = opts.isLoading ?? false;
+  return {
+    load: vi.fn(),
+    setActiveRestaurantId: vi.fn(),
+    isLoading: signal(isLoading),
+    multipleRestaurants: signal(restaurants.length > 1),
+    activeRestaurant: signal(activeRestaurant),
+    restaurants: signal(restaurants),
+  };
+}
 
 @Component({
   template: '',
@@ -23,6 +48,7 @@ describe('RestaurantPosShellPage', () => {
     initialPath = '/restaurant-pos/service',
     roles: string[] = ['test-role'],
     logout = vi.fn(() => of(undefined)),
+    contextMock = makeContextMock(),
   ) => {
     const storage = new MemoryKeyValueStorage();
     storage.setItem('locale', 'es');
@@ -44,6 +70,8 @@ describe('RestaurantPosShellPage', () => {
         ...i18n.providers,
         { provide: KEY_VALUE_STORAGE, useValue: storage },
         { provide: IdentityApiService, useValue: { logout } },
+        { provide: RestaurantContextStore, useValue: contextMock },
+        { provide: RestaurantPosApiService, useValue: API_MOCK },
         provideRouter([
           {
             path: 'restaurant-pos',
@@ -57,7 +85,7 @@ describe('RestaurantPosShellPage', () => {
     await TestBed.inject(Router).navigateByUrl(initialPath);
     view.fixture.detectChanges();
 
-    return { storage, logout, router: TestBed.inject(Router), fixture: view.fixture };
+    return { storage, logout, router: TestBed.inject(Router), fixture: view.fixture, contextMock };
   };
 
   it('renders only the allowed restaurant POS navigation items', async () => {
@@ -102,5 +130,45 @@ describe('RestaurantPosShellPage', () => {
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
 
     vi.useRealTimers();
+  });
+
+  it('llama a load en el contexto de restaurante al iniciarse', async () => {
+    const contextMock = makeContextMock();
+    await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+    expect(contextMock.load).toHaveBeenCalledTimes(1);
+  });
+
+  describe('selector de restaurante', () => {
+    it('muestra el selector cuando hay múltiples restaurantes y ninguno activo', async () => {
+      const contextMock = makeContextMock({ restaurants: [RESTAURANT_A, RESTAURANT_B], activeRestaurant: null });
+      await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+      expect(screen.getByRole('heading', { name: /Selecciona un restaurante/i })).toBeTruthy();
+    });
+
+    it('muestra los restaurantes disponibles como botones en el selector', async () => {
+      const contextMock = makeContextMock({ restaurants: [RESTAURANT_A, RESTAURANT_B], activeRestaurant: null });
+      await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+      expect(screen.getByRole('button', { name: 'MesaFlow Centro' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'MesaFlow Norte' })).toBeTruthy();
+    });
+
+    it('al seleccionar un restaurante llama a setActiveRestaurantId con el id correcto', async () => {
+      const contextMock = makeContextMock({ restaurants: [RESTAURANT_A, RESTAURANT_B], activeRestaurant: null });
+      const { fixture } = await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+      fireEvent.click(screen.getByRole('button', { name: 'MesaFlow Centro' }));
+      fixture.detectChanges();
+      expect(contextMock.setActiveRestaurantId).toHaveBeenCalledWith('r-a');
+    });
+
+    it('no muestra el selector cuando hay un restaurante activo', async () => {
+      await renderPage(['service']);
+      expect(screen.queryByRole('heading', { name: /Selecciona un restaurante/i })).toBeNull();
+    });
+
+    it('no muestra el selector cuando solo hay un restaurante', async () => {
+      const contextMock = makeContextMock({ restaurants: [RESTAURANT_A], activeRestaurant: null });
+      await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+      expect(screen.queryByRole('heading', { name: /Selecciona un restaurante/i })).toBeNull();
+    });
   });
 });

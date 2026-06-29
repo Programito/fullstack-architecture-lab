@@ -16,8 +16,6 @@ export class OrderSyncService {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    this.restaurantContext.load();
-
     toObservable(this.restaurantContext.activeRestaurant).pipe(
       takeUntilDestroyed(this.destroyRef),
       switchMap((restaurant) => {

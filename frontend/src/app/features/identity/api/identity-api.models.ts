@@ -20,6 +20,10 @@ export interface AuthResponseDto {
   user: UserResponseDto;
   roles: string[];
   permissions: PermissionName[];
+  scopes: {
+    organizations: string[];
+    restaurants: string[];
+  };
 }
 
 export interface AuthPublicConfigDto {

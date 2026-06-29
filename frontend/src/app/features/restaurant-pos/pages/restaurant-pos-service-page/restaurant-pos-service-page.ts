@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
-import { mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
+import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
@@ -22,6 +22,7 @@ import { ServiceSummary } from '../../components/service-summary/service-summary
 import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
 import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { OrderWriteService } from '../../state/order-write.service';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 const SERVICE_POINT_STATUS_FILTER_ORDER = ['free', 'occupied', 'waiting_kitchen', 'served', 'payment_pending', 'paid', 'cleaning', 'reserved'] as const satisfies readonly TableStatus[];
@@ -55,6 +56,7 @@ export class RestaurantPosServicePage {
   protected readonly store = inject(RestaurantPosStore);
   private readonly api = inject(RestaurantPosApiService);
   private readonly restaurantContext = inject(RestaurantContextStore);
+  private readonly orderWrite = inject(OrderWriteService);
   private readonly transloco = inject(TranslocoService);
   private readonly storage = inject(KEY_VALUE_STORAGE);
   private readonly menu = inject(MenuMockService);
@@ -176,6 +178,19 @@ export class RestaurantPosServicePage {
       if (!restaurant) return;
       this.api.getRestaurantServiceFloor(restaurant.id).subscribe((serviceFloor) => {
         this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
+      });
+    });
+
+    effect(() => {
+      const restaurant = this.restaurantContext.activeRestaurant();
+      if (!restaurant) return;
+      this.api.getRestaurantMenu(restaurant.id).subscribe((menu) => {
+        const products = mapRestaurantMenuToProducts(menu);
+        if (products.length > 0) {
+          this.store.hydrateProducts(products);
+          this.menu.hydrateModifierGroups(mapRestaurantMenuModifierGroups(menu));
+          this.menu.hydrateComboDefinitions(mapRestaurantMenuComboDefinitions(menu));
+        }
       });
     });
 
@@ -308,7 +323,7 @@ export class RestaurantPosServicePage {
 
     if (product?.type === 'combo') {
       if (!this.store.selectedTableId()) {
-        this.store.addProductToSelectedTable(productId);
+        this.orderWrite.addProduct(productId);
         return;
       }
 
@@ -318,7 +333,7 @@ export class RestaurantPosServicePage {
     }
 
     if (!this.store.selectedTableId()) {
-      this.store.addProductToSelectedTable(productId);
+      this.orderWrite.addProduct(productId);
       return;
     }
 
@@ -328,7 +343,7 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.store.addProductToSelectedTable(productId);
+    this.orderWrite.addProduct(productId);
     this.lastAddedProductId.set(productId);
   }
 
@@ -355,17 +370,17 @@ export class RestaurantPosServicePage {
   }
 
   protected confirmProductCustomization(customization: ProductCustomizationConfirmed): void {
-    this.store.addCustomizedProductToSelectedTable(
+    this.orderWrite.addCustomizedProduct(
       customization.productId,
       customization.selectedModifierOptionIds,
-      customization.kitchenNote,
+      customization.kitchenNote ?? '',
     );
     this.lastAddedProductId.set(customization.productId);
     this.closeProductCustomizer();
   }
 
   protected confirmComboCustomization(customization: ComboCustomizationConfirmed): void {
-    this.store.addConfiguredComboToSelectedTable(customization.comboProductId, customization.slotSelections);
+    this.orderWrite.addCombo(customization.comboProductId, customization.slotSelections);
     this.lastAddedProductId.set(customization.comboProductId);
     this.closeComboCustomizer();
   }

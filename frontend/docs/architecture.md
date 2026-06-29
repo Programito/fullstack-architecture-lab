@@ -692,24 +692,154 @@ sequenceDiagram
   `TestBed.inject(RestaurantFloorStore)` para manipular estado privado cuando el API público no
   lo expone directamente (p. ej. vaciar `_ordersByTable` para probar el caso «sin pedido»).
 
-## Restaurante activo
+## Restaurante activo y selección multi-restaurante
 
-`MenuApiService` lee el restaurante activo desde `RestaurantContextStore` en lugar de usar un
-ID hardcodeado:
+`RestaurantContextStore` gestiona la lista de restaurantes accesibles y cuál está activo:
 
-```ts
-private get restaurantId(): string {
-  const id = this.context.activeRestaurant()?.id;
-  if (!id) throw new Error('No active restaurant');
-  return id;
-}
+```mermaid
+flowchart LR
+  Shell["RestaurantPosShellPage\nllamada a load()"]
+  Context["RestaurantContextStore\nrestaurants, activeRestaurant\nmultipleRestaurants"]
+  API["RestaurantPosApiService\nlistRestaurants()"]
+  Selector["Selector overlay\n(si multipleRestaurants y sin activo)"]
+  POS["POS operativo"]
+
+  Shell -->|load()| Context
+  Context --> API
+  API --> Context
+  Context -->|1 restaurante| POS
+  Context -->|varios| Selector
+  Selector -->|setActiveRestaurantId()| Context
+  Context -->|activo resuelto| POS
 ```
 
-Todos los métodos de `MenuApiService` usan `this.restaurantId`. Si no hay restaurante activo,
-lanzan en tiempo de ejecución antes de hacer ninguna llamada HTTP.
+### Auto-selección
 
-`RestaurantContextStore.load()` hace auto-selección si el usuario tiene acceso a un único
-restaurante. La shell page es responsable de llamar a `load()` al inicializar.
+`load()` hace auto-selección (`_activeRestaurantId` ← `restaurants[0].id`) si la API devuelve
+exactamente un restaurante. Si devuelve más de uno, `activeRestaurant` es `null` hasta que el
+usuario elija, y la shell muestra el overlay selector.
+
+### Signals públicos de `RestaurantContextStore`
+
+| Signal / computed | Tipo | Descripción |
+|---|---|---|
+| `restaurants` | `RestaurantSummaryDto[]` | Lista cargada desde la API |
+| `activeRestaurant` | `RestaurantSummaryDto \| null` | Restaurante activo o null |
+| `multipleRestaurants` | `boolean` | `true` si hay más de uno |
+| `isLoading` | `boolean` | Carga en vuelo |
+| `loadError` | `string \| null` | Clave i18n de error |
+| `hasNoRestaurants` | `boolean` | Sin restaurantes y sin carga ni error |
+
+`setActiveRestaurantId(id)` es el único setter público; lo llama el overlay selector.
+
+### Responsabilidad de la shell
+
+`RestaurantPosShellPage` es la única responsable de llamar a `load()` en su constructor.
+`OrderSyncService` ya no lo llama para evitar doble carga. El polling de `OrderSyncService`
+se activa automáticamente en cuanto `activeRestaurant` deja de ser `null`.
+
+`MenuApiService` lee `activeRestaurant()?.id` directamente desde el store; lanza en runtime
+si no hay restaurante activo.
+
+---
+
+## Scopes de sesión en `IdentitySessionStore`
+
+El store de sesión persiste el campo `scopes` que devuelve el backend en login y refresh:
+
+```ts
+type SessionScopes = {
+  organizations: string[];
+  restaurants: string[];
+};
+
+type IdentitySessionSnapshot = {
+  userId: string | null;
+  roles: string[];
+  permissions: PermissionName[];
+  accessToken: string | null;
+  scopes: SessionScopes;
+};
+```
+
+`setAuthResponse(response)` lo extrae de `AuthResponseDto.scopes` con fallback a arrays vacíos
+para mantener compatibilidad con tokens emitidos antes de añadir el campo.
+
+El guard de ruta `restaurantScopeGuard` usa `IdentitySessionStore.scopes()` para decidir si el
+usuario puede acceder al restaurante activo en el frontend (comprobación local, sin llamada HTTP):
+
+```mermaid
+flowchart LR
+  Guard["restaurantScopeGuard"]
+  Session["IdentitySessionStore\nscopes.restaurants\nscopes.organizations"]
+  Context["RestaurantContextStore\nactiveRestaurant"]
+  Access["✓ acceso"]
+  Deny["→ /restaurant-pos/access"]
+
+  Guard --> Session
+  Guard --> Context
+  Session -->|scope coincide o vacío| Access
+  Session -->|scope no coincide| Deny
+  Context -->|sin restaurante activo| Access
+```
+
+Regla: si `scopes.restaurants` está vacío el guard pasa sin restricción (usuario sin scope
+específico de restaurante, p.ej. admin global). Si hay scopes y el restaurante activo no está
+en ellos, redirige a `/access`.
+
+---
+
+## Escritura de pedidos: `OrderWriteService`
+
+`OrderWriteService` es el puente entre las mutaciones locales del store y la API del backend.
+Implementa actualización optimista: primero actualiza el store, luego sincroniza con el backend
+y, si falla, recarga la planta para corregir el estado visual.
+
+```mermaid
+sequenceDiagram
+  participant UI as Componente
+  participant Svc as OrderWriteService
+  participant Store as RestaurantPosStore
+  participant API as RestaurantPosApiService
+
+  UI->>Svc: addProduct(productId)
+  Svc->>Store: addProductToSelectedTable(productId)
+  Svc->>API: addRestaurantOrderLine(...) [si hay restaurantProductId]
+  alt pedido existente
+    API->>API: POST /orders/:orderId/lines
+  else sin pedido
+    API->>API: POST /service-points/:tableId/orders
+    API->>API: POST /orders/:newId/lines
+  end
+  API-->>Svc: ServicePointOrderDto
+  Svc->>Store: hydrateServicePointOrder(tableId, mapped)
+  alt error
+    Svc->>Store: reportApiError('restaurantPos.errors.addLineFailed')
+    Svc->>API: getRestaurantServiceFloor(restaurantId)
+    API-->>Svc: ServiceFloorDto
+    Svc->>Store: hydrateServiceFloor(mapped)
+  end
+```
+
+### Métodos públicos
+
+| Método | Descripción |
+|---|---|
+| `addProduct(productId)` | Producto simple, sin modificadores |
+| `addCustomizedProduct(productId, modifierOptionIds, kitchenNote)` | Producto con modificadores y nota de cocina |
+| `addCombo(comboProductId, slotSelections)` | Combo con selecciones de slot |
+
+### Reglas de frontera
+
+- Si el producto no tiene `restaurantProductId` (mock sin ID backend), aplica solo la mutación
+  local del store y no llama a la API.
+- Si no hay restaurante activo o mesa seleccionada, no hace nada.
+- Cuando ya hay un pedido abierto en el store (`selectedOrder().id`), llama directamente a
+  `addRestaurantOrderLine`. Si no, abre el pedido primero con `openRestaurantOrder`.
+- En caso de error la planta se recarga desde el backend para que el estado visual sea consistente
+  con el servidor, aunque la actualización optimista ya se aplicó en el store.
+- `OrderWriteService` es un provider a nivel de componente (inyectado en la shell); no es
+  `providedIn: 'root'` para que cada instancia de la shell tenga su propio contexto.
 
 ## Documentación
 

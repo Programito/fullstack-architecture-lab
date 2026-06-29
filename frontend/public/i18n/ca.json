@@ -108,7 +108,12 @@
     "loading": "Carregant usuaris...",
     "empty": "No hi ha usuaris disponibles.",
     "confirmRevocation": "El canvi pot tancar les sessions actives d'aquest usuari.",
-    "types": { "regular": "Regular", "demo": "Demo", "system": "Sistema", "test": "Proves" }
+    "types": {
+      "regular": "Regular",
+      "demo": "Demo",
+      "system": "Sistema",
+      "test": "Proves"
+    }
   },
   "languageSelect": {
     "label": "Idioma",
@@ -168,7 +173,8 @@
       "selectTableFirst": "Selecciona una taula primer.",
       "productUnavailable": "El producte no està disponible.",
       "cannotPlaceElement": "No es pot col·locar l'element aquí.",
-      "cannotResizeGrid": "No es pot redimensionar el plànol perquè alguns elements quedarien fora de la matriu."
+      "cannotResizeGrid": "No es pot redimensionar el plànol perquè alguns elements quedarien fora de la matriu.",
+      "addLineFailed": "No s'ha pogut afegir el producte. Revisa l'estat de la taula."
     },
     "layout": {
       "title": "Plànol del restaurant",
@@ -492,7 +498,6 @@
         "no_show": "No show"
       }
     },
-    },
     "kitchen": {
       "eyebrow": "Producció",
       "title": "Cuina",
@@ -639,6 +644,10 @@
       "entrance": "Entrada",
       "blockedArea": "Zona bloquejada",
       "stool": "Tamboret"
+    },
+    "selector": {
+      "title": "Selecciona un restaurant",
+      "description": "Tria el restaurant en el qual vols treballar."
     }
   },
   "menu": {

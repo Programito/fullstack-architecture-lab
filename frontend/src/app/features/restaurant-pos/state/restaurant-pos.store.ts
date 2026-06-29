@@ -377,6 +377,10 @@ export class RestaurantPosStore {
     return this.floor.nextFloorElementSortOrder();
   }
 
+  reportApiError(message: string): void {
+    this.setError(message);
+  }
+
   // === private helpers ===
   private buildServiceTableInfo(table: RestaurantTable, orderVal: TableOrder): ServiceTableInfo {
     const pendingKitchenCount = orderVal.lines
