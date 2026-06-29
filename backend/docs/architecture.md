@@ -102,25 +102,30 @@ flowchart TB
 
 ## Auth y scopes
 
-La autenticación usa JWT en cookie. `AuthGuard` valida el token, carga el usuario y construye
-`request.auth`:
+La autenticación usa JWT Bearer. `AuthGuard` valida el token, carga el usuario y construye
+`request.auth` con toda la información de roles, permisos y scopes:
 
 ```mermaid
 flowchart LR
-  Request["HTTP Request\ncookie jwt_token"]
+  Request["HTTP Request\nAuthorization: Bearer"]
   Guard["AuthGuard"]
-  Roles["UserRoleAssignment\n(fuente de verdad de roles)"]
-  Auth["request.auth\n{ userId, roles, permissions, scopes }"]
+  Assignments["UserRoleAssignment\n(fuente de verdad)"]
+  Auth["request.auth\n{ userId, roles, permissions,\n  scopes, restaurantPermissions,\n  organizationPermissions }"]
 
   Request --> Guard
-  Guard --> Roles
+  Guard --> Assignments
   Guard --> Auth
 ```
 
 ### Fuente de verdad de roles
 
 `UserRoleAssignment` es la única fuente para roles de negocio (`manager`, `waiter`, `kitchen`).
-La tabla `UserRole` (many-to-many legacy) no se usa para construir `roles` ni `scopes` en el guard.
+Cada assignment tiene un `scopeType` (`organization` | `restaurant`) que indica el alcance del rol:
+
+| `scopeType` | Campos poblados | Ejemplo |
+|---|---|---|
+| `organization` | `organizationId` | Admin con acceso a todos los restaurantes de la org |
+| `restaurant` | `organizationId` + `restaurantId` | Camarero asignado a un restaurante concreto |
 
 ### Estructura de `request.auth`
 
@@ -128,27 +133,61 @@ La tabla `UserRole` (many-to-many legacy) no se usa para construir `roles` ni `s
 type AuthPayload = {
   userId: string;
   roles: string[];
-  permissions: string[];
+  permissions: string[];           // unión plana (compatibilidad)
   scopes: {
     organizations: string[];
     restaurants: string[];
   };
+  restaurantPermissions: Record<string, string[]>;    // permisos por restaurantId
+  organizationPermissions: Record<string, string[]>;  // permisos por organizationId
 };
 ```
 
-`scopes.restaurants` contiene los IDs de restaurante a los que el usuario tiene acceso según
-sus `UserRoleAssignment`. `listRestaurants` filtra por este conjunto, por lo que cada usuario
-solo ve los restaurantes propios.
+`scopes.restaurants` contiene los IDs de restaurante presentes en algún assignment del usuario.
+`listRestaurants` filtra por este conjunto para que cada usuario solo vea sus restaurantes.
+
+`restaurantPermissions` y `organizationPermissions` son los mapas de permisos calculados por scope
+a partir de cada `UserRoleAssignment` individual, evitando la unión plana incorrecta cuando un
+usuario tiene roles distintos en restaurantes distintos.
 
 ### Guards en endpoints de restaurante
 
-Los endpoints de lectura y escritura de un restaurante específico llevan tres guards:
+Los endpoints que requieren permiso de operación encadenan tres guards:
 
 ```
 @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
 ```
 
-`RestaurantAccessGuard` verifica que `params.restaurantId` esté en `request.auth.scopes.restaurants`.
+**`PermissionsGuard`** — resolución de permisos por scope:
+
+```mermaid
+flowchart TD
+  A["¿required vacío?"] -->|sí| Pass["✓ pasa"]
+  A -->|no| B["¿hay restaurantId en params?"]
+  B -->|no| C["check flat permissions"]
+  C -->|ok| Pass
+  C -->|falta| Deny["✗ 403"]
+  B -->|sí| D["restaurantPermissions[id]"]
+  D -->|tiene todos| Pass
+  D -->|no tiene todos| E["scopes.organizations vacío?"]
+  E -->|sí| Deny
+  E -->|no| F["organizationPermissions vacío?"]
+  F -->|sí| Deny
+  G["¿restaurant.organizationId ∈ orgs del usuario?"]
+  F -->|no| G
+  G -->|sí| Pass
+  G -->|no| Deny
+```
+
+El caso `developer` (org scope sin permisos) se cortocircuita antes de la consulta a Prisma porque
+`organizationPermissions` queda vacío aunque tenga org en `scopes.organizations`.
+
+**`RestaurantAccessGuard`** — comprueba que el usuario pueda acceder al restaurante:
+- Acceso directo si `restaurantId ∈ scopes.restaurants`
+- Acceso por org si el restaurante pertenece a una organización del usuario (consulta Prisma)
+
+**Limitación conocida:** `RestaurantAccessGuard` con scope de organización permite acceso a cualquier
+restaurante sin verificar que el restaurante pertenezca a esa organización.
 
 ---
 

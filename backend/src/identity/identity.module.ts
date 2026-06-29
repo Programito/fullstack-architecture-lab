@@ -36,6 +36,7 @@ import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.r
 import { InMemoryIdentitySeed } from './infrastructure/seed/in-memory-identity.seed';
 import { AuthTokenService } from './infrastructure/security/auth-token.service';
 import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password-hasher';
+import { RestaurantScopeService } from './infrastructure/security/restaurant-scope.service';
 import { AuthController } from './presentation/rest/auth.controller';
 import { AuthGuard } from './presentation/rest/auth.guard';
 import { PermissionsController } from './presentation/rest/permissions.controller';
@@ -55,6 +56,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
     AuthService,
     DeveloperAccessService,
     AuthTokenService,
+    RestaurantScopeService,
     AuthGuard,
     RolesGuard,
     PermissionsGuard,
@@ -146,6 +148,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
     DeveloperAccessService,
     AuthGuard,
     RestaurantAccessGuard,
+    RestaurantScopeService,
     AuthTokenService,
     USER_REPOSITORY,
     ROLE_REPOSITORY,

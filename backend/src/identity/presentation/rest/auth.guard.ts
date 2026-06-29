@@ -19,6 +19,8 @@ export type AuthenticatedRequest = {
     roles: string[];
     permissions: string[];
     scopes: { organizations: string[]; restaurants: string[] };
+    restaurantPermissions: Record<string, string[]>;
+    organizationPermissions: Record<string, string[]>;
   };
 };
 
@@ -54,11 +56,34 @@ export class AuthGuard implements CanActivate {
     const assignments = await this.userRoleAssignments.findByUserId(user.id);
     const assignedRoleIds = [...new Set(assignments.map((a) => a.roleId))];
     const activeRoles = (await this.roles.findManyByIds(assignedRoleIds)).filter((role) => role.enabled);
-    const activePermissions = (
+    const enabledPermissions = (
       await this.permissions.findManyByIds(activeRoles.flatMap((role) => role.permissionIds))
-    )
-      .filter((permission) => permission.enabled)
-      .map((permission) => permission.name);
+    ).filter((p) => p.enabled);
+    const activePermissions = enabledPermissions.map((p) => p.name);
+
+    const permissionNameById = new Map(enabledPermissions.map((p) => [p.id, p.name]));
+    const activeRolesById = new Map(activeRoles.map((r) => [r.id, r]));
+
+    const restaurantPermissions: Record<string, string[]> = {};
+    const organizationPermissions: Record<string, string[]> = {};
+
+    for (const assignment of assignments) {
+      const role = activeRolesById.get(assignment.roleId);
+      if (!role) continue;
+      const rolePermNames = [...new Set(
+        role.permissionIds.map((id) => permissionNameById.get(id)).filter((n): n is string => n !== undefined)
+      )];
+      if (assignment.scopeType === 'restaurant' && assignment.restaurantId) {
+        restaurantPermissions[assignment.restaurantId] = [
+          ...new Set([...(restaurantPermissions[assignment.restaurantId] ?? []), ...rolePermNames]),
+        ];
+      } else if (assignment.scopeType === 'organization' && assignment.organizationId) {
+        organizationPermissions[assignment.organizationId] = [
+          ...new Set([...(organizationPermissions[assignment.organizationId] ?? []), ...rolePermNames]),
+        ];
+      }
+    }
+
     request.auth = {
       userId: user.id,
       sessionId: session.id,
@@ -68,6 +93,8 @@ export class AuthGuard implements CanActivate {
         organizations: [...new Set(assignments.flatMap((a) => (a.organizationId ? [a.organizationId] : [])))],
         restaurants: [...new Set(assignments.flatMap((a) => (a.restaurantId ? [a.restaurantId] : [])))],
       },
+      restaurantPermissions,
+      organizationPermissions,
     };
     return true;
   }

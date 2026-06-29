@@ -3,12 +3,16 @@ import { Reflector } from '@nestjs/core';
 
 import type { AuthenticatedRequest } from './auth.guard';
 import { REQUIRE_RESTAURANT_SCOPE } from './require-restaurant-scope.decorator';
+import { RestaurantScopeService } from '../../infrastructure/security/restaurant-scope.service';
 
 @Injectable()
 export class RestaurantAccessGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly restaurantScope: RestaurantScopeService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiresScope = this.reflector.getAllAndOverride<boolean>(REQUIRE_RESTAURANT_SCOPE, [
       context.getHandler(),
       context.getClass(),
@@ -24,14 +28,10 @@ export class RestaurantAccessGuard implements CanActivate {
       return true;
     }
 
-    if (request.auth.scopes.restaurants.includes(restaurantId)) {
-      return true;
+    const allowed = await this.restaurantScope.canAccessRestaurant(request.auth, restaurantId);
+    if (!allowed) {
+      throw new ForbiddenException('Restaurant access is not allowed for this user.');
     }
-
-    if (request.auth.scopes.organizations.length > 0) {
-      return true;
-    }
-
-    throw new ForbiddenException('Restaurant access is not allowed for this user.');
+    return true;
   }
 }
