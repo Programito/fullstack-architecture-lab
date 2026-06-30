@@ -1,6 +1,8 @@
+import '@angular/compiler';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { RestaurantPosApiService } from './restaurant-pos-api.service';
 
@@ -759,6 +761,37 @@ describe('RestaurantPosApiService', () => {
       capacity: null,
     });
     request.flush({ restaurantId: 'restaurant-mesaflow-centro', tables: [], floors: [] });
+    http.verify();
+  });
+
+  it('requests a signed Cloudinary payload for product uploads', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service
+      .getProductImageUploadSignature('restaurant-mesaflow-centro', { fileName: 'burger.jpg' })
+      .subscribe((value) => {
+        result = value;
+      });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/products/image-upload-signature');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ fileName: 'burger.jpg' });
+    request.flush({
+      cloudName: 'demo-cloud',
+      apiKey: 'api-key',
+      timestamp: 1711111111,
+      signature: 'signed-payload',
+      folder: 'restaurants/restaurant-mesaflow-centro/products',
+    });
+
+    expect(result).toEqual({
+      cloudName: 'demo-cloud',
+      apiKey: 'api-key',
+      timestamp: 1711111111,
+      signature: 'signed-payload',
+      folder: 'restaurants/restaurant-mesaflow-centro/products',
+    });
     http.verify();
   });
 });

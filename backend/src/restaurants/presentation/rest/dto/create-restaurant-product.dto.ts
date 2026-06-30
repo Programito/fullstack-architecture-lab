@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRestaurantProductDto {
@@ -29,4 +29,15 @@ export class CreateRestaurantProductDto {
   @ApiProperty({ enum: ['direct', 'bar', 'kitchen', 'cold_station', 'dessert_station'], example: 'kitchen' })
   @IsEnum(['direct', 'bar', 'kitchen', 'cold_station', 'dessert_station'])
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/v1/products/burger.jpg', nullable: true })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional({ type: [String], example: ['burger-extras', 'burger-point'] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  modifierGroupIds?: string[];
 }

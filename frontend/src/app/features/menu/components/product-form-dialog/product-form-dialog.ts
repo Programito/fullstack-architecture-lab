@@ -5,34 +5,50 @@ import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Input } from '../../../../shared/ui/input/input';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Switch } from '../../../../shared/ui/switch/switch';
+import { ImageDropzone } from '../image-dropzone/image-dropzone';
+import type { ModifierGroup } from '../../models/modifier-group.model';
 import type { CreateProductInput, UpdateProductInput } from '../../models/product.model';
 import type { RestaurantProductDetailDto } from '../../services/menu-api.service';
+import {
+  ProductImageUploadError,
+  ProductImageUploadService,
+} from '../../services/product-image-upload.service';
+
+type UploadStatus = 'idle' | 'uploading' | 'failed';
 
 @Component({
   selector: 'app-product-form-dialog',
-  imports: [Dialog, Input, Select, Switch, TranslocoPipe],
+  imports: [Dialog, ImageDropzone, Input, Select, Switch, TranslocoPipe],
   templateUrl: './product-form-dialog.html',
 })
 export class ProductFormDialog {
   readonly open = input(false, { transform: booleanAttribute });
   readonly product = input<RestaurantProductDetailDto | null>(null);
+  readonly modifierGroups = input<ModifierGroup[]>([]);
   readonly loading = input(false);
   readonly closed = output<void>();
   readonly confirmed = output<CreateProductInput | UpdateProductInput>();
 
   private readonly transloco = inject(TranslocoService);
+  private readonly imageUpload = inject(ProductImageUploadService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
 
   protected readonly isEdit = computed(() => this.product() !== null);
 
   protected readonly name = signal('');
   protected readonly description = signal('');
+  protected readonly imageUrl = signal<string | null>(null);
   protected readonly priceEuros = signal('');
   protected readonly course = signal('main');
   protected readonly route = signal('kitchen');
   protected readonly available = signal(true);
+  protected readonly selectedModifierGroupIds = signal<string[]>([]);
+  protected readonly uploadStatus = signal<UploadStatus>('idle');
+  protected readonly imageErrorMessage = signal<string | null>(null);
+  private readonly pendingRetryFile = signal<File | null>(null);
 
   protected readonly isValid = computed(() => this.name().trim().length > 0);
+  protected readonly confirmDisabled = computed(() => !this.isValid() || this.uploadStatus() === 'uploading');
 
   protected readonly dialogTitle = computed(() =>
     this.transloco.translate(this.isEdit() ? 'menu.product.form.editTitle' : 'menu.product.form.createTitle'),
@@ -63,6 +79,10 @@ export class ProductFormDialog {
     ];
   });
 
+  protected readonly sortedModifierGroups = computed(() =>
+    [...this.modifierGroups()].sort((left, right) => left.name.localeCompare(right.name)),
+  );
+
   constructor() {
     effect(() => {
       const product = this.product();
@@ -70,31 +90,89 @@ export class ProductFormDialog {
         if (product) {
           this.name.set(product.name);
           this.description.set(product.description ?? '');
+          this.imageUrl.set(product.imageUrl ?? null);
           this.priceEuros.set((product.priceCents / 100).toFixed(2));
           this.course.set(product.course);
           this.route.set(product.preparationRoute);
           this.available.set(product.isAvailable);
+          this.selectedModifierGroupIds.set([...(product.modifierGroupIds ?? [])]);
         } else {
           this.name.set('');
           this.description.set('');
+          this.imageUrl.set(null);
           this.priceEuros.set('');
           this.course.set('main');
           this.route.set('kitchen');
           this.available.set(true);
+          this.selectedModifierGroupIds.set([]);
         }
+
+        this.uploadStatus.set('idle');
+        this.imageErrorMessage.set(null);
+        this.pendingRetryFile.set(null);
       }
+    });
+  }
+
+  protected handleFileSelected(file: File): void {
+    this.pendingRetryFile.set(file);
+    this.uploadSelectedFile(file);
+  }
+
+  protected handleRetryUpload(): void {
+    const file = this.pendingRetryFile();
+    if (!file || this.uploadStatus() === 'uploading') {
+      return;
+    }
+
+    this.uploadSelectedFile(file);
+  }
+
+  protected handleRemoveImage(): void {
+    this.imageUrl.set(null);
+    this.uploadStatus.set('idle');
+    this.imageErrorMessage.set(null);
+    this.pendingRetryFile.set(null);
+  }
+
+  protected toggleModifierGroup(modifierGroupId: string, checked: boolean): void {
+    this.selectedModifierGroupIds.update((currentIds) => {
+      if (checked) {
+        return currentIds.includes(modifierGroupId) ? currentIds : [...currentIds, modifierGroupId];
+      }
+
+      return currentIds.filter((currentId) => currentId !== modifierGroupId);
+    });
+  }
+
+  private uploadSelectedFile(file: File): void {
+    this.uploadStatus.set('uploading');
+    this.imageErrorMessage.set(null);
+    this.imageUpload.uploadProductImage(file).subscribe({
+      next: (uploadedUrl) => {
+        this.imageUrl.set(uploadedUrl);
+        this.uploadStatus.set('idle');
+        this.imageErrorMessage.set(null);
+        this.pendingRetryFile.set(null);
+      },
+      error: (error: unknown) => {
+        this.uploadStatus.set('failed');
+        this.imageErrorMessage.set(this.mapUploadErrorToMessage(error));
+      },
     });
   }
 
   protected handleConfirm(): void {
     const name = this.name().trim();
-    if (!name) return;
+    if (!name || this.uploadStatus() === 'uploading') return;
     const priceCents = Math.round(parseFloat(this.priceEuros().replace(',', '.') || '0') * 100);
 
     if (this.isEdit()) {
       this.confirmed.emit({
         name,
         description: this.description().trim() || null,
+        imageUrl: this.imageUrl(),
+        modifierGroupIds: this.selectedModifierGroupIds(),
         priceCents,
         course: this.course() as UpdateProductInput['course'],
         preparationRoute: this.route() as UpdateProductInput['preparationRoute'],
@@ -104,11 +182,32 @@ export class ProductFormDialog {
       this.confirmed.emit({
         name,
         description: this.description().trim() || undefined,
+        imageUrl: this.imageUrl(),
+        modifierGroupIds: this.selectedModifierGroupIds(),
         priceCents,
         currency: 'EUR',
         course: this.course() as CreateProductInput['course'],
         preparationRoute: this.route() as CreateProductInput['preparationRoute'],
       } as CreateProductInput);
+    }
+  }
+
+  private mapUploadErrorToMessage(error: unknown): string {
+    if (!(error instanceof ProductImageUploadError)) {
+      return this.transloco.translate('menu.product.form.uploadFailed');
+    }
+
+    switch (error.code) {
+      case 'invalid-type':
+        return this.transloco.translate('menu.product.form.invalidImageType');
+      case 'file-too-large':
+        return this.transloco.translate('menu.product.form.imageTooLarge');
+      case 'image-too-small':
+        return this.transloco.translate('menu.product.form.imageTooSmall');
+      case 'invalid-response':
+      case 'upload-failed':
+      default:
+        return this.transloco.translate('menu.product.form.uploadFailed');
     }
   }
 }

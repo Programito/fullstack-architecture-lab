@@ -16,6 +16,8 @@ export type UpdateRestaurantProductCommand = {
   priceCents?: number;
   isAvailable?: boolean;
   isVisible?: boolean;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
 };
 
 @Injectable()
@@ -34,6 +36,8 @@ export class UpdateRestaurantProductUseCase {
         priceCents: command.priceCents,
         isAvailable: command.isAvailable,
         isVisible: command.isVisible,
+        imageUrl: command.imageUrl,
+        modifierGroupIds: command.modifierGroupIds,
       });
       if (!product) {
         return err(restaurantProductNotFound(command.productId));

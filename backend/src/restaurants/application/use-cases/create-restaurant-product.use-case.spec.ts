@@ -43,6 +43,8 @@ const PRODUCT_DETAIL = {
   currency: 'EUR',
   isAvailable: true,
   isVisible: true,
+  imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+  modifierGroupIds: ['burger-extras', 'burger-point'],
 };
 
 describe('CreateRestaurantProductUseCase', () => {
@@ -59,6 +61,8 @@ describe('CreateRestaurantProductUseCase', () => {
       preparationRoute: 'kitchen',
       priceCents: 1290,
       currency: 'EUR',
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+      modifierGroupIds: ['burger-extras', 'burger-point'],
     });
 
     expect(result).toEqual(ok(PRODUCT_DETAIL));
@@ -69,6 +73,8 @@ describe('CreateRestaurantProductUseCase', () => {
       preparationRoute: 'kitchen',
       priceCents: 1290,
       currency: 'EUR',
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+      modifierGroupIds: ['burger-extras', 'burger-point'],
     });
   });
 

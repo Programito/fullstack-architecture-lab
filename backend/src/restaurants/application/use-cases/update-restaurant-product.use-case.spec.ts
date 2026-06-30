@@ -43,6 +43,8 @@ const UPDATED_DETAIL = {
   currency: 'EUR',
   isAvailable: true,
   isVisible: true,
+  imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger-premium.jpg',
+  modifierGroupIds: ['burger-extras'],
 };
 
 describe('UpdateRestaurantProductUseCase', () => {
@@ -56,10 +58,21 @@ describe('UpdateRestaurantProductUseCase', () => {
       productId: 'rp-1',
       name: 'Hamburguesa craft premium',
       priceCents: 1490,
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger-premium.jpg',
+      modifierGroupIds: ['burger-extras'],
     });
 
     expect(result).toEqual(ok(UPDATED_DETAIL));
-    expect(repository.updateProduct).toHaveBeenCalledWith('r-1', 'rp-1', expect.objectContaining({ name: 'Hamburguesa craft premium', priceCents: 1490 }));
+    expect(repository.updateProduct).toHaveBeenCalledWith(
+      'r-1',
+      'rp-1',
+      expect.objectContaining({
+        name: 'Hamburguesa craft premium',
+        priceCents: 1490,
+        imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger-premium.jpg',
+        modifierGroupIds: ['burger-extras'],
+      }),
+    );
   });
 
   it('returns restaurant_product_not_found when the product does not exist', async () => {

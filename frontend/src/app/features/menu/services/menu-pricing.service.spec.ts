@@ -73,6 +73,15 @@ describe('menu business logic', () => {
     ]);
   });
 
+  it('builds display-safe combo, customization and upgrade summaries', () => {
+    expect(pricing.buildComboCompositionSummary(comboDefinition(), MOCK_MENU_PRODUCTS)).toBe('Classic Burger + Fries + Coca-Cola');
+    expect(pricing.buildCustomizationSummary(burger(), MOCK_MODIFIER_GROUPS)).toBe(
+      'Add Bacon, Cheese, or Egg · Remove Onion, Pickles, or Sauce · Choose Burger point',
+    );
+    expect(pricing.getMinimumVisibleUpgrade(burger(), MOCK_MODIFIER_GROUPS)).toBe(1);
+    expect(pricing.getMinimumVisibleUpgrade(combo(), MOCK_MODIFIER_GROUPS, comboDefinition())).toBe(1);
+  });
+
   it('calculates combo base, supplements and total from slot selections', () => {
     const selections = [
       { slotId: 'combo-burger', selectedProductIds: ['product-7'] },

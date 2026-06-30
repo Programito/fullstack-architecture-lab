@@ -117,6 +117,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
             item.restaurantProduct.displayName ??
             item.restaurantProduct.product.name,
           description: item.restaurantProduct.product.description ?? undefined,
+          imageUrl: item.restaurantProduct.imageUrl,
           productType: item.restaurantProduct.product.productType as 'simple' | 'combo' | 'platter',
           priceCents: item.priceOverrideCents ?? item.restaurantProduct.priceCents,
           currency: item.restaurantProduct.currency,

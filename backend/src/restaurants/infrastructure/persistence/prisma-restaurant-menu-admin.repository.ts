@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
-import { menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken } from '../../../shared/errors/application-error';
+import { applicationError, menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { CreateProductData, RestaurantMenuAdminRepository, SortOrderItem, UpdateProductData } from '../../application/ports/restaurant-menu-admin-repository.port';
 import type { PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
@@ -180,7 +180,10 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     const rows = await this.prisma.restaurantProduct.findMany({
       where: { restaurantId },
       orderBy: { sortOrder: 'asc' },
-      include: { product: { select: { name: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+      include: {
+        product: { select: { name: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+        modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
+      },
     });
 
     return rows.map((rp) => ({
@@ -188,6 +191,8 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       productId: rp.productId,
       name: rp.displayName ?? rp.product.name,
       displayName: rp.displayName,
+      imageUrl: rp.imageUrl,
+      modifierGroupIds: rp.modifierGroups.map(({ modifierGroupId }) => modifierGroupId),
       productType: rp.product.productType as 'simple' | 'combo' | 'platter',
       course: rp.product.defaultCourse as RestaurantProductSummary['course'],
       preparationRoute: rp.product.defaultPreparationRoute as RestaurantProductSummary['preparationRoute'],
@@ -201,7 +206,10 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
   async findRestaurantProductById(restaurantId: string, productId: string): Promise<RestaurantProductDetail | null> {
     const rp = await this.prisma.restaurantProduct.findFirst({
       where: { id: productId, restaurantId },
-      include: { product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+      include: {
+        product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+        modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
+      },
     });
     return rp ? mapProductDetail(rp) : null;
   }
@@ -219,6 +227,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
 
     try {
       const rp = await this.prisma.$transaction(async (tx) => {
+        const modifierGroups = await this.resolveModifierGroups(tx, restaurant.organizationId, data.modifierGroupIds);
         const product = await tx.product.create({
           data: {
             organizationId: restaurant.organizationId,
@@ -238,9 +247,21 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
             currency: data.currency,
             isAvailable: true,
             isVisible: true,
+            imageUrl: data.imageUrl ?? null,
             sortOrder: count,
+            modifierGroups: modifierGroups.length > 0
+              ? {
+                  create: modifierGroups.map((modifierGroupId, index) => ({
+                    modifierGroupId,
+                    sortOrder: index,
+                  })),
+                }
+              : undefined,
           },
-          include: { product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+          include: {
+            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+            modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
+          },
         });
       });
 
@@ -262,6 +283,14 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
 
     try {
       const rp = await this.prisma.$transaction(async (tx) => {
+        const currentProduct = await tx.product.findUnique({
+          where: { id: existing.productId },
+          select: { organizationId: true },
+        });
+        if (!currentProduct) {
+          throw new ApplicationErrorException(applicationError('restaurant_product_not_found', `Restaurant product "${productId}" was not found.`, { productId }));
+        }
+
         if (data.name !== undefined || data.description !== undefined || data.course !== undefined || data.preparationRoute !== undefined) {
           await tx.product.update({
             where: { id: existing.productId },
@@ -274,14 +303,32 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           });
         }
 
+        if (data.modifierGroupIds !== undefined) {
+          const modifierGroups = await this.resolveModifierGroups(tx, currentProduct.organizationId, data.modifierGroupIds);
+          await tx.restaurantProductModifierGroup.deleteMany({ where: { restaurantProductId: productId } });
+          if (modifierGroups.length > 0) {
+            await tx.restaurantProductModifierGroup.createMany({
+              data: modifierGroups.map((modifierGroupId, index) => ({
+                restaurantProductId: productId,
+                modifierGroupId,
+                sortOrder: index,
+              })),
+            });
+          }
+        }
+
         return tx.restaurantProduct.update({
           where: { id: productId },
           data: {
             ...(data.priceCents !== undefined && { priceCents: data.priceCents }),
             ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
             ...(data.isVisible !== undefined && { isVisible: data.isVisible }),
+            ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           },
-          include: { product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } } },
+          include: {
+            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+            modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
+          },
         });
       });
 
@@ -310,7 +357,36 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       }
     });
 
-    return true;
+  return true;
+  }
+
+  private async resolveModifierGroups(
+    tx: Prisma.TransactionClient,
+    organizationId: string,
+    requestedModifierGroupIds: string[] | undefined,
+  ): Promise<string[]> {
+    const uniqueModifierGroupIds = [...new Set(requestedModifierGroupIds ?? [])];
+    if (uniqueModifierGroupIds.length === 0) {
+      return [];
+    }
+
+    const validModifierGroups = await tx.modifierGroup.findMany({
+      where: {
+        organizationId,
+        id: { in: uniqueModifierGroupIds },
+      },
+      select: { id: true },
+    });
+
+    if (validModifierGroups.length !== uniqueModifierGroupIds.length) {
+      throw new ApplicationErrorException(
+        applicationError('invalid_order_configuration', 'Some modifier groups are not available for this product.', {
+          modifierGroupIds: uniqueModifierGroupIds,
+        }),
+      );
+    }
+
+    return uniqueModifierGroupIds;
   }
 }
 
@@ -345,6 +421,8 @@ type RpWithProduct = {
   currency: string;
   isAvailable: boolean;
   isVisible: boolean;
+  imageUrl: string | null;
+  modifierGroups: Array<{ modifierGroupId: string }>;
   preparationRouteOverride: string | null;
   product: {
     organizationId: string;
@@ -365,6 +443,8 @@ function mapProductDetail(rp: RpWithProduct): RestaurantProductDetail {
     displayName: rp.displayName,
     description: rp.product.description,
     displayDescription: rp.displayDescription,
+    imageUrl: rp.imageUrl,
+    modifierGroupIds: rp.modifierGroups.map(({ modifierGroupId }) => modifierGroupId),
     productType: rp.product.productType as 'simple' | 'combo' | 'platter',
     course: rp.product.defaultCourse as ProductCourse,
     preparationRoute: rp.product.defaultPreparationRoute as PreparationRoute,

@@ -3,7 +3,7 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locale.types';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage } from '../utils/storage/key-value-storage';
 
-const TEST_TRANSLATIONS = {
+const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
   es: {
     auth: {
       eyebrow: 'Sala, cocina y cobros',
@@ -1675,7 +1675,7 @@ const TEST_TRANSLATIONS = {
       },
     },
   },
-};
+});
 
 export const provideI18nTesting = (locale = DEFAULT_LOCALE): { imports: Array<Type<unknown> | ModuleWithProviders<unknown>>; providers: Provider[] } => {
   const storage = new MemoryKeyValueStorage();
@@ -1697,3 +1697,188 @@ export const provideI18nTesting = (locale = DEFAULT_LOCALE): { imports: Array<Ty
     providers: [{ provide: KEY_VALUE_STORAGE, useValue: storage }],
   };
 };
+
+function withAdditionalMenuImageTranslations<T extends Record<string, any>>(translations: T): T {
+  const clones = structuredClone(translations);
+
+  clones['es'].menu.page.noImage = 'Sin imagen';
+  clones['es'].menu.page.imageFilter = 'Imagen';
+  clones['es'].menu.page.imageFilterAll = 'Todas';
+  clones['es'].menu.page.imageFilterWithImage = 'Con imagen';
+  clones['es'].menu.page.imageFilterWithoutImage = 'Sin imagen';
+  clones['es'].menu.page.mobileFilters = 'Filtros';
+  clones['es'].menu.page.reviewFilters = {
+    title: 'Atajos de revisión',
+    comboOnly: 'Solo menús',
+    customizableOnly: 'Solo personalizables',
+    withImage: 'Con imagen',
+    withoutImage: 'Sin imagen',
+    noSection: 'Sin sección',
+    missingDescription: 'Sin descripción',
+  };
+  clones['es'].menu.page.viewModeLabel = 'Vista';
+  clones['es'].menu.page.viewModes = { cards: 'Tarjetas', compact: 'Compacta' };
+  clones['es'].menu.page.comboReady = 'Listo para vender';
+  clones['es'].menu.page.comboGuideTitle = 'Qué revisar en los combos';
+  clones['es'].menu.page.comboGuideDescription =
+    'Comprueba de un vistazo qué menús tienen imagen, cuántos slots requieren y cuáles siguen siendo personalizables.';
+  clones['es'].menu.page.comboConfigurationSummary = '{{slotCount}} slots · {{customizationLabel}}';
+  clones['es'].menu.page.comboInclusionSummary = 'Incluye {{items}}';
+  clones['es'].menu.page.summaryConjunction = 'o';
+  clones['es'].menu.page.summaryHeadings = { included: 'Incluye', change: 'Puedes cambiar', priceImpact: 'Suplemento' };
+  clones['es'].menu.page.modifierActions = { add: 'Añadir', remove: 'Quitar', choose: 'Elegir' };
+  clones['es'].menu.page.modifierLimits = { choose: 'Elige {{count}}', upTo: 'Hasta {{count}}', optional: 'Opcional' };
+  clones['es'].menu.page.pricePhrases = { from: 'Desde', supplement: 'Suplemento' };
+  clones['es'].menu.page.compactMetaLabel = 'Ruta:';
+  clones['es'].menu.page.audit = {
+    title: 'Revisión rápida del menú',
+    description: 'Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.',
+    clearFilter: 'Ver todo',
+    nextSteps: 'Qué revisar a continuación',
+    empty: 'No hay alertas abiertas en el catálogo.',
+    example: 'Ejemplo: {{name}}',
+    warningLabels: {
+      'missing-image': 'Sin imagen',
+      'missing-description': 'Sin descripción',
+      'missing-section': 'Sin sección',
+      unavailable: 'No disponibles',
+      'weak-combo-summary': 'Resumen de menú débil',
+      'weak-customization-summary': 'Extras poco claros',
+    },
+  };
+  clones['es'].menu.page.previewPrice = 'Precio de vista previa';
+  clones['es'].menu.product.form.image = 'Imagen';
+  clones['es'].menu.product.form.noImage = 'Sin imagen';
+  clones['es'].menu.product.form.dropImageHint = 'Arrastra una imagen aquí o abre el selector';
+  clones['es'].menu.product.form.uploadImage = 'Subir imagen';
+  clones['es'].menu.product.form.uploadingImage = 'Subiendo imagen...';
+  clones['es'].menu.product.form.replaceImage = 'Reemplazar imagen';
+  clones['es'].menu.product.form.removeImage = 'Quitar imagen';
+  clones['es'].menu.product.form.retryUpload = 'Reintentar subida';
+  clones['es'].menu.product.form.invalidImageType = 'Usa una imagen JPG, PNG o WEBP.';
+  clones['es'].menu.product.form.imageTooLarge = 'La imagen es demasiado pesada. Prueba con un archivo mas ligero.';
+  clones['es'].menu.product.form.imageTooSmall = 'La imagen es demasiado pequena. Usa una resolucion mayor.';
+  clones['es'].menu.product.form.uploadFailed = 'No se pudo subir la imagen. Inténtalo de nuevo.';
+  clones['es'].menu.product.form.modifierGroupsHint = 'Selecciona los grupos de modificadores que puede usar este producto.';
+
+  clones['en'].menu.page.noImage = 'No image';
+  clones['en'].menu.page.imageFilter = 'Image';
+  clones['en'].menu.page.imageFilterAll = 'All';
+  clones['en'].menu.page.imageFilterWithImage = 'With image';
+  clones['en'].menu.page.imageFilterWithoutImage = 'Without image';
+  clones['en'].menu.page.mobileFilters = 'Filters';
+  clones['en'].menu.page.reviewFilters = {
+    title: 'Review shortcuts',
+    comboOnly: 'Combos only',
+    customizableOnly: 'Customizable only',
+    withImage: 'With image',
+    withoutImage: 'Without image',
+    noSection: 'No section',
+    missingDescription: 'Missing description',
+  };
+  clones['en'].menu.page.viewModeLabel = 'View';
+  clones['en'].menu.page.viewModes = { cards: 'Cards', compact: 'Compact' };
+  clones['en'].menu.page.comboReady = 'Ready to sell';
+  clones['en'].menu.page.comboGuideTitle = 'What to review in combos';
+  clones['en'].menu.page.comboGuideDescription =
+    'Check at a glance which menus have imagery, how many slots they require, and which ones are still customizable.';
+  clones['en'].menu.page.comboConfigurationSummary = '{{slotCount}} slots · {{customizationLabel}}';
+  clones['en'].menu.page.comboInclusionSummary = 'Includes {{items}}';
+  clones['en'].menu.page.summaryConjunction = 'or';
+  clones['en'].menu.page.summaryHeadings = { included: 'Includes', change: 'You can change', priceImpact: 'Supplement' };
+  clones['en'].menu.page.modifierActions = { add: 'Add', remove: 'Remove', choose: 'Choose' };
+  clones['en'].menu.page.modifierLimits = { choose: 'Choose {{count}}', upTo: 'Up to {{count}}', optional: 'Optional' };
+  clones['en'].menu.page.pricePhrases = { from: 'From', supplement: 'Supplement' };
+  clones['en'].menu.page.compactMetaLabel = 'Route:';
+  clones['en'].menu.page.audit = {
+    title: 'Quick menu review',
+    description: 'Use these alerts to spot which products still need imagery, copy, or operational review.',
+    clearFilter: 'View all',
+    nextSteps: 'What to fix next',
+    empty: 'There are no open catalog alerts.',
+    example: 'Example: {{name}}',
+    warningLabels: {
+      'missing-image': 'Missing image',
+      'missing-description': 'Missing description',
+      'missing-section': 'No section',
+      unavailable: 'Unavailable',
+      'weak-combo-summary': 'Weak combo summary',
+      'weak-customization-summary': 'Unclear extras',
+    },
+  };
+  clones['en'].menu.product.form.image = 'Image';
+  clones['en'].menu.product.form.noImage = 'No image';
+  clones['en'].menu.product.form.dropImageHint = 'Drag an image here or open the picker';
+  clones['en'].menu.product.form.uploadImage = 'Upload image';
+  clones['en'].menu.product.form.uploadingImage = 'Uploading image...';
+  clones['en'].menu.product.form.replaceImage = 'Replace image';
+  clones['en'].menu.product.form.removeImage = 'Remove image';
+  clones['en'].menu.product.form.retryUpload = 'Retry upload';
+  clones['en'].menu.product.form.invalidImageType = 'Use a JPG, PNG, or WEBP image.';
+  clones['en'].menu.product.form.imageTooLarge = 'The image is too large. Try a lighter file.';
+  clones['en'].menu.product.form.imageTooSmall = 'The image is too small. Use a higher resolution image.';
+  clones['en'].menu.product.form.uploadFailed = 'The image could not be uploaded. Please try again.';
+  clones['en'].menu.product.form.modifierGroupsHint = 'Select the modifier groups that this product can use.';
+
+  clones['ca'].menu.page.noImage = 'Sense imatge';
+  clones['ca'].menu.page.imageFilter = 'Imatge';
+  clones['ca'].menu.page.imageFilterAll = 'Totes';
+  clones['ca'].menu.page.imageFilterWithImage = 'Amb imatge';
+  clones['ca'].menu.page.imageFilterWithoutImage = 'Sense imatge';
+  clones['ca'].menu.page.mobileFilters = 'Filtres';
+  clones['ca'].menu.page.reviewFilters = {
+    title: 'Dreceres de revisió',
+    comboOnly: 'Només menús',
+    customizableOnly: 'Només personalitzables',
+    withImage: 'Amb imatge',
+    withoutImage: 'Sense imatge',
+    noSection: 'Sense secció',
+    missingDescription: 'Sense descripció',
+  };
+  clones['ca'].menu.page.viewModeLabel = 'Vista';
+  clones['ca'].menu.page.viewModes = { cards: 'Targetes', compact: 'Compacta' };
+  clones['ca'].menu.page.comboReady = 'Llesta per vendre';
+  clones['ca'].menu.page.comboGuideTitle = 'Què revisar als combos';
+  clones['ca'].menu.page.comboGuideDescription =
+    "Comprova d'un cop d'ull quins menús tenen imatge, quants slots necessiten i quins continuen sent personalitzables.";
+  clones['ca'].menu.page.comboConfigurationSummary = '{{slotCount}} slots · {{customizationLabel}}';
+  clones['ca'].menu.page.comboInclusionSummary = 'Inclou {{items}}';
+  clones['ca'].menu.page.summaryConjunction = 'o';
+  clones['ca'].menu.page.summaryHeadings = { included: 'Inclou', change: 'Pots canviar', priceImpact: 'Suplement' };
+  clones['ca'].menu.page.modifierActions = { add: 'Afegir', remove: 'Treure', choose: 'Triar' };
+  clones['ca'].menu.page.modifierLimits = { choose: 'Tria {{count}}', upTo: 'Fins a {{count}}', optional: 'Opcional' };
+  clones['ca'].menu.page.pricePhrases = { from: 'Des de', supplement: 'Suplement' };
+  clones['ca'].menu.page.compactMetaLabel = 'Ruta:';
+  clones['ca'].menu.page.audit = {
+    title: 'Revisió ràpida del menú',
+    description: 'Fes servir aquestes alertes per detectar de pressa quins productes encara necessiten imatge, text o revisió operativa.',
+    clearFilter: 'Veure-ho tot',
+    nextSteps: 'Què revisar a continuació',
+    empty: 'No hi ha alertes obertes al catàleg.',
+    example: 'Exemple: {{name}}',
+    warningLabels: {
+      'missing-image': 'Sense imatge',
+      'missing-description': 'Sense descripció',
+      'missing-section': 'Sense secció',
+      unavailable: 'No disponibles',
+      'weak-combo-summary': 'Resum de menú feble',
+      'weak-customization-summary': 'Extres poc clars',
+    },
+  };
+  clones['ca'].menu.page.previewPrice = 'Preu de vista prèvia';
+  clones['ca'].menu.product.form.image = 'Imatge';
+  clones['ca'].menu.product.form.noImage = 'Sense imatge';
+  clones['ca'].menu.product.form.dropImageHint = 'Arrossega una imatge aquí o obre el selector';
+  clones['ca'].menu.product.form.uploadImage = 'Pujar imatge';
+  clones['ca'].menu.product.form.uploadingImage = 'Pujant imatge...';
+  clones['ca'].menu.product.form.replaceImage = 'Reemplaçar imatge';
+  clones['ca'].menu.product.form.removeImage = 'Treure imatge';
+  clones['ca'].menu.product.form.retryUpload = 'Reintentar pujada';
+  clones['ca'].menu.product.form.invalidImageType = 'Fes servir una imatge JPG, PNG o WEBP.';
+  clones['ca'].menu.product.form.imageTooLarge = 'La imatge pesa massa. Prova amb un fitxer mes lleuger.';
+  clones['ca'].menu.product.form.imageTooSmall = 'La imatge es massa petita. Fes servir una resolucio mes gran.';
+  clones['ca'].menu.product.form.uploadFailed = "No s'ha pogut pujar la imatge. Torna-ho a provar.";
+  clones['ca'].menu.product.form.modifierGroupsHint = 'Selecciona els grups de modificadors que pot fer servir aquest producte.';
+
+  return clones;
+}

@@ -42,6 +42,8 @@ export interface ProductCustomizationPolicy {
 export interface CreateProductInput {
   name: string;
   description?: string;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
   priceCents: number;
   currency: string;
   course: ProductCourse;
@@ -51,6 +53,8 @@ export interface CreateProductInput {
 export interface UpdateProductInput {
   name?: string;
   description?: string | null;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
   priceCents?: number;
   course?: ProductCourse;
   preparationRoute?: ProductPreparationRoute;
@@ -72,6 +76,7 @@ export interface Product {
   restaurantProductId?: string;
   name: ProductName;
   description?: string;
+  imageUrl?: string | null;
   categoryId: string;
   basePrice: Money;
   available: ProductAvailability;

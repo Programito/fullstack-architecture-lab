@@ -60,6 +60,7 @@ export type RestaurantMenuItem = {
   productId?: string;
   name: string;
   description?: string;
+  imageUrl: string | null;
   productType: 'simple' | 'combo' | 'platter';
   priceCents: number;
   currency: string;
@@ -92,6 +93,8 @@ export type RestaurantProductSummary = {
   productId: string;
   name: string;
   displayName: string | null;
+  imageUrl: string | null;
+  modifierGroupIds: string[];
   productType: 'simple' | 'combo' | 'platter';
   course: ProductCourse;
   preparationRoute: PreparationRoute;
@@ -112,6 +115,8 @@ export type RestaurantProductDetail = {
   displayName: string | null;
   description: string | null;
   displayDescription: string | null;
+  imageUrl: string | null;
+  modifierGroupIds: string[];
   productType: 'simple' | 'combo' | 'platter';
   course: ProductCourse;
   preparationRoute: PreparationRoute;

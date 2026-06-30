@@ -231,6 +231,7 @@ model RestaurantProduct {
   productId                String
   displayName              String?
   displayDescription       String?
+  imageUrl                 String?
   priceCents               Int
   currency                 String
   isAvailable              Boolean                         @default(true)

@@ -14,26 +14,34 @@ import type { SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { Spinner } from '../../../../shared/ui/spinner/spinner';
+import { MenuHealthPanel } from '../../components/menu-health-panel/menu-health-panel';
 import { ProductFormDialog } from '../../components/product-form-dialog/product-form-dialog';
+import type { MenuAuditFilter, MenuAuditWarningType } from '../../models/menu-audit.model';
+import { deriveModifierGroupDisplayType, type ModifierGroupDisplayType } from '../../models/modifier-group.model';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../../models/menu.models';
 import type { CreateProductInput, UpdateProductInput } from '../../models/product.model';
 import { mapHttpError } from '../../../../core/errors/http-error.mapper';
 import { ToastService } from '../../../../shared/ui/toast/toast';
 import { MenuApiService, type MenuData, type RestaurantProductDetailDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
+import { MenuAuditService } from '../../services/menu-audit.service';
 import { MenuPricingService } from '../../services/menu-pricing.service';
 
 type AvailabilityFilter = 'all' | 'available' | 'sold-out';
 type CustomizationFilter = 'all' | 'customizable' | 'simple';
+type ImageFilter = 'all' | 'with-image' | 'without-image';
+type ReviewFilter = 'combo-only' | 'customizable-only' | 'with-image' | 'without-image' | 'no-section' | 'missing-description';
+type ProductViewMode = 'cards' | 'compact';
 type MenuPageTab = 'products' | 'categories' | 'modifiers' | 'combos' | 'platters' | 'availability';
 type PreparationRoute = Product['preparationPolicy']['route'];
 
 @Component({
   selector: 'app-menu-page',
-  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, NgTemplateOutlet, ProductFormDialog, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
+  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, MenuHealthPanel, NgTemplateOutlet, ProductFormDialog, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
   templateUrl: './menu-page.html',
 })
 export class MenuPage {
   private readonly menuApi = inject(MenuApiService);
+  private readonly audit = inject(MenuAuditService);
   private readonly pricing = inject(MenuPricingService);
   private readonly transloco = inject(TranslocoService);
   private readonly bp = inject(BreakpointObserver);
@@ -104,20 +112,30 @@ export class MenuPage {
   protected readonly addToSectionProduct = signal<Product | null>(null);
   protected readonly addToSectionOpen = signal(false);
   protected readonly addToSectionLoading = signal(false);
+  protected readonly modifierGroupsForForm = computed(() => this.modifierGroups());
 
   protected readonly isMobile = toSignal(
     this.bp.observe('(max-width: 1023px)').pipe(map((r) => r.matches)),
     { initialValue: false },
   );
+  protected readonly showSideDetail = toSignal(
+    this.bp.observe('(min-width: 900px)').pipe(map((r) => r.matches)),
+    { initialValue: true },
+  );
   protected readonly query = signal('');
   protected readonly categoryFilter = signal('all');
   protected readonly availabilityFilter = signal<AvailabilityFilter>('all');
   protected readonly customizationFilter = signal<CustomizationFilter>('all');
+  protected readonly imageFilter = signal<ImageFilter>('all');
+  protected readonly auditFilter = signal<MenuAuditFilter>('all');
+  protected readonly reviewFilters = signal<ReviewFilter[]>([]);
+  protected readonly productViewMode = signal<ProductViewMode>('cards');
   protected readonly activeTab = signal<MenuPageTab>('products');
   protected readonly selectedProductId = signal<string | null>(null);
   protected readonly selectedOptionIds = signal<string[]>([]);
   protected readonly mobileDetailOpen = signal(false);
   protected readonly mobileDetailTitle = computed(() => this.selectedProduct()?.name ?? '');
+  protected readonly mobileFiltersOpen = signal(false);
   protected readonly categorySelectorOpen = signal(false);
   protected readonly categorySelectorQuery = signal('');
   protected readonly currentCategoryLabel = computed(
@@ -153,16 +171,41 @@ export class MenuPage {
     { label: this.translate('menu.page.customizationCustomizable'), value: 'customizable' },
     { label: this.translate('menu.page.customizationSimple'), value: 'simple' },
   ]);
+  protected readonly imageOptions = computed<SegmentedControlOption[]>(() => [
+    { label: this.translate('menu.page.imageFilterAll'), value: 'all' },
+    { label: this.translate('menu.page.imageFilterWithImage'), value: 'with-image' },
+    { label: this.translate('menu.page.imageFilterWithoutImage'), value: 'without-image' },
+  ]);
+  protected readonly productViewModeOptions = computed<SegmentedControlOption[]>(() => [
+    { label: this.translate('menu.page.viewModes.cards'), value: 'cards' },
+    { label: this.translate('menu.page.viewModes.compact'), value: 'compact' },
+  ]);
+  protected readonly reviewFilterOptions = computed<Array<{ value: ReviewFilter; label: string }>>(() => [
+    { value: 'combo-only', label: this.translate('menu.page.reviewFilters.comboOnly') },
+    { value: 'customizable-only', label: this.translate('menu.page.reviewFilters.customizableOnly') },
+    { value: 'with-image', label: this.translate('menu.page.reviewFilters.withImage') },
+    { value: 'without-image', label: this.translate('menu.page.reviewFilters.withoutImage') },
+    { value: 'no-section', label: this.translate('menu.page.reviewFilters.noSection') },
+    { value: 'missing-description', label: this.translate('menu.page.reviewFilters.missingDescription') },
+  ]);
+  protected readonly auditReport = computed(() => this.audit.buildReport(this.products(), this.modifierGroups(), this.comboDefinitions()));
+  protected readonly auditCounters = computed(() => this.auditReport().counters);
   protected readonly filteredProducts = computed(() => {
     const query = this.normalize(this.query());
     const categoryFilter = this.categoryFilter();
     const availabilityFilter = this.availabilityFilter();
     const customizationFilter = this.customizationFilter();
+    const imageFilter = this.imageFilter();
+    const auditFilter = this.auditFilter();
+    const reviewFilters = this.reviewFilters();
 
     return this.products()
       .filter((product) => categoryFilter === 'all' || product.categoryId === categoryFilter)
       .filter((product) => availabilityFilter === 'all' || (availabilityFilter === 'available' ? product.available : !product.available))
       .filter((product) => customizationFilter === 'all' || (customizationFilter === 'customizable' ? this.isCustomizable(product) : this.isSimple(product)))
+      .filter((product) => imageFilter === 'all' || (imageFilter === 'with-image' ? !!product.imageUrl : !product.imageUrl))
+      .filter((product) => auditFilter === 'all' || this.productHasAuditWarning(product, auditFilter))
+      .filter((product) => reviewFilters.every((filter) => this.matchesReviewFilter(product, filter)))
       .filter((product) => !query || this.productSearchText(product).includes(query));
   });
   protected readonly comboProducts = computed(() => this.products().filter((product) => product.type === 'combo'));
@@ -191,6 +234,11 @@ export class MenuPage {
     const product = this.selectedProduct();
     return product ? this.pricing.calculateCustomizedProductPrice(product, this.selectedModifiers()) : 0;
   });
+  protected readonly comboWithImageCount = computed(() => this.comboProducts().filter((product) => !!product.imageUrl).length);
+  protected readonly withoutImageCount = computed(() => this.products().filter((product) => !product.imageUrl).length);
+  protected readonly customizableComboCount = computed(
+    () => this.comboProducts().filter((product) => this.isCustomizable(product)).length,
+  );
 
   protected updateQuery(query: string): void {
     this.query.set(query);
@@ -202,6 +250,25 @@ export class MenuPage {
     }
   }
 
+  protected setAuditFilter(value: MenuAuditFilter): void {
+    this.auditFilter.set(value);
+  }
+
+  protected toggleReviewFilter(filter: ReviewFilter): void {
+    this.reviewFilters.update((filters) => filters.includes(filter) ? filters.filter((value) => value !== filter) : [...filters, filter]);
+    this.resetSelection();
+  }
+
+  protected hasReviewFilter(filter: ReviewFilter): boolean {
+    return this.reviewFilters().includes(filter);
+  }
+
+  protected setProductViewMode(value: string): void {
+    if (value === 'cards' || value === 'compact') {
+      this.productViewMode.set(value);
+    }
+  }
+
   protected selectProduct(product: Product): void {
     this.selectedProductId.set(product.id);
     this.selectedOptionIds.set(this.defaultOptionIds(product));
@@ -209,11 +276,19 @@ export class MenuPage {
 
   protected handleProductClick(product: Product): void {
     this.selectProduct(product);
-    if (this.isMobile()) this.mobileDetailOpen.set(true);
+    if (!this.showSideDetail()) this.mobileDetailOpen.set(true);
   }
 
   protected closeMobileDetail(): void {
     this.mobileDetailOpen.set(false);
+  }
+
+  protected openMobileFilters(): void {
+    this.mobileFiltersOpen.set(true);
+  }
+
+  protected closeMobileFilters(): void {
+    this.mobileFiltersOpen.set(false);
   }
 
   protected selectCategory(value: string): void {
@@ -420,6 +495,13 @@ export class MenuPage {
     }
   }
 
+  protected setImageFilter(value: string): void {
+    if (value === 'all' || value === 'with-image' || value === 'without-image') {
+      this.imageFilter.set(value);
+      this.resetSelection();
+    }
+  }
+
   protected isSelected(product: Product): boolean {
     return this.selectedProduct()?.id === product.id;
   }
@@ -449,9 +531,7 @@ export class MenuPage {
       return this.translate('menu.page.productTypes.platter');
     }
 
-    return this.isCustomizable(product)
-      ? this.translate('menu.page.productTypes.customizable')
-      : this.translate('menu.page.productTypes.simple');
+    return this.translate('menu.page.productTypes.simple');
   }
 
   protected productTypeVariant(product: Product): BadgeVariant {
@@ -463,7 +543,145 @@ export class MenuPage {
       return 'success';
     }
 
-    return this.isCustomizable(product) ? 'secondary' : 'neutral';
+    return 'neutral';
+  }
+
+  protected productImageAlt(product: Product): string {
+    return product.name;
+  }
+
+  protected compactMetaSummary(product: Product): string {
+    return [this.categoryName(product), this.preparationRouteLabel(product)].filter(Boolean).join(' · ');
+  }
+
+  protected comboConfigurationSummary(product: Product): string {
+    const slotCount = this.comboSlotCount(product);
+    const customizationLabel = this.isCustomizable(product)
+      ? this.translate('menu.page.customizableBadge')
+      : this.translate('menu.page.comboReady');
+
+    return this.translate('menu.page.comboConfigurationSummary', {
+      slotCount,
+      customizationLabel,
+    });
+  }
+
+  protected cardInclusionSummary(product: Product): string {
+    if (this.isCombo(product)) {
+      return this.translate('menu.page.comboInclusionSummary', {
+        items: this.comboCompositionSummary(product),
+      });
+    }
+
+    if (this.isPlatter(product) && product.platterComponents?.length) {
+      return this.translate('menu.page.comboInclusionSummary', {
+        items: product.platterComponents.map((component) => component.name).join(' + '),
+      });
+    }
+
+    return product.description || [this.categoryName(product), this.preparationRouteLabel(product)].filter(Boolean).join(' · ');
+  }
+
+  protected comboCompositionSummary(product: Product): string {
+    const definition = this.comboDefinitions().find((comboDefinition) => comboDefinition.productId === product.id);
+    if (!definition) return '';
+
+    return this.pricing.buildComboCompositionSummary(definition, this.products());
+  }
+
+  protected customizationSummary(product: Product): string {
+    return this.pricing.buildCustomizationSummary(product, this.modifierGroups(), {
+      add: this.translate('menu.page.modifierActions.add'),
+      remove: this.translate('menu.page.modifierActions.remove'),
+      choose: this.translate('menu.page.modifierActions.choose'),
+      conjunction: this.translate('menu.page.summaryConjunction'),
+      oxfordComma: false,
+    });
+  }
+
+  protected visibleUpgradeDelta(product: Product): number | null {
+    return this.pricing.getMinimumVisibleUpgrade(
+      product,
+      this.modifierGroups(),
+      this.comboDefinitions().find((comboDefinition) => comboDefinition.productId === product.id),
+    );
+  }
+
+  protected hasVisibleUpgrades(product: Product): boolean {
+    return this.visibleUpgradeDelta(product) !== null;
+  }
+
+  protected modifierActionLabel(group: ModifierGroup): string {
+    const displayType = this.modifierDisplayType(group);
+
+    return this.translate(
+      displayType === 'remove'
+        ? 'menu.page.modifierActions.remove'
+        : displayType === 'add'
+          ? 'menu.page.modifierActions.add'
+          : 'menu.page.modifierActions.choose',
+    );
+  }
+
+  protected modifierSectionLabel(group: ModifierGroup): string {
+    if (this.modifierDisplayType(group) === 'remove') {
+      return group.name;
+    }
+
+    return `${this.modifierActionLabel(group)} ${group.name}`;
+  }
+
+  protected modifierLimitLabel(group: ModifierGroup): string {
+    if (this.modifierDisplayType(group) === 'single-choice') {
+      return this.translate('menu.page.modifierLimits.choose', { count: 1 });
+    }
+
+    if (!group.required && group.minSelections === 0) {
+      return group.maxSelections > 1
+        ? this.translate('menu.page.modifierLimits.upTo', { count: group.maxSelections })
+        : this.translate('menu.page.modifierLimits.optional');
+    }
+
+    return this.translate('menu.page.modifierLimits.choose', { count: Math.max(group.minSelections, 1) });
+  }
+
+  protected modifierOptionLabel(group: ModifierGroup, optionName: string): string {
+    if (this.modifierDisplayType(group) === 'remove') {
+      return this.translate('menu.customizer.without', { name: optionName });
+    }
+
+    return optionName;
+  }
+
+  protected modifierUpgradeLabel(group: ModifierGroup, optionName: string): string {
+    return this.modifierDisplayType(group) === 'add' ? `${this.modifierActionLabel(group)} ${optionName}` : optionName;
+  }
+
+  protected detailUpgradeItems(product: Product): Array<{ label: string; priceDelta: number }> {
+    const modifierItems = this.pricing
+      .getModifierGroupsForProduct(product, this.modifierGroups())
+      .flatMap((group) =>
+        group.options
+          .filter((option) => option.priceDelta > 0)
+          .map((option) => ({
+            label: this.modifierUpgradeLabel(group, option.name),
+            priceDelta: option.priceDelta,
+          })),
+      );
+    const comboDefinition = this.comboDefinitions().find((definition) => definition.productId === product.id);
+    const comboItems = comboDefinition?.supplements
+      .map((supplement) => {
+        const slot = comboDefinition.slots.find((candidate) => candidate.id === supplement.slotId);
+        const slotProduct = this.products().find((candidate) => candidate.id === supplement.productId);
+
+        return {
+          label: slotProduct?.name ?? slot?.name ?? product.name,
+          priceDelta: supplement.supplementPrice,
+        };
+      })
+      .filter((item) => item.priceDelta > 0) ?? [];
+
+    return [...modifierItems, ...comboItems];
   }
 
   protected availabilityLabel(product: Product): string {
@@ -483,6 +701,10 @@ export class MenuPage {
       .filter((category) => category.parentId === categoryId)
       .map((category) => category.name)
       .join(', ');
+  }
+
+  protected parentCategoryName(category: MenuCategory): string {
+    return this.categories().find((candidate) => candidate.id === category.parentId)?.name ?? category.parentId ?? '';
   }
 
   protected comboSlotCount(product: Product): number {
@@ -549,8 +771,25 @@ export class MenuPage {
       .replace(/[̀-ͯ]/g, '');
   }
 
-  private translate(key: string): string {
-    return this.transloco.translate(key);
+  private translate(key: string, params?: Record<string, string | number>): string {
+    return this.transloco.translate(key, params);
+  }
+
+  protected modifierDisplayType(group: ModifierGroup): ModifierGroupDisplayType {
+    return group.displayType ?? deriveModifierGroupDisplayType(group);
+  }
+
+  protected productHasAuditWarning(product: Product, type: MenuAuditWarningType): boolean {
+    return this.audit.hasWarning(product.id, type, this.auditReport());
+  }
+
+  private matchesReviewFilter(product: Product, filter: ReviewFilter): boolean {
+    if (filter === 'combo-only') return this.isCombo(product);
+    if (filter === 'customizable-only') return this.isCustomizable(product);
+    if (filter === 'with-image') return !!product.imageUrl;
+    if (filter === 'without-image') return !product.imageUrl;
+    if (filter === 'no-section') return this.isCatalogOnly(product);
+    return !product.description?.trim();
   }
 
   private isMenuPageTab(value: string): value is MenuPageTab {
@@ -567,6 +806,7 @@ function mapSummaryToProduct(cp: RestaurantProductSummaryDto): Product {
     id: cp.id,
     restaurantProductId: cp.id,
     name: cp.displayName ?? cp.name,
+    imageUrl: cp.imageUrl,
     categoryId: '',
     basePrice: cp.priceCents / 100,
     price: cp.priceCents / 100,
@@ -574,7 +814,7 @@ function mapSummaryToProduct(cp: RestaurantProductSummaryDto): Product {
     allergens: [],
     course: cp.course,
     type: cp.productType as Product['type'],
-    modifierGroupIds: [],
+    modifierGroupIds: cp.modifierGroupIds,
     preparationPolicy: {
       route: cp.preparationRoute,
       requiresReadyBeforeServe: cp.preparationRoute !== 'bar' && cp.preparationRoute !== 'direct',

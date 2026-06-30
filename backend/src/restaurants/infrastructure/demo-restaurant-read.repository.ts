@@ -55,9 +55,9 @@ const INITIAL_MENUS = new Map<string, RestaurantMenu>([
           sortOrder: 1,
           isVisible: true,
           items: [
-            { id: 'menu-item-coke', name: 'Coca-Cola', productType: 'simple', priceCents: 300, currency: 'EUR', isAvailable: true },
-            { id: 'menu-item-water', name: 'Agua mineral', productType: 'simple', priceCents: 250, currency: 'EUR', isAvailable: true },
-            { id: 'menu-item-beer', name: 'Cerveza', productType: 'simple', priceCents: 350, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-coke', name: 'Coca-Cola', imageUrl: null, productType: 'simple', priceCents: 300, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-water', name: 'Agua mineral', imageUrl: null, productType: 'simple', priceCents: 250, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-beer', name: 'Cerveza', imageUrl: null, productType: 'simple', priceCents: 350, currency: 'EUR', isAvailable: true },
           ],
         },
         {
@@ -66,10 +66,10 @@ const INITIAL_MENUS = new Map<string, RestaurantMenu>([
           sortOrder: 2,
           isVisible: true,
           items: [
-            { id: 'menu-item-burger', name: 'Hamburguesa craft', productType: 'simple', priceCents: 1250, currency: 'EUR', isAvailable: true },
-            { id: 'menu-item-croquetas', name: 'Croquetas de jamon iberico', productType: 'simple', priceCents: 980, currency: 'EUR', isAvailable: true },
-            { id: 'menu-item-combo', name: 'Menu Classic Burger', productType: 'combo', priceCents: 1390, currency: 'EUR', isAvailable: true },
-            { id: 'menu-item-platter', name: 'Plato combinado vegetal', productType: 'platter', priceCents: 1190, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-burger', name: 'Hamburguesa craft', imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg', productType: 'simple', priceCents: 1250, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-croquetas', name: 'Croquetas de jamon iberico', imageUrl: null, productType: 'simple', priceCents: 980, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-combo', name: 'Menu Classic Burger', imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/menu-classic-burger.jpg', productType: 'combo', priceCents: 1390, currency: 'EUR', isAvailable: true },
+            { id: 'menu-item-platter', name: 'Plato combinado vegetal', imageUrl: null, productType: 'platter', priceCents: 1190, currency: 'EUR', isAvailable: true },
           ],
         },
       ],

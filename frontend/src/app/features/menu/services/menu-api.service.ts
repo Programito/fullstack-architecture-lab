@@ -13,6 +13,7 @@ import type {
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../restaurant-pos/state/restaurant-context.store';
+import { deriveModifierGroupDisplayType } from '../models/modifier-group.model';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../models/menu.models';
 import type { ProductCourse, ProductPreparationRoute } from '../models/product.model';
 
@@ -115,6 +116,10 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
     id: mg.id,
     name: mg.name,
     type: mg.selectionType,
+    displayType: deriveModifierGroupDisplayType({
+      type: mg.selectionType,
+      options: mg.options.map((opt) => ({ priceDelta: opt.priceDeltaCents / 100 })),
+    }),
     required: mg.isRequired,
     minSelections: mg.minSelections,
     maxSelections: mg.maxSelections,
@@ -167,6 +172,7 @@ function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): P
     restaurantProductId: item.restaurantProductId,
     name: item.name,
     ...(item.description ? { description: item.description } : {}),
+    imageUrl: item.imageUrl ?? null,
     categoryId,
     basePrice: item.priceCents / 100,
     price: item.priceCents / 100,
