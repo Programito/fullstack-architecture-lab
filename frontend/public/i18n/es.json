@@ -705,15 +705,61 @@
       "customizationAll": "Todos",
       "customizationCustomizable": "Personalizables",
       "customizationSimple": "Simples",
+      "imageFilter": "Imagen",
+      "imageFilterAll": "Todas",
+      "imageFilterWithImage": "Con imagen",
+      "imageFilterWithoutImage": "Sin imagen",
+      "mobileFilters": "Filtros",
+      "reviewFilters": {
+        "title": "Atajos de revisión",
+        "comboOnly": "Solo menús",
+        "customizableOnly": "Solo personalizables",
+        "withImage": "Con imagen",
+        "withoutImage": "Sin imagen",
+        "noSection": "Sin sección",
+        "missingDescription": "Sin descripción"
+      },
+      "viewModeLabel": "Vista",
+      "viewModes": {
+        "cards": "Tarjetas",
+        "compact": "Compacta"
+      },
       "allergens": "Alérgenos",
+      "noImage": "Sin imagen",
+      "compactMetaLabel": "Ruta:",
       "modifiers": "Modificadores",
-      "previewPrice": "Precio preview",
+      "previewPrice": "Precio de vista previa",
       "parentCategory": "Categoría padre",
       "childCategories": "Subcategorías",
       "noChildCategories": "Sin subcategorías",
       "options": "opciones",
       "modifierType": "Tipo",
       "slots": "slots",
+      "comboReady": "Listo para vender",
+      "comboGuideTitle": "Qué revisar en los combos",
+      "comboGuideDescription": "Comprueba de un vistazo qué menús tienen imagen, cuántos slots requieren y cuáles siguen siendo personalizables.",
+      "comboConfigurationSummary": "{{slotCount}} slots · {{customizationLabel}}",
+      "comboInclusionSummary": "Incluye {{items}}",
+      "summaryConjunction": "o",
+      "summaryHeadings": {
+        "included": "Incluye",
+        "change": "Puedes cambiar",
+        "priceImpact": "Suplemento"
+      },
+      "modifierActions": {
+        "add": "Añadir",
+        "remove": "Quitar",
+        "choose": "Elegir"
+      },
+      "modifierLimits": {
+        "choose": "Elige {{count}}",
+        "upTo": "Hasta {{count}}",
+        "optional": "Opcional"
+      },
+      "pricePhrases": {
+        "from": "Desde",
+        "supplement": "Suplemento"
+      },
       "components": "componentes",
       "availableProducts": "Productos disponibles",
       "soldOutProducts": "Productos agotados",
@@ -746,7 +792,23 @@
       "cancelDeleteProduct": "Cancelar",
       "noSection": "Sin sección",
       "addToSection": "Añadir a sección",
-      "addToSectionTitle": "Añadir a sección"
+      "addToSectionTitle": "Añadir a sección",
+      "audit": {
+        "title": "Revisión rápida del menú",
+        "description": "Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.",
+        "clearFilter": "Ver todo",
+        "nextSteps": "Qué revisar a continuación",
+        "empty": "No hay alertas abiertas en el catálogo.",
+        "example": "Ejemplo: {{name}}",
+        "warningLabels": {
+          "missing-image": "Sin imagen",
+          "missing-description": "Sin descripción",
+          "missing-section": "Sin sección",
+          "unavailable": "No disponibles",
+          "weak-combo-summary": "Resumen de menú débil",
+          "weak-customization-summary": "Extras poco claros"
+        }
+      }
     },
     "customizer": {
       "title": "Personalizar producto",
@@ -774,7 +836,20 @@
         "namePlaceholder": "Nombre del producto",
         "description": "Descripción",
         "descriptionPlaceholder": "Descripción opcional",
+        "image": "Imagen",
+        "noImage": "Sin imagen",
+        "dropImageHint": "Arrastra una imagen aquí o abre el selector",
+        "uploadImage": "Subir imagen",
+        "uploadingImage": "Subiendo imagen...",
+        "replaceImage": "Reemplazar imagen",
+        "removeImage": "Quitar imagen",
+        "retryUpload": "Reintentar subida",
+        "invalidImageType": "Usa una imagen JPG, PNG o WEBP.",
+        "imageTooLarge": "La imagen es demasiado pesada. Prueba con un archivo más ligero.",
+        "imageTooSmall": "La imagen es demasiado pequeña. Usa una resolución mayor.",
+        "uploadFailed": "No se pudo subir la imagen. Inténtalo de nuevo.",
         "price": "Precio (€)",
+        "modifierGroupsHint": "Selecciona los grupos de modificadores que puede usar este producto.",
         "course": "Servicio",
         "route": "Ruta de preparación",
         "available": "Disponible",

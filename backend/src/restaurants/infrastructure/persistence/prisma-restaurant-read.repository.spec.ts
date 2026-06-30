@@ -36,6 +36,7 @@ describe('PrismaRestaurantReadRepository', () => {
                     priceCents: 1250,
                     currency: 'EUR',
                     isAvailable: true,
+                    imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
                     product: {
                       id: 'product-burger',
                       name: 'Hamburguesa craft',
@@ -68,6 +69,7 @@ describe('PrismaRestaurantReadRepository', () => {
                     priceCents: 1390,
                     currency: 'EUR',
                     isAvailable: true,
+                    imageUrl: null,
                     product: {
                       id: 'product-combo',
                       name: 'Menu Classic Burger',
@@ -105,10 +107,12 @@ describe('PrismaRestaurantReadRepository', () => {
       productId: 'product-burger',
       name: 'Hamburguesa craft',
       productType: 'simple',
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
     });
     expect(menu?.sections[1]?.items[0]).toMatchObject({
       name: 'Menu Classic Burger',
       productType: 'combo',
+      imageUrl: null,
       comboDefinition: { id: 'combo-1', slots: [] },
     });
   });

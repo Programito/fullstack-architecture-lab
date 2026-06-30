@@ -7,6 +7,8 @@ export class RestaurantProductSummaryResponseDto {
   @ApiProperty() productId!: string;
   @ApiProperty() name!: string;
   @ApiPropertyOptional({ nullable: true }) displayName!: string | null;
+  @ApiPropertyOptional({ nullable: true }) imageUrl!: string | null;
+  @ApiProperty({ type: [String] }) modifierGroupIds!: string[];
   @ApiProperty({ enum: ['simple', 'combo', 'platter'] }) productType!: string;
   @ApiProperty({ enum: ['drinks', 'starter', 'main', 'dessert', 'other'] }) course!: string;
   @ApiProperty({ enum: ['direct', 'bar', 'kitchen', 'cold_station', 'dessert_station'] }) preparationRoute!: string;
@@ -21,6 +23,8 @@ export class RestaurantProductSummaryResponseDto {
     dto.productId = domain.productId;
     dto.name = domain.name;
     dto.displayName = domain.displayName;
+    dto.imageUrl = domain.imageUrl;
+    dto.modifierGroupIds = domain.modifierGroupIds;
     dto.productType = domain.productType;
     dto.course = domain.course;
     dto.preparationRoute = domain.preparationRoute;

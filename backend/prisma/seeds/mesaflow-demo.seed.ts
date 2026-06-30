@@ -132,6 +132,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       update: {
         displayName: entry.displayName ?? null,
         displayDescription: entry.displayDescription ?? null,
+        imageUrl: entry.imageUrl ?? null,
         priceCents: entry.priceCents,
         currency: restaurant.currency,
         isAvailable: entry.isAvailable ?? true,
@@ -144,6 +145,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
         productId,
         displayName: entry.displayName ?? null,
         displayDescription: entry.displayDescription ?? null,
+        imageUrl: entry.imageUrl ?? null,
         priceCents: entry.priceCents,
         currency: restaurant.currency,
         isAvailable: entry.isAvailable ?? true,
@@ -522,6 +524,7 @@ function demoRestaurantProducts(): Array<{
   productName: string;
   displayName?: string;
   displayDescription?: string;
+  imageUrl?: string | null;
   priceCents: number;
   isAvailable?: boolean;
   preparationRouteOverride?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
@@ -533,7 +536,12 @@ function demoRestaurantProducts(): Array<{
     { productName: 'Cerveza', priceCents: 380, isAvailable: false, sortOrder: 3 },
     { productName: 'Limonada con gas', priceCents: 450, sortOrder: 4 },
     { productName: 'Vino tinto copa', priceCents: 420, sortOrder: 5 },
-    { productName: 'Hamburguesa craft', priceCents: 1250, sortOrder: 6 },
+    {
+      productName: 'Hamburguesa craft',
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg',
+      priceCents: 1250,
+      sortOrder: 6,
+    },
     { productName: 'Hamburguesa clasica', priceCents: 1150, sortOrder: 7 },
     { productName: 'Hamburguesa trufada', priceCents: 1550, sortOrder: 8 },
     { productName: 'Hamburguesa vegetal', priceCents: 1300, sortOrder: 9 },
@@ -543,14 +551,19 @@ function demoRestaurantProducts(): Array<{
     { productName: 'Patatas fritas', priceCents: 450, sortOrder: 13 },
     { productName: 'Ensalada cesar', priceCents: 1000, sortOrder: 14 },
     { productName: 'Ensalada', priceCents: 450, sortOrder: 15 },
-    { productName: 'Plato combinado de lomo', priceCents: 1290, sortOrder: 16 },
+    { productName: 'Plato combinado de lomo', imageUrl: null, priceCents: 1290, sortOrder: 16 },
     { productName: 'Plato combinado de pollo', priceCents: 1250, sortOrder: 17 },
     { productName: 'Plato combinado vegetal', priceCents: 1190, sortOrder: 18 },
     { productName: 'Tarta de queso', priceCents: 700, isAvailable: false, sortOrder: 19 },
     { productName: 'Coulant de chocolate', priceCents: 700, isAvailable: false, sortOrder: 20 },
     { productName: 'Cafe solo', priceCents: 250, sortOrder: 21 },
     { productName: 'Cafe con leche', priceCents: 280, sortOrder: 22 },
-    { productName: 'Menu Classic Burger', priceCents: 1390, sortOrder: 23 },
+    {
+      productName: 'Menu Classic Burger',
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/menu-classic-burger.jpg',
+      priceCents: 1390,
+      sortOrder: 23,
+    },
     // backward compat
     { productName: 'Sandwich club', priceCents: 1090, sortOrder: 24 },
   ];

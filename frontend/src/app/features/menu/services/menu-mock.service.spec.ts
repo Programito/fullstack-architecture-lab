@@ -32,6 +32,16 @@ describe('MenuMockService', () => {
     expect(menu.modifierGroups().flatMap((group) => group.options).find((option) => option.id === 'remove-onion')?.name).toBe('Cebolla');
   });
 
+  it('derives display-oriented modifier group semantics from current data', () => {
+    const menu = setup('es');
+    const displayTypes = new Map(menu.modifierGroups().map((group) => [group.id, group.displayType]));
+
+    expect(displayTypes.get('burger-extras')).toBe('add');
+    expect(displayTypes.get('burger-remove')).toBe('remove');
+    expect(displayTypes.get('burger-point')).toBe('single-choice');
+    expect(displayTypes.get('coffee-options')).toBe('multi-choice');
+  });
+
   it('changes localized text without changing stable ids or prices', () => {
     const spanishProduct = localizeMenuProducts('es').find((product) => product.id === 'product-2')!;
     const englishProduct = localizeMenuProducts('en').find((product) => product.id === 'product-2')!;

@@ -65,6 +65,27 @@ describe('seedMesaFlowDemo', () => {
     // 24 products: 4 drinks + 4 burgers + 4 tapas + 2 salads + 3 platters + 2 desserts + 2 coffee + 1 combo + 1 sandwich + 1 wine
     expect(productUpsert).toHaveBeenCalledTimes(24);
     expect(restaurantProductUpsert).toHaveBeenCalledTimes(24);
+    expect(restaurantProductUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg',
+        }),
+      }),
+    );
+    expect(restaurantProductUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/menu-classic-burger.jpg',
+        }),
+      }),
+    );
+    expect(restaurantProductUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          imageUrl: null,
+        }),
+      }),
+    );
 
     // 8 menu sections
     expect(menuSectionUpsert).toHaveBeenCalledTimes(8);

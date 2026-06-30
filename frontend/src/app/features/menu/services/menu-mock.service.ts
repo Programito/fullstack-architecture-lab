@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import type { AppLocale } from '../../../shared/i18n/locale.types';
+import { deriveModifierGroupDisplayType } from '../models/modifier-group.model';
 import type { ComboProductDefinition, ComboSlot, MenuCategory, ModifierGroup, ModifierOption, Product, ProductPreparationPolicy } from '../models/menu.models';
 
 type LocalizedText = Record<AppLocale, string>;
@@ -16,7 +17,7 @@ type ModifierOptionDefinition = Omit<ModifierOption, 'name'> & {
   name: LocalizedText;
 };
 
-type ModifierGroupDefinition = Omit<ModifierGroup, 'name' | 'options'> & {
+type ModifierGroupDefinition = Omit<ModifierGroup, 'name' | 'options' | 'displayType'> & {
   name: LocalizedText;
   options: ModifierOptionDefinition[];
 };
@@ -25,6 +26,7 @@ type ProductDefinition = Omit<Product, 'name' | 'description' | 'category' | 'al
   name: LocalizedText;
   description?: LocalizedOptionalText;
   allergens?: LocalizedText[];
+  imageUrl?: string | null;
 };
 
 type ComboSlotDefinition = Omit<ComboSlot, 'name'> & {
@@ -170,6 +172,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     basePrice: 12.5,
     price: 12.5,
     available: true,
+    imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg',
     allergens: [ALLERGENS.gluten, ALLERGENS.milk, ALLERGENS.egg],
     course: 'main',
     type: 'simple',
@@ -368,6 +371,7 @@ export const MOCK_MENU_PRODUCT_DEFINITIONS: ProductDefinition[] = [
     basePrice: 13.5,
     price: 13.5,
     available: true,
+    imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/menu-classic-burger.jpg',
     course: 'main',
     type: 'combo',
     modifierGroupIds: [],
@@ -496,14 +500,19 @@ export const localizeMenuCategories = (locale: AppLocale): MenuCategory[] =>
   }));
 
 export const localizeModifierGroups = (locale: AppLocale): ModifierGroup[] =>
-  MOCK_MODIFIER_GROUP_DEFINITIONS.map((group) => ({
-    ...group,
-    name: localizeText(group.name, locale),
-    options: group.options.map((option) => ({
+  MOCK_MODIFIER_GROUP_DEFINITIONS.map((group) => {
+    const options = group.options.map((option) => ({
       ...option,
       name: localizeText(option.name, locale),
-    })),
-  }));
+    }));
+
+    return {
+      ...group,
+      displayType: deriveModifierGroupDisplayType({ type: group.type, options }),
+      name: localizeText(group.name, locale),
+      options,
+    };
+  });
 
 export const localizeMenuProducts = (locale: AppLocale): Product[] => {
   const categories = localizeMenuCategories(locale);

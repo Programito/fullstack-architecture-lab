@@ -11,6 +11,8 @@ export type CreateProductData = {
   preparationRoute: PreparationRoute;
   priceCents: number;
   currency: string;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
 };
 
 export type UpdateProductData = {
@@ -21,6 +23,8 @@ export type UpdateProductData = {
   priceCents?: number;
   isAvailable?: boolean;
   isVisible?: boolean;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
 };
 
 export interface RestaurantMenuAdminRepository {

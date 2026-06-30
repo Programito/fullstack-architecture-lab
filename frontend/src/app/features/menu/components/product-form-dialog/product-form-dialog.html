@@ -3,54 +3,95 @@
   [title]="dialogTitle()"
   [showActions]="true"
   [confirmLabel]="confirmLabel()"
-  [confirmDisabled]="!isValid()"
+  [confirmDisabled]="confirmDisabled()"
   [confirmLoading]="loading()"
   [cancelLabel]="'menu.product.form.cancel' | transloco"
-  size="md"
+  size="lg"
   (closed)="closed.emit()"
   (cancelled)="closed.emit()"
   (confirmed)="handleConfirm()"
 >
-  <div class="grid gap-4">
-    <app-input
-      [label]="'menu.product.form.name' | transloco"
-      [placeholder]="'menu.product.form.namePlaceholder' | transloco"
-      [value]="name()"
-      required
-      (valueChange)="name.set($event)"
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-start">
+    <app-image-dropzone
+      [imageUrl]="imageUrl()"
+      [previewAlt]="name() || ('menu.product.form.image' | transloco)"
+      [uploadStatus]="uploadStatus()"
+      [errorMessage]="imageErrorMessage()"
+      [disabled]="loading()"
+      [inputLabel]="'menu.product.form.image'"
+      (fileSelected)="handleFileSelected($event)"
+      (removeRequested)="handleRemoveImage()"
+      (retryRequested)="handleRetryUpload()"
     />
-    <app-input
-      [label]="'menu.product.form.description' | transloco"
-      [placeholder]="'menu.product.form.descriptionPlaceholder' | transloco"
-      [value]="description()"
-      (valueChange)="description.set($event)"
-    />
-    <app-input
-      [label]="'menu.product.form.price' | transloco"
-      type="number"
-      [value]="priceEuros()"
-      [min]="0"
-      [step]="0.01"
-      (valueChange)="priceEuros.set($event)"
-    />
-    <app-select
-      [label]="'menu.product.form.course' | transloco"
-      [options]="courseOptions()"
-      [value]="course()"
-      (valueChange)="course.set($event)"
-    />
-    <app-select
-      [label]="'menu.product.form.route' | transloco"
-      [options]="routeOptions()"
-      [value]="route()"
-      (valueChange)="route.set($event)"
-    />
-    @if (isEdit()) {
-      <app-switch
-        [label]="'menu.product.form.available' | transloco"
-        [checked]="available()"
-        (checkedChange)="available.set($event)"
+    <div class="grid gap-4">
+      <app-input
+        [label]="'menu.product.form.name' | transloco"
+        [placeholder]="'menu.product.form.namePlaceholder' | transloco"
+        [value]="name()"
+        required
+        (valueChange)="name.set($event)"
       />
-    }
+      <app-input
+        [label]="'menu.product.form.description' | transloco"
+        [placeholder]="'menu.product.form.descriptionPlaceholder' | transloco"
+        [value]="description()"
+        (valueChange)="description.set($event)"
+      />
+      <div class="grid gap-3 sm:grid-cols-2">
+        <app-input
+          [label]="'menu.product.form.price' | transloco"
+          type="number"
+          [value]="priceEuros()"
+          [min]="0"
+          [step]="0.01"
+          (valueChange)="priceEuros.set($event)"
+        />
+        <app-select
+          [label]="'menu.product.form.course' | transloco"
+          [options]="courseOptions()"
+          [value]="course()"
+          (valueChange)="course.set($event)"
+        />
+      </div>
+      <app-select
+        [label]="'menu.product.form.route' | transloco"
+        [options]="routeOptions()"
+        [value]="route()"
+        (valueChange)="route.set($event)"
+      />
+      <div class="grid gap-2 rounded-lg border p-3">
+        <div class="grid gap-1">
+          <p class="theme-title text-sm font-semibold">{{ 'menu.page.modifiers' | transloco }}</p>
+          <p class="theme-muted text-xs">{{ 'menu.product.form.modifierGroupsHint' | transloco }}</p>
+        </div>
+        @if (sortedModifierGroups().length) {
+          <div class="grid max-h-64 gap-2 overflow-y-auto pr-1">
+            @for (group of sortedModifierGroups(); track group.id) {
+              <label class="theme-field flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  [checked]="selectedModifierGroupIds().includes(group.id)"
+                  [disabled]="loading()"
+                  (change)="toggleModifierGroup(group.id, $any($event.target).checked)"
+                />
+                <span class="grid gap-1">
+                  <span class="theme-title font-medium">{{ group.name }}</span>
+                  <span class="theme-muted text-xs">{{ group.minSelections }}-{{ group.maxSelections }}</span>
+                </span>
+              </label>
+            }
+          </div>
+        } @else {
+          <p class="theme-muted rounded-md border border-dashed px-3 py-3 text-sm">{{ 'menu.page.noModifiers' | transloco }}</p>
+        }
+      </div>
+      @if (isEdit()) {
+        <app-switch
+          [label]="'menu.product.form.available' | transloco"
+          [checked]="available()"
+          (checkedChange)="available.set($event)"
+        />
+      }
+    </div>
   </div>
 </app-dialog>

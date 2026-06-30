@@ -705,7 +705,28 @@
       "customizationAll": "All",
       "customizationCustomizable": "Customizable",
       "customizationSimple": "Simple",
+      "imageFilter": "Image",
+      "imageFilterAll": "All",
+      "imageFilterWithImage": "With image",
+      "imageFilterWithoutImage": "Without image",
+      "mobileFilters": "Filters",
+      "reviewFilters": {
+        "title": "Review shortcuts",
+        "comboOnly": "Combos only",
+        "customizableOnly": "Customizable only",
+        "withImage": "With image",
+        "withoutImage": "Without image",
+        "noSection": "No section",
+        "missingDescription": "Missing description"
+      },
+      "viewModeLabel": "View",
+      "viewModes": {
+        "cards": "Cards",
+        "compact": "Compact"
+      },
       "allergens": "Allergens",
+      "noImage": "No image",
+      "compactMetaLabel": "Route:",
       "modifiers": "Modifiers",
       "previewPrice": "Preview price",
       "parentCategory": "Parent category",
@@ -714,6 +735,31 @@
       "options": "options",
       "modifierType": "Type",
       "slots": "slots",
+      "comboReady": "Ready to sell",
+      "comboGuideTitle": "What to review in combos",
+      "comboGuideDescription": "Check at a glance which menus have imagery, how many slots they require, and which ones are still customizable.",
+      "comboConfigurationSummary": "{{slotCount}} slots · {{customizationLabel}}",
+      "comboInclusionSummary": "Includes {{items}}",
+      "summaryConjunction": "or",
+      "summaryHeadings": {
+        "included": "Includes",
+        "change": "You can change",
+        "priceImpact": "Supplement"
+      },
+      "modifierActions": {
+        "add": "Add",
+        "remove": "Remove",
+        "choose": "Choose"
+      },
+      "modifierLimits": {
+        "choose": "Choose {{count}}",
+        "upTo": "Up to {{count}}",
+        "optional": "Optional"
+      },
+      "pricePhrases": {
+        "from": "From",
+        "supplement": "Supplement"
+      },
       "components": "components",
       "availableProducts": "Available products",
       "soldOutProducts": "Sold-out products",
@@ -746,7 +792,23 @@
       "cancelDeleteProduct": "Cancel",
       "noSection": "No section",
       "addToSection": "Add to section",
-      "addToSectionTitle": "Add to section"
+      "addToSectionTitle": "Add to section",
+      "audit": {
+        "title": "Quick menu review",
+        "description": "Use these alerts to spot which products still need imagery, copy, or operational review.",
+        "clearFilter": "View all",
+        "nextSteps": "What to fix next",
+        "empty": "There are no open catalog alerts.",
+        "example": "Example: {{name}}",
+        "warningLabels": {
+          "missing-image": "Missing image",
+          "missing-description": "Missing description",
+          "missing-section": "No section",
+          "unavailable": "Unavailable",
+          "weak-combo-summary": "Weak combo summary",
+          "weak-customization-summary": "Unclear extras"
+        }
+      }
     },
     "customizer": {
       "title": "Customize product",
@@ -774,7 +836,20 @@
         "namePlaceholder": "Product name",
         "description": "Description",
         "descriptionPlaceholder": "Optional description",
+        "image": "Image",
+        "noImage": "No image",
+        "dropImageHint": "Drag an image here or open the picker",
+        "uploadImage": "Upload image",
+        "uploadingImage": "Uploading image...",
+        "replaceImage": "Replace image",
+        "removeImage": "Remove image",
+        "retryUpload": "Retry upload",
+        "invalidImageType": "Use a JPG, PNG, or WEBP image.",
+        "imageTooLarge": "The image is too large. Try a lighter file.",
+        "imageTooSmall": "The image is too small. Use a higher resolution image.",
+        "uploadFailed": "The image could not be uploaded. Please try again.",
         "price": "Price (€)",
+        "modifierGroupsHint": "Select the modifier groups that this product can use.",
         "course": "Course",
         "route": "Preparation route",
         "available": "Available",

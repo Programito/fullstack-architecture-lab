@@ -1,5 +1,6 @@
-import { of } from 'rxjs';
-import { vi } from 'vitest';
+﻿import { of } from 'rxjs';
+import { describe, expect, it, vi } from 'vitest';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { MenuApiService, type MenuData, type MenuSectionAdminDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
@@ -26,6 +27,8 @@ const CATALOG_ONLY_PRODUCT: RestaurantProductSummaryDto = {
   productId: 'p-catalog-new',
   name: 'Agua mineral',
   displayName: null,
+  imageUrl: null,
+  modifierGroupIds: [],
   productType: 'simple',
   course: 'drinks',
   preparationRoute: 'direct',
@@ -36,6 +39,7 @@ const CATALOG_ONLY_PRODUCT: RestaurantProductSummaryDto = {
 };
 
 function makeMockMenuApi(overrides: Partial<{
+  getMenu: () => ReturnType<MenuApiService['getMenu']>;
   createSection: () => ReturnType<MenuApiService['createSection']>;
   updateSection: () => ReturnType<MenuApiService['updateSection']>;
   deleteSection: () => ReturnType<MenuApiService['deleteSection']>;
@@ -43,7 +47,7 @@ function makeMockMenuApi(overrides: Partial<{
   addSectionItem: () => ReturnType<MenuApiService['addSectionItem']>;
 }> = {}) {
   return {
-    getMenu: () => of(buildMockMenuData()),
+    getMenu: overrides.getMenu ?? (() => of(buildMockMenuData())),
     toggleAvailability: () => of(undefined),
     createSection: overrides.createSection ?? (() => of({ id: 'new-sec', menuId: 'menu-demo-main', name: 'Nueva', sortOrder: 5, isVisible: true } as MenuSectionAdminDto)),
     updateSection: overrides.updateSection ?? (() => of({ id: 'cat-hamburguesas', menuId: 'menu-demo-main', name: 'Hamburguesas', sortOrder: 0, isVisible: false } as MenuSectionAdminDto)),
@@ -59,13 +63,23 @@ function makeMockMenuApi(overrides: Partial<{
 }
 
 describe('MenuPage', () => {
-  const renderPage = async (apiOverrides = {}) => {
-    const i18n = provideI18nTesting('es');
+  const renderPage = async (
+    apiOverrides = {},
+    locale: 'es' | 'en' | 'ca' = 'es',
+    breakpoints: Record<string, boolean> = { '(max-width: 1023px)': false, '(min-width: 900px)': true },
+  ) => {
+    const i18n = provideI18nTesting(locale);
 
     const result = await render(MenuPage, {
       imports: [...i18n.imports],
       providers: [
         ...i18n.providers,
+        {
+          provide: BreakpointObserver,
+          useValue: {
+            observe: (query: string) => of({ matches: breakpoints[query] ?? false, breakpoints: { [query]: breakpoints[query] ?? false } }),
+          },
+        },
         { provide: MenuApiService, useValue: makeMockMenuApi(apiOverrides) },
       ],
     });
@@ -85,7 +99,7 @@ describe('MenuPage', () => {
     expect(screen.getAllByText(/Cocina/).length).toBeGreaterThan(0);
     expect(screen.queryByText('Craft Burger')).toBeNull();
 
-    fireEvent.input(screen.getByRole('searchbox', { name: 'Buscar en el catálogo' }), { target: { value: 'croquetas' } });
+    fireEvent.input(screen.getByLabelText('Buscar en el catálogo'), { target: { value: 'croquetas' } });
     fixture.detectChanges();
 
     expect(screen.getAllByText('Croquetas de jamón ibérico').length).toBeGreaterThan(0);
@@ -134,6 +148,220 @@ describe('MenuPage', () => {
     expect(screen.getByText('No hay productos que coincidan con los filtros.')).toBeTruthy();
   });
 
+it('renders product images when available and the placeholder when missing', async () => {
+  await renderPage();
+
+  expect(screen.getAllByRole('img', { name: 'Hamburguesa craft' }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('img', { name: 'Menu Classic Burger' }).length).toBeGreaterThan(0);
+  expect(screen.getAllByText('Sin imagen').length).toBeGreaterThan(0);
+});
+
+it('filters products by image availability', async () => {
+  const { fixture } = await renderPage();
+
+  fireEvent.click(screen.getByRole('radio', { name: 'Sin imagen' }));
+  fixture.detectChanges();
+
+  expect(screen.getAllByText('Sin imagen').length).toBeGreaterThan(0);
+  expect(screen.queryByText('Hamburguesa craft')).toBeNull();
+
+  fireEvent.click(screen.getByRole('radio', { name: 'Con imagen' }));
+  fixture.detectChanges();
+
+  expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+});
+
+it('renders the menu health panel with actionable warning groups', async () => {
+  await renderPage({
+    listProducts: () => of([CATALOG_ONLY_PRODUCT]),
+  });
+
+  const healthPanel = screen.getByLabelText('Revisión rápida del menú');
+  expect(screen.getByText('Revisión rápida del menú')).toBeTruthy();
+  expect(within(healthPanel).getByRole('button', { name: /Sin imagen/i })).toBeTruthy();
+  expect(within(healthPanel).getByRole('button', { name: /Sin sección/i })).toBeTruthy();
+});
+
+it('filters the current product list from a warning shortcut', async () => {
+  const { fixture } = await renderPage({
+    listProducts: () => of([CATALOG_ONLY_PRODUCT]),
+  });
+
+  const healthPanel = screen.getByLabelText('Revisión rápida del menú');
+  fireEvent.click(within(healthPanel).getByRole('button', { name: /Sin sección/i }));
+  fixture.detectChanges();
+
+  expect(screen.getAllByText('Agua mineral').length).toBeGreaterThan(0);
+  expect(screen.queryByText('Hamburguesa craft')).toBeNull();
+  expect(screen.getByRole('button', { name: /Ver todo/i })).toBeTruthy();
+});
+
+it('keeps the desktop detail panel pinned while browsing the list', async () => {
+  await renderPage();
+
+  const detailPanel = screen.getByRole('complementary');
+  expect(detailPanel.className).toContain('lg:h-[calc(100dvh-7rem)]');
+  expect(detailPanel.className).toContain('lg:overflow-y-auto');
+});
+
+it('supports a compact review mode', async () => {
+  const { fixture } = await renderPage();
+
+  fireEvent.click(screen.getByRole('radio', { name: 'Compacta' }));
+  fixture.detectChanges();
+
+  expect(screen.getAllByText(/Ruta:/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+});
+
+it('combines operational review filters', async () => {
+  const { fixture } = await renderPage();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Solo menús' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Con imagen' }));
+  fixture.detectChanges();
+
+  expect(screen.getAllByText('Menu Classic Burger').length).toBeGreaterThan(0);
+  expect(screen.queryByText('Hamburguesa craft')).toBeNull();
+});
+
+it('keeps the selected product stable when switching between card and compact modes', async () => {
+  const { fixture } = await renderPage();
+
+  fireEvent.click(screen.getAllByRole('button', { name: /Croquetas de jamón ibérico/i }).at(-1)!);
+  fixture.detectChanges();
+  expect(screen.getByRole('complementary').textContent).toContain('Croquetas de jamón ibérico');
+
+  fireEvent.click(screen.getByRole('radio', { name: 'Compacta' }));
+  fixture.detectChanges();
+
+  expect(screen.getByRole('complementary').textContent).toContain('Croquetas de jamón ibérico');
+});
+
+it('opens and closes the filter dialog in mobile mode', async () => {
+  const { fixture } = await renderPage({}, 'es', {
+    '(max-width: 1023px)': true,
+    '(min-width: 900px)': false,
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+  fixture.detectChanges();
+  expect(screen.getByRole('dialog', { name: 'Filtros' })).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: /cerrar dialogo/i }));
+  fixture.detectChanges();
+  expect(screen.queryByRole('dialog', { name: 'Filtros' })).toBeNull();
+});
+
+it('shows combo summaries inside the mobile detail dialog', async () => {
+  const { fixture } = await renderPage({}, 'es', {
+    '(max-width: 1023px)': true,
+    '(min-width: 900px)': false,
+  });
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Menu Classic Burger' })[0]);
+  fixture.detectChanges();
+
+  const dialog = screen.getByRole('dialog', { name: 'Menu Classic Burger' });
+  expect(within(dialog).getByText('Incluye Hamburguesa clásica + Patatas fritas + Coca-Cola')).toBeTruthy();
+});
+
+it('keeps create product reachable on smaller widths', async () => {
+  const { fixture } = await renderPage({}, 'es', {
+    '(max-width: 1023px)': true,
+    '(min-width: 900px)': false,
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Nuevo producto' }));
+  fixture.detectChanges();
+
+  expect(screen.getByRole('dialog', { name: /Nuevo producto/i })).toBeTruthy();
+});
+
+it('shows only one primary create action in mobile layout', async () => {
+  await renderPage({}, 'es', {
+    '(max-width: 1023px)': true,
+    '(min-width: 900px)': false,
+  });
+
+  expect(screen.getAllByRole('button', { name: 'Nuevo producto' })).toHaveLength(1);
+});
+
+it('keeps long product names clamped inside cards', async () => {
+  const menuData = buildMockMenuData();
+  const longName =
+    'Hamburguesa craft edición especial con bacon ahumado, cebolla caramelizada y cheddar madurado de la casa';
+  menuData.products[0] = { ...menuData.products[0], name: longName };
+
+  await renderPage({
+    getMenu: () => of(menuData),
+  });
+
+  expect(screen.getAllByText(longName)[0].className).toContain('line-clamp-2');
+});
+
+it('keeps combo and customizable badges visible on smaller widths', async () => {
+  const menuData = buildMockMenuData();
+  const comboIndex = menuData.products.findIndex((product) => product.name === 'Menu Classic Burger');
+  menuData.products[comboIndex] = {
+    ...menuData.products[comboIndex],
+    modifierGroupIds: ['drink-size'],
+  };
+
+  await renderPage(
+    {
+      getMenu: () => of(menuData),
+    },
+    'es',
+    {
+      '(max-width: 1023px)': true,
+      '(min-width: 900px)': false,
+    },
+  );
+
+  const comboCard = screen.getAllByRole('button', { name: 'Menu Classic Burger' })[0];
+  expect(within(comboCard).getByText('Menú')).toBeTruthy();
+  expect(within(comboCard).getByText('Personalizable')).toBeTruthy();
+});
+
+it('renders combo cards with an inclusion summary', async () => {
+  await renderPage();
+
+  const comboCard = screen.getAllByRole('button', { name: 'Menu Classic Burger' })[0];
+
+  expect(within(comboCard).getByText('Incluye Hamburguesa clásica + Patatas fritas + Coca-Cola')).toBeTruthy();
+});
+
+it('renders changeable extras summaries for customizable products', async () => {
+  await renderPage();
+
+  const burgerCard = screen.getAllByRole('button', { name: 'Hamburguesa craft' })[0];
+
+  expect(within(burgerCard).getByText(/Queso o Huevo/)).toBeTruthy();
+  expect(within(burgerCard).getByText(/Pepinillos o Salsa/)).toBeTruthy();
+  expect(within(burgerCard).getByText(/Punto de la carne/)).toBeTruthy();
+});
+
+  it('keeps customizable and combo badges visible, and allows both on the same card', async () => {
+    const menuData = buildMockMenuData();
+    const comboIndex = menuData.products.findIndex((product) => product.name === 'Menu Classic Burger');
+    menuData.products[comboIndex] = {
+      ...menuData.products[comboIndex],
+      modifierGroupIds: ['drink-size'],
+    };
+
+    await renderPage({
+      getMenu: () => of(menuData),
+    });
+
+    const craftCard = screen.getAllByRole('button', { name: 'Hamburguesa craft' })[0];
+    expect(within(craftCard).getByText('Personalizable')).toBeTruthy();
+
+    const comboCard = screen.getAllByRole('button', { name: 'Menu Classic Burger' })[0];
+    expect(within(comboCard).getByText('Menú')).toBeTruthy();
+    expect(within(comboCard).getByText('Personalizable')).toBeTruthy();
+  });
+
   it('shows selected product details and updates preview price from modifiers', async () => {
     const { fixture } = await renderPage();
 
@@ -144,14 +372,106 @@ describe('MenuPage', () => {
     fixture.detectChanges();
 
     const details = screen.getByRole('complementary');
-    expect(within(details).getByText('Punto de la carne')).toBeTruthy();
-    expect(within(details).getByText('Queso')).toBeTruthy();
+    expect(within(details).getAllByText(/Punto de la carne/).length).toBeGreaterThan(0);
     expect(within(details).getByLabelText(/Queso/i).closest('label')?.className).toContain('cursor-pointer');
 
     fireEvent.click(within(details).getByLabelText(/Queso/i));
     fixture.detectChanges();
 
     expect(within(details).getByText('€13.50')).toBeTruthy();
+  });
+
+  it('keeps the detail panel hierarchy as include, change, then price impact', async () => {
+    const menuData = buildMockMenuData();
+    const comboIndex = menuData.products.findIndex((product) => product.name === 'Menu Classic Burger');
+    menuData.products[comboIndex] = {
+      ...menuData.products[comboIndex],
+      modifierGroupIds: ['drink-size'],
+    };
+
+    const { fixture } = await renderPage({
+      getMenu: () => of(menuData),
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Menu Classic Burger' })[0]);
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+    const detailText = details.textContent ?? '';
+
+    expect(detailText).toContain('Incluye');
+    expect(detailText).toContain('Puedes cambiar');
+    expect(detailText).toContain('Suplemento');
+    expect(detailText.indexOf('Incluye')).toBeLessThan(detailText.indexOf('Puedes cambiar'));
+    expect(detailText.indexOf('Puedes cambiar')).toBeLessThan(detailText.indexOf('Suplemento'));
+  });
+
+  it('keeps price supplements visible and correct in the detail panel', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+
+    expect(within(details).getAllByText(/Suplemento \+€1.50/).length).toBeGreaterThan(0);
+    expect(within(details).getAllByText(/Suplemento \+€1.00/).length).toBeGreaterThan(0);
+  });
+
+  it('shows remove groups as kitchen instructions instead of additions', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+    const removeGroup = within(details).getByText('Quitar ingredientes').closest('fieldset');
+
+    expect(removeGroup).toBeTruthy();
+    expect(within(removeGroup!).getByText('SIN Cebolla')).toBeTruthy();
+    expect(within(removeGroup!).getAllByText('Suplemento +€0.00').length).toBeGreaterThan(0);
+    expect(within(removeGroup!).queryByText('Añadir Cebolla')).toBeNull();
+  });
+
+  it('shows add-on groups with positive inline price deltas', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+    const addGroup = within(details).getByText('Añadir Extras de hamburguesa').closest('fieldset');
+
+    expect(addGroup).toBeTruthy();
+    expect(within(addGroup!).getByText('Suplemento +€1.50')).toBeTruthy();
+    expect(within(addGroup!).getByText('Suplemento +€1.00')).toBeTruthy();
+  });
+
+  it('shows the one-choice hint for single-choice groups', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+    const singleChoiceGroup = within(details).getByText('Elegir Punto de la carne').closest('fieldset');
+
+    expect(singleChoiceGroup).toBeTruthy();
+    expect(within(singleChoiceGroup!).getByText('Elige 1')).toBeTruthy();
+    expect(within(singleChoiceGroup!).getAllByText('Suplemento +€0.00').length).toBeGreaterThan(0);
+  });
+
+  it('shows the max-selection hint for multi-choice groups when available', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Café solo/i }));
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+    const multiChoiceGroup = within(details).getByText('Elegir Opciones de café').closest('fieldset');
+
+    expect(multiChoiceGroup).toBeTruthy();
+    expect(within(multiChoiceGroup!).getByText('Hasta 3')).toBeTruthy();
   });
 
   it('shows management tabs for categories, modifiers, menus, platters and availability', async () => {
@@ -167,12 +487,13 @@ describe('MenuPage', () => {
     expect(screen.getByText('Extras de hamburguesa')).toBeTruthy();
     expect(screen.getAllByText(/opciones/).length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
-    fixture.detectChanges();
-    expect(screen.getByText('Menu Classic Burger')).toBeTruthy();
-    expect(screen.getAllByText('Menú').length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
+  fixture.detectChanges();
+  expect(screen.getByText('Menu Classic Burger')).toBeTruthy();
+  expect(screen.getAllByText('Menú').length).toBeGreaterThan(0);
+  expect(screen.getByText('Qué revisar en los combos')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Platos combinados' }));
+  fireEvent.click(screen.getByRole('radio', { name: 'Platos combinados' }));
     fixture.detectChanges();
     expect(screen.getByText('Plato combinado de lomo')).toBeTruthy();
     expect(screen.getAllByText('Plato combinado').length).toBeGreaterThan(0);
@@ -183,17 +504,69 @@ describe('MenuPage', () => {
     expect(screen.getByText('Coulant de chocolate')).toBeTruthy();
   });
 
+  it('keeps combo image coverage scoped to combo products only', async () => {
+    const menuData = buildMockMenuData();
+    const comboIndex = menuData.products.findIndex((product) => product.id === 'product-16');
+    menuData.products[comboIndex] = { ...menuData.products[comboIndex], imageUrl: undefined };
+
+    const { fixture } = await renderPage({
+      getMenu: () => of(menuData),
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
+    fixture.detectChanges();
+
+    const withImageCard = screen.getByText('Con imagen').closest('div');
+    expect(withImageCard).toBeTruthy();
+    expect(within(withImageCard!).getByText('0')).toBeTruthy();
+  });
+
+  it('renders the parent category name instead of the raw parent id', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Categorías' }));
+    fixture.detectChanges();
+
+    expect(screen.getAllByText(/Categoría padre: Hamburguesas/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Categoría padre: burgers-classic/)).toBeNull();
+  });
+
+  it('renders es sales strings localized instead of fallback english copy', async () => {
+    const { fixture } = await renderPage();
+
+    expect(screen.queryAllByText('No image')).toHaveLength(0);
+    expect(screen.getAllByText('Sin imagen').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    expect(screen.getByText('Precio de vista previa')).toBeTruthy();
+  });
+
+  it('renders ca sales strings localized in catalan', async () => {
+    const { fixture } = await renderPage({}, 'ca');
+
+    expect(screen.queryAllByText('No image')).toHaveLength(0);
+    expect(screen.getAllByText('Sense imatge').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    expect(screen.getByText('Preu de vista prèvia')).toBeTruthy();
+    expect(screen.getByText("Pots canviar")).toBeTruthy();
+  });
+
   it('shows an empty state when filters have no results', async () => {
     const { fixture } = await renderPage();
 
-    fireEvent.input(screen.getByRole('searchbox', { name: 'Buscar en el catálogo' }), { target: { value: 'zzzzz' } });
+    fireEvent.input(screen.getByLabelText('Buscar en el catálogo'), { target: { value: 'zzzzz' } });
     fixture.detectChanges();
 
     expect(screen.getByText('No hay productos que coincidan con los filtros.')).toBeTruthy();
     expect(screen.getByText('Selecciona un producto para revisar su detalle.')).toBeTruthy();
   });
 
-  describe('tab Categorías — CRUD', () => {
+  describe('tab Categorías â€” CRUD', () => {
     const goToCategories = async (apiOverrides = {}) => {
       const result = await renderPage(apiOverrides);
       fireEvent.click(screen.getByRole('radio', { name: 'Categorías' }));
@@ -286,7 +659,7 @@ describe('MenuPage', () => {
     });
   });
 
-  describe('tab Productos — artículo sin sección', () => {
+  describe('tab Productos â€” artículo sin sección', () => {
     const renderWithCatalogProduct = async (overrides = {}) => {
       const result = await renderPage({
         listProducts: () => of([CATALOG_ONLY_PRODUCT]),
@@ -298,6 +671,22 @@ describe('MenuPage', () => {
     it('muestra badge "Sin sección" para artículos del catálogo sin asignar', async () => {
       await renderWithCatalogProduct();
       expect(screen.getAllByText('Sin sección').length).toBeGreaterThan(0);
+    });
+
+    it('mantiene el badge "Personalizable" para artículos de catálogo con modificadores', async () => {
+      await renderWithCatalogProduct({
+        listProducts: () =>
+          of([
+            {
+              ...CATALOG_ONLY_PRODUCT,
+              name: 'Burger fuera de carta',
+              modifierGroupIds: ['burger-extras'],
+            },
+          ]),
+      });
+
+      const card = screen.getAllByRole('button', { name: 'Burger fuera de carta' })[0];
+      expect(within(card).getByText('Personalizable')).toBeTruthy();
     });
 
     it('muestra botón "Añadir a sección" para artículos sin asignar', async () => {
@@ -330,3 +719,5 @@ describe('MenuPage', () => {
     });
   });
 });
+
+

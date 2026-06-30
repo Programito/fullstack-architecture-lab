@@ -14,6 +14,8 @@ export type CreateRestaurantProductCommand = {
   preparationRoute: PreparationRoute;
   priceCents: number;
   currency: string;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
 };
 
 @Injectable()
@@ -31,6 +33,8 @@ export class CreateRestaurantProductUseCase {
         preparationRoute: command.preparationRoute,
         priceCents: command.priceCents,
         currency: command.currency,
+        imageUrl: command.imageUrl,
+        modifierGroupIds: command.modifierGroupIds,
       });
       return ok(product);
     } catch (error) {

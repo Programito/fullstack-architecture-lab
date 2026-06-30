@@ -17,6 +17,9 @@ import { RestaurantProductSummaryResponseDto } from './dto/restaurant-product-su
 import { RestaurantProductDetailResponseDto } from './dto/restaurant-product-detail-response.dto';
 import { CreateRestaurantProductDto } from './dto/create-restaurant-product.dto';
 import { UpdateRestaurantProductDto } from './dto/update-restaurant-product.dto';
+import { CreateProductImageUploadSignatureDto } from './dto/create-product-image-upload-signature.dto';
+import { ProductImageUploadSignatureResponseDto } from './dto/product-image-upload-signature-response.dto';
+import { CreateProductImageUploadSignatureUseCase } from '../../application/use-cases/create-product-image-upload-signature.use-case';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -27,6 +30,7 @@ export class RestaurantProductsController {
     private readonly createRestaurantProduct: CreateRestaurantProductUseCase,
     private readonly updateRestaurantProduct: UpdateRestaurantProductUseCase,
     private readonly deleteRestaurantProduct: DeleteRestaurantProductUseCase,
+    private readonly createProductImageUploadSignature: CreateProductImageUploadSignatureUseCase,
   ) {}
 
   @Get(':id/products')
@@ -73,6 +77,8 @@ export class RestaurantProductsController {
       preparationRoute: body.preparationRoute,
       priceCents: body.priceCents,
       currency: body.currency,
+      imageUrl: body.imageUrl,
+      modifierGroupIds: body.modifierGroupIds,
     });
     return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
   }
@@ -100,8 +106,29 @@ export class RestaurantProductsController {
       priceCents: body.priceCents,
       isAvailable: body.isAvailable,
       isVisible: body.isVisible,
+      imageUrl: body.imageUrl,
+      modifierGroupIds: body.modifierGroupIds,
     });
     return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
+  }
+
+  @Post(':id/products/image-upload-signature')
+  @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('menu')
+  @RequireRestaurantScope()
+  @ApiCreatedResponse({ type: ProductImageUploadSignatureResponseDto })
+  @ApiNotFoundResponse()
+  @ApiUnauthorizedResponse()
+  async createImageUploadSignature(
+    @Param('id') id: string,
+    @Body() body: CreateProductImageUploadSignatureDto,
+  ): Promise<ProductImageUploadSignatureResponseDto> {
+    const result = await this.createProductImageUploadSignature.execute({
+      restaurantId: id,
+      fileName: body.fileName,
+    });
+    return ProductImageUploadSignatureResponseDto.from(unwrapResultOrThrow(result));
   }
 
   @Delete(':id/products/:productId')

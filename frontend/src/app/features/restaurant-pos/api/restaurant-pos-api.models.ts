@@ -379,6 +379,7 @@ export type RestaurantMenuItemDto = {
   productId?: string;
   name: string;
   description?: string;
+  imageUrl?: string | null;
   productType: 'simple' | 'combo' | 'platter';
   priceCents: number;
   currency: string;
@@ -429,6 +430,8 @@ export type RestaurantProductSummaryDto = {
   productId: string;
   name: string;
   displayName: string | null;
+  imageUrl: string | null;
+  modifierGroupIds: string[];
   productType: 'simple' | 'combo' | 'platter';
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
@@ -444,8 +447,10 @@ export type RestaurantProductDetailDto = {
   organizationId: string;
   name: string;
   displayName: string | null;
+  imageUrl: string | null;
   description: string | null;
   displayDescription: string | null;
+  modifierGroupIds: string[];
   productType: 'simple' | 'combo' | 'platter';
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
@@ -459,6 +464,8 @@ export type RestaurantProductDetailDto = {
 export type CreateRestaurantProductRequest = {
   name: string;
   description?: string;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
   priceCents: number;
   currency: string;
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
@@ -468,11 +475,25 @@ export type CreateRestaurantProductRequest = {
 export type UpdateRestaurantProductRequest = {
   name?: string;
   description?: string | null;
+  imageUrl?: string | null;
+  modifierGroupIds?: string[];
   priceCents?: number;
   course?: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   isAvailable?: boolean;
   isVisible?: boolean;
+};
+
+export type CreateProductImageUploadSignatureRequest = {
+  fileName?: string;
+};
+
+export type ProductImageUploadSignatureDto = {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  signature: string;
+  folder: string;
 };
 
 export type CreateMenuSectionRequest = { name: string; isVisible?: boolean };

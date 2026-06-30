@@ -56,6 +56,23 @@ Role seeding is idempotent: existing roles are updated by name and missing roles
 are created. Seed implementations live in `prisma/seeds/`, while
 `prisma/seed.ts` is the common entry point.
 
+Product image uploads use signed Cloudinary uploads. Configure these backend
+environment variables when you want the menu admin to sign product image
+uploads:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+The backend signs uploads for the frontend through:
+
+- `POST /api/v1/restaurants/:id/products/image-upload-signature`
+
+The endpoint is protected with the same restaurant/menu permissions as product
+creation and update. The signed payload is used for direct browser uploads to
+Cloudinary, while the resulting `secure_url` is stored in
+`RestaurantProduct.imageUrl`.
+
 When changing database providers, update the provider in `prisma/schema.prisma`
 and generate a new provider-specific migration history. Keep shared seed data in
 TypeScript so it remains independent from SQL dialects.

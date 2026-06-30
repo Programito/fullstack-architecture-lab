@@ -10,6 +10,7 @@ import type {
   CreateCustomerRequest,
   CreateFloorElementRequest,
   CreateMenuSectionRequest,
+  CreateProductImageUploadSignatureRequest,
   CreateRestaurantProductRequest,
   CreateRestaurantReservationRequest,
   CustomerSummaryDto,
@@ -30,6 +31,7 @@ import type {
   ServicePointDetailDto,
   ServicePointOrderDto,
   ServiceWindowDto,
+  ProductImageUploadSignatureDto,
   UpdateFloorElementRequest,
   UpdateFloorRequest,
   UpdateMenuSectionItemRequest,
@@ -222,6 +224,16 @@ export class RestaurantPosApiService {
 
   updateRestaurantProduct(restaurantId: string, productId: string, body: UpdateRestaurantProductRequest): Observable<RestaurantProductDetailDto> {
     return this.http.patch<RestaurantProductDetailDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}`, body);
+  }
+
+  getProductImageUploadSignature(
+    restaurantId: string,
+    body: CreateProductImageUploadSignatureRequest,
+  ): Observable<ProductImageUploadSignatureDto> {
+    return this.http.post<ProductImageUploadSignatureDto>(
+      `${this.restaurantsUrl}/${restaurantId}/products/image-upload-signature`,
+      body,
+    );
   }
 
   deleteRestaurantProduct(restaurantId: string, productId: string): Observable<void> {

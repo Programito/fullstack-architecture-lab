@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateRestaurantProductDto {
@@ -38,4 +38,15 @@ export class UpdateRestaurantProductDto {
   @IsBoolean()
   @IsOptional()
   isVisible?: boolean;
+
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/v1/products/burger.jpg', nullable: true })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional({ type: [String], example: ['burger-extras', 'burger-point'] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  modifierGroupIds?: string[];
 }

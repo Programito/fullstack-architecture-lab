@@ -42,8 +42,10 @@ import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from './application/ports/resta
 import { SearchCustomersUseCase } from './application/use-cases/search-customers.use-case';
 import { CreateCustomerUseCase } from './application/use-cases/create-customer.use-case';
 import { CUSTOMER_REPOSITORY } from './application/ports/customer-repository.port';
+import { PRODUCT_IMAGE_SIGNING_PORT } from './application/ports/product-image-signing.port';
 import { PrismaCustomerRepository } from './infrastructure/persistence/prisma-customer.repository';
 import { PrismaRestaurantMenuAdminRepository } from './infrastructure/persistence/prisma-restaurant-menu-admin.repository';
+import { CloudinaryProductImageSigner } from './infrastructure/media/cloudinary-product-image-signer';
 import { OpenRestaurantOrderUseCase } from './application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from './application/use-cases/add-restaurant-order-line.use-case';
 import { UpdateRestaurantOrderLineUseCase } from './application/use-cases/update-restaurant-order-line.use-case';
@@ -64,6 +66,7 @@ import { RestaurantReservationsController } from './presentation/rest/restaurant
 import { RestaurantProductsController } from './presentation/rest/restaurant-products.controller';
 import { RestaurantCustomersController } from './presentation/rest/restaurant-customers.controller';
 import { RestaurantServiceController } from './presentation/rest/restaurant-service.controller';
+import { CreateProductImageUploadSignatureUseCase } from './application/use-cases/create-product-image-upload-signature.use-case';
 
 @Module({
   imports: [IdentityModule],
@@ -127,6 +130,7 @@ import { RestaurantServiceController } from './presentation/rest/restaurant-serv
     UpdateRestaurantServiceWindowsUseCase,
     SearchCustomersUseCase,
     CreateCustomerUseCase,
+    CreateProductImageUploadSignatureUseCase,
     {
       provide: CUSTOMER_REPOSITORY,
       useExisting: PrismaCustomerRepository,
@@ -150,6 +154,11 @@ import { RestaurantServiceController } from './presentation/rest/restaurant-serv
     {
       provide: RESTAURANT_MENU_ADMIN_REPOSITORY,
       useExisting: PrismaRestaurantMenuAdminRepository,
+    },
+    CloudinaryProductImageSigner,
+    {
+      provide: PRODUCT_IMAGE_SIGNING_PORT,
+      useExisting: CloudinaryProductImageSigner,
     },
   ],
 })

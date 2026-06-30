@@ -705,15 +705,61 @@
       "customizationAll": "Tots",
       "customizationCustomizable": "Personalitzables",
       "customizationSimple": "Simples",
+      "imageFilter": "Imatge",
+      "imageFilterAll": "Totes",
+      "imageFilterWithImage": "Amb imatge",
+      "imageFilterWithoutImage": "Sense imatge",
+      "mobileFilters": "Filtres",
+      "reviewFilters": {
+        "title": "Dreceres de revisió",
+        "comboOnly": "Només menús",
+        "customizableOnly": "Només personalitzables",
+        "withImage": "Amb imatge",
+        "withoutImage": "Sense imatge",
+        "noSection": "Sense secció",
+        "missingDescription": "Sense descripció"
+      },
+      "viewModeLabel": "Vista",
+      "viewModes": {
+        "cards": "Targetes",
+        "compact": "Compacta"
+      },
       "allergens": "Al·lergògens",
+      "noImage": "Sense imatge",
+      "compactMetaLabel": "Ruta:",
       "modifiers": "Modificadors",
-      "previewPrice": "Preu preview",
+      "previewPrice": "Preu de vista prèvia",
       "parentCategory": "Categoria pare",
       "childCategories": "Subcategories",
       "noChildCategories": "Sense subcategories",
       "options": "opcions",
       "modifierType": "Tipus",
       "slots": "slots",
+      "comboReady": "Llesta per vendre",
+      "comboGuideTitle": "Què revisar als combos",
+      "comboGuideDescription": "Comprova d'un cop d'ull quins menús tenen imatge, quants slots necessiten i quins continuen sent personalitzables.",
+      "comboConfigurationSummary": "{{slotCount}} slots · {{customizationLabel}}",
+      "comboInclusionSummary": "Inclou {{items}}",
+      "summaryConjunction": "o",
+      "summaryHeadings": {
+        "included": "Inclou",
+        "change": "Pots canviar",
+        "priceImpact": "Suplement"
+      },
+      "modifierActions": {
+        "add": "Afegir",
+        "remove": "Treure",
+        "choose": "Triar"
+      },
+      "modifierLimits": {
+        "choose": "Tria {{count}}",
+        "upTo": "Fins a {{count}}",
+        "optional": "Opcional"
+      },
+      "pricePhrases": {
+        "from": "Des de",
+        "supplement": "Suplement"
+      },
       "components": "components",
       "availableProducts": "Productes disponibles",
       "soldOutProducts": "Productes esgotats",
@@ -746,7 +792,23 @@
       "cancelDeleteProduct": "Cancel·lar",
       "noSection": "Sense secció",
       "addToSection": "Afegir a secció",
-      "addToSectionTitle": "Afegir a secció"
+      "addToSectionTitle": "Afegir a secció",
+      "audit": {
+        "title": "Revisió ràpida del menú",
+        "description": "Fes servir aquestes alertes per detectar de pressa quins productes encara necessiten imatge, text o revisió operativa.",
+        "clearFilter": "Veure-ho tot",
+        "nextSteps": "Què revisar a continuació",
+        "empty": "No hi ha alertes obertes al catàleg.",
+        "example": "Exemple: {{name}}",
+        "warningLabels": {
+          "missing-image": "Sense imatge",
+          "missing-description": "Sense descripció",
+          "missing-section": "Sense secció",
+          "unavailable": "No disponibles",
+          "weak-combo-summary": "Resum de menú feble",
+          "weak-customization-summary": "Extres poc clars"
+        }
+      }
     },
     "customizer": {
       "title": "Personalitzar producte",
@@ -774,7 +836,20 @@
         "namePlaceholder": "Nom del producte",
         "description": "Descripció",
         "descriptionPlaceholder": "Descripció opcional",
+        "image": "Imatge",
+        "noImage": "Sense imatge",
+        "dropImageHint": "Arrossega una imatge aquí o obre el selector",
+        "uploadImage": "Pujar imatge",
+        "uploadingImage": "Pujant imatge...",
+        "replaceImage": "Reemplaçar imatge",
+        "removeImage": "Treure imatge",
+        "retryUpload": "Reintentar pujada",
+        "invalidImageType": "Fes servir una imatge JPG, PNG o WEBP.",
+        "imageTooLarge": "La imatge pesa massa. Prova amb un fitxer més lleuger.",
+        "imageTooSmall": "La imatge és massa petita. Fes servir una resolució més gran.",
+        "uploadFailed": "No s'ha pogut pujar la imatge. Torna-ho a provar.",
         "price": "Preu (€)",
+        "modifierGroupsHint": "Selecciona els grups de modificadors que pot fer servir aquest producte.",
         "course": "Servei",
         "route": "Ruta de preparació",
         "available": "Disponible",

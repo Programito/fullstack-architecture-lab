@@ -1,46 +1,46 @@
-import { ModuleWithProviders, Provider, Type } from '@angular/core';
+﻿import { ModuleWithProviders, Provider, Type } from '@angular/core';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locale.types';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage } from '../utils/storage/key-value-storage';
 
-const TEST_TRANSLATIONS = {
+const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
   es: {
     auth: {
       eyebrow: 'Sala, cocina y cobros',
       title: 'Explora MesaFlow',
       badge: 'Restaurant Suite',
       description: 'Gestiona mesas, pedidos, cocina y cobros desde una experiencia pensada para restaurantes.',
-      methodLabel: 'Método de acceso',
+      methodLabel: 'MÃ©todo de acceso',
       benefits: {
         floor: 'Plano de mesas, pedidos y cobros',
-        kitchen: 'Cocina y preparación en tiempo real',
-        menu: 'Carta, menús y platos combinados',
+        kitchen: 'Cocina y preparaciÃ³n en tiempo real',
+        menu: 'Carta, menÃºs y platos combinados',
       },
       demo: {
-        tab: 'Demo rápida',
-        title: 'Demo rápida',
+        tab: 'Demo rÃ¡pida',
+        title: 'Demo rÃ¡pida',
         description: 'Elige un perfil para recorrer MesaFlow sin introducir credenciales.',
         restaurantTitle: 'Perfiles de restaurante',
-        restaurantDescription: 'Accede a operación, servicio y cocina con un clic.',
-        technicalTitle: 'Perfil técnico',
-        technicalDescription: 'Revisa documentación, Storybook y arquitectura.',
+        restaurantDescription: 'Accede a operaciÃ³n, servicio y cocina con un clic.',
+        technicalTitle: 'Perfil tÃ©cnico',
+        technicalDescription: 'Revisa documentaciÃ³n, Storybook y arquitectura.',
         action: 'Entrar ahora',
         loading: 'Abriendo...',
       },
       credentials: {
-        tab: 'Usuario y contraseña',
-        title: 'Usuario y contraseña',
+        tab: 'Usuario y contraseÃ±a',
+        title: 'Usuario y contraseÃ±a',
         description: 'Accede con las credenciales de tu cuenta para continuar donde lo dejaste.',
         email: 'Email',
-        password: 'Contraseña',
+        password: 'ContraseÃ±a',
         submit: 'Entrar',
-        showPassword: 'Mostrar contraseña',
-        hidePassword: 'Ocultar contraseña',
+        showPassword: 'Mostrar contraseÃ±a',
+        hidePassword: 'Ocultar contraseÃ±a',
         validation: {
           emailRequired: 'Introduce tu email.',
-          emailInvalid: 'Introduce un email válido.',
-          passwordRequired: 'Introduce tu contraseña.',
-          passwordMinLength: 'La contraseña debe tener al menos 8 caracteres.',
+          emailInvalid: 'Introduce un email vÃ¡lido.',
+          passwordRequired: 'Introduce tu contraseÃ±a.',
+          passwordMinLength: 'La contraseÃ±a debe tener al menos 8 caracteres.',
         },
       },
       roles: {
@@ -50,7 +50,7 @@ const TEST_TRANSLATIONS = {
         },
         manager: {
           label: 'Encargado',
-          description: 'Turnos, descuentos, menú y caja.',
+          description: 'Turnos, descuentos, menÃº y caja.',
         },
         waiter: {
           label: 'Camarero',
@@ -62,25 +62,25 @@ const TEST_TRANSLATIONS = {
         },
         developer: {
           label: 'Developer',
-          description: 'Documentación, Storybook y arquitectura.',
+          description: 'DocumentaciÃ³n, Storybook y arquitectura.',
         },
       },
       errors: {
-        invalidCredentials: 'No se ha podido iniciar sesión. Revisa el email y la contraseña.',
-        demoUnavailable: 'No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos.',
+        invalidCredentials: 'No se ha podido iniciar sesiÃ³n. Revisa el email y la contraseÃ±a.',
+        demoUnavailable: 'No se ha podido abrir la demo ahora mismo. IntÃ©ntalo de nuevo en unos minutos.',
       },
     },
     developer: {
-      eyebrow: 'Espacio técnico',
+      eyebrow: 'Espacio tÃ©cnico',
       title: 'Recursos para Developer',
-      description: 'Documentación técnica disponible únicamente para cuentas con rol Developer.',
+      description: 'DocumentaciÃ³n tÃ©cnica disponible Ãºnicamente para cuentas con rol Developer.',
       loading: 'Cargando recursos...',
       apiDocs: 'Consulta los contratos y endpoints de la API.',
       storybook: 'Explora los componentes, estados y patrones visuales.',
       architectureTitle: 'Arquitectura',
       architecture: 'Revisa las decisiones y los flujos principales del frontend.',
       open: 'Abrir recurso',
-      logout: 'Cerrar sesión',
+      logout: 'Cerrar sesiÃ³n',
     },
     userAdmin: {
       navigation: 'Usuarios',
@@ -91,7 +91,7 @@ const TEST_TRANSLATIONS = {
       buttonAriaLabel: '{{label}}: {{language}}',
       closeAriaLabel: 'Cerrar selector de idioma',
       listboxAriaLabel: 'Idioma',
-      languages: { es: 'Español', ca: 'Català', en: 'English' },
+      languages: { es: 'EspaÃ±ol', ca: 'CatalÃ ', en: 'English' },
     },
     colorMode: {
       label: 'Tema',
@@ -113,8 +113,8 @@ const TEST_TRANSLATIONS = {
         kitchen: 'Cocina',
         reservations: 'Reservas',
         pos: 'TPV restaurante',
-        navigation: 'Navegación principal',
-        logout: 'Cerrar sesión',
+        navigation: 'NavegaciÃ³n principal',
+        logout: 'Cerrar sesiÃ³n',
         cancel: 'Cancelar',
         saveChanges: 'Guardar cambios',
         columnsRows: '{{columns}} columnas x {{rows}} filas',
@@ -123,19 +123,19 @@ const TEST_TRANSLATIONS = {
       },
       access: {
         eyebrow: 'Acceso al TPV',
-        title: 'Sin módulos disponibles',
+        title: 'Sin mÃ³dulos disponibles',
         description: 'Tu usuario no tiene permisos para acceder a las secciones operativas del TPV.',
       },
       errors: {
         selectTableFirst: 'Selecciona una mesa primero.',
-        productUnavailable: 'El producto no está disponible.',
-        cannotPlaceElement: 'No se puede colocar el elemento aquí.',
-        cannotResizeGrid: 'No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz.',
+        productUnavailable: 'El producto no estÃ¡ disponible.',
+        cannotPlaceElement: 'No se puede colocar el elemento aquÃ­.',
+        cannotResizeGrid: 'No se puede redimensionar el plano porque algunos elementos quedarÃ­an fuera de la matriz.',
       },
       layout: {
         title: 'Plano del restaurante',
-        description: 'Diseña el comedor, la barra, la cocina y las zonas de servicio.',
-        editingActions: 'Acciones de edición del plano',
+        description: 'DiseÃ±a el comedor, la barra, la cocina y las zonas de servicio.',
+        editingActions: 'Acciones de ediciÃ³n del plano',
         resizeLayout: 'Redimensionar plano',
         addElement: 'Añadir elemento',
         saveChanges: 'Guardar cambios',
@@ -145,51 +145,51 @@ const TEST_TRANSLATIONS = {
         layoutMode: 'Modo plano',
         elementCount: '{{count}} elementos',
         selectedElement: 'Seleccionado: {{label}}',
-        noElementSelected: 'Ningún elemento seleccionado',
+        noElementSelected: 'NingÃºn elemento seleccionado',
         resizeDialog: {
           title: 'Redimensionar plano',
-          description: 'Elige el tamaño de la matriz antes de aplicarlo.',
+          description: 'Elige el tamaÃ±o de la matriz antes de aplicarlo.',
           close: 'Cerrar redimensionar plano',
-          controls: 'Controles de tamaño del plano',
+          controls: 'Controles de tamaÃ±o del plano',
           rows: 'Filas',
           columns: 'Columnas',
-          preview: 'Vista previa de redimensión',
-          matrix: 'Matriz de redimensión',
+          preview: 'Vista previa de redimensiÃ³n',
+          matrix: 'Matriz de redimensiÃ³n',
           selectSize: 'Seleccionar {{columns}} columnas x {{rows}} filas',
-          apply: 'Aplicar tamaño del plano',
+          apply: 'Aplicar tamaÃ±o del plano',
         },
         resizeElementDialog: {
           title: 'Redimensionar elemento',
-          description: 'Cambia cuántas celdas de la matriz ocupa este elemento.',
+          description: 'Cambia cuÃ¡ntas celdas de la matriz ocupa este elemento.',
           width: 'Ancho del elemento',
           height: 'Alto del elemento',
-          apply: 'Aplicar tamaño',
+          apply: 'Aplicar tamaÃ±o',
         },
         elementDialog: {
           addTitle: 'Añadir elemento',
           editTitle: 'Editar elemento',
-          description: 'Elige un preset y colócalo dentro de la matriz actual.',
+          description: 'Elige un preset y colÃ³calo dentro de la matriz actual.',
           close: 'Cerrar formulario de elemento',
           configuration: 'Configuración del elemento',
           type: 'Tipo de elemento',
-          presetSize: 'Tamaño predefinido',
+          presetSize: 'TamaÃ±o predefinido',
           label: 'Etiqueta del elemento',
           width: 'Ancho',
           height: 'Alto',
           tableCapacity: 'Capacidad de mesa',
           preview: 'Vista previa del elemento seleccionado',
           previewTitle: 'Vista previa',
-          positionTitle: 'Selecciona una posición',
+          positionTitle: 'Selecciona una posiciÃ³n',
           positionDescription: 'Selecciona la esquina superior izquierda del elemento.',
-          positionSelector: 'Selector de posición',
+          positionSelector: 'Selector de posiciÃ³n',
           placeAt: 'Colocar en columna {{column}} fila {{row}}',
-          invalidPosition: 'La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.',
-          selectedPosition: 'Posición: columna {{column}}, fila {{row}}',
-          unselectedPosition: 'Posición: sin seleccionar',
-          unselectedPositionBadge: 'Posición sin seleccionar',
+          invalidPosition: 'La posiciÃ³n seleccionada no estÃ¡ disponible. Elige otra celda libre dentro de la matriz.',
+          selectedPosition: 'PosiciÃ³n: columna {{column}}, fila {{row}}',
+          unselectedPosition: 'PosiciÃ³n: sin seleccionar',
+          unselectedPositionBadge: 'PosiciÃ³n sin seleccionar',
           singleCellBadge: 'Columna {{column}}, fila {{row}}',
           rangeBadge: 'Columnas {{startColumn}}-{{endColumn}}, filas {{startRow}}-{{endRow}}',
-          size: 'Tamaño: {{width}} x {{height}}',
+          size: 'TamaÃ±o: {{width}} x {{height}}',
           addNamed: 'Añadir {{label}}',
           addElement: 'Añadir elemento',
           editAction: 'Editar',
@@ -197,10 +197,10 @@ const TEST_TRANSLATIONS = {
         },
       },
       service: {
-        eyebrow: 'Operación de servicio',
+        eyebrow: 'OperaciÃ³n de servicio',
         title: 'Servicio de sala',
         sections: 'Secciones del TPV restaurante',
-        description: 'Esta ruta gestionará el estado de las mesas, los pedidos, el flujo de cocina y los pagos en próximas iteraciones.',
+        description: 'Esta ruta gestionarÃ¡ el estado de las mesas, los pedidos, el flujo de cocina y los pagos en prÃ³ximas iteraciones.',
         shiftSummary: 'Resumen del turno',
         occupiedTables: 'Ocupadas',
         kitchenQueue: 'Cocina',
@@ -221,34 +221,34 @@ const TEST_TRANSLATIONS = {
         noOrderPhase: 'Sin pedido',
         coursePending: '{{course}} pendiente',
         readyToChargePhase: 'Listo para cobrar',
-        serviceSummary: '{{status}} · {{duration}} · {{phase}} · {{total}}',
-        nextAction: 'Siguiente acción',
+        serviceSummary: '{{status}} Â· {{duration}} Â· {{phase}} Â· {{total}}',
+        nextAction: 'Siguiente acciÃ³n',
         nextActionSendKitchen: 'Siguiente: enviar {{count}} a cocina',
         nextActionMarkServed: 'Siguiente: marcar servido',
         nextActionCharge: 'Siguiente: cobrar',
         nextActionCleaning: 'Siguiente: pasar a limpieza',
         nextActionFreeTable: 'Siguiente: liberar mesa',
-        nextActionNone: 'Sin acción pendiente',
+        nextActionNone: 'Sin acciÃ³n pendiente',
         pendingKitchenCount: 'Pendiente cocina: {{count}}',
-        courseSummary: '{{count}} uds · {{total}}',
+        courseSummary: '{{count}} uds Â· {{total}}',
         startService: 'Iniciar servicio',
         searchServicePoint: 'Buscar mesa/taburete',
-        searchServicePointDescription: 'Busca una mesa o taburete y selecciónalo en el plano de servicio.',
+        searchServicePointDescription: 'Busca una mesa o taburete y selecciÃ³nalo en el plano de servicio.',
         searchServicePointPlaceholder: 'Buscar mesa, taburete, estado o capacidad',
         servicePointStatusFilter: 'Estado',
         allServicePointStatuses: 'Todos los estados',
         returnToLastServicePoint: 'Volver a {{label}}',
         closeServicePointSearch: 'Cerrar buscador de mesas y taburetes',
-        clearServicePointSearch: 'Limpiar búsqueda de mesas y taburetes',
+        clearServicePointSearch: 'Limpiar bÃºsqueda de mesas y taburetes',
         addProductsTitle: 'Añadir productos',
-        addProductsDescription: 'Busca, filtra y añade productos al pedido.',
+        addProductsDescription: 'Busca, filtra y aÃ±ade productos al pedido.',
         searchProduct: 'Buscar producto',
-        searchProductDescription: 'Busca por nombre, categoría o alérgenos y añade productos al pedido.',
-        searchProductPlaceholder: 'Buscar plato, bebida o alérgeno',
+        searchProductDescription: 'Busca por nombre, categorÃ­a o alÃ©rgenos y aÃ±ade productos al pedido.',
+        searchProductPlaceholder: 'Buscar plato, bebida o alÃ©rgeno',
         productView: 'Vista de productos',
         allProducts: 'Todos',
         favoriteProducts: 'Favoritos',
-        bestSellerProducts: 'Más vendidos',
+        bestSellerProducts: 'MÃ¡s vendidos',
         drinkProducts: 'Bebidas',
         foodProducts: 'Comida',
         comboProducts: 'Menús',
@@ -264,32 +264,32 @@ const TEST_TRANSLATIONS = {
         combo: 'Menú',
         soldOut: 'Agotado',
         favoriteBadge: 'Favorito',
-        bestSellerBadge: 'Más vendido',
+        bestSellerBadge: 'MÃ¡s vendido',
         finishProductSearch: 'Cerrar',
-        productPickerSummary: '{{count}} productos añadidos · {{total}}',
+        productPickerSummary: '{{count}} productos añadidos Â· {{total}}',
         addProductAction: 'Añadir',
         configureProductAction: 'Configurar',
-        configureComboAction: 'Configurar menú',
+        configureComboAction: 'Configurar menÃº',
         configurePlatterAction: 'Configurar plato',
-        comboComingSoonAction: 'Próximamente',
+        comboComingSoonAction: 'PrÃ³ximamente',
         configureProductActionLabel: 'Configurar {{name}}',
-        configureComboActionLabel: 'Configurar menú {{name}}',
+        configureComboActionLabel: 'Configurar menÃº {{name}}',
         configurePlatterActionLabel: 'Configurar plato {{name}}',
-        comboComingSoonActionLabel: 'Configuración de menú próximamente para {{name}}',
-        addComboToOrder: 'Añadir menú',
+        comboComingSoonActionLabel: 'Configuración de menÃº prÃ³ximamente para {{name}}',
+        addComboToOrder: 'Añadir menÃº',
         comboBasePrice: 'Precio base',
-        comboTotal: 'Total menú',
+        comboTotal: 'Total menÃº',
         productQuantityLabel: 'Cantidad de {{name}}: {{count}}',
         addFavoriteProduct: 'Añadir {{name}} a favoritos',
         removeFavoriteProduct: 'Quitar {{name}} de favoritos',
         closeProductSearch: 'Cerrar buscador de productos',
-        clearProductSearch: 'Limpiar búsqueda de productos',
-        quickProducts: 'Añadir rápido',
+        clearProductSearch: 'Limpiar bÃºsqueda de productos',
+        quickProducts: 'Añadir rÃ¡pido',
         order: 'Pedido',
-        emptyOrder: 'Todavía no hay productos añadidos.',
-        noProductResults: 'No hay productos que coincidan con la búsqueda.',
-        noServicePointResults: 'No hay mesas ni taburetes que coincidan con la búsqueda.',
-        noAllergens: 'Sin alérgenos indicados',
+        emptyOrder: 'TodavÃ­a no hay productos añadidos.',
+        noProductResults: 'No hay productos que coincidan con la bÃºsqueda.',
+        noServicePointResults: 'No hay mesas ni taburetes que coincidan con la bÃºsqueda.',
+        noAllergens: 'Sin alÃ©rgenos indicados',
         sendKitchen: 'Cocina',
         markServed: 'Servido',
         charge: 'Cobrar',
@@ -302,12 +302,12 @@ const TEST_TRANSLATIONS = {
         markServedActionLabel: 'Marcar el pedido de la mesa seleccionada como servido',
         increaseProductQuantityActionLabel: 'Añadir una unidad de {{name}}',
         decreaseProductQuantityActionLabel: 'Quitar una unidad de {{name}}',
-        newProductOptionAction: 'Nueva opción',
-        newProductOptionActionLabel: 'Crear otra opción de {{name}}',
+        newProductOptionAction: 'Nueva opciÃ³n',
+        newProductOptionActionLabel: 'Crear otra opciÃ³n de {{name}}',
         viewProductOptionsAction: 'Ver opciones',
         hideProductOptionsAction: 'Ocultar',
-        productOptionsSummary: '{{count}} en pedido · {{options}} opciones',
-        defaultProductOption: 'Opción estándar',
+        productOptionsSummary: '{{count}} en pedido Â· {{options}} opciones',
+        defaultProductOption: 'OpciÃ³n estÃ¡ndar',
         noteSummary: 'Nota: {{note}}',
         productLineQuantityLabel: 'Cantidad de {{name}} ({{summary}}): {{count}}',
         increaseProductLineQuantityActionLabel: 'Añadir una unidad de {{name}} con {{summary}}',
@@ -329,14 +329,14 @@ const TEST_TRANSLATIONS = {
         cleaningActionLabel: 'Marcar la mesa seleccionada para limpieza',
         freeTableActionLabel: 'Liberar la mesa seleccionada',
         freeTableConfirmTitle: 'Liberar mesa',
-        freeTableConfirmDescription: 'Esta acción vaciará el pedido y dejará la mesa libre.',
+        freeTableConfirmDescription: 'Esta acciÃ³n vaciarÃ¡ el pedido y dejarÃ¡ la mesa libre.',
         confirmFreeTable: 'Liberar mesa',
         cancelFreeTable: 'Mantener mesa',
       },
       reservations: {
         eyebrow: 'Libro de sala',
         title: 'Agenda de reservas',
-        description: 'Consulta las reservas del día y organízalas por servicio antes de abrir sala.',
+        description: 'Consulta las reservas del dÃ­a y organÃ­zalas por servicio antes de abrir sala.',
         selectedDate: 'Fecha activa',
         dateLabel: 'Selecciona una fecha',
         summaryReservations: 'Reservas',
@@ -344,7 +344,7 @@ const TEST_TRANSLATIONS = {
         summaryUnassigned: 'Sin mesa',
         summaryOverdue: 'Pendientes',
         searchLabel: 'Buscar reserva',
-        searchPlaceholder: 'Buscar por nombre de cliente o teléfono',
+        searchPlaceholder: 'Buscar por nombre de cliente o telÃ©fono',
         statusFilter: 'Estado',
         statusAll: 'Todos',
         serviceFilter: 'Servicio',
@@ -352,29 +352,29 @@ const TEST_TRANSLATIONS = {
         serviceLunch: 'Comidas',
         serviceDinner: 'Cenas',
         lunch: 'Comidas',
-        lunchDescription: 'Reservas previstas para el servicio de mediodía.',
+        lunchDescription: 'Reservas previstas para el servicio de mediodÃ­a.',
         dinner: 'Cenas',
         dinnerDescription: 'Reservas previstas para el servicio de noche.',
         partySize: '{{count}} comensales',
         empty: 'No hay reservas para este servicio.',
         unassignedTable: 'Sin mesa asignada',
         unassignedBadge: 'Sin mesa',
-        upcoming: 'Próxima',
+        upcoming: 'PrÃ³xima',
         overdue: 'Pendiente',
         loading: 'Cargando reservas',
         loadError: 'No se han podido cargar las reservas.',
         retry: 'Reintentar',
-        confirmCancelTitle: '¿Cancelar reserva?',
-        confirmCancelDescription: 'La reserva quedará cancelada.',
-        confirmNoShowTitle: '¿No presentado?',
-        confirmNoShowDescription: 'Se registrará que el cliente no se presentó.',
-        confirmDestructiveLabel: 'Sí, continuar',
-        previousDay: 'Día anterior',
-        nextDay: 'Día siguiente',
+        confirmCancelTitle: 'Â¿Cancelar reserva?',
+        confirmCancelDescription: 'La reserva quedarÃ¡ cancelada.',
+        confirmNoShowTitle: 'Â¿No presentado?',
+        confirmNoShowDescription: 'Se registrarÃ¡ que el cliente no se presentÃ³.',
+        confirmDestructiveLabel: 'SÃ­, continuar',
+        previousDay: 'DÃ­a anterior',
+        nextDay: 'DÃ­a siguiente',
         today: 'Hoy',
         countdownNow: 'Ahora',
         countdownMinutes: 'En {{count}} min',
-        emptyDayTitle: 'Sin reservas para este día',
+        emptyDayTitle: 'Sin reservas para este dÃ­a',
         emptyDayDescription: 'No hay reservas registradas para la fecha seleccionada.',
         actionError: 'No se ha podido actualizar la reserva.',
         actionSuccess: {
@@ -395,7 +395,7 @@ const TEST_TRANSLATIONS = {
           customer: 'Cliente',
           customerName: 'Cliente',
           customerPhone: 'Telefono',
-          customerSearchPlaceholder: 'Buscar por nombre o teléfono...',
+          customerSearchPlaceholder: 'Buscar por nombre o telÃ©fono...',
           customerChange: 'Cambiar',
           customerNoShows: '{{ count }} no-show',
           partySize: 'Comensales',
@@ -421,16 +421,16 @@ const TEST_TRANSLATIONS = {
         },
       },
       kitchen: {
-        eyebrow: 'Producción',
+        eyebrow: 'ProducciÃ³n',
         title: 'Cocina',
-        queueTitle: 'Comandas en preparación',
-        queueDescription: 'Revisa los platos enviados desde sala y marca cada línea cuando esté preparada.',
+        queueTitle: 'Comandas en preparaciÃ³n',
+        queueDescription: 'Revisa los platos enviados desde sala y marca cada lÃ­nea cuando estÃ© preparada.',
         pending: 'Pendientes',
-        preparing: 'Preparándose',
+        preparing: 'PreparÃ¡ndose',
         ready: 'Preparados',
         orders: 'Comandas de cocina',
         emptyTitle: 'Sin comandas en cocina',
-        emptyDescription: 'Cuando sala envíe un pedido a cocina, aparecerá aquí para prepararlo.',
+        emptyDescription: 'Cuando sala envÃ­e un pedido a cocina, aparecerÃ¡ aquÃ­ para prepararlo.',
         openTable: 'Ver mesa',
         startPreparing: 'Empezar',
         startPreparingActionLabel: 'Empezar {{name}}',
@@ -441,7 +441,7 @@ const TEST_TRANSLATIONS = {
         archive: 'Archivar',
         archiveActionLabel: 'Archivar {{name}} de cocina',
         moveBackActionLabel: 'Volver {{name}} a la fase anterior',
-        ticketElapsed: 'Tiempo máximo: {{time}}',
+        ticketElapsed: 'Tiempo mÃ¡ximo: {{time}}',
         lineElapsed: 'Espera: {{time}}',
         elapsedPending: 'sin enviar',
         elapsedLessThanMinute: 'menos de 1 min',
@@ -455,9 +455,9 @@ const TEST_TRANSLATIONS = {
             empty: 'No hay platos en cola.',
           },
           preparing: {
-            title: 'Preparándose',
-            description: 'Platos que cocina está preparando.',
-            empty: 'No hay platos preparándose.',
+            title: 'PreparÃ¡ndose',
+            description: 'Platos que cocina estÃ¡ preparando.',
+            empty: 'No hay platos preparÃ¡ndose.',
           },
           ready: {
             title: 'Preparado para coger',
@@ -467,23 +467,23 @@ const TEST_TRANSLATIONS = {
         },
       },
       preparationBoard: {
-        title: 'Preparación',
-        description: 'Mueve las líneas entre pendiente, preparándose y preparado.',
+        title: 'PreparaciÃ³n',
+        description: 'Mueve las lÃ­neas entre pendiente, preparÃ¡ndose y preparado.',
         pending: 'Pendiente',
-        preparing: 'Preparándose',
+        preparing: 'PreparÃ¡ndose',
         ready: 'Preparado',
-        emptyColumn: 'No hay líneas en esta fase.',
+        emptyColumn: 'No hay lÃ­neas en esta fase.',
         tableLabel: 'Mesa {{number}}',
-        markPreparing: 'Preparándose',
+        markPreparing: 'PreparÃ¡ndose',
         markReady: 'Preparado',
         directStation: 'Barra',
-        genericMoveError: 'No se ha podido mover la línea.',
+        genericMoveError: 'No se ha podido mover la lÃ­nea.',
         servedCount: '{{count}} servido(s)',
-        servedModalTitle: 'Líneas servidas',
-        servedModalDescription: 'Revisa las líneas ya servidas. Puedes cancelar una si se ha servido por error.',
-        cancelLine: 'Cancelar línea',
-        cancelLineConfirm: '¿Cancelar esta línea? Esta acción no se puede deshacer.',
-        cancelLineConfirmAction: 'Sí, cancelar',
+        servedModalTitle: 'LÃ­neas servidas',
+        servedModalDescription: 'Revisa las lÃ­neas ya servidas. Puedes cancelar una si se ha servido por error.',
+        cancelLine: 'Cancelar lÃ­nea',
+        cancelLineConfirm: 'Â¿Cancelar esta lÃ­nea? Esta acciÃ³n no se puede deshacer.',
+        cancelLineConfirmAction: 'SÃ­, cancelar',
         cancelLineAbort: 'Volver',
         elapsedMinutes: '{{count}} min',
       },
@@ -500,7 +500,7 @@ const TEST_TRANSLATIONS = {
       lineStatus: {
         pending: 'Pendiente',
         sent_to_kitchen: 'En cocina',
-        preparing: 'Preparándose',
+        preparing: 'PreparÃ¡ndose',
         ready: 'Preparado',
         picked_up: 'Recogido',
         served: 'Servido',
@@ -521,9 +521,9 @@ const TEST_TRANSLATIONS = {
       },
       paymentGateway: {
         title: 'Pasarela bancaria',
-        description: 'Simulación de cobro con tarjeta para el terminal.',
+        description: 'SimulaciÃ³n de cobro con tarjeta para el terminal.',
         connecting: 'Conectando con terminal...',
-        rejected: 'Pago rechazado. Revisa el terminal o prueba otro método.',
+        rejected: 'Pago rechazado. Revisa el terminal o prueba otro mÃ©todo.',
         accept: 'Aceptar pago',
         error: 'Error',
         cancel: 'Cancelar',
@@ -531,7 +531,7 @@ const TEST_TRANSLATIONS = {
       floorPlan: {
         legend: 'Leyenda del plano',
         canvas: 'Lienzo del plano',
-        scrollHint: 'Indicación de plano desplazable',
+        scrollHint: 'IndicaciÃ³n de plano desplazable',
         matrix: 'Matriz del plano',
         cell: 'Celda {{x}}, {{y}}',
         floorElement: '{{label}} elemento del plano',
@@ -543,18 +543,18 @@ const TEST_TRANSLATIONS = {
         resize: 'Redimensionar {{label}}',
         edit: 'Editar {{label}}',
         delete: 'Eliminar {{label}}',
-        deleteConfirm: '¿Eliminar este elemento del plano?',
+        deleteConfirm: 'Â¿Eliminar este elemento del plano?',
         table: 'Mesa',
         bar: 'Barra',
         kitchen: 'Cocina',
         entrance: 'Entrada',
-        bathroom: 'Baño',
+        bathroom: 'BaÃ±o',
         stool: 'Taburete',
         selectedServicePoint: 'Seleccionada',
         blocked: 'Zona bloqueada',
       },
       presets: {
-        smallTable: 'Mesa pequeña 2 pax',
+        smallTable: 'Mesa pequeÃ±a 2 pax',
         squareTable: 'Mesa cuadrada 4 pax',
         rectangularTable: 'Mesa rectangular 6 pax',
         largeTable: 'Mesa grande 8 pax',
@@ -562,7 +562,7 @@ const TEST_TRANSLATIONS = {
         barHorizontal: 'Barra horizontal',
         barVertical: 'Barra vertical',
         kitchen: 'Cocina',
-        bathroom: 'Baño',
+        bathroom: 'BaÃ±o',
         entrance: 'Entrada',
         blockedArea: 'Zona bloqueada',
         stool: 'Taburete',
@@ -629,7 +629,7 @@ const TEST_TRANSLATIONS = {
         customizationSimple: 'Simples',
         allergens: 'Alérgenos',
         modifiers: 'Modificadores',
-        previewPrice: 'Precio preview',
+        previewPrice: 'Precio de vista previa',
         parentCategory: 'Categoría padre',
         childCategories: 'Subcategorías',
         noChildCategories: 'Sin subcategorías',
@@ -672,8 +672,8 @@ const TEST_TRANSLATIONS = {
       },
       customizer: {
         title: 'Personalizar producto',
-        description: 'Selecciona modificadores y añade una nota para cocina si hace falta.',
-        close: 'Cerrar personalización',
+        description: 'Selecciona modificadores y aÃ±ade una nota para cocina si hace falta.',
+        close: 'Cerrar personalizaciÃ³n',
         basePrice: 'Precio base',
         required: 'obligatorio',
         without: 'SIN {{name}}',
@@ -682,11 +682,11 @@ const TEST_TRANSLATIONS = {
         addFor: 'Añadir por {{price}}',
       },
       comboCustomizer: {
-        title: 'Configurar menú',
-        description: 'Elige hamburguesa, acompañamiento y bebida.',
-        close: 'Cerrar configuración de menú',
+        title: 'Configurar menÃº',
+        description: 'Elige hamburguesa, acompaÃ±amiento y bebida.',
+        close: 'Cerrar configuraciÃ³n de menÃº',
         noValidProducts: 'No hay productos disponibles para este slot.',
-        invalidSelection: 'Completa los slots obligatorios para añadir el menú.',
+        invalidSelection: 'Completa los slots obligatorios para aÃ±adir el menÃº.',
       },
       product: {
         form: {
@@ -694,28 +694,28 @@ const TEST_TRANSLATIONS = {
           editTitle: 'Editar producto',
           name: 'Nombre',
           namePlaceholder: 'Nombre del producto',
-          description: 'Descripción',
-          descriptionPlaceholder: 'Descripción opcional',
-          price: 'Precio (€)',
+          description: 'DescripciÃ³n',
+          descriptionPlaceholder: 'DescripciÃ³n opcional',
+          price: 'Precio (â‚¬)',
           course: 'Servicio',
-          route: 'Ruta de preparación',
+          route: 'Ruta de preparaciÃ³n',
           available: 'Disponible',
           create: 'Crear producto',
           save: 'Guardar cambios',
           cancel: 'Cancelar',
         },
         success: {
-          created: 'Artículo creado correctamente.',
-          updated: 'Artículo actualizado correctamente.',
-          deleted: 'Artículo eliminado correctamente.',
-          addedToSection: 'Artículo añadido a la sección correctamente.',
+          created: 'ArtÃ­culo creado correctamente.',
+          updated: 'ArtÃ­culo actualizado correctamente.',
+          deleted: 'ArtÃ­culo eliminado correctamente.',
+          addedToSection: 'ArtÃ­culo aÃ±adido a la secciÃ³n correctamente.',
         },
         errors: {
-          nameTaken: 'Ya existe un artículo con ese nombre.',
-          saveFailed: 'No se pudo guardar el artículo.',
-          deleteFailed: 'No se pudo eliminar el artículo.',
-          alreadyInSection: 'El artículo ya está en esa sección.',
-          addToSectionFailed: 'No se pudo añadir el artículo a la sección.',
+          nameTaken: 'Ya existe un artÃ­culo con ese nombre.',
+          saveFailed: 'No se pudo guardar el artÃ­culo.',
+          deleteFailed: 'No se pudo eliminar el artÃ­culo.',
+          alreadyInSection: 'El artÃ­culo ya estÃ¡ en esa secciÃ³n.',
+          addToSectionFailed: 'No se pudo aÃ±adir el artÃ­culo a la secciÃ³n.',
         },
       },
     },
@@ -807,7 +807,7 @@ const TEST_TRANSLATIONS = {
       buttonAriaLabel: '{{label}}: {{language}}',
       closeAriaLabel: 'Close language selector',
       listboxAriaLabel: 'Language',
-      languages: { es: 'Español', ca: 'Català', en: 'English' },
+      languages: { es: 'EspaÃ±ol', ca: 'CatalÃ ', en: 'English' },
     },
     colorMode: {
       label: 'Theme',
@@ -880,7 +880,7 @@ const TEST_TRANSLATIONS = {
         combo: 'Menu',
         soldOut: 'Sold out',
         finishProductSearch: 'Close',
-        productPickerSummary: '{{count}} products added · {{total}}',
+        productPickerSummary: '{{count}} products added Â· {{total}}',
         addProductAction: 'Add',
         configureProductAction: 'Configure',
         configureComboAction: 'Configure menu',
@@ -911,7 +911,7 @@ const TEST_TRANSLATIONS = {
         noOrderPhase: 'No order',
         coursePending: '{{course}} pending',
         readyToChargePhase: 'Ready to charge',
-        serviceSummary: '{{status}} · {{duration}} · {{phase}} · {{total}}',
+        serviceSummary: '{{status}} Â· {{duration}} Â· {{phase}} Â· {{total}}',
         nextAction: 'Next action',
         nextActionSendKitchen: 'Next: send {{count}} to kitchen',
         nextActionMarkServed: 'Next: mark served',
@@ -920,7 +920,7 @@ const TEST_TRANSLATIONS = {
         nextActionFreeTable: 'Next: free table',
         nextActionNone: 'No pending action',
         pendingKitchenCount: 'Kitchen pending: {{count}}',
-        courseSummary: '{{count}} items · {{total}}',
+        courseSummary: '{{count}} items Â· {{total}}',
         cleaning: 'Cleaning',
         freeTable: 'Free table',
         kitchenActions: 'Kitchen actions',
@@ -934,7 +934,7 @@ const TEST_TRANSLATIONS = {
         newProductOptionActionLabel: 'Create another option for {{name}}',
         viewProductOptionsAction: 'View options',
         hideProductOptionsAction: 'Hide',
-        productOptionsSummary: '{{count}} in order · {{options}} options',
+        productOptionsSummary: '{{count}} in order Â· {{options}} options',
         defaultProductOption: 'Standard option',
         noteSummary: 'Note: {{note}}',
         productLineQuantityLabel: 'Quantity of {{name}} ({{summary}}): {{count}}',
@@ -1226,7 +1226,7 @@ const TEST_TRANSLATIONS = {
         newProduct: 'New product',
         editProduct: 'Edit product',
         deleteProductTitle: 'Delete product',
-        deleteProductDescription: 'Delete «{{name}}»? This action cannot be undone.',
+        deleteProductDescription: 'Delete Â«{{name}}Â»? This action cannot be undone.',
         confirmDeleteProduct: 'Delete',
         cancelDeleteProduct: 'Cancel',
         noSection: 'No section',
@@ -1259,7 +1259,7 @@ const TEST_TRANSLATIONS = {
           namePlaceholder: 'Product name',
           description: 'Description',
           descriptionPlaceholder: 'Optional description',
-          price: 'Price (€)',
+          price: 'Price (â‚¬)',
           course: 'Course',
           route: 'Preparation route',
           available: 'Available',
@@ -1288,21 +1288,21 @@ const TEST_TRANSLATIONS = {
       eyebrow: 'Sala, cuina i cobraments',
       title: 'Explora MesaFlow',
       badge: 'Restaurant Suite',
-      description: "Gestiona taules, comandes, cuina i cobraments des d'una experiència pensada per a restaurants.",
-      methodLabel: "Mètode d'accés",
+      description: "Gestiona taules, comandes, cuina i cobraments des d'una experiÃ¨ncia pensada per a restaurants.",
+      methodLabel: "MÃ¨tode d'accÃ©s",
       benefits: {
-        floor: 'Plànol de taules, comandes i cobraments',
-        kitchen: 'Cuina i preparació en temps real',
-        menu: 'Carta, menús i plats combinats',
+        floor: 'PlÃ nol de taules, comandes i cobraments',
+        kitchen: 'Cuina i preparaciÃ³ en temps real',
+        menu: 'Carta, menÃºs i plats combinats',
       },
       demo: {
-        tab: 'Demo ràpida',
-        title: 'Demo ràpida',
-        description: 'Tria un perfil per recórrer MesaFlow sense introduir credencials.',
+        tab: 'Demo rÃ pida',
+        title: 'Demo rÃ pida',
+        description: 'Tria un perfil per recÃ³rrer MesaFlow sense introduir credencials.',
         restaurantTitle: 'Perfils de restaurant',
-        restaurantDescription: 'Accedeix a operació, servei i cuina amb un clic.',
-        technicalTitle: 'Perfil tècnic',
-        technicalDescription: 'Revisa documentació, Storybook i arquitectura.',
+        restaurantDescription: 'Accedeix a operaciÃ³, servei i cuina amb un clic.',
+        technicalTitle: 'Perfil tÃ¨cnic',
+        technicalDescription: 'Revisa documentaciÃ³, Storybook i arquitectura.',
         action: 'Entrar ara',
         loading: 'Obrint...',
       },
@@ -1317,9 +1317,9 @@ const TEST_TRANSLATIONS = {
         hidePassword: 'Ocultar contrasenya',
         validation: {
           emailRequired: 'Introdueix el teu email.',
-          emailInvalid: 'Introdueix un email vàlid.',
+          emailInvalid: 'Introdueix un email vÃ lid.',
           passwordRequired: 'Introdueix la teva contrasenya.',
-          passwordMinLength: 'La contrasenya ha de tenir com a mínim 8 caràcters.',
+          passwordMinLength: 'La contrasenya ha de tenir com a mÃ­nim 8 carÃ cters.',
         },
       },
       roles: {
@@ -1329,7 +1329,7 @@ const TEST_TRANSLATIONS = {
         },
         manager: {
           label: 'Encarregat',
-          description: 'Torns, descomptes, menú i caixa.',
+          description: 'Torns, descomptes, menÃº i caixa.',
         },
         waiter: {
           label: 'Cambrer',
@@ -1341,36 +1341,36 @@ const TEST_TRANSLATIONS = {
         },
         developer: {
           label: 'Developer',
-          description: 'Documentació, Storybook i arquitectura.',
+          description: 'DocumentaciÃ³, Storybook i arquitectura.',
         },
       },
       errors: {
-        invalidCredentials: "No s'ha pogut iniciar la sessió. Revisa l'email i la contrasenya.",
-        demoUnavailable: "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquí a uns minuts.",
+        invalidCredentials: "No s'ha pogut iniciar la sessiÃ³. Revisa l'email i la contrasenya.",
+        demoUnavailable: "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquÃ­ a uns minuts.",
       },
     },
     developer: {
-      eyebrow: 'Espai tècnic',
+      eyebrow: 'Espai tÃ¨cnic',
       title: 'Recursos per a Developer',
-      description: 'Documentació tècnica disponible només per a comptes amb rol Developer.',
+      description: 'DocumentaciÃ³ tÃ¨cnica disponible nomÃ©s per a comptes amb rol Developer.',
       loading: 'Carregant recursos...',
       apiDocs: "Consulta els contractes i endpoints de l'API.",
       storybook: 'Explora els components, estats i patrons visuals.',
       architectureTitle: 'Arquitectura',
       architecture: 'Revisa les decisions i els fluxos principals del frontend.',
       open: 'Obrir recurs',
-      logout: 'Tancar sessió',
+      logout: 'Tancar sessiÃ³',
     },
     userAdmin: {
       navigation: 'Usuaris',
     },
     languageSelect: {
       label: 'Idioma',
-      hint: "La preferència s'aplica a la interfície.",
+      hint: "La preferÃ¨ncia s'aplica a la interfÃ­cie.",
       buttonAriaLabel: '{{label}}: {{language}}',
       closeAriaLabel: "Tancar el selector d'idioma",
       listboxAriaLabel: 'Idioma',
-      languages: { es: 'Español', ca: 'Català', en: 'English' },
+      languages: { es: 'EspaÃ±ol', ca: 'CatalÃ ', en: 'English' },
     },
     colorMode: {
       label: 'Tema',
@@ -1379,29 +1379,29 @@ const TEST_TRANSLATIONS = {
       switchToLight: 'Canviar al mode clar',
       optionAriaLabel: 'Usar tema {{option}}',
       options: {
-        system: { label: 'Sistema', description: 'Segueix la preferència del dispositiu.' },
-        light: { label: 'Clar', description: 'Interfície amb fons clar.' },
-        dark: { label: 'Fosc', description: 'Interfície amb fons fosc.' },
+        system: { label: 'Sistema', description: 'Segueix la preferÃ¨ncia del dispositiu.' },
+        light: { label: 'Clar', description: 'InterfÃ­cie amb fons clar.' },
+        dark: { label: 'Fosc', description: 'InterfÃ­cie amb fons fosc.' },
       },
     },
     restaurantPos: {
       common: {
-        layout: 'Plànol',
+        layout: 'PlÃ nol',
         service: 'Servei',
         menu: 'Menú',
         kitchen: 'Cuina',
         reservations: 'Reserves',
         pos: 'TPV restaurant',
-        navigation: 'Navegació principal',
-        logout: 'Tancar sessió',
+        navigation: 'NavegaciÃ³ principal',
+        logout: 'Tancar sessiÃ³',
       },
       access: {
-        eyebrow: 'Accés al TPV',
-        title: 'Sense mòduls disponibles',
-        description: 'El teu usuari no té permisos per accedir a les seccions operatives del TPV.',
+        eyebrow: 'AccÃ©s al TPV',
+        title: 'Sense mÃ²duls disponibles',
+        description: 'El teu usuari no tÃ© permisos per accedir a les seccions operatives del TPV.',
       },
       kitchen: {
-        ticketElapsed: 'Temps màxim: {{time}}',
+        ticketElapsed: 'Temps mÃ xim: {{time}}',
         lineElapsed: 'Espera: {{time}}',
         elapsedPending: 'sense enviar',
         elapsedLessThanMinute: "menys d'1 min",
@@ -1410,41 +1410,41 @@ const TEST_TRANSLATIONS = {
         soundOff: 'Activar so',
       },
       preparationBoard: {
-        title: 'Preparació',
-        description: 'Mou les línies entre pendent, preparant-se i preparat.',
+        title: 'PreparaciÃ³',
+        description: 'Mou les lÃ­nies entre pendent, preparant-se i preparat.',
         pending: 'Pendent',
         preparing: 'Preparant-se',
         ready: 'Preparat',
-        emptyColumn: 'No hi ha línies en aquesta fase.',
+        emptyColumn: 'No hi ha lÃ­nies en aquesta fase.',
         tableLabel: 'Taula {{number}}',
         markPreparing: 'Preparant-se',
         markReady: 'Preparat',
         directStation: 'Barra',
-        genericMoveError: "No s'ha pogut moure la línia.",
+        genericMoveError: "No s'ha pogut moure la lÃ­nia.",
         servedCount: '{{count}} servit(s)',
-        servedModalTitle: 'Línies servides',
-        servedModalDescription: 'Revisa les línies ja servides. Pots cancel·lar-ne una si s\'ha servit per error.',
-        cancelLine: 'Cancel·lar línia',
-        cancelLineConfirm: 'Cancel·lar aquesta línia? Aquesta acció no es pot desfer.',
-        cancelLineConfirmAction: 'Sí, cancel·lar',
+        servedModalTitle: 'LÃ­nies servides',
+        servedModalDescription: 'Revisa les lÃ­nies ja servides. Pots cancelÂ·lar-ne una si s\'ha servit per error.',
+        cancelLine: 'CancelÂ·lar lÃ­nia',
+        cancelLineConfirm: 'CancelÂ·lar aquesta lÃ­nia? Aquesta acciÃ³ no es pot desfer.',
+        cancelLineConfirmAction: 'SÃ­, cancelÂ·lar',
         cancelLineAbort: 'Tornar',
         elapsedMinutes: '{{count}} min',
       },
       layout: {
-        title: 'Plànol del restaurant',
+        title: 'PlÃ nol del restaurant',
         addElement: 'Afegir element',
-        editingActions: "Accions d'edició del plànol",
+        editingActions: "Accions d'ediciÃ³ del plÃ nol",
       },
       service: {
         combo: 'Menú',
         addProductsTitle: 'Afegir productes',
         addProductsDescription: 'Busca, filtra i afegeix productes a la comanda.',
         searchProduct: 'Buscar producte',
-        searchProductPlaceholder: 'Buscar plat, beguda o al·lergogen',
+        searchProductPlaceholder: 'Buscar plat, beguda o alÂ·lergogen',
         productView: 'Vista de productes',
         allProducts: 'Tots',
         favoriteProducts: 'Favorits',
-        bestSellerProducts: 'Més venuts',
+        bestSellerProducts: 'MÃ©s venuts',
         drinkProducts: 'Begudes',
         foodProducts: 'Menjar',
         comboProducts: 'Menús',
@@ -1452,28 +1452,28 @@ const TEST_TRANSLATIONS = {
         dessertProducts: 'Postres',
         productSearchResults: 'Resultats',
         finishProductSearch: 'Tancar',
-        productPickerSummary: '{{count}} productes afegits · {{total}}',
+        productPickerSummary: '{{count}} productes afegits Â· {{total}}',
         addProductAction: 'Afegir',
         configureProductAction: 'Configurar',
-        configureComboAction: 'Configurar menú',
+        configureComboAction: 'Configurar menÃº',
         configurePlatterAction: 'Configurar plat',
         comboComingSoonAction: 'Properament',
         configureProductActionLabel: 'Configurar {{name}}',
-        configureComboActionLabel: 'Configurar menú {{name}}',
+        configureComboActionLabel: 'Configurar menÃº {{name}}',
         configurePlatterActionLabel: 'Configurar plat {{name}}',
-        comboComingSoonActionLabel: 'Configuració de menú properament per a {{name}}',
-        addComboToOrder: 'Afegir menú',
+        comboComingSoonActionLabel: 'ConfiguraciÃ³ de menÃº properament per a {{name}}',
+        addComboToOrder: 'Afegir menÃº',
         comboBasePrice: 'Preu base',
-        comboTotal: 'Total menú',
+        comboTotal: 'Total menÃº',
         productQuantityLabel: 'Quantitat de {{name}}: {{count}}',
         increaseProductQuantityActionLabel: 'Afegir una unitat de {{name}}',
         decreaseProductQuantityActionLabel: 'Treure una unitat de {{name}}',
-        newProductOptionAction: 'Nova opció',
-        newProductOptionActionLabel: 'Crear una altra opció de {{name}}',
+        newProductOptionAction: 'Nova opciÃ³',
+        newProductOptionActionLabel: 'Crear una altra opciÃ³ de {{name}}',
         viewProductOptionsAction: 'Veure opcions',
         hideProductOptionsAction: 'Amagar',
-        productOptionsSummary: '{{count}} a la comanda · {{options}} opcions',
-        defaultProductOption: 'Opció estàndard',
+        productOptionsSummary: '{{count}} a la comanda Â· {{options}} opcions',
+        defaultProductOption: 'OpciÃ³ estÃ ndard',
         noteSummary: 'Nota: {{note}}',
         productLineQuantityLabel: 'Quantitat de {{name}} ({{summary}}): {{count}}',
         increaseProductLineQuantityActionLabel: 'Afegir una unitat de {{name}} amb {{summary}}',
@@ -1491,7 +1491,7 @@ const TEST_TRANSLATIONS = {
         summaryUnassigned: 'Sense taula',
         summaryOverdue: 'Pendents',
         searchLabel: 'Buscar reserva',
-        searchPlaceholder: 'Buscar per nom de client o telèfon',
+        searchPlaceholder: 'Buscar per nom de client o telÃ¨fon',
         statusFilter: 'Estat',
         statusAll: 'Tots',
         serviceFilter: 'Servei',
@@ -1506,18 +1506,18 @@ const TEST_TRANSLATIONS = {
         empty: 'No hi ha reserves per a aquest servei.',
         unassignedTable: 'Sense taula assignada',
         unassignedBadge: 'Sense taula',
-        upcoming: 'Pròxima',
+        upcoming: 'PrÃ²xima',
         overdue: 'Pendent',
         loading: 'Carregant reserves',
         loadError: "No s'han pogut carregar les reserves.",
         retry: 'Tornar a intentar',
-        confirmCancelTitle: 'Cancel·lar reserva?',
-        confirmCancelDescription: 'La reserva quedarà cancel·lada.',
+        confirmCancelTitle: 'CancelÂ·lar reserva?',
+        confirmCancelDescription: 'La reserva quedarÃ  cancelÂ·lada.',
         confirmNoShowTitle: 'No presentat?',
-        confirmNoShowDescription: "Es registrarà que el client no s'ha presentat.",
-        confirmDestructiveLabel: 'Sí, continuar',
+        confirmNoShowDescription: "Es registrarÃ  que el client no s'ha presentat.",
+        confirmDestructiveLabel: 'SÃ­, continuar',
         previousDay: 'Dia anterior',
-        nextDay: 'Dia següent',
+        nextDay: 'Dia segÃ¼ent',
         today: 'Avui',
         countdownNow: 'Ara',
         countdownMinutes: 'En {{count}} min',
@@ -1528,13 +1528,13 @@ const TEST_TRANSLATIONS = {
           confirm: { title: 'Reserva confirmada', description: "La reserva ha passat a l'estat confirmada." },
           seat: { title: 'Client assegut', description: "La reserva ha passat a l'estat assegut." },
           no_show: { title: 'No presentat', description: 'La reserva ha estat marcada com a no presentat.' },
-          cancel: { title: "Reserva cancel·lada", description: "La reserva s'ha cancel·lat correctament." },
+          cancel: { title: "Reserva cancelÂ·lada", description: "La reserva s'ha cancelÂ·lat correctament." },
         },
         actions: {
           confirm: 'Confirmar',
           seat: 'Asseure',
           noShow: 'No-show',
-          cancel: 'CancelÂ·lar',
+          cancel: 'CancelÃ‚Â·lar',
         },
         create: {
           open: 'Nova reserva',
@@ -1542,7 +1542,7 @@ const TEST_TRANSLATIONS = {
           customer: 'Client',
           customerName: 'Client',
           customerPhone: 'Telefon',
-          customerSearchPlaceholder: 'Cerca per nom o telèfon...',
+          customerSearchPlaceholder: 'Cerca per nom o telÃ¨fon...',
           customerChange: 'Canviar',
           customerNoShows: '{{ count }} no-show',
           partySize: 'Comensals',
@@ -1563,7 +1563,7 @@ const TEST_TRANSLATIONS = {
           pending: 'Pendent',
           confirmed: 'Confirmada',
           seated: 'Asseguda',
-          cancelled: 'Cancel·lada',
+          cancelled: 'CancelÂ·lada',
           no_show: 'No show',
         },
       },
@@ -1581,16 +1581,38 @@ const TEST_TRANSLATIONS = {
         other: 'Altres',
       },
       page: {
-        eyebrow: 'Cataleg operatiu',
-        title: 'Menu',
+        eyebrow: 'Catàleg operatiu',
+        title: 'Menú',
         description: 'Revisa productes, disponibilitat, categories i modificadors abans del servei.',
         available: 'Disponibles',
         customizable: 'Personalitzables',
         categories: 'Categories',
         soldOut: 'Esgotat',
         customizableBadge: 'Personalitzable',
-        comboBadge: 'Combo',
+        comboBadge: 'Menú',
         platterBadge: 'Plat combinat',
+        tabsLabel: 'Seccions del menú',
+        tabs: {
+          products: 'Productes',
+          categories: 'Categories',
+          modifiers: 'Modificadors',
+          combos: 'Menús',
+          platters: 'Plats combinats',
+          availability: 'Disponibilitat',
+        },
+        productTypes: {
+          simple: 'Simple',
+          customizable: 'Personalitzable',
+          combo: 'Menú',
+          platter: 'Plat combinat',
+        },
+        preparationRoutes: {
+          direct: 'Directe',
+          bar: 'Barra',
+          kitchen: 'Cuina',
+          cold: 'Fred',
+          dessert: 'Postres',
+        },
         searchLabel: 'Buscar al catàleg',
         searchPlaceholder: 'Buscar producte, categoria, al·lergen o modificador',
         clearSearch: 'Netejar cerca del catàleg',
@@ -1605,9 +1627,9 @@ const TEST_TRANSLATIONS = {
         customizationAll: 'Tots',
         customizationCustomizable: 'Personalitzables',
         customizationSimple: 'Simples',
-        allergens: 'Al·lergògens',
+        allergens: 'Al·lèrgens',
         modifiers: 'Modificadors',
-        previewPrice: 'Preu preview',
+        previewPrice: 'Preu de vista prèvia',
         noModifiers: 'Aquest producte no té modificadors.',
         noResults: 'No hi ha productes que coincideixin amb els filtres.',
         noSelection: 'Selecciona un producte per revisar-ne el detall.',
@@ -1637,11 +1659,11 @@ const TEST_TRANSLATIONS = {
         addFor: 'Afegir per {{price}}',
       },
       comboCustomizer: {
-        title: 'Configurar menú',
+        title: 'Configurar menÃº',
         description: 'Tria hamburguesa, acompanyament i beguda.',
-        close: 'Tancar configuració de menú',
+        close: 'Tancar configuraciÃ³ de menÃº',
         noValidProducts: 'No hi ha productes disponibles per a aquest slot.',
-        invalidSelection: 'Completa els slots obligatoris per afegir el menú.',
+        invalidSelection: 'Completa els slots obligatoris per afegir el menÃº.',
       },
       product: {
         form: {
@@ -1649,33 +1671,33 @@ const TEST_TRANSLATIONS = {
           editTitle: 'Editar producte',
           name: 'Nom',
           namePlaceholder: 'Nom del producte',
-          description: 'Descripció',
-          descriptionPlaceholder: 'Descripció opcional',
-          price: 'Preu (€)',
+          description: 'DescripciÃ³',
+          descriptionPlaceholder: 'DescripciÃ³ opcional',
+          price: 'Preu (â‚¬)',
           course: 'Servei',
-          route: 'Ruta de preparació',
+          route: 'Ruta de preparaciÃ³',
           available: 'Disponible',
           create: 'Crear producte',
           save: 'Guardar canvis',
-          cancel: 'Cancel·lar',
+          cancel: 'CancelÂ·lar',
         },
         success: {
           created: 'Article creat correctament.',
           updated: 'Article actualitzat correctament.',
           deleted: 'Article eliminat correctament.',
-          addedToSection: 'Article afegit a la secció correctament.',
+          addedToSection: 'Article afegit a la secciÃ³ correctament.',
         },
         errors: {
           nameTaken: 'Ja existeix un article amb aquest nom.',
           saveFailed: "No s'ha pogut guardar l'article.",
           deleteFailed: "No s'ha pogut eliminar l'article.",
-          alreadyInSection: "L'article ja és a aquesta secció.",
-          addToSectionFailed: "No s'ha pogut afegir l'article a la secció.",
+          alreadyInSection: "L'article ja Ã©s a aquesta secciÃ³.",
+          addToSectionFailed: "No s'ha pogut afegir l'article a la secciÃ³.",
         },
       },
     },
   },
-};
+});
 
 export const provideI18nTesting = (locale = DEFAULT_LOCALE): { imports: Array<Type<unknown> | ModuleWithProviders<unknown>>; providers: Provider[] } => {
   const storage = new MemoryKeyValueStorage();
@@ -1697,3 +1719,188 @@ export const provideI18nTesting = (locale = DEFAULT_LOCALE): { imports: Array<Ty
     providers: [{ provide: KEY_VALUE_STORAGE, useValue: storage }],
   };
 };
+
+function withAdditionalMenuImageTranslations<T extends Record<string, any>>(translations: T): T {
+  const clones = structuredClone(translations);
+
+  clones['es'].menu.page.noImage = 'Sin imagen';
+  clones['es'].menu.page.imageFilter = 'Imagen';
+  clones['es'].menu.page.imageFilterAll = 'Todas';
+  clones['es'].menu.page.imageFilterWithImage = 'Con imagen';
+  clones['es'].menu.page.imageFilterWithoutImage = 'Sin imagen';
+  clones['es'].menu.page.mobileFilters = 'Filtros';
+  clones['es'].menu.page.reviewFilters = {
+    title: 'Atajos de revisión',
+    comboOnly: 'Solo menús',
+    customizableOnly: 'Solo personalizables',
+    withImage: 'Con imagen',
+    withoutImage: 'Sin imagen',
+    noSection: 'Sin sección',
+    missingDescription: 'Sin descripción',
+  };
+  clones['es'].menu.page.viewModeLabel = 'Vista';
+  clones['es'].menu.page.viewModes = { cards: 'Tarjetas', compact: 'Compacta' };
+  clones['es'].menu.page.comboReady = 'Listo para vender';
+  clones['es'].menu.page.comboGuideTitle = 'Qué revisar en los combos';
+  clones['es'].menu.page.comboGuideDescription =
+    'Comprueba de un vistazo qué menús tienen imagen, cuántos slots requieren y cuáles siguen siendo personalizables.';
+  clones['es'].menu.page.comboConfigurationSummary = '{{slotCount}} slots · {{customizationLabel}}';
+  clones['es'].menu.page.comboInclusionSummary = 'Incluye {{items}}';
+  clones['es'].menu.page.summaryConjunction = 'o';
+  clones['es'].menu.page.summaryHeadings = { included: 'Incluye', change: 'Puedes cambiar', priceImpact: 'Suplemento' };
+  clones['es'].menu.page.modifierActions = { add: 'Añadir', remove: 'Quitar', choose: 'Elegir' };
+  clones['es'].menu.page.modifierLimits = { choose: 'Elige {{count}}', upTo: 'Hasta {{count}}', optional: 'Opcional' };
+  clones['es'].menu.page.pricePhrases = { from: 'Desde', supplement: 'Suplemento' };
+  clones['es'].menu.page.compactMetaLabel = 'Ruta:';
+  clones['es'].menu.page.audit = {
+    title: 'Revisión rápida del menú',
+    description: 'Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.',
+    clearFilter: 'Ver todo',
+    nextSteps: 'Qué revisar a continuación',
+    empty: 'No hay alertas abiertas en el catálogo.',
+    example: 'Ejemplo: {{name}}',
+    warningLabels: {
+      'missing-image': 'Sin imagen',
+      'missing-description': 'Sin descripción',
+      'missing-section': 'Sin sección',
+      unavailable: 'No disponibles',
+      'weak-combo-summary': 'Resumen de menú débil',
+      'weak-customization-summary': 'Extras poco claros',
+    },
+  };
+  clones['es'].menu.product.form.image = 'Imagen';
+  clones['es'].menu.product.form.noImage = 'Sin imagen';
+  clones['es'].menu.product.form.dropImageHint = 'Arrastra una imagen aquí o abre el selector';
+  clones['es'].menu.product.form.uploadImage = 'Subir imagen';
+  clones['es'].menu.product.form.uploadingImage = 'Subiendo imagen...';
+  clones['es'].menu.product.form.replaceImage = 'Reemplazar imagen';
+  clones['es'].menu.product.form.removeImage = 'Quitar imagen';
+  clones['es'].menu.product.form.retryUpload = 'Reintentar subida';
+  clones['es'].menu.product.form.invalidImageType = 'Usa una imagen JPG, PNG o WEBP.';
+  clones['es'].menu.product.form.imageTooLarge = 'La imagen es demasiado pesada. Prueba con un archivo mas ligero.';
+  clones['es'].menu.product.form.imageTooSmall = 'La imagen es demasiado pequena. Usa una resolucion mayor.';
+  clones['es'].menu.product.form.uploadFailed = 'No se pudo subir la imagen. Inténtalo de nuevo.';
+  clones['es'].menu.product.form.modifierGroupsHint = 'Selecciona los grupos de modificadores que puede usar este producto.';
+
+  clones['en'].menu.page.noImage = 'No image';
+  clones['en'].menu.page.imageFilter = 'Image';
+  clones['en'].menu.page.imageFilterAll = 'All';
+  clones['en'].menu.page.imageFilterWithImage = 'With image';
+  clones['en'].menu.page.imageFilterWithoutImage = 'Without image';
+  clones['en'].menu.page.mobileFilters = 'Filters';
+  clones['en'].menu.page.reviewFilters = {
+    title: 'Review shortcuts',
+    comboOnly: 'Combos only',
+    customizableOnly: 'Customizable only',
+    withImage: 'With image',
+    withoutImage: 'Without image',
+    noSection: 'No section',
+    missingDescription: 'Missing description',
+  };
+  clones['en'].menu.page.viewModeLabel = 'View';
+  clones['en'].menu.page.viewModes = { cards: 'Cards', compact: 'Compact' };
+  clones['en'].menu.page.comboReady = 'Ready to sell';
+  clones['en'].menu.page.comboGuideTitle = 'What to review in combos';
+  clones['en'].menu.page.comboGuideDescription =
+    'Check at a glance which menus have imagery, how many slots they require, and which ones are still customizable.';
+  clones['en'].menu.page.comboConfigurationSummary = '{{slotCount}} slots · {{customizationLabel}}';
+  clones['en'].menu.page.comboInclusionSummary = 'Includes {{items}}';
+  clones['en'].menu.page.summaryConjunction = 'or';
+  clones['en'].menu.page.summaryHeadings = { included: 'Includes', change: 'You can change', priceImpact: 'Supplement' };
+  clones['en'].menu.page.modifierActions = { add: 'Add', remove: 'Remove', choose: 'Choose' };
+  clones['en'].menu.page.modifierLimits = { choose: 'Choose {{count}}', upTo: 'Up to {{count}}', optional: 'Optional' };
+  clones['en'].menu.page.pricePhrases = { from: 'From', supplement: 'Supplement' };
+  clones['en'].menu.page.compactMetaLabel = 'Route:';
+  clones['en'].menu.page.audit = {
+    title: 'Quick menu review',
+    description: 'Use these alerts to spot which products still need imagery, copy, or operational review.',
+    clearFilter: 'View all',
+    nextSteps: 'What to fix next',
+    empty: 'There are no open catalog alerts.',
+    example: 'Example: {{name}}',
+    warningLabels: {
+      'missing-image': 'Missing image',
+      'missing-description': 'Missing description',
+      'missing-section': 'No section',
+      unavailable: 'Unavailable',
+      'weak-combo-summary': 'Weak combo summary',
+      'weak-customization-summary': 'Unclear extras',
+    },
+  };
+  clones['en'].menu.product.form.image = 'Image';
+  clones['en'].menu.product.form.noImage = 'No image';
+  clones['en'].menu.product.form.dropImageHint = 'Drag an image here or open the picker';
+  clones['en'].menu.product.form.uploadImage = 'Upload image';
+  clones['en'].menu.product.form.uploadingImage = 'Uploading image...';
+  clones['en'].menu.product.form.replaceImage = 'Replace image';
+  clones['en'].menu.product.form.removeImage = 'Remove image';
+  clones['en'].menu.product.form.retryUpload = 'Retry upload';
+  clones['en'].menu.product.form.invalidImageType = 'Use a JPG, PNG, or WEBP image.';
+  clones['en'].menu.product.form.imageTooLarge = 'The image is too large. Try a lighter file.';
+  clones['en'].menu.product.form.imageTooSmall = 'The image is too small. Use a higher resolution image.';
+  clones['en'].menu.product.form.uploadFailed = 'The image could not be uploaded. Please try again.';
+  clones['en'].menu.product.form.modifierGroupsHint = 'Select the modifier groups that this product can use.';
+
+  clones['ca'].menu.page.noImage = 'Sense imatge';
+  clones['ca'].menu.page.imageFilter = 'Imatge';
+  clones['ca'].menu.page.imageFilterAll = 'Totes';
+  clones['ca'].menu.page.imageFilterWithImage = 'Amb imatge';
+  clones['ca'].menu.page.imageFilterWithoutImage = 'Sense imatge';
+  clones['ca'].menu.page.mobileFilters = 'Filtres';
+  clones['ca'].menu.page.reviewFilters = {
+    title: 'Dreceres de revisió',
+    comboOnly: 'Només menús',
+    customizableOnly: 'Només personalitzables',
+    withImage: 'Amb imatge',
+    withoutImage: 'Sense imatge',
+    noSection: 'Sense secció',
+    missingDescription: 'Sense descripció',
+  };
+  clones['ca'].menu.page.viewModeLabel = 'Vista';
+  clones['ca'].menu.page.viewModes = { cards: 'Targetes', compact: 'Compacta' };
+  clones['ca'].menu.page.comboReady = 'Llesta per vendre';
+  clones['ca'].menu.page.comboGuideTitle = 'Què revisar als combos';
+  clones['ca'].menu.page.comboGuideDescription =
+    "Comprova d'un cop d'ull quins menús tenen imatge, quants slots necessiten i quins continuen sent personalitzables.";
+  clones['ca'].menu.page.comboConfigurationSummary = '{{slotCount}} slots · {{customizationLabel}}';
+  clones['ca'].menu.page.comboInclusionSummary = 'Inclou {{items}}';
+  clones['ca'].menu.page.summaryConjunction = 'o';
+  clones['ca'].menu.page.summaryHeadings = { included: 'Inclou', change: 'Pots canviar', priceImpact: 'Suplement' };
+  clones['ca'].menu.page.modifierActions = { add: 'Afegir', remove: 'Treure', choose: 'Triar' };
+  clones['ca'].menu.page.modifierLimits = { choose: 'Tria {{count}}', upTo: 'Fins a {{count}}', optional: 'Opcional' };
+  clones['ca'].menu.page.pricePhrases = { from: 'Des de', supplement: 'Suplement' };
+  clones['ca'].menu.page.compactMetaLabel = 'Ruta:';
+  clones['ca'].menu.page.audit = {
+    title: 'Revisió ràpida del menú',
+    description: 'Fes servir aquestes alertes per detectar de pressa quins productes encara necessiten imatge, text o revisió operativa.',
+    clearFilter: 'Veure-ho tot',
+    nextSteps: 'Què revisar a continuació',
+    empty: 'No hi ha alertes obertes al catàleg.',
+    example: 'Exemple: {{name}}',
+    warningLabels: {
+      'missing-image': 'Sense imatge',
+      'missing-description': 'Sense descripció',
+      'missing-section': 'Sense secció',
+      unavailable: 'No disponibles',
+      'weak-combo-summary': 'Resum de menú feble',
+      'weak-customization-summary': 'Extres poc clars',
+    },
+  };
+  clones['ca'].menu.product.form.image = 'Imatge';
+  clones['ca'].menu.product.form.noImage = 'Sense imatge';
+  clones['ca'].menu.product.form.dropImageHint = 'Arrossega una imatge aquí o obre el selector';
+  clones['ca'].menu.product.form.uploadImage = 'Pujar imatge';
+  clones['ca'].menu.product.form.uploadingImage = 'Pujant imatge...';
+  clones['ca'].menu.product.form.replaceImage = 'Reemplaçar imatge';
+  clones['ca'].menu.product.form.removeImage = 'Treure imatge';
+  clones['ca'].menu.product.form.retryUpload = 'Reintentar pujada';
+  clones['ca'].menu.product.form.invalidImageType = 'Fes servir una imatge JPG, PNG o WEBP.';
+  clones['ca'].menu.product.form.imageTooLarge = 'La imatge pesa massa. Prova amb un fitxer mes lleuger.';
+  clones['ca'].menu.product.form.imageTooSmall = 'La imatge es massa petita. Fes servir una resolucio mes gran.';
+  clones['ca'].menu.product.form.uploadFailed = "No s'ha pogut pujar la imatge. Torna-ho a provar.";
+  clones['ca'].menu.product.form.modifierGroupsHint = 'Selecciona els grups de modificadors que pot fer servir aquest producte.';
+
+  return clones;
+}
+
+

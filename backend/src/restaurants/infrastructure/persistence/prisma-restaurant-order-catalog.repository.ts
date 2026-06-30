@@ -46,6 +46,7 @@ type RawMenuItem = {
   restaurantProduct: {
     id: string;
     displayName: string | null;
+    imageUrl: string | null;
     priceCents: number;
     currency: string;
     isAvailable: boolean;
@@ -153,6 +154,7 @@ function mapMenuItem(item: RawMenuItem) {
     productId: product.id,
     name: item.displayNameOverride ?? rp.displayName ?? product.name,
     description: product.description ?? undefined,
+    imageUrl: rp.imageUrl,
     productType: product.productType as 'simple' | 'combo' | 'platter',
     priceCents: item.priceOverrideCents ?? rp.priceCents,
     currency: rp.currency,

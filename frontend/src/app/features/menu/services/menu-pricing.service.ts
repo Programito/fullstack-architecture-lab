@@ -1,6 +1,14 @@
 import { Injectable } from '@angular/core';
 import type { ComboProductDefinition, ComboSlotSelection, ModifierGroup, Product, SelectedModifier } from '../models/menu.models';
 
+interface CustomizationSummaryLabels {
+  add: string;
+  remove: string;
+  choose: string;
+  conjunction: string;
+  oxfordComma?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MenuPricingService {
   getModifierGroupsForProduct(product: Product, modifierGroups: ModifierGroup[]): ModifierGroup[] {
@@ -69,8 +77,66 @@ export class MenuPricingService {
     return [productId, modifiers, note].join('::');
   }
 
+  buildComboCompositionSummary(comboDefinition: ComboProductDefinition, products: Product[]): string {
+    return comboDefinition.slots
+      .map((slot) => products.find((product) => product.id === slot.defaultProductId)?.name ?? slot.name)
+      .filter(Boolean)
+      .join(' + ');
+  }
+
+  buildCustomizationSummary(
+    product: Product,
+    modifierGroups: ModifierGroup[],
+    labels: CustomizationSummaryLabels = {
+      add: 'Add',
+      remove: 'Remove',
+      choose: 'Choose',
+      conjunction: 'or',
+      oxfordComma: true,
+    },
+  ): string {
+    return this.getModifierGroupsForProduct(product, modifierGroups)
+      .map((group) => {
+        if (group.type === 'single') {
+          return `${labels.choose} ${group.name}`;
+        }
+
+        const optionNames = group.options.map((option) => option.name);
+        if (!optionNames.length) return '';
+
+        const action = group.type === 'remove' ? labels.remove : labels.add;
+        return `${action} ${this.formatNaturalList(optionNames, labels.conjunction, labels.oxfordComma ?? false)}`;
+      })
+      .filter(Boolean)
+      .join(' · ');
+  }
+
+  getMinimumVisibleUpgrade(
+    product: Product,
+    modifierGroups: ModifierGroup[],
+    comboDefinition?: ComboProductDefinition,
+  ): number | null {
+    const modifierDeltas = this.getModifierGroupsForProduct(product, modifierGroups)
+      .flatMap((group) => group.options.map((option) => option.priceDelta))
+      .filter((priceDelta) => priceDelta > 0);
+    const comboDeltas = comboDefinition?.supplements
+      .map((supplement) => supplement.supplementPrice)
+      .filter((priceDelta) => priceDelta > 0) ?? [];
+    const deltas = [...modifierDeltas, ...comboDeltas];
+
+    return deltas.length ? Math.min(...deltas) : null;
+  }
+
   private roundCurrency(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private formatNaturalList(items: string[], conjunction: string, oxfordComma: boolean): string {
+    if (items.length <= 1) return items[0] ?? '';
+    if (items.length === 2) return `${items[0]} ${conjunction} ${items[1]}`;
+
+    const separator = oxfordComma ? `, ${conjunction} ` : ` ${conjunction} `;
+    return `${items.slice(0, -1).join(', ')}${separator}${items.at(-1)}`;
   }
 
   private comboSlotProductKey(slotId: string, productId: string): string {
