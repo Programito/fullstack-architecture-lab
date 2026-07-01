@@ -168,20 +168,6 @@ it('renders product images when available and the placeholder when missing', asy
   expect(screen.getAllByText('Sin imagen').length).toBeGreaterThan(0);
 });
 
-it('filters products by image availability', async () => {
-  const { fixture } = await renderPage();
-
-  fireEvent.click(screen.getByRole('radio', { name: 'Sin imagen' }));
-  fixture.detectChanges();
-
-  expect(screen.getAllByText('Sin imagen').length).toBeGreaterThan(0);
-  expect(screen.queryByText('Hamburguesa craft')).toBeNull();
-
-  fireEvent.click(screen.getByRole('radio', { name: 'Con imagen' }));
-  fixture.detectChanges();
-
-  expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
-});
 
 it('renders the menu health panel with actionable warning groups', async () => {
   await renderPage({
@@ -212,7 +198,9 @@ it('keeps the desktop detail panel pinned while browsing the list', async () => 
   await renderPage();
 
   const detailPanel = screen.getByRole('complementary');
-  expect(detailPanel.className).toContain('lg:h-[calc(100dvh-7rem)]');
+  expect(detailPanel.className).toContain('lg:sticky');
+  expect(detailPanel.className).toContain('lg:top-28');
+  expect(detailPanel.className).toContain('lg:max-h-[calc(100dvh-7rem)]');
   expect(detailPanel.className).toContain('lg:overflow-y-auto');
 });
 

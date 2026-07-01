@@ -29,7 +29,6 @@ import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant
 
 type AvailabilityFilter = 'all' | 'available' | 'sold-out';
 type CustomizationFilter = 'all' | 'customizable' | 'simple';
-type ImageFilter = 'all' | 'with-image' | 'without-image';
 type ReviewFilter = 'combo-only' | 'customizable-only' | 'with-image' | 'without-image' | 'no-section' | 'missing-description';
 type ProductViewMode = 'cards' | 'compact';
 type MenuPageTab = 'products' | 'categories' | 'modifiers' | 'combos' | 'platters' | 'availability';
@@ -129,8 +128,8 @@ export class MenuPage {
   protected readonly categoryFilter = signal('all');
   protected readonly availabilityFilter = signal<AvailabilityFilter>('all');
   protected readonly customizationFilter = signal<CustomizationFilter>('all');
-  protected readonly imageFilter = signal<ImageFilter>('all');
   protected readonly auditFilter = signal<MenuAuditFilter>('all');
+  protected readonly reviewPanelOpen = signal(true);
   protected readonly reviewFilters = signal<ReviewFilter[]>([]);
   protected readonly productViewMode = signal<ProductViewMode>('cards');
   protected readonly activeTab = signal<MenuPageTab>('products');
@@ -174,11 +173,6 @@ export class MenuPage {
     { label: this.translate('menu.page.customizationCustomizable'), value: 'customizable' },
     { label: this.translate('menu.page.customizationSimple'), value: 'simple' },
   ]);
-  protected readonly imageOptions = computed<SegmentedControlOption[]>(() => [
-    { label: this.translate('menu.page.imageFilterAll'), value: 'all' },
-    { label: this.translate('menu.page.imageFilterWithImage'), value: 'with-image' },
-    { label: this.translate('menu.page.imageFilterWithoutImage'), value: 'without-image' },
-  ]);
   protected readonly productViewModeOptions = computed<SegmentedControlOption[]>(() => [
     { label: this.translate('menu.page.viewModes.cards'), value: 'cards' },
     { label: this.translate('menu.page.viewModes.compact'), value: 'compact' },
@@ -193,12 +187,12 @@ export class MenuPage {
   ]);
   protected readonly auditReport = computed(() => this.audit.buildReport(this.products(), this.modifierGroups(), this.comboDefinitions()));
   protected readonly auditCounters = computed(() => this.auditReport().counters);
+  protected readonly activeWarningCount = computed(() => this.auditCounters().reduce((sum, c) => sum + c.count, 0));
   protected readonly filteredProducts = computed(() => {
     const query = this.normalize(this.query());
     const categoryFilter = this.categoryFilter();
     const availabilityFilter = this.availabilityFilter();
     const customizationFilter = this.customizationFilter();
-    const imageFilter = this.imageFilter();
     const auditFilter = this.auditFilter();
     const reviewFilters = this.reviewFilters();
 
@@ -206,7 +200,6 @@ export class MenuPage {
       .filter((product) => categoryFilter === 'all' || product.categoryId === categoryFilter)
       .filter((product) => availabilityFilter === 'all' || (availabilityFilter === 'available' ? product.available : !product.available))
       .filter((product) => customizationFilter === 'all' || (customizationFilter === 'customizable' ? this.isCustomizable(product) : this.isSimple(product)))
-      .filter((product) => imageFilter === 'all' || (imageFilter === 'with-image' ? !!product.imageUrl : !product.imageUrl))
       .filter((product) => auditFilter === 'all' || this.productHasAuditWarning(product, auditFilter))
       .filter((product) => reviewFilters.every((filter) => this.matchesReviewFilter(product, filter)))
       .filter((product) => !query || this.productSearchText(product).includes(query));
@@ -494,13 +487,6 @@ export class MenuPage {
   protected setCustomizationFilter(value: string): void {
     if (value === 'all' || value === 'customizable' || value === 'simple') {
       this.customizationFilter.set(value);
-      this.resetSelection();
-    }
-  }
-
-  protected setImageFilter(value: string): void {
-    if (value === 'all' || value === 'with-image' || value === 'without-image') {
-      this.imageFilter.set(value);
       this.resetSelection();
     }
   }

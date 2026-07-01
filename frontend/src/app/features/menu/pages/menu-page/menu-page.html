@@ -40,9 +40,9 @@
           <app-spinner size="lg" variant="primary" />
         </div>
       } @else {
-      <div class="grid gap-4 lg:h-[calc(100dvh-7rem)] lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
         <!-- Lista de productos -->
-        <section class="grid content-start gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+        <section class="grid content-start gap-4 lg:pr-2">
           @if (isMobile()) {
             <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
               <app-search-input
@@ -105,29 +105,29 @@
                   (valueChange)="setCustomizationFilter($event)"
                 />
               </div>
-              <div class="grid gap-1">
-                <span class="theme-muted text-xs font-medium">{{ 'menu.page.imageFilter' | transloco }}</span>
-                <app-segmented-control
-                  [style.width]="'100%'"
-                  size="sm"
-                  variant="pill"
-                  [ariaLabel]="'menu.page.imageFilter' | transloco"
-                  [options]="imageOptions()"
-                  [value]="imageFilter()"
-                  (valueChange)="setImageFilter($event)"
-                />
-              </div>
             </div>
           </div>
 
           <!-- Botón nuevo producto -->
           }
 
-          <app-menu-health-panel
-            [counters]="auditCounters()"
-            [selectedFilter]="auditFilter()"
-            (filterSelected)="setAuditFilter($event)"
-          />
+          <div class="flex items-center">
+            <app-button variant="neutral" fill="outline" size="sm" (pressed)="reviewPanelOpen.update(v => !v)">
+              <app-icon name="fact_check" size="sm" [decorative]="true" />
+              {{ 'menu.page.reviewButton' | transloco }}
+              @if (activeWarningCount() > 0) {
+                <app-badge variant="warning" size="sm">{{ activeWarningCount() }}</app-badge>
+              }
+            </app-button>
+          </div>
+
+          @if (reviewPanelOpen()) {
+            <app-menu-health-panel
+              [counters]="auditCounters()"
+              [selectedFilter]="auditFilter()"
+              (filterSelected)="setAuditFilter($event)"
+            />
+          }
 
           <app-dialog
             [open]="mobileFiltersOpen()"
@@ -167,15 +167,6 @@
                 [value]="customizationFilter()"
                 (valueChange)="setCustomizationFilter($event)"
               />
-              <app-segmented-control
-                [style.width]="'100%'"
-                size="sm"
-                variant="pill"
-                [ariaLabel]="'menu.page.imageFilter' | transloco"
-                [options]="imageOptions()"
-                [value]="imageFilter()"
-                (valueChange)="setImageFilter($event)"
-              />
               <div class="grid gap-2">
                 <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.reviewFilters.title' | transloco }}</p>
                 <div class="flex flex-wrap gap-2">
@@ -207,38 +198,33 @@
           </app-dialog>
 
           @if (!isMobile()) {
-          <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
-            <div class="grid gap-2">
-              <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.reviewFilters.title' | transloco }}</p>
-              <div class="flex flex-wrap gap-2">
-                @for (filter of reviewFilterOptions(); track filter.value) {
-                  <app-button
-                    variant="neutral"
-                    [fill]="hasReviewFilter(filter.value) ? 'solid' : 'outline'"
-                    size="sm"
-                    (pressed)="toggleReviewFilter(filter.value)"
-                  >
-                    {{ filter.label }}
-                  </app-button>
-                }
+            @if (reviewPanelOpen()) {
+              <div class="grid gap-2">
+                <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.reviewFilters.title' | transloco }}</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (filter of reviewFilterOptions(); track filter.value) {
+                    <app-button
+                      variant="neutral"
+                      [fill]="hasReviewFilter(filter.value) ? 'solid' : 'outline'"
+                      size="sm"
+                      (pressed)="toggleReviewFilter(filter.value)"
+                    >
+                      {{ filter.label }}
+                    </app-button>
+                  }
+                </div>
               </div>
-            </div>
+            }
 
-            <div class="grid gap-2">
-              <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.viewModeLabel' | transloco }}</p>
-              <app-segmented-control
-                [style.width]="'100%'"
-                size="sm"
-                variant="pill"
-                [ariaLabel]="'menu.page.viewModeLabel' | transloco"
-                [options]="productViewModeOptions()"
-                [value]="productViewMode()"
-                (valueChange)="setProductViewMode($event)"
-              />
-            </div>
-          </div>
-
-          <div class="flex justify-end">
+          <div class="flex items-center justify-between gap-3">
+            <app-segmented-control
+              size="sm"
+              variant="pill"
+              [ariaLabel]="'menu.page.viewModeLabel' | transloco"
+              [options]="productViewModeOptions()"
+              [value]="productViewMode()"
+              (valueChange)="setProductViewMode($event)"
+            />
             <app-button variant="primary" fill="solid" size="sm" (pressed)="openCreateProduct()">
               <app-icon name="add" size="sm" [decorative]="true" />
               {{ 'menu.page.newProduct' | transloco }}
@@ -398,7 +384,7 @@
         </section>
 
         <!-- Panel de detalle (solo desktop ≥ lg) -->
-        <aside class="theme-panel h-fit self-start rounded-xl border p-5 shadow-sm lg:block lg:h-[calc(100dvh-7rem)] lg:overflow-y-auto" [class.hidden]="!showSideDetail()">
+        <aside class="theme-panel self-start rounded-xl border p-5 shadow-sm lg:block lg:sticky lg:top-28 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto" [class.hidden]="!showSideDetail()">
           @if (selectedProduct(); as product) {
             <ng-container *ngTemplateOutlet="productDetailTpl; context: { product }" />
           } @else {

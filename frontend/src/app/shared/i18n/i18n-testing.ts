@@ -1702,11 +1702,10 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   const clones = structuredClone(translations);
 
   clones['es'].menu.page.noImage = 'Sin imagen';
-  clones['es'].menu.page.imageFilter = 'Imagen';
-  clones['es'].menu.page.imageFilterAll = 'Todas';
   clones['es'].menu.page.imageFilterWithImage = 'Con imagen';
   clones['es'].menu.page.imageFilterWithoutImage = 'Sin imagen';
   clones['es'].menu.page.mobileFilters = 'Filtros';
+  clones['es'].menu.page.reviewButton = 'Revisar menú';
   clones['es'].menu.page.reviewFilters = {
     title: 'Atajos de revisión',
     comboOnly: 'Solo menús',
@@ -1762,11 +1761,10 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.product.form.modifierGroupsHint = 'Selecciona los grupos de modificadores que puede usar este producto.';
 
   clones['en'].menu.page.noImage = 'No image';
-  clones['en'].menu.page.imageFilter = 'Image';
-  clones['en'].menu.page.imageFilterAll = 'All';
   clones['en'].menu.page.imageFilterWithImage = 'With image';
   clones['en'].menu.page.imageFilterWithoutImage = 'Without image';
   clones['en'].menu.page.mobileFilters = 'Filters';
+  clones['en'].menu.page.reviewButton = 'Review menu';
   clones['en'].menu.page.reviewFilters = {
     title: 'Review shortcuts',
     comboOnly: 'Combos only',
@@ -1821,11 +1819,10 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.product.form.modifierGroupsHint = 'Select the modifier groups that this product can use.';
 
   clones['ca'].menu.page.noImage = 'Sense imatge';
-  clones['ca'].menu.page.imageFilter = 'Imatge';
-  clones['ca'].menu.page.imageFilterAll = 'Totes';
   clones['ca'].menu.page.imageFilterWithImage = 'Amb imatge';
   clones['ca'].menu.page.imageFilterWithoutImage = 'Sense imatge';
   clones['ca'].menu.page.mobileFilters = 'Filtres';
+  clones['ca'].menu.page.reviewButton = 'Revisar menú';
   clones['ca'].menu.page.reviewFilters = {
     title: 'Dreceres de revisió',
     comboOnly: 'Només menús',

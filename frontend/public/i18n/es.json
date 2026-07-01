@@ -705,11 +705,10 @@
       "customizationAll": "Todos",
       "customizationCustomizable": "Personalizables",
       "customizationSimple": "Simples",
-      "imageFilter": "Imagen",
-      "imageFilterAll": "Todas",
       "imageFilterWithImage": "Con imagen",
       "imageFilterWithoutImage": "Sin imagen",
       "mobileFilters": "Filtros",
+      "reviewButton": "Revisar menú",
       "reviewFilters": {
         "title": "Atajos de revisión",
         "comboOnly": "Solo menús",

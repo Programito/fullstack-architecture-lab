@@ -705,11 +705,10 @@
       "customizationAll": "All",
       "customizationCustomizable": "Customizable",
       "customizationSimple": "Simple",
-      "imageFilter": "Image",
-      "imageFilterAll": "All",
       "imageFilterWithImage": "With image",
       "imageFilterWithoutImage": "Without image",
       "mobileFilters": "Filters",
+      "reviewButton": "Review menu",
       "reviewFilters": {
         "title": "Review shortcuts",
         "comboOnly": "Combos only",

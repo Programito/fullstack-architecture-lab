@@ -705,11 +705,10 @@
       "customizationAll": "Tots",
       "customizationCustomizable": "Personalitzables",
       "customizationSimple": "Simples",
-      "imageFilter": "Imatge",
-      "imageFilterAll": "Totes",
       "imageFilterWithImage": "Amb imatge",
       "imageFilterWithoutImage": "Sense imatge",
       "mobileFilters": "Filtres",
+      "reviewButton": "Revisar menú",
       "reviewFilters": {
         "title": "Dreceres de revisió",
         "comboOnly": "Només menús",
