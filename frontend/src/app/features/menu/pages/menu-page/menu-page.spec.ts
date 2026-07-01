@@ -1,5 +1,6 @@
 ﻿import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
+import { signal } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
@@ -10,7 +11,17 @@ import {
   localizeMenuProducts,
   localizeModifierGroups,
 } from '../../services/menu-mock.service';
+import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 import { MenuPage } from './menu-page';
+
+const ACTIVE_RESTAURANT = {
+  id: 'r1',
+  name: 'MesaFlow Demo',
+  displayName: 'MesaFlow Demo',
+  timezone: 'Europe/Madrid',
+  currency: 'EUR',
+  isActive: true,
+};
 
 function buildMockMenuData(): MenuData {
   return {
@@ -81,6 +92,7 @@ describe('MenuPage', () => {
           },
         },
         { provide: MenuApiService, useValue: makeMockMenuApi(apiOverrides) },
+        { provide: RestaurantContextStore, useValue: { activeRestaurant: signal(ACTIVE_RESTAURANT).asReadonly() } },
       ],
     });
     await result.fixture.whenStable();

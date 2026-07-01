@@ -1,8 +1,8 @@
 import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { BehaviorSubject, forkJoin, map, switchMap } from 'rxjs';
+import { BehaviorSubject, combineLatest, filter, forkJoin, map, switchMap } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
@@ -25,6 +25,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast';
 import { MenuApiService, type MenuData, type RestaurantProductDetailDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
 import { MenuAuditService } from '../../services/menu-audit.service';
 import { MenuPricingService } from '../../services/menu-pricing.service';
+import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 
 type AvailabilityFilter = 'all' | 'available' | 'sold-out';
 type CustomizationFilter = 'all' | 'customizable' | 'simple';
@@ -46,6 +47,7 @@ export class MenuPage {
   private readonly transloco = inject(TranslocoService);
   private readonly bp = inject(BreakpointObserver);
   private readonly toast = inject(ToastService);
+  private readonly restaurantContext = inject(RestaurantContextStore);
 
   private readonly reloadTrigger = new BehaviorSubject<void>(undefined);
   private readonly _menuLoading = signal(true);
@@ -77,7 +79,8 @@ export class MenuPage {
   protected readonly comboDefinitions = computed<ComboProductDefinition[]>(() => this._menuData()?.comboProductDefinitions ?? []);
 
   constructor() {
-    this.reloadTrigger.pipe(
+    combineLatest([this.reloadTrigger, toObservable(this.restaurantContext.activeRestaurant)]).pipe(
+      filter(([, activeRestaurant]) => activeRestaurant !== null),
       switchMap(() =>
         forkJoin({
           menuData: this.menuApi.getMenu(),
