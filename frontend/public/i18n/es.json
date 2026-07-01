@@ -733,6 +733,11 @@
       "noChildCategories": "Sin subcategorías",
       "options": "opciones",
       "modifierType": "Tipo",
+      "newModifierGroup": "Nuevo grupo",
+      "deleteModifierGroupAriaLabel": "Eliminar grupo de modificadores",
+      "deleteModifierGroupTitle": "Eliminar grupo de modificadores",
+      "deleteModifierGroupDescription": "Se eliminará el grupo \"{{ name }}\" y todas sus opciones. Esta acción no se puede deshacer.",
+      "confirmDeleteModifierGroup": "Eliminar grupo",
       "slots": "slots",
       "comboReady": "Listo para vender",
       "comboGuideTitle": "Qué revisar en los combos",
@@ -868,6 +873,32 @@
         "deleteFailed": "No se pudo eliminar el artículo.",
         "alreadyInSection": "El artículo ya está en esa sección.",
         "addToSectionFailed": "No se pudo añadir el artículo a la sección."
+      }
+    },
+    "modifierGroup": {
+      "form": {
+        "createTitle": "Nuevo grupo de modificadores",
+        "nameLabel": "Nombre del grupo",
+        "namePlaceholder": "Nombre del grupo",
+        "typeLabel": "Tipo de selección",
+        "typeSingle": "Una opción",
+        "typeMultiple": "Varias opciones",
+        "requiredLabel": "Obligatorio",
+        "optionsLabel": "Opciones",
+        "addOption": "Añadir opción",
+        "removeOption": "Eliminar opción",
+        "optionName": "Nombre de la opción",
+        "optionPrice": "Precio adicional (€)",
+        "create": "Crear grupo"
+      },
+      "success": {
+        "created": "Grupo de modificadores creado.",
+        "deleted": "Grupo de modificadores eliminado."
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar el grupo. Inténtalo de nuevo.",
+        "deleteFailed": "No se pudo eliminar el grupo.",
+        "inUse": "El grupo está asignado a productos y no puede eliminarse."
       }
     }
   }

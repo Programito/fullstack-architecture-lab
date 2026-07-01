@@ -67,6 +67,12 @@ import { RestaurantProductsController } from './presentation/rest/restaurant-pro
 import { RestaurantCustomersController } from './presentation/rest/restaurant-customers.controller';
 import { RestaurantServiceController } from './presentation/rest/restaurant-service.controller';
 import { CreateProductImageUploadSignatureUseCase } from './application/use-cases/create-product-image-upload-signature.use-case';
+import { ListModifierGroupsUseCase } from './application/use-cases/list-modifier-groups.use-case';
+import { CreateModifierGroupUseCase } from './application/use-cases/create-modifier-group.use-case';
+import { DeleteModifierGroupUseCase } from './application/use-cases/delete-modifier-group.use-case';
+import { MODIFIER_GROUP_REPOSITORY } from './application/ports/modifier-group-repository.port';
+import { PrismaModifierGroupRepository } from './infrastructure/persistence/prisma-modifier-group.repository';
+import { RestaurantModifierGroupsController } from './presentation/rest/restaurant-modifier-groups.controller';
 
 @Module({
   imports: [IdentityModule],
@@ -79,6 +85,7 @@ import { CreateProductImageUploadSignatureUseCase } from './application/use-case
     RestaurantProductsController,
     RestaurantCustomersController,
     RestaurantServiceController,
+    RestaurantModifierGroupsController,
   ],
   providers: [
     ListRestaurantsUseCase,
@@ -131,6 +138,14 @@ import { CreateProductImageUploadSignatureUseCase } from './application/use-case
     SearchCustomersUseCase,
     CreateCustomerUseCase,
     CreateProductImageUploadSignatureUseCase,
+    ListModifierGroupsUseCase,
+    CreateModifierGroupUseCase,
+    DeleteModifierGroupUseCase,
+    PrismaModifierGroupRepository,
+    {
+      provide: MODIFIER_GROUP_REPOSITORY,
+      useExisting: PrismaModifierGroupRepository,
+    },
     {
       provide: CUSTOMER_REPOSITORY,
       useExisting: PrismaCustomerRepository,

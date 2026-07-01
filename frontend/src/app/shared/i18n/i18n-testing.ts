@@ -635,6 +635,11 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         noChildCategories: 'Sin subcategorías',
         options: 'opciones',
         modifierType: 'Tipo',
+        newModifierGroup: 'Nuevo grupo',
+        deleteModifierGroupAriaLabel: 'Eliminar grupo de modificadores',
+        deleteModifierGroupTitle: 'Eliminar grupo de modificadores',
+        deleteModifierGroupDescription: 'Se eliminará el grupo "{{ name }}" y todas sus opciones. Esta acción no se puede deshacer.',
+        confirmDeleteModifierGroup: 'Eliminar grupo',
         slots: 'slots',
         components: 'componentes',
         availableProducts: 'Productos disponibles',
@@ -1216,6 +1221,11 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         allergens: 'Allergens',
         modifiers: 'Modifiers',
         previewPrice: 'Preview price',
+        newModifierGroup: 'New group',
+        deleteModifierGroupAriaLabel: 'Delete modifier group',
+        deleteModifierGroupTitle: 'Delete modifier group',
+        deleteModifierGroupDescription: 'The group "{{ name }}" and all its options will be deleted. This action cannot be undone.',
+        confirmDeleteModifierGroup: 'Delete group',
         noModifiers: 'This product has no modifiers.',
         noResults: 'No products match the filters.',
         noSelection: 'Select a product to review its details.',
@@ -1608,6 +1618,11 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         allergens: 'Al·lergògens',
         modifiers: 'Modificadors',
         previewPrice: 'Preu preview',
+        newModifierGroup: 'Nou grup',
+        deleteModifierGroupAriaLabel: 'Eliminar grup de modificadors',
+        deleteModifierGroupTitle: 'Eliminar grup de modificadors',
+        deleteModifierGroupDescription: 'S\'eliminarà el grup "{{ name }}" i totes les seves opcions. Aquesta acció no es pot desfer.',
+        confirmDeleteModifierGroup: 'Eliminar grup',
         noModifiers: 'Aquest producte no té modificadors.',
         noResults: 'No hi ha productes que coincideixin amb els filtres.',
         noSelection: 'Selecciona un producte per revisar-ne el detall.',
@@ -1760,6 +1775,30 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.product.form.uploadFailed = 'No se pudo subir la imagen. Inténtalo de nuevo.';
   clones['es'].menu.product.form.modifierGroupsHint = 'Selecciona los grupos de modificadores que puede usar este producto.';
 
+  clones['es'].menu.modifierGroup = {
+    form: {
+      createTitle: 'Nuevo grupo de modificadores',
+      nameLabel: 'Nombre del grupo',
+      namePlaceholder: 'Nombre del grupo',
+      typeLabel: 'Tipo de selección',
+      typeSingle: 'Una opción',
+      typeMultiple: 'Varias opciones',
+      requiredLabel: 'Obligatorio',
+      optionsLabel: 'Opciones',
+      addOption: 'Añadir opción',
+      removeOption: 'Eliminar opción',
+      optionName: 'Nombre de la opción',
+      optionPrice: 'Precio adicional (€)',
+      create: 'Crear grupo',
+    },
+    success: { created: 'Grupo de modificadores creado.', deleted: 'Grupo de modificadores eliminado.' },
+    errors: {
+      saveFailed: 'No se pudo guardar el grupo. Inténtalo de nuevo.',
+      deleteFailed: 'No se pudo eliminar el grupo.',
+      inUse: 'El grupo está asignado a productos y no puede eliminarse.',
+    },
+  };
+
   clones['en'].menu.page.noImage = 'No image';
   clones['en'].menu.page.imageFilterWithImage = 'With image';
   clones['en'].menu.page.imageFilterWithoutImage = 'Without image';
@@ -1817,6 +1856,30 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.product.form.imageTooSmall = 'The image is too small. Use a higher resolution image.';
   clones['en'].menu.product.form.uploadFailed = 'The image could not be uploaded. Please try again.';
   clones['en'].menu.product.form.modifierGroupsHint = 'Select the modifier groups that this product can use.';
+
+  clones['en'].menu.modifierGroup = {
+    form: {
+      createTitle: 'New modifier group',
+      nameLabel: 'Group name',
+      namePlaceholder: 'Group name',
+      typeLabel: 'Selection type',
+      typeSingle: 'One option',
+      typeMultiple: 'Multiple options',
+      requiredLabel: 'Required',
+      optionsLabel: 'Options',
+      addOption: 'Add option',
+      removeOption: 'Remove option',
+      optionName: 'Option name',
+      optionPrice: 'Additional price (€)',
+      create: 'Create group',
+    },
+    success: { created: 'Modifier group created.', deleted: 'Modifier group deleted.' },
+    errors: {
+      saveFailed: 'The group could not be saved. Please try again.',
+      deleteFailed: 'The group could not be deleted.',
+      inUse: 'The group is assigned to products and cannot be deleted.',
+    },
+  };
 
   clones['ca'].menu.page.noImage = 'Sense imatge';
   clones['ca'].menu.page.imageFilterWithImage = 'Amb imatge';
@@ -1876,6 +1939,30 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['ca'].menu.product.form.imageTooSmall = 'La imatge es massa petita. Fes servir una resolucio mes gran.';
   clones['ca'].menu.product.form.uploadFailed = "No s'ha pogut pujar la imatge. Torna-ho a provar.";
   clones['ca'].menu.product.form.modifierGroupsHint = 'Selecciona els grups de modificadors que pot fer servir aquest producte.';
+
+  clones['ca'].menu.modifierGroup = {
+    form: {
+      createTitle: 'Nou grup de modificadors',
+      nameLabel: 'Nom del grup',
+      namePlaceholder: 'Nom del grup',
+      typeLabel: 'Tipus de selecció',
+      typeSingle: 'Una opció',
+      typeMultiple: 'Diverses opcions',
+      requiredLabel: 'Obligatori',
+      optionsLabel: 'Opcions',
+      addOption: 'Afegir opció',
+      removeOption: 'Eliminar opció',
+      optionName: "Nom de l'opció",
+      optionPrice: 'Preu addicional (€)',
+      create: 'Crear grup',
+    },
+    success: { created: 'Grup de modificadors creat.', deleted: 'Grup de modificadors eliminat.' },
+    errors: {
+      saveFailed: "No s'ha pogut desar el grup. Torna-ho a intentar.",
+      deleteFailed: "No s'ha pogut eliminar el grup.",
+      inUse: "El grup està assignat a productes i no es pot eliminar.",
+    },
+  };
 
   return clones;
 }

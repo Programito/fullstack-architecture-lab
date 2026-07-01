@@ -22,7 +22,8 @@ import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } fro
 import type { CreateProductInput, UpdateProductInput } from '../../models/product.model';
 import { mapHttpError } from '../../../../core/errors/http-error.mapper';
 import { ToastService } from '../../../../shared/ui/toast/toast';
-import { MenuApiService, type MenuData, type RestaurantProductDetailDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
+import { MenuApiService, type CreateModifierGroupRequest, type MenuData, type RestaurantProductDetailDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
+import { ModifierGroupFormDialog } from '../../components/modifier-group-form-dialog/modifier-group-form-dialog';
 import { MenuAuditService } from '../../services/menu-audit.service';
 import { MenuPricingService } from '../../services/menu-pricing.service';
 import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
@@ -36,7 +37,7 @@ type PreparationRoute = Product['preparationPolicy']['route'];
 
 @Component({
   selector: 'app-menu-page',
-  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, MenuHealthPanel, NgTemplateOutlet, ProductFormDialog, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
+  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, MenuHealthPanel, ModifierGroupFormDialog, NgTemplateOutlet, ProductFormDialog, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
   templateUrl: './menu-page.html',
 })
 export class MenuPage {
@@ -115,6 +116,11 @@ export class MenuPage {
   protected readonly addToSectionOpen = signal(false);
   protected readonly addToSectionLoading = signal(false);
   protected readonly modifierGroupsForForm = computed(() => this.modifierGroups());
+  protected readonly modifierGroupFormOpen = signal(false);
+  protected readonly modifierGroupFormLoading = signal(false);
+  protected readonly modifierGroupToDelete = signal<ModifierGroup | null>(null);
+  protected readonly deleteModifierGroupOpen = signal(false);
+  protected readonly deleteModifierGroupLoading = signal(false);
 
   protected readonly isMobile = toSignal(
     this.bp.observe('(max-width: 1023px)').pipe(map((r) => r.matches)),
@@ -464,6 +470,54 @@ export class MenuPage {
     if (!product.restaurantProductId) return;
     this.menuApi.toggleAvailability(product.restaurantProductId, !product.available).subscribe({
       complete: () => this.reloadMenuData(),
+    });
+  }
+
+  protected openCreateModifierGroup(): void {
+    this.modifierGroupFormOpen.set(true);
+  }
+
+  protected submitModifierGroupForm(data: CreateModifierGroupRequest): void {
+    this.modifierGroupFormLoading.set(true);
+    this.menuApi.createModifierGroup(data).subscribe({
+      complete: () => {
+        this.modifierGroupFormLoading.set(false);
+        this.modifierGroupFormOpen.set(false);
+        this.reloadMenuData();
+        this.toast.success({ title: this.translate('menu.modifierGroup.success.created') });
+      },
+      error: () => {
+        this.modifierGroupFormLoading.set(false);
+        this.toast.danger({ title: this.translate('menu.modifierGroup.errors.saveFailed') });
+      },
+    });
+  }
+
+  protected openDeleteModifierGroup(group: ModifierGroup): void {
+    this.modifierGroupToDelete.set(group);
+    this.deleteModifierGroupOpen.set(true);
+  }
+
+  protected confirmDeleteModifierGroup(): void {
+    const group = this.modifierGroupToDelete();
+    if (!group) return;
+    this.deleteModifierGroupLoading.set(true);
+    this.menuApi.deleteModifierGroup(group.id).subscribe({
+      complete: () => {
+        this.deleteModifierGroupLoading.set(false);
+        this.deleteModifierGroupOpen.set(false);
+        this.modifierGroupToDelete.set(null);
+        this.reloadMenuData();
+        this.toast.success({ title: this.translate('menu.modifierGroup.success.deleted') });
+      },
+      error: (err: unknown) => {
+        this.deleteModifierGroupLoading.set(false);
+        const appError = mapHttpError(err);
+        const key = appError.type === 'conflict'
+          ? 'menu.modifierGroup.errors.inUse'
+          : 'menu.modifierGroup.errors.deleteFailed';
+        this.toast.danger({ title: this.translate(key) });
+      },
     });
   }
 

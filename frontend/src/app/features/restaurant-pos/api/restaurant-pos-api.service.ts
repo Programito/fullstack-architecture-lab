@@ -39,6 +39,8 @@ import type {
   UpdateRestaurantOrderLineRequest,
   UpdateRestaurantProductRequest,
   UpdateServiceWindowsRequest,
+  CreateModifierGroupRequest,
+  RestaurantMenuModifierGroupDto,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -238,6 +240,18 @@ export class RestaurantPosApiService {
 
   deleteRestaurantProduct(restaurantId: string, productId: string): Observable<void> {
     return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}`);
+  }
+
+  listModifierGroups(restaurantId: string): Observable<RestaurantMenuModifierGroupDto[]> {
+    return this.http.get<RestaurantMenuModifierGroupDto[]>(`${this.restaurantsUrl}/${restaurantId}/modifier-groups`);
+  }
+
+  createModifierGroup(restaurantId: string, body: CreateModifierGroupRequest): Observable<RestaurantMenuModifierGroupDto> {
+    return this.http.post<RestaurantMenuModifierGroupDto>(`${this.restaurantsUrl}/${restaurantId}/modifier-groups`, body);
+  }
+
+  deleteModifierGroup(restaurantId: string, groupId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/modifier-groups/${groupId}`);
   }
 
   createMenuSection(restaurantId: string, menuId: string, body: CreateMenuSectionRequest): Observable<MenuSectionAdminDto> {

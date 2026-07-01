@@ -37,7 +37,10 @@ export type ApplicationErrorCode =
   | 'reservation_conflict'
   | 'reservation_in_past'
   | 'insufficient_table_capacity'
-  | 'outside_service_hours';
+  | 'outside_service_hours'
+  | 'modifier_group_not_found'
+  | 'modifier_group_name_taken'
+  | 'modifier_group_in_use';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -151,4 +154,16 @@ export function insufficientTableCapacity(tableId: string, required: number, ava
 
 export function outsideServiceHours(): ApplicationError {
   return applicationError('outside_service_hours', 'Reservation does not fall within any active service window.');
+}
+
+export function modifierGroupNotFound(groupId: string): ApplicationError {
+  return applicationError('modifier_group_not_found', `Modifier group "${groupId}" was not found.`, { groupId });
+}
+
+export function modifierGroupNameTaken(name: string): ApplicationError {
+  return applicationError('modifier_group_name_taken', `A modifier group named "${name}" already exists in this organization.`, { name });
+}
+
+export function modifierGroupInUse(groupId: string): ApplicationError {
+  return applicationError('modifier_group_in_use', `Modifier group "${groupId}" is assigned to products and cannot be deleted.`, { groupId });
 }

@@ -578,25 +578,64 @@
         </p>
       </app-dialog>
     } @else if (activeTab() === 'modifiers') {
-      <section class="grid gap-3 md:grid-cols-2">
-        @for (group of modifierGroups(); track group.id) {
-          <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <app-icon name="tune" size="sm" class="theme-muted shrink-0" />
-                <h2 class="theme-title text-base font-semibold">{{ group.name }}</h2>
+      <div class="grid gap-4">
+        <div class="flex items-center justify-between gap-3">
+          <p class="theme-muted text-sm">{{ modifierGroups().length }} {{ 'menu.page.modifiers' | transloco }}</p>
+          <app-button variant="primary" fill="solid" size="sm" (pressed)="openCreateModifierGroup()">
+            <app-icon name="add" size="sm" [decorative]="true" />
+            {{ 'menu.page.newModifierGroup' | transloco }}
+          </app-button>
+        </div>
+
+        <section class="grid gap-3 md:grid-cols-2">
+          @for (group of modifierGroups(); track group.id) {
+            <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <app-icon name="tune" size="sm" class="theme-muted shrink-0" />
+                  <h2 class="theme-title text-base font-semibold">{{ group.name }}</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                  <app-badge variant="secondary" size="sm">{{ group.options.length }} {{ 'menu.page.options' | transloco }}</app-badge>
+                  <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'menu.page.deleteModifierGroupAriaLabel' | transloco" (pressed)="openDeleteModifierGroup(group)">
+                    <app-icon name="delete" size="sm" [decorative]="true" />
+                  </app-button>
+                </div>
               </div>
-              <app-badge variant="secondary" size="sm">{{ group.options.length }} {{ 'menu.page.options' | transloco }}</app-badge>
-            </div>
-            <p class="theme-muted text-sm">{{ 'menu.page.modifierType' | transloco }}: {{ group.type }}</p>
-            <div class="flex flex-wrap gap-1.5">
-              @for (option of group.options; track option.id) {
-                <app-badge variant="neutral" size="sm">{{ option.name }}</app-badge>
-              }
-            </div>
-          </article>
-        }
-      </section>
+              <p class="theme-muted text-sm">{{ 'menu.page.modifierType' | transloco }}: {{ group.type }}</p>
+              <div class="flex flex-wrap gap-1.5">
+                @for (option of group.options; track option.id) {
+                  <app-badge variant="neutral" size="sm">{{ option.name }}</app-badge>
+                }
+              </div>
+            </article>
+          }
+        </section>
+
+        <app-modifier-group-form-dialog
+          [open]="modifierGroupFormOpen()"
+          [loading]="modifierGroupFormLoading()"
+          (closed)="modifierGroupFormOpen.set(false)"
+          (confirmed)="submitModifierGroupForm($event)"
+        />
+
+        <app-dialog
+          [open]="deleteModifierGroupOpen()"
+          [title]="'menu.page.deleteModifierGroupTitle' | transloco"
+          [showActions]="true"
+          [confirmLabel]="'menu.page.confirmDeleteModifierGroup' | transloco"
+          [confirmLoading]="deleteModifierGroupLoading()"
+          [cancelLabel]="'menu.product.form.cancel' | transloco"
+          variant="danger"
+          (closed)="deleteModifierGroupOpen.set(false)"
+          (cancelled)="deleteModifierGroupOpen.set(false)"
+          (confirmed)="confirmDeleteModifierGroup()"
+        >
+          <p class="theme-muted text-sm">
+            {{ 'menu.page.deleteModifierGroupDescription' | transloco: { name: modifierGroupToDelete()?.name ?? '' } }}
+          </p>
+        </app-dialog>
+      </div>
     } @else if (activeTab() === 'combos') {
       <section class="grid gap-3">
         <div class="grid gap-3 md:grid-cols-3">

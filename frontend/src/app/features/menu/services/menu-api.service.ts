@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, type Observable } from 'rxjs';
 
 import type {
+  CreateModifierGroupRequest,
   CreateRestaurantProductRequest,
   MenuSectionAdminDto,
   RestaurantMenuDto,
@@ -25,7 +26,7 @@ export type MenuData = {
   comboProductDefinitions: ComboProductDefinition[];
 };
 
-export type { CreateRestaurantProductRequest, MenuSectionAdminDto, RestaurantProductDetailDto, RestaurantProductSummaryDto, UpdateRestaurantProductRequest };
+export type { CreateModifierGroupRequest, CreateRestaurantProductRequest, MenuSectionAdminDto, RestaurantMenuModifierGroupDto, RestaurantProductDetailDto, RestaurantProductSummaryDto, UpdateRestaurantProductRequest };
 
 @Injectable({ providedIn: 'root' })
 export class MenuApiService {
@@ -84,6 +85,14 @@ export class MenuApiService {
 
   deleteProduct(productId: string): Observable<void> {
     return this.api.deleteRestaurantProduct(this.restaurantId, productId);
+  }
+
+  createModifierGroup(data: CreateModifierGroupRequest): Observable<RestaurantMenuModifierGroupDto> {
+    return this.api.createModifierGroup(this.restaurantId, data);
+  }
+
+  deleteModifierGroup(groupId: string): Observable<void> {
+    return this.api.deleteModifierGroup(this.restaurantId, groupId);
   }
 }
 

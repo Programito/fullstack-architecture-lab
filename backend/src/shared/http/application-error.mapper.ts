@@ -42,6 +42,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'menu_section_not_found':
     case 'menu_item_not_found':
     case 'customer_not_found':
+    case 'modifier_group_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':
@@ -52,6 +53,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'product_name_taken':
     case 'customer_already_exists':
     case 'reservation_conflict':
+    case 'modifier_group_name_taken':
+    case 'modifier_group_in_use':
       return new ConflictException(error.message);
 
     case 'payment_exceeds_balance':

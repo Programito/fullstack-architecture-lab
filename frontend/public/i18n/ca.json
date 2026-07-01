@@ -733,6 +733,11 @@
       "noChildCategories": "Sense subcategories",
       "options": "opcions",
       "modifierType": "Tipus",
+      "newModifierGroup": "Nou grup",
+      "deleteModifierGroupAriaLabel": "Eliminar grup de modificadors",
+      "deleteModifierGroupTitle": "Eliminar grup de modificadors",
+      "deleteModifierGroupDescription": "S'eliminarà el grup \"{{ name }}\" i totes les seves opcions. Aquesta acció no es pot desfer.",
+      "confirmDeleteModifierGroup": "Eliminar grup",
       "slots": "slots",
       "comboReady": "Llesta per vendre",
       "comboGuideTitle": "Què revisar als combos",
@@ -868,6 +873,32 @@
         "deleteFailed": "No s'ha pogut eliminar l'article.",
         "alreadyInSection": "L'article ja és a aquesta secció.",
         "addToSectionFailed": "No s'ha pogut afegir l'article a la secció."
+      }
+    },
+    "modifierGroup": {
+      "form": {
+        "createTitle": "Nou grup de modificadors",
+        "nameLabel": "Nom del grup",
+        "namePlaceholder": "Nom del grup",
+        "typeLabel": "Tipus de selecció",
+        "typeSingle": "Una opció",
+        "typeMultiple": "Diverses opcions",
+        "requiredLabel": "Obligatori",
+        "optionsLabel": "Opcions",
+        "addOption": "Afegir opció",
+        "removeOption": "Eliminar opció",
+        "optionName": "Nom de l'opció",
+        "optionPrice": "Preu addicional (€)",
+        "create": "Crear grup"
+      },
+      "success": {
+        "created": "Grup de modificadors creat.",
+        "deleted": "Grup de modificadors eliminat."
+      },
+      "errors": {
+        "saveFailed": "No s'ha pogut desar el grup. Torna-ho a intentar.",
+        "deleteFailed": "No s'ha pogut eliminar el grup.",
+        "inUse": "El grup està assignat a productes i no es pot eliminar."
       }
     }
   }

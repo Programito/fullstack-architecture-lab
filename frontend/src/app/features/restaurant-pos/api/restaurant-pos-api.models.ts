@@ -536,3 +536,19 @@ export type ServiceWindowDto = {
 export type UpdateServiceWindowsRequest = {
   windows: Array<{ name: string; startTime: string; endTime: string }>;
 };
+
+// ── Modifier groups ───────────────────────────────────────────────────────────
+
+export type CreateModifierGroupOptionRequest = {
+  name: string;
+  priceDeltaCents: number;
+};
+
+export type CreateModifierGroupRequest = {
+  name: string;
+  selectionType: 'single' | 'multiple';
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: CreateModifierGroupOptionRequest[];
+};

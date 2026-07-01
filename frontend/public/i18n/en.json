@@ -733,6 +733,11 @@
       "noChildCategories": "No subcategories",
       "options": "options",
       "modifierType": "Type",
+      "newModifierGroup": "New group",
+      "deleteModifierGroupAriaLabel": "Delete modifier group",
+      "deleteModifierGroupTitle": "Delete modifier group",
+      "deleteModifierGroupDescription": "The group \"{{ name }}\" and all its options will be deleted. This action cannot be undone.",
+      "confirmDeleteModifierGroup": "Delete group",
       "slots": "slots",
       "comboReady": "Ready to sell",
       "comboGuideTitle": "What to review in combos",
@@ -868,6 +873,32 @@
         "deleteFailed": "The item could not be deleted.",
         "alreadyInSection": "The item is already in that section.",
         "addToSectionFailed": "The item could not be added to the section."
+      }
+    },
+    "modifierGroup": {
+      "form": {
+        "createTitle": "New modifier group",
+        "nameLabel": "Group name",
+        "namePlaceholder": "Group name",
+        "typeLabel": "Selection type",
+        "typeSingle": "One option",
+        "typeMultiple": "Multiple options",
+        "requiredLabel": "Required",
+        "optionsLabel": "Options",
+        "addOption": "Add option",
+        "removeOption": "Remove option",
+        "optionName": "Option name",
+        "optionPrice": "Additional price (€)",
+        "create": "Create group"
+      },
+      "success": {
+        "created": "Modifier group created.",
+        "deleted": "Modifier group deleted."
+      },
+      "errors": {
+        "saveFailed": "The group could not be saved. Please try again.",
+        "deleteFailed": "The group could not be deleted.",
+        "inUse": "The group is assigned to products and cannot be deleted."
       }
     }
   }

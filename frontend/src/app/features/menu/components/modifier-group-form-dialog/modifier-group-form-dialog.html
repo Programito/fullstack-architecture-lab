@@ -1,0 +1,87 @@
+<app-dialog
+  [open]="open()"
+  [title]="'menu.modifierGroup.form.createTitle' | transloco"
+  [showActions]="true"
+  [confirmLabel]="'menu.modifierGroup.form.create' | transloco"
+  [confirmDisabled]="!isValid()"
+  [confirmLoading]="loading()"
+  [cancelLabel]="'menu.product.form.cancel' | transloco"
+  (closed)="closed.emit()"
+  (cancelled)="closed.emit()"
+  (confirmed)="handleConfirm()"
+>
+  <div class="grid gap-4">
+    <app-input
+      [label]="'menu.modifierGroup.form.nameLabel' | transloco"
+      [placeholder]="'menu.modifierGroup.form.namePlaceholder' | transloco"
+      [value]="name()"
+      [disabled]="loading()"
+      (valueChange)="name.set($event)"
+    />
+
+    <app-select
+      [label]="'menu.modifierGroup.form.typeLabel' | transloco"
+      [options]="selectionTypeOptions"
+      [value]="selectionType()"
+      [disabled]="loading()"
+      (valueChange)="selectionType.set($event === 'multiple' ? 'multiple' : 'single')"
+    />
+
+    <app-switch
+      [label]="'menu.modifierGroup.form.requiredLabel' | transloco"
+      [checked]="isRequired()"
+      [disabled]="loading()"
+      (checkedChange)="isRequired.set($event)"
+    />
+
+    <div class="grid gap-2">
+      <p class="theme-label text-sm font-medium">{{ 'menu.modifierGroup.form.optionsLabel' | transloco }}</p>
+
+      @for (option of options(); track $index) {
+        <div class="flex items-end gap-2">
+          <div class="min-w-0 flex-1">
+            <app-input
+              [label]="$index === 0 ? ('menu.modifierGroup.form.optionName' | transloco) : ''"
+              [placeholder]="'menu.modifierGroup.form.optionName' | transloco"
+              [value]="option.name"
+              [disabled]="loading()"
+              (valueChange)="updateOptionName($index, $event)"
+            />
+          </div>
+          <div class="w-24 shrink-0">
+            <app-input
+              [label]="$index === 0 ? ('menu.modifierGroup.form.optionPrice' | transloco) : ''"
+              [placeholder]="'0.00'"
+              [value]="option.priceDeltaCents === 0 ? '' : (option.priceDeltaCents / 100).toFixed(2)"
+              [disabled]="loading()"
+              (valueChange)="updateOptionPrice($index, $event)"
+            />
+          </div>
+          @if (options().length > 1) {
+            <app-button
+              variant="neutral"
+              fill="clear"
+              size="sm"
+              [ariaLabel]="'menu.modifierGroup.form.removeOption' | transloco"
+              [disabled]="loading()"
+              (pressed)="removeOption($index)"
+            >
+              <app-icon name="close" size="sm" [decorative]="true" />
+            </app-button>
+          }
+        </div>
+      }
+
+      <app-button
+        variant="neutral"
+        fill="outline"
+        size="sm"
+        [disabled]="loading()"
+        (pressed)="addOption()"
+      >
+        <app-icon name="add" size="sm" [decorative]="true" />
+        {{ 'menu.modifierGroup.form.addOption' | transloco }}
+      </app-button>
+    </div>
+  </div>
+</app-dialog>
