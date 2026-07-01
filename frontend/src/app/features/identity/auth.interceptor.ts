@@ -17,13 +17,14 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     || request.url.includes('/auth/demo-login')
     || request.url.includes('/auth/refresh')
     || request.url.includes('/auth/public-config');
-  const authorizedRequest = token && !isAuthRequest
+  const isOwnApi = !request.url.startsWith('http') || request.url.startsWith(window.location.origin);
+  const authorizedRequest = token && !isAuthRequest && isOwnApi
     ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : request;
 
   return next(authorizedRequest).pipe(
     catchError((error: unknown) => {
-      if (!(error instanceof HttpErrorResponse) || error.status !== 401 || isAuthRequest || refreshInProgress) {
+      if (!(error instanceof HttpErrorResponse) || error.status !== 401 || isAuthRequest || !isOwnApi || refreshInProgress) {
         return throwError(() => error);
       }
       refreshInProgress = true;
