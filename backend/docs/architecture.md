@@ -204,6 +204,7 @@ cada archivo bajo 150 líneas:
 | `RestaurantFloorController` | `restaurants/:id` | Suelo, service floor, service points |
 | `RestaurantReservationsController` | `restaurants/:id` | Agenda de reservas |
 | `RestaurantProductsController` | `restaurants/:id` | Catálogo de productos |
+| `RestaurantModifierGroupsController` | `restaurants/:id` | CRUD de grupos de modificadores |
 | `RestaurantCustomersController` | `restaurants/:id` | Búsqueda y alta de clientes |
 | `RestaurantServiceController` | `restaurants/:id` | Service windows |
 
@@ -224,6 +225,9 @@ HTTP en `application-error.mapper.ts`:
 | `outside_service_hours` | 422 | Fuera de franjas de servicio |
 | `invalid_order_state` | 422 | Transición de pedido no permitida |
 | `product_not_found` | 404 | Producto no encontrado |
+| `modifier_group_not_found` | 404 | Grupo de modificadores no encontrado |
+| `modifier_group_name_taken` | 409 | Ya existe un grupo con ese nombre en la organización |
+| `modifier_group_in_use` | 409 | El grupo está asignado a al menos un producto |
 
 Los casos de uso devuelven `Result<T, ApplicationError>` usando el tipo `Result` de
 `shared/result/result.ts`. El adaptador HTTP convierte `err(applicationError)` en la excepción

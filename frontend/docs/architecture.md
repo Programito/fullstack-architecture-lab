@@ -115,6 +115,7 @@ Estructura actual:
 ```txt
 features/menu/
   components/combo-customizer-dialog/
+  components/modifier-group-form-dialog/
   components/product-customizer-dialog/
   models/
     combo.model.ts
@@ -219,6 +220,9 @@ Métodos expuestos por `MenuApiService`:
 | `createProduct(data)` | Crea producto en el catálogo |
 | `updateProduct(productId, data)` | Actualiza campos del producto |
 | `deleteProduct(productId)` | Elimina producto del catálogo |
+| `listModifierGroups()` | Lista grupos de modificadores de la organización |
+| `createModifierGroup(data)` | Crea un grupo con sus opciones iniciales |
+| `deleteModifierGroup(groupId)` | Elimina un grupo (falla si está en uso) |
 
 ### Carga paralela del catálogo
 
@@ -306,6 +310,35 @@ Todas las mutaciones muestran un toast de éxito en `complete` y un toast de err
 errores 409 se distinguen por `mapHttpError(err).type === 'conflict'` para dar un mensaje más
 específico (nombre duplicado, producto ya en sección).
 
+### Estado de la pestaña Modificadores
+
+```mermaid
+stateDiagram-v2
+  [*] --> Listado : menú cargado
+  Listado --> FormularioNuevo : openCreateModifierGroup()
+  FormularioNuevo --> Listado : closed
+  FormularioNuevo --> Listado : confirmed → createModifierGroup() → reload
+  Listado --> ConfirmarEliminar : openDeleteModifierGroup(group)
+  ConfirmarEliminar --> Listado : cancelDeleteModifierGroup()
+  ConfirmarEliminar --> Listado : confirmDeleteModifierGroup() → deleteModifierGroup() → reload
+```
+
+Signals de grupos de modificadores en `MenuPage`:
+
+| Signal | Tipo | Descripción |
+|---|---|---|
+| `modifierGroupFormOpen` | `boolean` | Visibilidad del diálogo `ModifierGroupFormDialog` |
+| `modifierGroupFormLoading` | `boolean` | Spinner del botón guardar del diálogo |
+| `modifierGroupToDelete` | `RestaurantMenuModifierGroupDto \| null` | Grupo pendiente de confirmación |
+| `deleteModifierGroupOpen` | `boolean` | Visibilidad del diálogo de borrado |
+| `deleteModifierGroupLoading` | `boolean` | Spinner del botón confirmar borrado |
+
+`ModifierGroupFormDialog` (`components/modifier-group-form-dialog/`) mantiene su propio estado
+de formulario con signals (`name`, `selectionType`, `isRequired`, `options`) y emite `confirmed`
+con `CreateModifierGroupRequest` cuando el usuario confirma. La validez (`isValid`) requiere nombre
+no vacío y al menos una opción con nombre. Un `effect()` limpia el formulario cada vez que `open`
+pasa a `true`.
+
 ### Reglas de frontera
 
 - `MenuApiService` no transforma datos de dominio; mapea las respuestas DTO directamente.
@@ -313,6 +346,42 @@ específico (nombre duplicado, producto ya en sección).
 - El `menuId` se obtiene del menú cargado (no hardcodeado) para soportar múltiples menús.
 - La recarga siempre relanza `forkJoin(getMenu(), listProducts())` para mantener ambas listas
   sincronizadas tras cualquier mutación.
+- Los grupos de modificadores se cargan con `listModifierGroups()` en el mismo `forkJoin`
+  de inicialización; sus mutaciones también relanza la carga completa.
+
+## Interceptor HTTP de autenticación
+
+`authInterceptor` (`features/identity/auth.interceptor.ts`) añade la cabecera
+`Authorization: Bearer <token>` a todas las peticiones hacia la propia API, y gestiona el refresco
+de token ante respuestas `401`.
+
+```mermaid
+flowchart LR
+  Req["HttpRequest"]
+  Check{"¿URL propia\ny no es /auth/*?"}
+  AddAuth["Clona con\nAuthorization: Bearer"]
+  Pass["Pasa sin cabecera"]
+  Next["next(request)"]
+  Err401{"401?"}
+  Refresh["api.refresh()"]
+  Retry["Reintenta con\nnuevo token"]
+  Logout["identity.clear()\nnaviga /login"]
+
+  Req --> Check
+  Check -->|sí| AddAuth --> Next
+  Check -->|no| Pass --> Next
+  Next --> Err401
+  Err401 -->|sí, URL propia| Refresh
+  Refresh -->|ok| Retry
+  Refresh -->|falla| Logout
+  Err401 -->|no o URL externa| Err401
+```
+
+**Regla de URL propia:** una URL se considera propia cuando es relativa (no comienza por `http`) o
+cuando su origen coincide con `window.location.origin`. Las peticiones a servicios externos como
+`https://api.cloudinary.com` no reciben la cabecera y sus errores `401` no activan el refresco de
+token. Esto evita que las cabeceras Bearer interfieran con esquemas de autenticación propios de
+esos servicios (firma Cloudinary, etc.).
 
 ## API de Pedidos Persistentes
 

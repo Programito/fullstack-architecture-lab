@@ -268,6 +268,95 @@ Los endpoints de admin de menú y producto lanzan errores alineados con `applica
 | `restaurant_product_not_found` | 404 | El producto no existe en el restaurante |
 | `product_name_taken` | 409 | Ya existe un producto con ese nombre en la organización |
 
+## Grupos de modificadores
+
+Los grupos de modificadores pertenecen a la **organización** y se resuelven desde el `restaurantId`
+del scope. Un grupo define un conjunto de opciones que se pueden aplicar a productos
+(`single` obliga a elegir una; `multiple` permite varias).
+
+- `GET /api/v1/restaurants/:id/modifier-groups`
+  Devuelve todos los grupos de modificadores de la organización a la que pertenece el restaurante.
+  Requiere autenticación.
+
+- `POST /api/v1/restaurants/:id/modifier-groups`
+  Crea un nuevo grupo con sus opciones iniciales. Requiere autenticación y permiso `menu`.
+  Lanza `409` si ya existe un grupo con el mismo nombre en la organización.
+
+- `DELETE /api/v1/restaurants/:id/modifier-groups/:gid`
+  Elimina el grupo. Lanza `409` si el grupo está asignado a algún producto.
+  Devuelve `204 No Content`.
+
+### Contrato de creación
+
+`POST /api/v1/restaurants/:id/modifier-groups` acepta:
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `name` | `string` | sí | Nombre único en la organización. |
+| `selectionType` | `'single' \| 'multiple'` | sí | Tipo de selección. |
+| `minSelections` | `integer ≥ 0` | sí | Mínimo de opciones a elegir. |
+| `maxSelections` | `integer ≥ 1` | sí | Máximo de opciones a elegir. |
+| `isRequired` | `boolean` | sí | Si el grupo debe resolverse antes de confirmar el producto. |
+| `options` | `CreateModifierOptionDto[]` | sí | Al menos una opción. |
+
+Cada opción (`CreateModifierOptionDto`):
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `name` | `string` | sí | Nombre visible de la opción. |
+| `priceDeltaCents` | `integer` | sí | Suplemento en céntimos (0 si no tiene coste adicional). |
+
+### Respuesta
+
+`ModifierGroupResponseDto`:
+
+```json
+{
+  "id": "mgr_uuid",
+  "organizationId": "org_uuid",
+  "name": "Extras de pizza",
+  "selectionType": "multiple",
+  "minSelections": 0,
+  "maxSelections": 3,
+  "isRequired": false,
+  "options": [
+    { "id": "opt_uuid", "name": "Queso extra", "priceDeltaCents": 100, "isAvailable": true },
+    { "id": "opt_uuid2", "name": "Champiñones", "priceDeltaCents": 50, "isAvailable": true }
+  ]
+}
+```
+
+### Errores
+
+| Código | HTTP | Descripción |
+|---|---|---|
+| `restaurant_not_found` | 404 | El restaurante del scope no existe |
+| `modifier_group_not_found` | 404 | El grupo no existe |
+| `modifier_group_name_taken` | 409 | Ya existe un grupo con ese nombre en la organización |
+| `modifier_group_in_use` | 409 | El grupo está asignado a al menos un producto |
+
+```mermaid
+flowchart TB
+  Client["Frontend Angular\nMenuApiService"]
+  Controller["RestaurantModifierGroupsController\n/api/v1/restaurants/:id/modifier-groups"]
+  ListUC["ListModifierGroupsUseCase"]
+  CreateUC["CreateModifierGroupUseCase"]
+  DeleteUC["DeleteModifierGroupUseCase"]
+  Repo["PrismaModifierGroupRepository"]
+  DB["PostgreSQL\nmodifier_groups · modifier_options\nrestaurant_product_modifier_groups"]
+
+  Client -->|"GET / POST / DELETE"| Controller
+  Controller --> ListUC
+  Controller --> CreateUC
+  Controller --> DeleteUC
+  ListUC --> Repo
+  CreateUC --> Repo
+  DeleteUC --> Repo
+  Repo --> DB
+```
+
+---
+
 ## Follow-up write endpoints
 
 The next write endpoints expected on top of the current data model are:
