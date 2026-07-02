@@ -49,6 +49,16 @@
   text-transform: uppercase;
 }
 
+.developer-page__platform-status {
+  margin-top: 1.5rem;
+}
+
+.developer-page__platform-meta {
+  margin-top: 0.35rem;
+  color: var(--ui-text-muted);
+  font-size: 0.875rem;
+}
+
 .developer-page__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

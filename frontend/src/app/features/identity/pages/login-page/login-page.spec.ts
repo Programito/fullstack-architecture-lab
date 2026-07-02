@@ -6,7 +6,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import type { AuthPublicConfigDto, AuthResponseDto, DemoRoleName } from '../../api/identity-api.models';
+import type { AuthPublicConfigDto, AuthResponseDto, DemoRoleName, ReadinessStatusDto } from '../../api/identity-api.models';
 import { IdentityApiService } from '../../api/identity-api.service';
 import { IdentitySessionStore } from '../../identity-session.store';
 import { LoginPage } from './login-page';
@@ -50,18 +50,22 @@ describe('LoginPage', () => {
     config = { demoLoginEnabled: true, demoRoles },
     demoLogin = vi.fn<(role: DemoRoleName) => Observable<AuthResponseDto>>(),
     login = vi.fn<(email: string, password: string) => Observable<AuthResponseDto>>(),
+    readiness = vi.fn<() => Observable<ReadinessStatusDto>>(() => of({ status: 'ready', database: 'ready', durationMs: 20 })),
   }: {
     locale?: 'es' | 'en' | 'ca';
     config?: AuthPublicConfigDto;
     demoLogin?: ReturnType<typeof vi.fn>;
     login?: ReturnType<typeof vi.fn>;
+    readiness?: ReturnType<typeof vi.fn>;
   } = {}) => {
     const i18n = provideI18nTesting(locale);
     const store = { setAuthResponse: vi.fn() };
     const api = {
       getAuthPublicConfig: vi.fn(() => of(config)),
+      getReadiness: readiness,
       demoLogin,
       login,
+      triggerSeed: vi.fn(() => of({ seeded: true })),
     };
 
     const result = await render(LoginPage, {
@@ -163,6 +167,24 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Developer/ }));
 
     expect((await screen.findByRole('alert')).textContent).toContain('No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos.');
+  });
+
+  it('shows a warming-up banner while the database is waking up', async () => {
+    await renderPage({
+      readiness: vi.fn(() => of({ status: 'warming_up', database: 'warming_up', durationMs: 1800 })),
+    });
+
+    expect(await screen.findByText('Estamos despertando la base de datos')).toBeTruthy();
+    expect(screen.getByText('El primer acceso puede tardar unos segundos. Reintentamos en segundo plano para que puedas entrar en cuanto todo responda.')).toBeTruthy();
+  });
+
+  it('shows a danger banner when readiness reports a hard outage', async () => {
+    await renderPage({
+      readiness: vi.fn(() => of({ status: 'down', database: 'down', durationMs: 120 })),
+    });
+
+    expect(await screen.findByText('Ahora mismo los servicios no responden')).toBeTruthy();
+    expect(screen.getByText('La aplicación sigue intentando recuperar la conexión. Si persiste, revisa el estado de la base de datos y vuelve a intentarlo.')).toBeTruthy();
   });
 
   it('shows credential validation, allows toggling the password visibility and submits the login', async () => {

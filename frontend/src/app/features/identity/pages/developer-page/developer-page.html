@@ -15,6 +15,22 @@
     <h1 id="developer-title">{{ 'developer.title' | transloco }}</h1>
     <p>{{ 'developer.description' | transloco }}</p>
 
+    <app-banner
+      class="developer-page__platform-status"
+      [eyebrow]="'developer.platformStatus.eyebrow' | transloco"
+      [title]="readinessTitleKey() | transloco"
+      [description]="readinessDescriptionKey() | transloco"
+      [variant]="readinessVariant()"
+      fill="soft"
+      appearance="minimal"
+      [actionLabel]="'developer.platformStatus.action' | transloco"
+      (action)="openLogs()"
+    >
+      <p class="developer-page__platform-meta">
+        {{ 'developer.platformStatus.duration' | transloco:{ durationMs: readinessDurationMs() } }}
+      </p>
+    </app-banner>
+
     @if (loading()) {
       <div class="developer-page__loading" aria-live="polite">
         <app-spinner
@@ -47,6 +63,14 @@
             <app-icon name="account_tree" size="lg" />
             <h2>{{ 'developer.architectureTitle' | transloco }}</h2>
             <p>{{ 'developer.architecture' | transloco }}</p>
+            <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
+          </app-card>
+        </a>
+        <a class="developer-page__resource" href="/developer/logs">
+          <app-card variant="outlined">
+            <app-icon name="monitoring" size="lg" />
+            <h2>{{ 'developer.logs.cardTitle' | transloco }}</h2>
+            <p>{{ 'developer.logs.cardDescription' | transloco }}</p>
             <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
           </app-card>
         </a>

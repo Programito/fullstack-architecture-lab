@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Res, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
-import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
+import { AuditService } from '../../../observability/application/audit.service';
+import { auditContext } from '../../../observability/application/audit-context';
 import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
 import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
@@ -31,6 +33,7 @@ export class RestaurantProductsController {
     private readonly updateRestaurantProduct: UpdateRestaurantProductUseCase,
     private readonly deleteRestaurantProduct: DeleteRestaurantProductUseCase,
     private readonly createProductImageUploadSignature: CreateProductImageUploadSignatureUseCase,
+    private readonly audit: AuditService,
   ) {}
 
   @Get(':id/products')
@@ -68,6 +71,7 @@ export class RestaurantProductsController {
   async createProduct(
     @Param('id') id: string,
     @Body() body: CreateRestaurantProductDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantProductDetailResponseDto> {
     const result = await this.createRestaurantProduct.execute({
       restaurantId: id,
@@ -80,7 +84,19 @@ export class RestaurantProductsController {
       imageUrl: body.imageUrl,
       modifierGroupIds: body.modifierGroupIds,
     });
-    return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
+    const product = unwrapResultOrThrow(result);
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.product.created',
+      message: `Product ${product.displayName} created.`,
+      result: 'succeeded',
+      entityType: 'product',
+      entityId: product.id,
+      entityLabel: product.displayName,
+      changedFields: ['name', 'description', 'course', 'preparationRoute', 'priceCents', 'currency', 'imageUrl', 'modifierGroupIds'],
+      metadata: { productId: product.id, name: product.displayName },
+    });
+    return RestaurantProductDetailResponseDto.from(product);
   }
 
   @Patch(':id/products/:productId')
@@ -95,6 +111,7 @@ export class RestaurantProductsController {
     @Param('id') id: string,
     @Param('productId') productId: string,
     @Body() body: UpdateRestaurantProductDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantProductDetailResponseDto> {
     const result = await this.updateRestaurantProduct.execute({
       restaurantId: id,
@@ -109,7 +126,19 @@ export class RestaurantProductsController {
       imageUrl: body.imageUrl,
       modifierGroupIds: body.modifierGroupIds,
     });
-    return RestaurantProductDetailResponseDto.from(unwrapResultOrThrow(result));
+    const product = unwrapResultOrThrow(result);
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.product.updated',
+      message: `Product ${product.displayName} updated.`,
+      result: 'succeeded',
+      entityType: 'product',
+      entityId: productId,
+      entityLabel: product.displayName,
+      changedFields: collectChangedFields(body, ['name', 'description', 'course', 'preparationRoute', 'priceCents', 'isAvailable', 'isVisible', 'imageUrl', 'modifierGroupIds']),
+      metadata: { productId, name: product.displayName },
+    });
+    return RestaurantProductDetailResponseDto.from(product);
   }
 
   @Post(':id/products/image-upload-signature')
@@ -142,9 +171,25 @@ export class RestaurantProductsController {
   async deleteProduct(
     @Param('id') id: string,
     @Param('productId') productId: string,
+    @Req() request: AuthenticatedRequest,
     @Res() res: HttpResponse,
   ): Promise<void> {
     unwrapResultOrThrow(await this.deleteRestaurantProduct.execute({ restaurantId: id, productId }));
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.product.deleted',
+      message: `Product ${productId} deleted.`,
+      result: 'succeeded',
+      entityType: 'product',
+      entityId: productId,
+      entityLabel: productId,
+      changedFields: ['deleted'],
+      metadata: { productId },
+    });
     res.status(HttpStatus.NO_CONTENT);
   }
+}
+
+function collectChangedFields<T extends object>(input: T, keys: Array<keyof T>): string[] {
+  return keys.filter((key) => input[key] !== undefined).map((key) => String(key));
 }

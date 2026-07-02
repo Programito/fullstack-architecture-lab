@@ -8,6 +8,7 @@ import { ListUsersUseCase } from '../../application/use-cases/list-users.use-cas
 import { SetUserEnabledUseCase } from '../../application/use-cases/set-user-enabled.use-case';
 import { SetUserAccountTypeUseCase } from '../../application/use-cases/set-user-account-type.use-case';
 import { AuthGuard } from './auth.guard';
+import { BootstrapOrAdminGuard } from './bootstrap-or-admin.guard';
 import { RolesGuard, RequireRoles } from './roles.guard';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,6 +29,7 @@ export class UsersController {
 
   @Post()
   @Version('1')
+  @UseGuards(BootstrapOrAdminGuard)
   @ApiCreatedResponse({ type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid email, name or password.' })
   @ApiConflictResponse({ description: 'Email already taken.' })
@@ -39,6 +41,7 @@ export class UsersController {
 
   @Get()
   @Version('1')
+  @UseGuards(BootstrapOrAdminGuard)
   @ApiOkResponse({ type: UserResponseDto, isArray: true })
   async list(): Promise<UserResponseDto[]> {
     const users = unwrapResultOrThrow(await this.listUsers.execute());
@@ -48,6 +51,7 @@ export class UsersController {
 
   @Patch(':id/roles')
   @Version('1')
+  @UseGuards(BootstrapOrAdminGuard)
   @ApiOkResponse({ type: UserResponseDto })
   @ApiNotFoundResponse({ description: 'User or role not found.' })
   async assignRoles(@Param('id') id: string, @Body() body: AssignUserRolesDto): Promise<UserResponseDto> {

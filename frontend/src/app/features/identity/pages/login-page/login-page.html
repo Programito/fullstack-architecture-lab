@@ -15,6 +15,26 @@
 
   <section class="login-page__hero" aria-labelledby="login-title">
     <app-card class="login-page__access-card" variant="elevated" padding="lg">
+      @if (showWarmingUpBanner()) {
+        <app-alert
+          class="login-page__status-alert"
+          variant="warning"
+          [role]="'status'"
+          [title]="'auth.readiness.warmingUp.title' | transloco"
+          [description]="'auth.readiness.warmingUp.description' | transloco"
+        />
+      }
+
+      @if (showDownBanner()) {
+        <app-alert
+          class="login-page__status-alert"
+          variant="danger"
+          [role]="'alert'"
+          [title]="'auth.readiness.down.title' | transloco"
+          [description]="'auth.readiness.down.description' | transloco"
+        />
+      }
+
       @if (demoLoginEnabled()) {
         <app-tabs
           [options]="tabs()"

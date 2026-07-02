@@ -213,13 +213,15 @@ describe('CreateRestaurantReservationUseCase', () => {
     const readRepo = new InMemoryReservationReadRepository();
     const windowsRepo = new InMemoryServiceWindowsRepository();
     windowsRepo.seed([{ id: 'sw-1', restaurantId: 'r1', name: 'Comidas', startTime: '12:00', endTime: '16:00', sortOrder: 0 }]);
+    const outsideServiceHoursIso = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    outsideServiceHoursIso.setHours(20, 0, 0, 0);
 
     const result = await makeUseCase(readRepo, windowsRepo).execute({
       restaurantId: 'r1',
       customerNameSnapshot: 'Midnight Guest',
       customerPhoneSnapshot: null,
       partySize: 2,
-      reservationAt: FUTURE_ISO,
+      reservationAt: outsideServiceHoursIso.toISOString(),
       durationMinutes: 90,
       notes: null,
       tableIds: [],

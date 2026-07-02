@@ -1,17 +1,19 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { finalize } from 'rxjs';
 
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Card } from '../../../../shared/ui/card/card';
 import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { LanguageSelect } from '../../../../shared/ui/language-select/language-select';
 import { Tabs, type TabsOption } from '../../../../shared/ui/tabs/tabs';
-import type { DemoRoleName } from '../../api/identity-api.models';
+import type { DemoRoleName, ReadinessStatusDto } from '../../api/identity-api.models';
 import { IdentityApiService } from '../../api/identity-api.service';
+import { PlatformReadinessService } from '../../api/platform-readiness.service';
 import { authenticatedHome } from '../../auth-navigation';
 import { IdentitySessionStore } from '../../identity-session.store';
 
@@ -34,12 +36,14 @@ const DEMO_ROLE_META: Record<DemoRoleName, { group: DemoRoleView['group']; order
 
 @Component({
   selector: 'app-login-page',
-  imports: [Button, Card, ColorModeMenu, Icon, LanguageSelect, Tabs, TranslocoPipe],
+  imports: [Alert, Button, Card, ColorModeMenu, Icon, LanguageSelect, Tabs, TranslocoPipe],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
 export class LoginPage {
   private readonly api = inject(IdentityApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly readiness = inject(PlatformReadinessService);
   private readonly identity = inject(IdentitySessionStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -62,6 +66,7 @@ export class LoginPage {
   protected readonly seedLoading = signal(false);
   protected readonly seedDone = signal(false);
   protected readonly seedError = signal(false);
+  protected readonly readinessStatus = signal<ReadinessStatusDto['status']>('ready');
 
   protected readonly tabs = computed<TabsOption[]>(() => {
     this.activeTranslations();
@@ -115,6 +120,8 @@ export class LoginPage {
   protected readonly credentialsValid = computed(() =>
     this.email().trim().length > 0 && isValidEmail(this.email()) && this.password().length >= 8,
   );
+  protected readonly showWarmingUpBanner = computed(() => this.readinessStatus() === 'warming_up');
+  protected readonly showDownBanner = computed(() => this.readinessStatus() === 'down');
 
   constructor() {
     this.api.getAuthPublicConfig().subscribe({
@@ -128,6 +135,12 @@ export class LoginPage {
         this.activeTab.set('credentials');
       },
     });
+
+    this.readiness.watch({ stopWhenReady: true })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        this.readinessStatus.set(result.status);
+      });
   }
 
   protected selectTab(value: string): void {

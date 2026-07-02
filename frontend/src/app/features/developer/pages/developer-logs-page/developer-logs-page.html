@@ -1,0 +1,276 @@
+<main class="developer-logs-page">
+  <header class="developer-logs-page__header">
+    <div>
+      <p class="developer-logs-page__eyebrow">{{ 'developer.logs.eyebrow' | transloco }}</p>
+      <h1>{{ 'developer.logs.title' | transloco }}</h1>
+      <p>{{ 'developer.logs.description' | transloco }}</p>
+    </div>
+    <app-button variant="neutral" fill="outline" routerLink="/developer">
+      {{ 'developer.logs.back' | transloco }}
+    </app-button>
+  </header>
+
+  <section class="developer-logs-page__filters" aria-label="Filtros de logs">
+    <div class="developer-logs-page__segmented">
+      <app-button [variant]="view() === 'all' ? 'violet' : 'neutral'" [fill]="view() === 'all' ? 'solid' : 'outline'" (pressed)="setView('all')">
+        {{ 'developer.logs.views.all' | transloco }}
+      </app-button>
+      <app-button [variant]="view() === 'operations' ? 'violet' : 'neutral'" [fill]="view() === 'operations' ? 'solid' : 'outline'" (pressed)="setView('operations')">
+        {{ 'developer.logs.views.operations' | transloco }}
+      </app-button>
+      <app-button [variant]="view() === 'audit' ? 'violet' : 'neutral'" [fill]="view() === 'audit' ? 'solid' : 'outline'" (pressed)="setView('audit')">
+        {{ 'developer.logs.views.audit' | transloco }}
+      </app-button>
+    </div>
+    <div class="developer-logs-page__quick-range">
+      <app-button [variant]="quickRange() === '1h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '1h' ? 'solid' : 'outline'" (pressed)="setQuickRange('1h')">
+        {{ 'developer.logs.ranges.1h' | transloco }}
+      </app-button>
+      <app-button [variant]="quickRange() === '6h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '6h' ? 'solid' : 'outline'" (pressed)="setQuickRange('6h')">
+        {{ 'developer.logs.ranges.6h' | transloco }}
+      </app-button>
+      <app-button [variant]="quickRange() === '24h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '24h' ? 'solid' : 'outline'" (pressed)="setQuickRange('24h')">
+        {{ 'developer.logs.ranges.24h' | transloco }}
+      </app-button>
+      <app-button [variant]="quickRange() === '3d' ? 'secondary' : 'neutral'" [fill]="quickRange() === '3d' ? 'solid' : 'outline'" (pressed)="setQuickRange('3d')">
+        {{ 'developer.logs.ranges.3d' | transloco }}
+      </app-button>
+      <app-button [variant]="quickRange() === '7d' ? 'secondary' : 'neutral'" [fill]="quickRange() === '7d' ? 'solid' : 'outline'" (pressed)="setQuickRange('7d')">
+        {{ 'developer.logs.ranges.7d' | transloco }}
+      </app-button>
+    </div>
+    <label>
+      <span>{{ 'developer.logs.filters.from' | transloco }}</span>
+      <input type="datetime-local" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)" />
+    </label>
+    <label>
+      <span>{{ 'developer.logs.filters.to' | transloco }}</span>
+      <input type="datetime-local" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
+    </label>
+    <label>
+      <span>{{ 'developer.logs.filters.level' | transloco }}</span>
+      <select [ngModel]="filters().level" (ngModelChange)="setFilter('level', $event)">
+        <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        <option value="info">info</option>
+        <option value="warn">warn</option>
+        <option value="error">error</option>
+      </select>
+    </label>
+    <label>
+      <span>{{ 'developer.logs.filters.category' | transloco }}</span>
+      <select [ngModel]="filters().category" (ngModelChange)="setFilter('category', $event)">
+        <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        <option value="request">request</option>
+        <option value="error">error</option>
+        <option value="audit">audit</option>
+        <option value="client">client</option>
+      </select>
+    </label>
+    <label>
+      <span>{{ 'developer.logs.filters.path' | transloco }}</span>
+      <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
+        <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        @for (group of pathGroupOptions; track group.value) {
+          <option [value]="group.value">{{ group.label }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>{{ 'developer.logs.filters.result' | transloco }}</span>
+      <select [ngModel]="filters().result" (ngModelChange)="setFilter('result', $event)">
+        <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        <option value="attempted">attempted</option>
+        <option value="succeeded">succeeded</option>
+        <option value="failed">failed</option>
+      </select>
+    </label>
+    <label>
+      <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
+      <select [ngModel]="filters().entityType" (ngModelChange)="setFilter('entityType', $event)">
+        <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        @for (entityType of entityTypeOptions; track entityType) {
+          <option [value]="entityType">{{ entityType }}</option>
+        }
+      </select>
+    </label>
+    <app-combobox
+      class="developer-logs-page__search"
+      [label]="'developer.logs.filters.entityId' | transloco"
+      [hint]="'developer.logs.filters.entityIdHint' | transloco"
+      [options]="entityOptions()"
+      [value]="filters().entityId"
+      (valueChange)="setFilter('entityId', $event)"
+    />
+    <app-combobox
+      class="developer-logs-page__search"
+      [label]="'developer.logs.filters.actorUserId' | transloco"
+      [hint]="'developer.logs.filters.actorUserIdHint' | transloco"
+      [options]="actorOptions()"
+      [value]="filters().actorUserId"
+      (valueChange)="setFilter('actorUserId', $event)"
+    />
+    <app-combobox
+      class="developer-logs-page__search"
+      [label]="'developer.logs.filters.restaurantId' | transloco"
+      [hint]="'developer.logs.filters.restaurantIdHint' | transloco"
+      [options]="restaurantOptions()"
+      [value]="filters().restaurantId"
+      (valueChange)="setFilter('restaurantId', $event)"
+    />
+    <label class="developer-logs-page__search">
+      <span>{{ 'developer.logs.filters.search' | transloco }}</span>
+      <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />
+    </label>
+    <div class="developer-logs-page__actions">
+      <app-button variant="violet" (pressed)="applyFilters()">{{ 'developer.logs.filters.apply' | transloco }}</app-button>
+      <app-button variant="neutral" fill="outline" (pressed)="resetFilters()">{{ 'developer.logs.filters.reset' | transloco }}</app-button>
+    </div>
+  </section>
+
+  <section class="developer-logs-page__kpis">
+    <app-card variant="outlined">
+      <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.requests' | transloco }}</p>
+      <strong>{{ summary()?.totalRequests ?? 0 }}</strong>
+    </app-card>
+    <app-card variant="outlined">
+      <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errors' | transloco }}</p>
+      <strong>{{ summary()?.errorCount ?? 0 }}</strong>
+    </app-card>
+    <app-card variant="outlined">
+      <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errorRate' | transloco }}</p>
+      <strong>{{ summary()?.errorRate ?? 0 }}%</strong>
+    </app-card>
+    <app-card variant="outlined">
+      <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.audit' | transloco }}</p>
+      <strong>{{ summary()?.auditEvents ?? 0 }}</strong>
+    </app-card>
+    <app-card variant="outlined">
+      <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.latency' | transloco }}</p>
+      <strong>{{ summary()?.p95DurationMs ?? 0 }} ms</strong>
+    </app-card>
+  </section>
+
+  <section class="developer-logs-page__charts">
+    <app-card variant="outlined">
+      <app-chart
+        type="line"
+        [loading]="loading()"
+        [title]="'developer.logs.charts.activity' | transloco"
+        [categories]="timelineCategories()"
+        [data]="timelineSeries()"
+      />
+    </app-card>
+    <app-card variant="outlined">
+      <app-chart
+        type="bar"
+        [loading]="loading()"
+        [title]="'developer.logs.charts.levels' | transloco"
+        [categories]="levelCategories()"
+        [data]="levelSeries()"
+      />
+    </app-card>
+    <app-card variant="outlined">
+      <app-chart
+        type="donut"
+        [loading]="loading()"
+        [title]="'developer.logs.charts.categories' | transloco"
+        [categories]="categoryCategories()"
+        [data]="categorySeries()"
+      />
+    </app-card>
+  </section>
+
+  <section class="developer-logs-page__table">
+    <div class="developer-logs-page__table-header">
+      <h2>{{ 'developer.logs.events.title' | transloco }}</h2>
+      <app-badge variant="neutral" fill="soft">{{ totalItems() }}</app-badge>
+    </div>
+    <app-table
+      [columns]="columns()"
+      [rows]="rows()"
+      [loading]="loading()"
+      [pagination]="true"
+      [page]="page()"
+      [pageSize]="pageSize()"
+      [totalItems]="totalItems()"
+      [emptyTitle]="'developer.logs.table.emptyTitle' | transloco"
+      [emptyDescription]="'developer.logs.table.emptyDescription' | transloco"
+      (pageChange)="onPageChange($event)"
+      (rowSelected)="selectEvent($event)"
+    />
+    @if (selectedEvent(); as event) {
+      <app-card variant="outlined">
+        <div class="developer-logs-page__detail-header">
+          <div>
+            <p class="developer-logs-page__metric-label">{{ 'developer.logs.detail.title' | transloco }}</p>
+            <strong>{{ event.event }}</strong>
+          </div>
+          <app-badge variant="neutral" fill="soft">{{ event.level }}</app-badge>
+        </div>
+        <div class="developer-logs-page__detail-grid">
+          <div>
+            <span>{{ 'developer.logs.detail.timestamp' | transloco }}</span>
+            <strong>{{ event.timestamp | date: 'medium' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.source' | transloco }}</span>
+            <strong>{{ event.source }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.category' | transloco }}</span>
+            <strong>{{ event.category }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.path' | transloco }}</span>
+            <strong>{{ event.path || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.method' | transloco }}</span>
+            <strong>{{ event.method || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.status' | transloco }}</span>
+            <strong>{{ event.statusCode ?? '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.duration' | transloco }}</span>
+            <strong>{{ event.durationMs ?? '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.requestId' | transloco }}</span>
+            <strong>{{ event.requestId || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.actorUserId' | transloco }}</span>
+            <strong>{{ event.userId || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.actorRoles' | transloco }}</span>
+            <strong>{{ event.actorRoles.length ? event.actorRoles.join(', ') : '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.result' | transloco }}</span>
+            <strong>{{ event.result || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.entityType' | transloco }}</span>
+            <strong>{{ event.entityType || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.entityId' | transloco }}</span>
+            <strong>{{ event.entityId || '-' }}</strong>
+          </div>
+          <div>
+            <span>{{ 'developer.logs.detail.entityLabel' | transloco }}</span>
+            <strong>{{ event.entityLabel || '-' }}</strong>
+          </div>
+          <div class="developer-logs-page__detail-wide">
+            <span>{{ 'developer.logs.detail.changedFields' | transloco }}</span>
+            <strong>{{ event.changedFields.length ? event.changedFields.join(', ') : '-' }}</strong>
+          </div>
+        </div>
+        <p class="developer-logs-page__detail-message">{{ event.message }}</p>
+      </app-card>
+    }
+  </section>
+</main>

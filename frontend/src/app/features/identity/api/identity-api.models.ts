@@ -36,6 +36,12 @@ export interface AuthPublicConfigDto {
   }>;
 }
 
+export interface ReadinessStatusDto {
+  status: 'ready' | 'warming_up' | 'down';
+  database: 'ready' | 'warming_up' | 'down';
+  durationMs: number;
+}
+
 export interface DeveloperResourcesDto {
   storybookUrl: string;
   apiDocsUrl: string;

@@ -123,6 +123,33 @@ model OutboxEvent {
   @@map("outbox_events")
 }
 
+model AppLog {
+  id           String      @id @default(cuid())
+  timestamp    DateTime    @default(now())
+  source       LogSource
+  category     LogCategory
+  level        LogLevel
+  event        String
+  message      String
+  requestId    String?
+  organizationId String?
+  userId       String?
+  restaurantId String?
+  method       String?
+  path         String?
+  statusCode   Int?
+  durationMs   Int?
+  metadata     Json?
+
+  @@index([timestamp])
+  @@index([category, timestamp])
+  @@index([level, timestamp])
+  @@index([organizationId, timestamp])
+  @@index([userId, timestamp])
+  @@index([restaurantId, timestamp])
+  @@map("app_logs")
+}
+
 model Organization {
   id            String                  @id @default(uuid())
   name          String
@@ -755,4 +782,22 @@ enum ReservationStatus {
   seated
   cancelled
   no_show
+}
+
+enum LogSource {
+  backend
+  frontend
+}
+
+enum LogCategory {
+  request
+  error
+  audit
+  client
+}
+
+enum LogLevel {
+  info
+  warn
+  error
 }

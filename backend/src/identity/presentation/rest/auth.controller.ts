@@ -1,6 +1,8 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards, Version } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { AuditService } from '../../../observability/application/audit.service';
+import { auditContext } from '../../../observability/application/audit-context';
 import { AuthService } from '../../application/use-cases/auth.service';
 import { AuthTokenService } from '../../infrastructure/security/auth-token.service';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -21,6 +23,7 @@ export class AuthController {
     private readonly auth: AuthService,
     private readonly tokens: AuthTokenService,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
   ) {}
 
   @Post('login')
@@ -28,9 +31,38 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({ type: AuthResponseDto })
   @ApiUnauthorizedResponse()
-  async login(@Body() body: LoginDto, @Res({ passthrough: true }) response: CookieResponse): Promise<AuthResponseDto> {
-    const result = await this.auth.login(body.email, body.password);
+  async login(
+    @Body() body: LoginDto,
+    @Req() request: CookieRequest,
+    @Res({ passthrough: true }) response: CookieResponse,
+  ): Promise<AuthResponseDto> {
+    let result: Awaited<ReturnType<AuthService['login']>>;
+    try {
+      result = await this.auth.login(body.email, body.password);
+    } catch (error) {
+      await this.audit.record({
+        ...auditContext(request),
+        event: 'auth.login.failed',
+        message: `Login attempt for ${body.email} failed.`,
+        result: 'failed',
+        entityType: 'auth',
+        entityLabel: body.email,
+      });
+      throw error;
+    }
     this.setAuthCookies(response, result);
+    await this.audit.record({
+      ...auditContext(request, result.scopes.restaurants[0] ?? null),
+      userId: result.user.id,
+      event: 'auth.login.succeeded',
+      message: `User ${result.user.email} signed in.`,
+      result: 'succeeded',
+      entityType: 'auth',
+      entityId: result.user.id,
+      entityLabel: result.user.email,
+      changedFields: ['session'],
+      metadata: { roles: result.roles },
+    });
     return AuthResponseDto.fromResult(result);
   }
 
@@ -40,10 +72,23 @@ export class AuthController {
   @ApiOkResponse({ type: AuthResponseDto })
   async demoLogin(
     @Body() body: DemoLoginDto,
+    @Req() request: CookieRequest,
     @Res({ passthrough: true }) response: CookieResponse,
   ): Promise<AuthResponseDto> {
     const result = await this.auth.demoLogin(body.role);
     this.setAuthCookies(response, result);
+    await this.audit.record({
+      ...auditContext(request, result.scopes.restaurants[0] ?? null),
+      userId: result.user.id,
+      event: 'auth.demo-login.succeeded',
+      message: `Demo role ${body.role} signed in.`,
+      result: 'succeeded',
+      entityType: 'auth',
+      entityId: result.user.id,
+      entityLabel: result.user.email,
+      changedFields: ['session'],
+      metadata: { role: body.role, email: result.user.email },
+    });
     return AuthResponseDto.fromResult(result);
   }
 
@@ -78,7 +123,21 @@ export class AuthController {
   async refresh(@Req() request: CookieRequest, @Res({ passthrough: true }) response: CookieResponse): Promise<AuthResponseDto> {
     const token = readCookie(request, REFRESH_COOKIE);
     if (!token) throw new UnauthorizedException('Refresh token cookie is required.');
-    const result = await this.auth.refresh(token);
+    let result: Awaited<ReturnType<AuthService['refresh']>>;
+    try {
+      result = await this.auth.refresh(token);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('reuse detected')) {
+        await this.audit.record({
+          ...auditContext(request),
+          event: 'auth.refresh.reuse-detected',
+          message: 'Refresh token reuse detected; session revoked.',
+          result: 'failed',
+          entityType: 'auth',
+        });
+      }
+      throw error;
+    }
     this.setAuthCookies(response, result);
     return AuthResponseDto.fromResult(result);
   }
@@ -90,6 +149,17 @@ export class AuthController {
   @ApiBearerAuth()
   async logout(@Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: CookieResponse): Promise<void> {
     await this.auth.logout(request.auth.sessionId);
+    await this.audit.record({
+      ...auditContext(request),
+      event: 'auth.logout.succeeded',
+      message: `User ${request.auth.userId} signed out.`,
+      result: 'succeeded',
+      entityType: 'auth',
+      entityId: request.auth.userId,
+      entityLabel: request.auth.userId,
+      changedFields: ['session'],
+      metadata: { sessionId: request.auth.sessionId },
+    });
     response.clearCookie(REFRESH_COOKIE, this.cookieOptions());
     response.clearCookie(DEVELOPER_COOKIE, this.developerCookieOptions());
   }
@@ -153,7 +223,7 @@ export class AuthController {
   }
 }
 
-type CookieRequest = { headers: { cookie?: string } };
+type CookieRequest = { headers: { cookie?: string }; requestId?: string; method?: string; originalUrl?: string; url?: string };
 type CookieResponse = {
   cookie(name: string, value: string, options: Record<string, unknown>): void;
   clearCookie(name: string, options: Record<string, unknown>): void;

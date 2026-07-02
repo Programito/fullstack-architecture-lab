@@ -8,6 +8,8 @@ import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presenta
 import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
 import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
+import { AuditService } from '../../../observability/application/audit.service';
+import { auditContext } from '../../../observability/application/audit-context';
 import { OpenRestaurantOrderUseCase } from '../../application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from '../../application/use-cases/add-restaurant-order-line.use-case';
 import { UpdateRestaurantOrderLineUseCase } from '../../application/use-cases/update-restaurant-order-line.use-case';
@@ -43,6 +45,7 @@ export class RestaurantOrderController {
     private readonly chargeRestaurantServicePoint: ChargeRestaurantServicePointUseCase,
     private readonly sendRestaurantServicePointOrderToKitchen: SendRestaurantServicePointOrderToKitchenUseCase,
     private readonly markRestaurantServicePointOrderServed: MarkRestaurantServicePointOrderServedUseCase,
+    private readonly audit: AuditService,
   ) {}
 
   @Post(':id/service-points/:tableId/orders')
@@ -69,6 +72,17 @@ export class RestaurantOrderController {
         guestCount: body.guestCount ?? 1,
       }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.opened',
+      message: `Order ${result.order.order.id} opened for table ${tableId}.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: result.order.order.id,
+      entityLabel: tableId,
+      changedFields: result.created ? ['status', 'guestCount'] : ['guestCount'],
+      metadata: { orderId: result.order.order.id, tableId, created: result.created, guestCount: result.order.order.guestCount },
+    });
     response.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
     return RestaurantOrderResponseDto.fromDomain(result.order);
   }
@@ -86,21 +100,32 @@ export class RestaurantOrderController {
     @Param('id') restaurantId: string,
     @Param('orderId') orderId: string,
     @Body() body: AddRestaurantOrderLineDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantOrderResponseDto> {
-    return RestaurantOrderResponseDto.fromDomain(
-      unwrapResultOrThrow(
-        await this.addRestaurantOrderLine.execute({
-          restaurantId,
-          orderId,
-          restaurantProductId: body.restaurantProductId,
-          quantity: body.quantity,
-          kitchenNote: body.kitchenNote?.trim() || null,
-          modifiers: body.modifiers ?? [],
-          comboSlots: body.comboSlots ?? [],
-          platterComponents: body.platterComponents ?? [],
-        }),
-      ),
+    const order = unwrapResultOrThrow(
+      await this.addRestaurantOrderLine.execute({
+        restaurantId,
+        orderId,
+        restaurantProductId: body.restaurantProductId,
+        quantity: body.quantity,
+        kitchenNote: body.kitchenNote?.trim() || null,
+        modifiers: body.modifiers ?? [],
+        comboSlots: body.comboSlots ?? [],
+        platterComponents: body.platterComponents ?? [],
+      }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.line.created',
+      message: `Line added to order ${orderId}.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: orderId,
+      entityLabel: orderId,
+      changedFields: ['lines'],
+      metadata: { orderId, restaurantProductId: body.restaurantProductId, quantity: body.quantity },
+    });
+    return RestaurantOrderResponseDto.fromDomain(order);
   }
 
   @Patch(':id/orders/:orderId/lines/:lineId')
@@ -117,12 +142,23 @@ export class RestaurantOrderController {
     @Param('orderId') orderId: string,
     @Param('lineId') lineId: string,
     @Body() body: UpdateRestaurantOrderLineDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantOrderResponseDto> {
-    return RestaurantOrderResponseDto.fromDomain(
-      unwrapResultOrThrow(
-        await this.updateRestaurantOrderLine.execute({ restaurantId, orderId, lineId, quantity: body.quantity, kitchenNote: body.kitchenNote }),
-      ),
+    const order = unwrapResultOrThrow(
+      await this.updateRestaurantOrderLine.execute({ restaurantId, orderId, lineId, quantity: body.quantity, kitchenNote: body.kitchenNote }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.line.updated',
+      message: `Line ${lineId} updated.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: orderId,
+      entityLabel: orderId,
+      changedFields: collectChangedFields(body, ['quantity', 'kitchenNote']),
+      metadata: { orderId, lineId, quantity: body.quantity },
+    });
+    return RestaurantOrderResponseDto.fromDomain(order);
   }
 
   @Delete(':id/orders/:orderId/lines/:lineId')
@@ -137,10 +173,21 @@ export class RestaurantOrderController {
     @Param('id') restaurantId: string,
     @Param('orderId') orderId: string,
     @Param('lineId') lineId: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantOrderResponseDto> {
-    return RestaurantOrderResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.deleteRestaurantOrderLine.execute({ restaurantId, orderId, lineId })),
-    );
+    const order = unwrapResultOrThrow(await this.deleteRestaurantOrderLine.execute({ restaurantId, orderId, lineId }));
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.line.deleted',
+      message: `Line ${lineId} deleted.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: orderId,
+      entityLabel: orderId,
+      changedFields: ['lines'],
+      metadata: { orderId, lineId },
+    });
+    return RestaurantOrderResponseDto.fromDomain(order);
   }
 
   @Post(':id/orders/:orderId/lines/:lineId/cancel')
@@ -157,12 +204,23 @@ export class RestaurantOrderController {
     @Param('orderId') orderId: string,
     @Param('lineId') lineId: string,
     @Body() body: CancelRestaurantOrderLineDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantOrderResponseDto> {
-    return RestaurantOrderResponseDto.fromDomain(
-      unwrapResultOrThrow(
-        await this.cancelRestaurantOrderLine.execute({ restaurantId, orderId, lineId, reason: body.reason.trim() }),
-      ),
+    const order = unwrapResultOrThrow(
+      await this.cancelRestaurantOrderLine.execute({ restaurantId, orderId, lineId, reason: body.reason.trim() }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.line.cancelled',
+      message: `Line ${lineId} cancelled.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: orderId,
+      entityLabel: orderId,
+      changedFields: ['lines', 'status'],
+      metadata: { orderId, lineId, reason: body.reason.trim() },
+    });
+    return RestaurantOrderResponseDto.fromDomain(order);
   }
 
   @Patch(':id/orders/:orderId/lines/:lineId/status')
@@ -200,12 +258,23 @@ export class RestaurantOrderController {
     @Param('id') restaurantId: string,
     @Param('orderId') orderId: string,
     @Body() body: RegisterRestaurantOrderPaymentDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantOrderResponseDto> {
-    return RestaurantOrderResponseDto.fromDomain(
-      unwrapResultOrThrow(
-        await this.registerRestaurantOrderPayment.execute({ restaurantId, orderId, amountCents: body.amountCents, method: body.method }),
-      ),
+    const order = unwrapResultOrThrow(
+      await this.registerRestaurantOrderPayment.execute({ restaurantId, orderId, amountCents: body.amountCents, method: body.method }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.payment.recorded',
+      message: `Payment recorded for order ${orderId}.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: orderId,
+      entityLabel: orderId,
+      changedFields: ['payments'],
+      metadata: { orderId, amountCents: body.amountCents, method: body.method },
+    });
+    return RestaurantOrderResponseDto.fromDomain(order);
   }
 
   @Post(':id/service-points/:tableId/send-to-kitchen')
@@ -216,10 +285,24 @@ export class RestaurantOrderController {
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point has no pending lines to send.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
-  async sendServicePointToKitchen(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
-    return ServicePointDetailResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.sendRestaurantServicePointOrderToKitchen.execute(id, tableId)),
-    );
+  async sendServicePointToKitchen(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ServicePointDetailResponseDto> {
+    const detail = unwrapResultOrThrow(await this.sendRestaurantServicePointOrderToKitchen.execute(id, tableId));
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'order.service-point.sent-to-kitchen',
+      message: `Service point ${tableId} sent to kitchen.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: tableId,
+      entityLabel: tableId,
+      changedFields: ['status'],
+      metadata: { tableId },
+    });
+    return ServicePointDetailResponseDto.fromDomain(detail);
   }
 
   @Post(':id/service-points/:tableId/mark-served')
@@ -230,10 +313,24 @@ export class RestaurantOrderController {
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point has no active lines to mark as served.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
-  async markServicePointServed(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
-    return ServicePointDetailResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.markRestaurantServicePointOrderServed.execute(id, tableId)),
-    );
+  async markServicePointServed(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ServicePointDetailResponseDto> {
+    const detail = unwrapResultOrThrow(await this.markRestaurantServicePointOrderServed.execute(id, tableId));
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'order.service-point.marked-served',
+      message: `Service point ${tableId} marked served.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: tableId,
+      entityLabel: tableId,
+      changedFields: ['status'],
+      metadata: { tableId },
+    });
+    return ServicePointDetailResponseDto.fromDomain(detail);
   }
 
   @Post(':id/service-points/:tableId/charge')
@@ -244,10 +341,24 @@ export class RestaurantOrderController {
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point cannot be charged in its current state.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
-  async chargeServicePoint(@Param('id') id: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
-    return ServicePointDetailResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.chargeRestaurantServicePoint.execute(id, tableId)),
-    );
+  async chargeServicePoint(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ServicePointDetailResponseDto> {
+    const detail = unwrapResultOrThrow(await this.chargeRestaurantServicePoint.execute(id, tableId));
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'order.service-point.charged',
+      message: `Service point ${tableId} charged.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: tableId,
+      entityLabel: tableId,
+      changedFields: ['payments', 'status'],
+      metadata: { tableId },
+    });
+    return ServicePointDetailResponseDto.fromDomain(detail);
   }
 
   @Post(':id/service-points/:tableId/free')
@@ -258,9 +369,27 @@ export class RestaurantOrderController {
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   @ApiNotFoundResponse({ description: 'Restaurant or table not found.' })
-  async freeServicePoint(@Param('id') restaurantId: string, @Param('tableId') tableId: string): Promise<ServicePointDetailResponseDto> {
-    return ServicePointDetailResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.freeRestaurantServicePoint.execute(restaurantId, tableId)),
-    );
+  async freeServicePoint(
+    @Param('id') restaurantId: string,
+    @Param('tableId') tableId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ServicePointDetailResponseDto> {
+    const detail = unwrapResultOrThrow(await this.freeRestaurantServicePoint.execute(restaurantId, tableId));
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.service-point.freed',
+      message: `Service point ${tableId} freed.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: tableId,
+      entityLabel: tableId,
+      changedFields: ['status'],
+      metadata: { tableId },
+    });
+    return ServicePointDetailResponseDto.fromDomain(detail);
   }
+}
+
+function collectChangedFields<T extends object>(input: T, keys: Array<keyof T>): string[] {
+  return keys.filter((key) => input[key] !== undefined).map((key) => String(key));
 }
