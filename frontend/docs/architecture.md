@@ -977,12 +977,20 @@ Filtros expuestos en UI:
 - presets rapidos `1h`, `6h`, `24h`, `3d`, `7d`
 - nivel
 - categoria
-- ruta
-- usuario actor
+- ruta — `<select>` con grupos de rutas curados a mano (`KNOWN_LOG_PATH_GROUPS`, `api/developer-logs.models.ts`); sincronizar si se añaden endpoints nuevos en el backend
+- restaurante — picker `app-combobox` cargado una vez desde `GET /restaurants`
+- usuario actor — picker `app-combobox` cargado desde `/developer/logs/actor-options` (derivado de eventos de auditoria `auth.*`, no de `GET /users`)
 - tipo de entidad
-- id de entidad
+- id de entidad — picker `app-combobox` que se recarga desde `/developer/logs/entity-options` al cambiar tipo de entidad o restaurante
 - resultado
 - texto libre
+
+Los tres pickers usan `app-combobox` (`shared/ui/combobox/`) en vez de un modal a medida: mismo
+resultado para el usuario (escribir para filtrar, texto de ayuda vía `hint`) con mucho menos codigo
+nuevo. `entityId` y `actorUserId` no reusan endpoints de `identity` (`GET /users` requiere rol
+`admin` desde que se cerro el bootstrap sin guard, ver `backend/docs/architecture.md`); en su lugar
+derivan las opciones del propio rastro de auditoria en `app_logs`, lo que ademas hereda
+automaticamente el aislamiento de cuentas demo.
 
 Para detalles de backend, contrato de auditoria y retencion, ver
 [backend/docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).

@@ -10,6 +10,8 @@ La persistencia vive en PostgreSQL mediante Prisma sobre la tabla `app_logs`, y 
 - `GET /api/v1/developer/logs/timeline`
 - `GET /api/v1/developer/logs/breakdown`
 - `GET /api/v1/developer/logs/events`
+- `GET /api/v1/developer/logs/entity-options` — opciones para el picker de `entityId` (`entityType` requerido, `restaurantId` opcional), derivadas de lo que ya hay auditado
+- `GET /api/v1/developer/logs/actor-options` — opciones para el picker de `actorUserId`, derivadas de eventos `auth.*` auditados
 - `POST /api/v1/observability/client-events`
 
 ## Modelo de log
@@ -79,12 +81,23 @@ Filtros disponibles:
 - presets `1h`, `6h`, `24h`, `3d`, `7d`
 - `level`
 - `category`
-- `path`
-- `actorUserId`
+- `path` — `<select>` con grupos de rutas conocidos (curados a mano en `KNOWN_LOG_PATH_GROUPS`, `frontend/src/app/features/developer/api/developer-logs.models.ts`); el backend sigue matcheando por `contains`, así que hay que mantener este listado sincronizado si se añaden controladores nuevos
+- `restaurantId` — picker (`app-combobox`) contra `GET /restaurants`
+- `actorUserId` — picker contra `/developer/logs/actor-options`
 - `entityType`
-- `entityId`
+- `entityId` — picker contra `/developer/logs/entity-options`, se recarga al cambiar `entityType` o `restaurantId`
 - `result`
 - `search`
+
+### Aislamiento de cuentas demo
+
+Las cuentas demo (`/auth/demo-login`) son de acceso público sin credenciales. Un `developer` demo
+**nunca** ve actividad de usuarios reales en el dashboard, sea cual sea el filtro que intente:
+
+- `AuthGuard` propaga `accountType` (`regular` | `demo` | `system` | `test`) a `request.auth`.
+- `DeveloperLogsController` resuelve, para cuentas demo, la lista de IDs de usuarios demo (`UserRepository.findAll()` filtrado por `accountType === 'demo'`) y la pasa como `restrictToUserIds` a todos los métodos de `ObservabilityService` (`getSummary`, `getTimeline`, `getBreakdown`, `listEvents`, `listEntityOptions`, `listActorOptions`).
+- `restrictToUserIds` se aplica como una condición `AND` independiente (`userId IS NULL OR userId IN (...)`) que se combina con cualquier otro filtro — un intento explícito de `actorUserId=<id-real>` simplemente no devuelve resultados, no hay forma de saltárselo desde la UI ni desde la query string.
+- Las peticiones anónimas (`userId: null`, sin PII) siguen visibles.
 
 ## Readiness para bases dormidas
 
@@ -126,13 +139,17 @@ Variables de entorno:
 - `AUDIT_RETENTION_DAYS`
 - `OBSERVABILITY_DB_COLD_START_ENABLED`
 
-Ambas deben ser enteros positivos. Valores iniciales recomendados:
+Ambas deben ser enteros positivos. Valores por defecto si no se fijan (`observability-retention.service.ts`):
 
 ```env
 LOG_RETENTION_DAYS=30
-AUDIT_RETENTION_DAYS=30
+AUDIT_RETENTION_DAYS=365
 OBSERVABILITY_DB_COLD_START_ENABLED=false
 ```
+
+`AUDIT_RETENTION_DAYS` es mas largo que `LOG_RETENTION_DAYS` a propósito: los logs operativos no
+necesitan retención larga, pero un rastro de auditoría con solo 30 días es corto para fines de
+compliance/investigación.
 
 La limpieza separa logs generales y auditoria para permitir politicas distintas.
 
@@ -227,7 +244,8 @@ Casos comunes:
 
 ## Pendiente de verificar
 
-- `src/observability/application/observability.service.integration-spec.ts` (Testcontainers) cubre `getTimeline` (SQL crudo con `date_trunc`), `getBreakdown` (`groupBy`), `listEvents` (filtros JSON de Postgres) y `purgeExpired` (las dos ventanas de retencion), pero no se ha podido ejecutar en el entorno donde se escribio por falta de Docker. Correr `pnpm test:integration -- observability.service.integration-spec.ts` con Docker disponible antes de darlo por validado en CI.
+- `src/observability/application/observability.service.integration-spec.ts` (Testcontainers) cubre `getTimeline` (SQL crudo con `date_trunc`), `getBreakdown` (`groupBy`), `listEvents` (filtros JSON de Postgres), `listEntityOptions`/`listActorOptions` (incluyendo `restrictToUserIds`) y `purgeExpired` (las dos ventanas de retencion), pero no se ha podido ejecutar en el entorno donde se escribio por falta de Docker. Correr `pnpm test:integration -- observability.service.integration-spec.ts` con Docker disponible antes de darlo por validado en CI.
+- Mejora responsive del dashboard (`developer-logs-page.css`, breakpoints 960px/720px) verificada solo por build; no se ha comprobado visualmente en navegador.
 
 ## Mejoras futuras
 

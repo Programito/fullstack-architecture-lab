@@ -5,6 +5,29 @@ export type LogCategory = 'request' | 'error' | 'audit' | 'client';
 // backend/src/observability/application/audit-event.types.ts.
 export const AUDIT_ENTITY_TYPES = ['auth', 'product', 'menu', 'menu-section', 'reservation', 'order'] as const;
 
+// Curated substrings of known backend routes (the `path` filter matches by
+// "contains", so these work even though the stored path carries real ids
+// and query strings). Must stay in sync by hand with the controllers under
+// backend/src/{identity,restaurants,observability,health}/presentation/rest.
+export const KNOWN_LOG_PATH_GROUPS = [
+  { value: '/auth', label: '/auth' },
+  { value: '/users', label: '/users' },
+  { value: '/roles', label: '/roles' },
+  { value: '/permissions', label: '/permissions' },
+  { value: '/sessions', label: '/sessions' },
+  { value: '/restaurants', label: '/restaurants' },
+  { value: '/menu', label: '/restaurants/:id/menu' },
+  { value: '/products', label: '/restaurants/:id/products' },
+  { value: '/reservations', label: '/restaurants/:id/reservations' },
+  { value: '/orders', label: '/restaurants/:id/orders' },
+  { value: '/service-points', label: '/restaurants/:id/service-points' },
+  { value: '/customers', label: '/restaurants/:id/customers' },
+  { value: '/floors', label: '/restaurants/:id/floors' },
+  { value: '/developer/logs', label: '/developer/logs' },
+  { value: '/observability/client-events', label: '/observability/client-events' },
+  { value: '/health', label: '/health' },
+] as const;
+
 export type DeveloperLogSummaryDto = {
   totalRequests: number;
   errorCount: number;
@@ -70,3 +93,13 @@ export type DeveloperLogFilters = {
 
 export type DeveloperLogsView = 'all' | 'operations' | 'audit';
 export type DeveloperLogsQuickRange = '1h' | '6h' | '24h' | '3d' | '7d' | 'custom';
+
+export type RestaurantOptionDto = {
+  id: string;
+  name: string;
+};
+
+export type PickerOptionDto = {
+  id: string;
+  label: string;
+};

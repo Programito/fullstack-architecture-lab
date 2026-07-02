@@ -39,6 +39,7 @@ import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password-
 import { RestaurantScopeService } from './infrastructure/security/restaurant-scope.service';
 import { AuthController } from './presentation/rest/auth.controller';
 import { AuthGuard } from './presentation/rest/auth.guard';
+import { BootstrapOrAdminGuard } from './presentation/rest/bootstrap-or-admin.guard';
 import { PermissionsController } from './presentation/rest/permissions.controller';
 import { PermissionsGuard } from './presentation/rest/permissions.guard';
 import { RestaurantAccessGuard } from './presentation/rest/restaurant-access.guard';
@@ -58,6 +59,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
     AuthTokenService,
     RestaurantScopeService,
     AuthGuard,
+    BootstrapOrAdminGuard,
     RolesGuard,
     PermissionsGuard,
     RestaurantAccessGuard,

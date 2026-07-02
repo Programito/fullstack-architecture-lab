@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/angular';
+import { fireEvent, render, screen } from '@testing-library/angular';
 import { ActivatedRoute, Router, convertToParamMap, type Params } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 
@@ -10,6 +10,14 @@ class TestResizeObserver {
   observe(): void {}
   unobserve(): void {}
   disconnect(): void {}
+}
+
+function pickerApiMocks() {
+  return {
+    getRestaurantOptions: vi.fn(() => of([{ id: 'restaurant-mesaflow-centro', name: 'MesaFlow Centro' }])),
+    getActorOptions: vi.fn(() => of([{ id: 'user-1', label: 'developer@mesaflow.demo' }])),
+    getEntityOptions: vi.fn(() => of([{ id: 'user-1', label: 'developer@mesaflow.demo' }])),
+  };
 }
 
 function createRouteHarness(initialParams: Params = {}) {
@@ -42,6 +50,7 @@ describe('DeveloperLogsPage', () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
+      ...pickerApiMocks(),
       getSummary: vi.fn(() => of({
         totalRequests: 120,
         errorCount: 8,
@@ -102,6 +111,7 @@ describe('DeveloperLogsPage', () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
+      ...pickerApiMocks(),
       getSummary: vi.fn(() => of({
         totalRequests: 120,
         errorCount: 8,
@@ -163,6 +173,7 @@ describe('DeveloperLogsPage', () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
+      ...pickerApiMocks(),
       getSummary: vi.fn(() => of({
         totalRequests: 120,
         errorCount: 8,
@@ -212,14 +223,13 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const searchInputs = screen.getAllByRole('searchbox');
-    const pathInput = searchInputs[0] as HTMLInputElement;
-    pathInput.value = '/api/v1/orders';
-    pathInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const pathSelect = screen.getByLabelText('developer.logs.filters.path') as HTMLSelectElement;
+    pathSelect.value = '/orders';
+    pathSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
 
-    const expectedFilter = expect.objectContaining({ path: '/api/v1/orders' });
+    const expectedFilter = expect.objectContaining({ path: '/orders' });
     expect(api.getSummary).toHaveBeenLastCalledWith(expectedFilter);
     expect(api.getTimeline).toHaveBeenLastCalledWith(expectedFilter);
     expect(api.getBreakdown).toHaveBeenLastCalledWith(expectedFilter);
@@ -230,6 +240,7 @@ describe('DeveloperLogsPage', () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
+      ...pickerApiMocks(),
       getSummary: vi.fn(() => of({
         totalRequests: 30,
         errorCount: 1,
@@ -251,9 +262,9 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const restaurantIdInput = screen.getByLabelText('developer.logs.filters.restaurantId') as HTMLInputElement;
-    restaurantIdInput.value = 'restaurant-mesaflow-centro';
-    restaurantIdInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const restaurantIdCombobox = screen.getByRole('combobox', { name: 'developer.logs.filters.restaurantId' });
+    fireEvent.focus(restaurantIdCombobox);
+    fireEvent.click(screen.getByRole('option', { name: /MesaFlow Centro/i }));
 
     screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
 
@@ -268,6 +279,7 @@ describe('DeveloperLogsPage', () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
+      ...pickerApiMocks(),
       getSummary: vi.fn(() => of({
         totalRequests: 4,
         errorCount: 0,
@@ -317,21 +329,21 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const entityIdInput = screen.getByLabelText('developer.logs.filters.entityId') as HTMLInputElement;
-    entityIdInput.value = 'user-1';
-    entityIdInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const entityTypeSelect = screen.getByLabelText('developer.logs.filters.entityType') as HTMLSelectElement;
+    entityTypeSelect.value = 'auth';
+    entityTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-    const actorUserIdInput = screen.getByLabelText('developer.logs.filters.actorUserId') as HTMLInputElement;
-    actorUserIdInput.value = 'user-1';
-    actorUserIdInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const entityIdCombobox = screen.getByRole('combobox', { name: 'developer.logs.filters.entityId' });
+    fireEvent.focus(entityIdCombobox);
+    fireEvent.click(screen.getByRole('option', { name: /developer@mesaflow.demo/i }));
+
+    const actorUserIdCombobox = screen.getByRole('combobox', { name: 'developer.logs.filters.actorUserId' });
+    fireEvent.focus(actorUserIdCombobox);
+    fireEvent.click(screen.getByRole('option', { name: /developer@mesaflow.demo/i }));
 
     const resultSelect = screen.getByLabelText('developer.logs.filters.result') as HTMLSelectElement;
     resultSelect.value = 'succeeded';
     resultSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-    const entityTypeSelect = screen.getByLabelText('developer.logs.filters.entityType') as HTMLSelectElement;
-    entityTypeSelect.value = 'auth';
-    entityTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
 
@@ -360,6 +372,7 @@ describe('DeveloperLogsPage', () => {
       view: 'audit',
     });
     const api = {
+      ...pickerApiMocks(),
       getSummary: vi.fn(() => of({
         totalRequests: 1,
         errorCount: 0,

@@ -9,13 +9,14 @@ import {
 import { USER_REPOSITORY, type UserRepository } from '../../application/ports/user-repository.port';
 import { AuthTokenService } from '../../infrastructure/security/auth-token.service';
 import { ConfigService } from '@nestjs/config';
-import { canUseInteractiveAuth } from '../../domain/account-type';
+import { canUseInteractiveAuth, type AccountType } from '../../domain/account-type';
 
 export type AuthenticatedRequest = {
   headers: { authorization?: string };
   auth: {
     userId: string;
     sessionId: string;
+    accountType: AccountType;
     roles: string[];
     permissions: string[];
     scopes: { organizations: string[]; restaurants: string[] };
@@ -87,6 +88,7 @@ export class AuthGuard implements CanActivate {
     request.auth = {
       userId: user.id,
       sessionId: session.id,
+      accountType: user.accountType,
       roles: activeRoles.map((role) => role.name),
       permissions: activePermissions,
       scopes: {

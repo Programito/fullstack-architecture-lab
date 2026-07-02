@@ -8,6 +8,7 @@ import { ListPermissionsUseCase } from '../../application/use-cases/list-permiss
 import { ListRolesUseCase } from '../../application/use-cases/list-roles.use-case';
 import { SetRoleEnabledUseCase } from '../../application/use-cases/set-role-enabled.use-case';
 import { AuthGuard } from './auth.guard';
+import { BootstrapOrAdminGuard } from './bootstrap-or-admin.guard';
 import { RolesGuard, RequireRoles } from './roles.guard';
 import { AssignRolePermissionsDto } from './dto/assign-role-permissions.dto';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -27,6 +28,7 @@ export class RolesController {
 
   @Post()
   @Version('1')
+  @UseGuards(BootstrapOrAdminGuard)
   @ApiCreatedResponse({ type: RoleResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid role name.' })
   @ApiConflictResponse({ description: 'Role name already taken.' })
@@ -38,6 +40,7 @@ export class RolesController {
 
   @Get()
   @Version('1')
+  @UseGuards(BootstrapOrAdminGuard)
   @ApiOkResponse({ type: RoleResponseDto, isArray: true })
   async list(): Promise<RoleResponseDto[]> {
     const roles = unwrapResultOrThrow(await this.listRoles.execute());

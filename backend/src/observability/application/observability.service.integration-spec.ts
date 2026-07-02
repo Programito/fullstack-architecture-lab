@@ -194,6 +194,115 @@ describe('ObservabilityService (integration)', () => {
     expect(bySearch.items[0]).toMatchObject({ entityId: 'prod-2' });
   });
 
+  it('lists distinct entity options for an entity type, restricted by restaurant', async () => {
+    await prisma.appLog.createMany({
+      data: [
+        {
+          timestamp: new Date('2026-01-10T10:00:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'restaurant.product.updated',
+          message: 'Product updated.',
+          restaurantId: 'restaurant-a',
+          metadata: { entityType: 'product', entityId: 'prod-1', entityLabel: 'Burger especial', result: 'succeeded' },
+        },
+        {
+          timestamp: new Date('2026-01-10T10:05:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'restaurant.product.updated',
+          message: 'Product updated again.',
+          restaurantId: 'restaurant-a',
+          metadata: { entityType: 'product', entityId: 'prod-1', entityLabel: 'Burger especial', result: 'succeeded' },
+        },
+        {
+          // different restaurant -> excluded when filtering by restaurant-a
+          timestamp: new Date('2026-01-10T10:10:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'restaurant.product.updated',
+          message: 'Product updated.',
+          restaurantId: 'restaurant-b',
+          metadata: { entityType: 'product', entityId: 'prod-2', entityLabel: 'Ensalada', result: 'succeeded' },
+        },
+      ],
+    });
+
+    const options = await service.listEntityOptions('product', 'restaurant-a');
+
+    expect(options).toEqual([{ id: 'prod-1', label: 'Burger especial' }]);
+  });
+
+  it('restricts entity options to the given user ids (plus anonymous rows)', async () => {
+    await prisma.appLog.createMany({
+      data: [
+        {
+          timestamp: new Date('2026-01-10T10:00:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'restaurant.product.updated',
+          message: 'Product updated.',
+          userId: 'demo-user-1',
+          metadata: { entityType: 'product', entityId: 'prod-demo', entityLabel: 'Demo product', result: 'succeeded' },
+        },
+        {
+          timestamp: new Date('2026-01-10T10:05:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'restaurant.product.updated',
+          message: 'Product updated.',
+          userId: 'real-user-1',
+          metadata: { entityType: 'product', entityId: 'prod-real', entityLabel: 'Real product', result: 'succeeded' },
+        },
+      ],
+    });
+
+    const options = await service.listEntityOptions('product', undefined, ['demo-user-1']);
+
+    expect(options).toEqual([{ id: 'prod-demo', label: 'Demo product' }]);
+  });
+
+  it('lists distinct actor options derived from auth audit events, restricted by user ids', async () => {
+    await prisma.appLog.createMany({
+      data: [
+        {
+          timestamp: new Date('2026-01-10T10:00:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'auth.login.succeeded',
+          message: 'User signed in.',
+          userId: 'demo-user-1',
+          metadata: { entityType: 'auth', entityId: 'demo-user-1', entityLabel: 'developer@mesaflow.demo', result: 'succeeded' },
+        },
+        {
+          timestamp: new Date('2026-01-10T10:05:00.000Z'),
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'auth.login.succeeded',
+          message: 'User signed in.',
+          userId: 'real-user-1',
+          metadata: { entityType: 'auth', entityId: 'real-user-1', entityLabel: 'admin@example.com', result: 'succeeded' },
+        },
+      ],
+    });
+
+    const allOptions = await service.listActorOptions();
+    expect(allOptions).toEqual(expect.arrayContaining([
+      { id: 'demo-user-1', label: 'developer@mesaflow.demo' },
+      { id: 'real-user-1', label: 'admin@example.com' },
+    ]));
+
+    const restrictedOptions = await service.listActorOptions(['demo-user-1']);
+    expect(restrictedOptions).toEqual([{ id: 'demo-user-1', label: 'developer@mesaflow.demo' }]);
+  });
+
   it('purges non-audit logs past their retention window while keeping audit logs within theirs', async () => {
     const now = new Date('2026-06-01T00:00:00.000Z');
     await prisma.appLog.createMany({

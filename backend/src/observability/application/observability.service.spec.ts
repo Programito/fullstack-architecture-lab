@@ -107,6 +107,49 @@ describe('ObservabilityService', () => {
     });
   });
 
+  it('restricts results to a set of user ids (plus anonymous rows) when restrictToUserIds is set', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.appLog.count)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0);
+    vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([] as never);
+
+    await service.getSummary(
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-07-02T00:00:00.000Z'),
+      { restrictToUserIds: ['demo-user-1', 'demo-user-2'] },
+    );
+
+    expect(prisma.appLog.count).toHaveBeenNthCalledWith(1, {
+      where: expect.objectContaining({
+        AND: [{ OR: [{ userId: null }, { userId: { in: ['demo-user-1', 'demo-user-2'] } }] }],
+      }),
+    });
+  });
+
+  it('does not let an explicit actorUserId filter bypass restrictToUserIds', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.appLog.count)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([] as never);
+
+    await service.getSummary(
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-07-02T00:00:00.000Z'),
+      { actorUserId: 'real-user-99', restrictToUserIds: ['demo-user-1'] },
+    );
+
+    expect(prisma.appLog.count).toHaveBeenNthCalledWith(1, {
+      where: expect.objectContaining({
+        userId: 'real-user-99',
+        AND: [{ OR: [{ userId: null }, { userId: { in: ['demo-user-1'] } }] }],
+      }),
+    });
+  });
+
   it('applies path filters consistently across developer dashboard queries', async () => {
     const { prisma, service } = buildService();
     vi.mocked(prisma.appLog.count)
@@ -194,6 +237,56 @@ describe('ObservabilityService', () => {
     );
 
     expect(timeline).toEqual([]);
+  });
+
+  it('lists distinct entity options for a given entity type via raw SQL', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { id: 'prod-1', label: 'Burger especial' },
+      { id: 'prod-2', label: null },
+    ] as never);
+
+    const options = await service.listEntityOptions('product', 'restaurant-mesaflow-centro');
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(options).toEqual([
+      { id: 'prod-1', label: 'Burger especial' },
+      { id: 'prod-2', label: 'prod-2' },
+    ]);
+  });
+
+  it('lists distinct actor options derived from auth audit events via raw SQL', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { id: 'user-1', label: 'admin@example.com' },
+      { id: 'user-2', label: null },
+    ] as never);
+
+    const options = await service.listActorOptions(['user-1', 'user-2']);
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(options).toEqual([
+      { id: 'user-1', label: 'admin@example.com' },
+      { id: 'user-2', label: 'user-2' },
+    ]);
+  });
+
+  it('returns empty actor options when the raw query fails', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(new Error('connection lost'));
+
+    const options = await service.listActorOptions();
+
+    expect(options).toEqual([]);
+  });
+
+  it('returns empty entity options when the raw query fails', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(new Error('connection lost'));
+
+    const options = await service.listEntityOptions('product');
+
+    expect(options).toEqual([]);
   });
 
   it('aggregates the breakdown by level and category via groupBy', async () => {

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,9 +10,10 @@ import { Badge } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
 import { Card } from '../../../../shared/ui/card/card';
 import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
+import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/combobox';
 import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
-import { AUDIT_ENTITY_TYPES } from '../../api/developer-logs.models';
+import { AUDIT_ENTITY_TYPES, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
 import type {
   DeveloperLogBreakdownDto,
   DeveloperLogEventDto,
@@ -25,7 +26,7 @@ import type {
 
 @Component({
   selector: 'app-developer-logs-page',
-  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, Badge, Button, Card, Chart, Table],
+  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, Badge, Button, Card, Chart, Combobox, Table],
   templateUrl: './developer-logs-page.html',
   styleUrl: './developer-logs-page.css',
 })
@@ -39,6 +40,10 @@ export class DeveloperLogsPage {
   });
 
   protected readonly entityTypeOptions = AUDIT_ENTITY_TYPES;
+  protected readonly pathGroupOptions = KNOWN_LOG_PATH_GROUPS;
+  protected readonly restaurantOptions = signal<ComboboxOption[]>([]);
+  protected readonly actorOptions = signal<ComboboxOption[]>([]);
+  protected readonly entityOptions = signal<ComboboxOption[]>([]);
   protected readonly loading = signal(true);
   protected readonly summary = signal<DeveloperLogSummaryDto | null>(null);
   protected readonly timeline = signal<DeveloperLogTimelinePointDto[]>([]);
@@ -99,6 +104,28 @@ export class DeveloperLogsPage {
       this.quickRange.set(quickRange);
       this.selectedEvent.set(null);
       this.load();
+    });
+
+    this.api.getRestaurantOptions().subscribe({
+      next: (restaurants) => this.restaurantOptions.set(restaurants.map((restaurant) => ({ value: restaurant.id, label: restaurant.name }))),
+      error: () => this.restaurantOptions.set([]),
+    });
+    this.api.getActorOptions().subscribe({
+      next: (actors) => this.actorOptions.set(actors.map((actor) => ({ value: actor.id, label: actor.label }))),
+      error: () => this.actorOptions.set([]),
+    });
+
+    effect(() => {
+      const entityType = this.filters().entityType;
+      const restaurantId = this.filters().restaurantId;
+      if (!entityType) {
+        this.entityOptions.set([]);
+        return;
+      }
+      this.api.getEntityOptions(entityType, restaurantId).subscribe({
+        next: (entities) => this.entityOptions.set(entities.map((entity) => ({ value: entity.id, label: entity.label }))),
+        error: () => this.entityOptions.set([]),
+      });
     });
   }
 

@@ -159,6 +159,38 @@ class InMemoryObservabilityService {
     return { levels: [], categories: [] };
   }
 
+  async listEntityOptions(entityType: string, restaurantId?: string, restrictToUserIds?: string[]) {
+    const seen = new Map<string, string>();
+    for (const item of this.items) {
+      if (item['category'] !== 'audit') continue;
+      if (item['entityType'] !== entityType) continue;
+      if (restaurantId && item['restaurantId'] !== restaurantId) continue;
+      if (restrictToUserIds) {
+        const userId = item['userId'];
+        if (userId !== null && !restrictToUserIds.includes(userId as string)) continue;
+      }
+      const entityId = item['entityId'];
+      if (typeof entityId !== 'string') continue;
+      const entityLabel = typeof item['entityLabel'] === 'string' ? item['entityLabel'] : entityId;
+      if (!seen.has(entityId)) seen.set(entityId, entityLabel);
+    }
+    return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
+  }
+
+  async listActorOptions(restrictToUserIds?: string[]) {
+    const seen = new Map<string, string>();
+    for (const item of this.items) {
+      if (item['category'] !== 'audit') continue;
+      if (item['entityType'] !== 'auth') continue;
+      const userId = item['userId'];
+      if (typeof userId !== 'string') continue;
+      if (restrictToUserIds && !restrictToUserIds.includes(userId)) continue;
+      const label = typeof item['entityLabel'] === 'string' ? item['entityLabel'] : userId;
+      if (!seen.has(userId)) seen.set(userId, label);
+    }
+    return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
+  }
+
   async listEvents(query: {
     category?: string;
     actorUserId?: string;
@@ -167,6 +199,7 @@ class InMemoryObservabilityService {
     entityId?: string;
     result?: string;
     search?: string;
+    restrictToUserIds?: string[];
     page: number;
     pageSize: number;
   }) {
@@ -178,6 +211,10 @@ class InMemoryObservabilityService {
       if (query.entityType && item['entityType'] !== query.entityType) return false;
       if (query.entityId && item['entityId'] !== query.entityId) return false;
       if (query.result && item['result'] !== query.result) return false;
+      if (query.restrictToUserIds) {
+        const userId = item['userId'];
+        if (userId !== null && !query.restrictToUserIds.includes(userId as string)) return false;
+      }
       if (search) {
         const haystack = [item['event'], item['message'], item['path'], item['entityLabel']]
           .filter((value): value is string => typeof value === 'string')
@@ -1098,19 +1135,23 @@ describe('App e2e', () => {
   });
 
   it('creates and lists users without exposing password data', async () => {
+    const admin = await createAndLoginAdmin(app);
+    const adminToken = admin.body.accessToken;
+
     const createResponse = await request(app.getHttpServer())
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        email: ' ADMIN@Example.COM ',
-        firstName: ' Admin ',
+        email: ' STAFF@Example.COM ',
+        firstName: ' Staff ',
         lastName: ' User ',
         password: 'supersecret',
       })
       .expect(201);
 
     expect(createResponse.body).toMatchObject({
-      email: 'admin@example.com',
-      firstName: 'Admin',
+      email: 'staff@example.com',
+      firstName: 'Staff',
       lastName: 'User',
       enabled: true,
       roles: [],
@@ -1118,26 +1159,64 @@ describe('App e2e', () => {
     expect(createResponse.body.password).toBeUndefined();
     expect(createResponse.body.passwordHash).toBeUndefined();
 
-    const listResponse = await request(app.getHttpServer()).get('/api/v1/users').expect(200);
+    const listResponse = await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
 
-    expect(listResponse.body).toHaveLength(1);
-    expect(listResponse.body[0]).toMatchObject({
+    const staffEntry = listResponse.body.find((user: { id: string }) => user.id === createResponse.body.id);
+    expect(staffEntry).toMatchObject({
       id: createResponse.body.id,
-      email: 'admin@example.com',
-      firstName: 'Admin',
+      email: 'staff@example.com',
+      firstName: 'Staff',
       lastName: 'User',
       roles: [],
     });
-    expect(listResponse.body[0].password).toBeUndefined();
-    expect(listResponse.body[0].passwordHash).toBeUndefined();
+    expect(staffEntry.password).toBeUndefined();
+    expect(staffEntry.passwordHash).toBeUndefined();
+  });
+
+  it('locks down user and role bootstrap endpoints once the first admin exists', async () => {
+    const admin = await createAndLoginAdmin(app);
+    const adminToken = admin.body.accessToken;
+
+    await request(app.getHttpServer()).get('/api/v1/users').expect(401);
+    await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .send({ email: 'someone@example.com', firstName: 'Some', lastName: 'One', password: 'supersecret' })
+      .expect(401);
+    await request(app.getHttpServer()).get('/api/v1/roles').expect(401);
+    await request(app.getHttpServer())
+      .post('/api/v1/roles')
+      .send({ name: 'sneaky' })
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'waiter@example.com', firstName: 'Waiter', lastName: 'User', password: 'supersecret' })
+      .expect(201);
+    const waiterLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'waiter@example.com', password: 'supersecret' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${waiterLogin.body.accessToken}`)
+      .expect(403);
   });
 
   it('returns 409 when creating a user with a duplicated normalized email', async () => {
+    const admin = await createAndLoginAdmin(app);
+    const adminToken = admin.body.accessToken;
+
     await request(app.getHttpServer())
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        email: 'admin@example.com',
-        firstName: 'Admin',
+        email: 'staff@example.com',
+        firstName: 'Staff',
         lastName: 'User',
         password: 'supersecret',
       })
@@ -1145,30 +1224,40 @@ describe('App e2e', () => {
 
     await request(app.getHttpServer())
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        email: ' ADMIN@EXAMPLE.COM ',
+        email: ' STAFF@EXAMPLE.COM ',
         firstName: 'Other',
-        lastName: 'Admin',
+        lastName: 'Staff',
         password: 'supersecret',
       })
       .expect(409);
   });
 
   it('rejects invalid user payloads', async () => {
+    const admin = await createAndLoginAdmin(app);
+    const adminToken = admin.body.accessToken;
+
     await request(app.getHttpServer())
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ email: 'invalid-email', firstName: 'Admin', lastName: 'User', password: 'supersecret' })
       .expect(400);
 
     await request(app.getHttpServer())
       .post('/api/v1/users')
-      .send({ email: 'admin@example.com', firstName: 'Admin', lastName: 'User', password: 'short' })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'staff@example.com', firstName: 'Admin', lastName: 'User', password: 'short' })
       .expect(400);
   });
 
   it('creates roles and assigns them to users', async () => {
+    const admin = await createAndLoginAdmin(app);
+    const adminToken = admin.body.accessToken;
+
     const roleResponse = await request(app.getHttpServer())
       .post('/api/v1/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: ' Cashier ', description: 'Cash desk access.' })
       .expect(201);
 
@@ -1179,9 +1268,10 @@ describe('App e2e', () => {
 
     const userResponse = await request(app.getHttpServer())
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        email: 'admin@example.com',
-        firstName: 'Admin',
+        email: 'staff@example.com',
+        firstName: 'Staff',
         lastName: 'User',
         password: 'supersecret',
       })
@@ -1189,6 +1279,7 @@ describe('App e2e', () => {
 
     const assignResponse = await request(app.getHttpServer())
       .patch(`/api/v1/users/${userResponse.body.id}/roles`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ roleIds: [roleResponse.body.id] })
       .expect(200);
 
@@ -1197,9 +1288,11 @@ describe('App e2e', () => {
       roles: [roleResponse.body.id],
     });
 
-    const rolesResponse = await request(app.getHttpServer()).get('/api/v1/roles').expect(200);
-    expect(rolesResponse.body).toHaveLength(1);
-    expect(rolesResponse.body[0].id).toBe(roleResponse.body.id);
+    const rolesResponse = await request(app.getHttpServer())
+      .get('/api/v1/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(rolesResponse.body.map((role: { id: string }) => role.id)).toContain(roleResponse.body.id);
   });
 
   it('lists permissions, assigns them to a role, includes them in auth/me and invalidates a disabled session immediately', async () => {
@@ -1434,9 +1527,21 @@ describe('App e2e with in-memory identity seed', () => {
   });
 
   it('returns seeded users and roles', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'admin1234' })
+      .expect(200);
+    const adminToken = login.body.accessToken;
+
     const permissionsResponse = await request(app.getHttpServer()).get('/api/v1/permissions').expect(200);
-    const rolesResponse = await request(app.getHttpServer()).get('/api/v1/roles').expect(200);
-    const usersResponse = await request(app.getHttpServer()).get('/api/v1/users').expect(200);
+    const rolesResponse = await request(app.getHttpServer())
+      .get('/api/v1/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const usersResponse = await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
 
     expect(permissionsResponse.body.map((permission: { name: string }) => permission.name).sort()).toEqual([
       'kitchen',
@@ -1599,6 +1704,96 @@ describe('App e2e with in-memory identity seed', () => {
         }),
       ]),
     );
+  });
+
+  it('hides real user activity from a demo developer even when explicitly filtered for', async () => {
+    const realLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'admin1234' })
+      .expect(200);
+    const realUserId = realLogin.body.user.id;
+
+    const demoDeveloper = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const unfiltered = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/events')
+      .query({ category: 'audit', entityType: 'auth', page: 1, pageSize: 50 })
+      .set('Authorization', `Bearer ${demoDeveloper.body.accessToken}`)
+      .expect(200);
+    expect(unfiltered.body.items.some((item: { userId: string | null }) => item.userId === realUserId)).toBe(false);
+
+    const bypassAttempt = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/events')
+      .query({ category: 'audit', actorUserId: realUserId, page: 1, pageSize: 50 })
+      .set('Authorization', `Bearer ${demoDeveloper.body.accessToken}`)
+      .expect(200);
+    expect(bypassAttempt.body.items).toHaveLength(0);
+  });
+
+  it('lists distinct entity options for a given entity type', async () => {
+    const developer = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const options = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/entity-options')
+      .query({ entityType: 'auth' })
+      .set('Authorization', `Bearer ${developer.body.accessToken}`)
+      .expect(200);
+
+    expect(options.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: developer.body.user.id, label: developer.body.user.email }),
+      ]),
+    );
+  });
+
+  it('hides real user entity options from a demo developer', async () => {
+    const realLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'admin1234' })
+      .expect(200);
+
+    const demoDeveloper = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const options = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/entity-options')
+      .query({ entityType: 'auth' })
+      .set('Authorization', `Bearer ${demoDeveloper.body.accessToken}`)
+      .expect(200);
+
+    expect(options.body.some((option: { id: string }) => option.id === realLogin.body.user.id)).toBe(false);
+  });
+
+  it('lists actor options derived from auth audit events and hides real actors from a demo developer', async () => {
+    const realLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'admin1234' })
+      .expect(200);
+
+    const demoDeveloper = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const asDeveloper = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/actor-options')
+      .set('Authorization', `Bearer ${demoDeveloper.body.accessToken}`)
+      .expect(200);
+
+    expect(asDeveloper.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: demoDeveloper.body.user.id, label: demoDeveloper.body.user.email }),
+      ]),
+    );
+    expect(asDeveloper.body.some((option: { id: string }) => option.id === realLogin.body.user.id)).toBe(false);
   });
 
   it('rejects a developer logs page size above the allowed maximum', async () => {

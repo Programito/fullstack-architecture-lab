@@ -110,8 +110,34 @@
   margin: 1rem 0 0;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .developer-logs-page__charts {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .developer-logs-page {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .developer-logs-page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .developer-logs-page__filters label,
+  .developer-logs-page__search {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  .developer-logs-page__actions {
+    flex-direction: column;
+  }
+
+  .developer-logs-page__actions app-button {
+    width: 100%;
   }
 }

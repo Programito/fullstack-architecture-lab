@@ -189,6 +189,35 @@ El caso `developer` (org scope sin permisos) se cortocircuita antes de la consul
 **Limitación conocida:** `RestaurantAccessGuard` con scope de organización permite acceso a cualquier
 restaurante sin verificar que el restaurante pertenezca a esa organización.
 
+### `BootstrapOrAdminGuard`
+
+Protege el bootstrap de identidad: `POST/GET /users`, `PATCH /users/:id/roles`, `POST/GET /roles`.
+Estos endpoints estuvieron sin ningún guard durante un tiempo (bypass total de autenticación:
+cualquiera podía listar usuarios, crear cuentas o auto-asignarse el rol `admin`). El motivo original
+era permitir crear el primer admin sin token en una instalación nueva.
+
+```
+@UseGuards(BootstrapOrAdminGuard)
+```
+
+Lógica:
+
+```mermaid
+flowchart TD
+  A["¿existe algún User en el repositorio?"] -->|no| Pass["✓ pasa (bootstrap)"]
+  A -->|sí| B["AuthGuard: ¿token válido?"]
+  B -->|no| Deny401["✗ 401"]
+  B -->|sí| C["¿request.auth.roles incluye 'admin'?"]
+  C -->|sí| Pass
+  C -->|no| Deny403["✗ 403"]
+```
+
+En producción el primer admin normal se siembra con `pnpm prisma:seed` (escribe directo a la base,
+no pasa por este guard). El bootstrap vía API solo importa para entornos efímeros (tests e2e, demos
+locales sin seed) donde no hay ningún usuario todavía. En cuanto existe un usuario, el guard exige
+sesión válida + rol `admin` para siempre — no hay forma de reabrir el bootstrap sin vaciar la tabla
+`users`.
+
 ---
 
 ## Controladores de restaurante

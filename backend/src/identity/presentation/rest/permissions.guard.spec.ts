@@ -12,6 +12,7 @@ function makeAuth(overrides: Partial<AuthenticatedRequest['auth']> = {}): Authen
   return {
     userId: 'u1',
     sessionId: 's1',
+    accountType: 'regular',
     roles: [],
     permissions: [],
     scopes: { organizations: [], restaurants: [] },

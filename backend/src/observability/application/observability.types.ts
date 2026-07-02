@@ -31,6 +31,7 @@ export type LogQuery = {
   entityId?: string;
   result?: 'attempted' | 'succeeded' | 'failed';
   search?: string;
+  restrictToUserIds?: string[];
   page: number;
   pageSize: number;
 };

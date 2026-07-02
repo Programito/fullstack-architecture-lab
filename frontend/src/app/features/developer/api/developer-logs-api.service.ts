@@ -9,6 +9,8 @@ import type {
   DeveloperLogFilters,
   DeveloperLogSummaryDto,
   DeveloperLogTimelinePointDto,
+  PickerOptionDto,
+  RestaurantOptionDto,
 } from './developer-logs.models';
 
 @Injectable({ providedIn: 'root' })
@@ -16,6 +18,20 @@ export class DeveloperLogsApiService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly baseUrl = `${this.apiBaseUrl}/developer/logs`;
+
+  getRestaurantOptions(): Observable<RestaurantOptionDto[]> {
+    return this.http.get<RestaurantOptionDto[]>(`${this.apiBaseUrl}/restaurants`);
+  }
+
+  getActorOptions(): Observable<PickerOptionDto[]> {
+    return this.http.get<PickerOptionDto[]>(`${this.baseUrl}/actor-options`);
+  }
+
+  getEntityOptions(entityType: string, restaurantId: string): Observable<PickerOptionDto[]> {
+    let params = new HttpParams().set('entityType', entityType);
+    if (restaurantId.trim()) params = params.set('restaurantId', restaurantId.trim());
+    return this.http.get<PickerOptionDto[]>(`${this.baseUrl}/entity-options`, { params });
+  }
 
   getSummary(filters: DeveloperLogFilters): Observable<DeveloperLogSummaryDto> {
     return this.http.get<DeveloperLogSummaryDto>(`${this.baseUrl}/summary`, { params: this.buildParams(filters) });

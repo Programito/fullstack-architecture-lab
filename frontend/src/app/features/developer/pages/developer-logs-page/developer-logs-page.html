@@ -66,9 +66,14 @@
         <option value="client">client</option>
       </select>
     </label>
-    <label class="developer-logs-page__search">
+    <label>
       <span>{{ 'developer.logs.filters.path' | transloco }}</span>
-      <input type="search" [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)" />
+      <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
+        <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        @for (group of pathGroupOptions; track group.value) {
+          <option [value]="group.value">{{ group.label }}</option>
+        }
+      </select>
     </label>
     <label>
       <span>{{ 'developer.logs.filters.result' | transloco }}</span>
@@ -88,18 +93,30 @@
         }
       </select>
     </label>
-    <label class="developer-logs-page__search">
-      <span>{{ 'developer.logs.filters.entityId' | transloco }}</span>
-      <input type="search" [ngModel]="filters().entityId" (ngModelChange)="setFilter('entityId', $event)" />
-    </label>
-    <label class="developer-logs-page__search">
-      <span>{{ 'developer.logs.filters.actorUserId' | transloco }}</span>
-      <input type="search" [ngModel]="filters().actorUserId" (ngModelChange)="setFilter('actorUserId', $event)" />
-    </label>
-    <label class="developer-logs-page__search">
-      <span>{{ 'developer.logs.filters.restaurantId' | transloco }}</span>
-      <input type="search" [ngModel]="filters().restaurantId" (ngModelChange)="setFilter('restaurantId', $event)" />
-    </label>
+    <app-combobox
+      class="developer-logs-page__search"
+      [label]="'developer.logs.filters.entityId' | transloco"
+      [hint]="'developer.logs.filters.entityIdHint' | transloco"
+      [options]="entityOptions()"
+      [value]="filters().entityId"
+      (valueChange)="setFilter('entityId', $event)"
+    />
+    <app-combobox
+      class="developer-logs-page__search"
+      [label]="'developer.logs.filters.actorUserId' | transloco"
+      [hint]="'developer.logs.filters.actorUserIdHint' | transloco"
+      [options]="actorOptions()"
+      [value]="filters().actorUserId"
+      (valueChange)="setFilter('actorUserId', $event)"
+    />
+    <app-combobox
+      class="developer-logs-page__search"
+      [label]="'developer.logs.filters.restaurantId' | transloco"
+      [hint]="'developer.logs.filters.restaurantIdHint' | transloco"
+      [options]="restaurantOptions()"
+      [value]="filters().restaurantId"
+      (valueChange)="setFilter('restaurantId', $event)"
+    />
     <label class="developer-logs-page__search">
       <span>{{ 'developer.logs.filters.search' | transloco }}</span>
       <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />

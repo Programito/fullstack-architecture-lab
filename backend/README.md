@@ -81,7 +81,7 @@ frontend client events, and structured audit events.
 Environment variables:
 
 - `LOG_RETENTION_DAYS=30`
-- `AUDIT_RETENTION_DAYS=30`
+- `AUDIT_RETENTION_DAYS=365`
 - `OBSERVABILITY_DB_COLD_START_ENABLED=false`
 
 Developer-only endpoints live under `/api/v1/developer/logs/*`, and the

@@ -47,7 +47,7 @@ export class ObservabilityService {
   async getSummary(
     from: Date,
     to: Date,
-    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search'>> = {},
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<LogSummary> {
     try {
       const where = buildWhere({ ...filters, from, to });
@@ -85,7 +85,7 @@ export class ObservabilityService {
   async getTimeline(
     from: Date,
     to: Date,
-    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search'>> = {},
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<Array<{ bucket: string; total: number; errors: number; audit: number }>> {
     try {
       const whereSql = buildWhereSql({ ...filters, from, to });
@@ -116,7 +116,7 @@ export class ObservabilityService {
   async getBreakdown(
     from: Date,
     to: Date,
-    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search'>> = {},
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<{
     levels: Array<{ key: LogLevel; count: number }>;
     categories: Array<{ key: string; count: number }>;
@@ -135,6 +135,67 @@ export class ObservabilityService {
     } catch (error) {
       this.logger.error('Failed to compute log breakdown.', error instanceof Error ? error.stack : error);
       return { levels: [], categories: [] };
+    }
+  }
+
+  async listEntityOptions(
+    entityType: string,
+    restaurantId?: string,
+    restrictToUserIds?: string[],
+  ): Promise<Array<{ id: string; label: string }>> {
+    try {
+      const conditions: Prisma.Sql[] = [
+        Prisma.sql`"category" = 'audit'`,
+        Prisma.sql`"metadata"->>'entityType' = ${entityType}`,
+        Prisma.sql`"metadata"->>'entityId' IS NOT NULL`,
+      ];
+      if (restaurantId) conditions.push(Prisma.sql`"restaurantId" = ${restaurantId}`);
+      if (restrictToUserIds) {
+        conditions.push(Prisma.sql`("userId" IS NULL OR "userId" = ANY(${restrictToUserIds}::text[]))`);
+      }
+
+      const rows = await this.prisma.$queryRaw<Array<{ id: string; label: string | null }>>(Prisma.sql`
+        SELECT DISTINCT
+          "metadata"->>'entityId' AS id,
+          "metadata"->>'entityLabel' AS label
+        FROM "app_logs"
+        WHERE ${Prisma.join(conditions, ' AND ')}
+        ORDER BY id
+        LIMIT 50
+      `);
+
+      return rows.map((row) => ({ id: row.id, label: row.label ?? row.id }));
+    } catch (error) {
+      this.logger.error('Failed to list entity options.', error instanceof Error ? error.stack : error);
+      return [];
+    }
+  }
+
+  async listActorOptions(restrictToUserIds?: string[]): Promise<Array<{ id: string; label: string }>> {
+    try {
+      const conditions: Prisma.Sql[] = [
+        Prisma.sql`"category" = 'audit'`,
+        Prisma.sql`"metadata"->>'entityType' = 'auth'`,
+        Prisma.sql`"userId" IS NOT NULL`,
+      ];
+      if (restrictToUserIds) {
+        conditions.push(Prisma.sql`"userId" = ANY(${restrictToUserIds}::text[])`);
+      }
+
+      const rows = await this.prisma.$queryRaw<Array<{ id: string; label: string | null }>>(Prisma.sql`
+        SELECT DISTINCT ON ("userId")
+          "userId" AS id,
+          "metadata"->>'entityLabel' AS label
+        FROM "app_logs"
+        WHERE ${Prisma.join(conditions, ' AND ')}
+        ORDER BY "userId", "timestamp" DESC
+        LIMIT 50
+      `);
+
+      return rows.map((row) => ({ id: row.id, label: row.label ?? row.id }));
+    } catch (error) {
+      this.logger.error('Failed to list actor options.', error instanceof Error ? error.stack : error);
+      return [];
     }
   }
 
@@ -286,17 +347,20 @@ function isAuditResult(value: unknown): value is 'attempted' | 'succeeded' | 'fa
 }
 
 function buildWhere(
-  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search'>>,
+  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>>,
 ): Prisma.AppLogWhereInput {
-  const metadataFilters: Prisma.AppLogWhereInput[] = [];
+  const andFilters: Prisma.AppLogWhereInput[] = [];
   if (query.entityType) {
-    metadataFilters.push({ metadata: { path: ['entityType'], equals: query.entityType } });
+    andFilters.push({ metadata: { path: ['entityType'], equals: query.entityType } });
   }
   if (query.entityId) {
-    metadataFilters.push({ metadata: { path: ['entityId'], equals: query.entityId } });
+    andFilters.push({ metadata: { path: ['entityId'], equals: query.entityId } });
   }
   if (query.result) {
-    metadataFilters.push({ metadata: { path: ['result'], equals: query.result } });
+    andFilters.push({ metadata: { path: ['result'], equals: query.result } });
+  }
+  if (query.restrictToUserIds) {
+    andFilters.push({ OR: [{ userId: null }, { userId: { in: query.restrictToUserIds } }] });
   }
 
   return {
@@ -306,7 +370,7 @@ function buildWhere(
     path: query.path ? { contains: query.path, mode: 'insensitive' } : undefined,
     userId: query.actorUserId ?? query.userId,
     restaurantId: query.restaurantId,
-    AND: metadataFilters.length > 0 ? metadataFilters : undefined,
+    AND: andFilters.length > 0 ? andFilters : undefined,
     OR: query.search ? [
       { event: { contains: query.search, mode: 'insensitive' } },
       { message: { contains: query.search, mode: 'insensitive' } },
@@ -317,7 +381,7 @@ function buildWhere(
 }
 
 function buildWhereSql(
-  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search'>>,
+  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>>,
 ): Prisma.Sql {
   const conditions: Prisma.Sql[] = [
     Prisma.sql`"timestamp" >= ${query.from}`,
@@ -334,6 +398,9 @@ function buildWhereSql(
   if (query.entityType) conditions.push(Prisma.sql`"metadata"->>'entityType' = ${query.entityType}`);
   if (query.entityId) conditions.push(Prisma.sql`"metadata"->>'entityId' = ${query.entityId}`);
   if (query.result) conditions.push(Prisma.sql`"metadata"->>'result' = ${query.result}`);
+  if (query.restrictToUserIds) {
+    conditions.push(Prisma.sql`("userId" IS NULL OR "userId" = ANY(${query.restrictToUserIds}::text[]))`);
+  }
   if (query.search) {
     const term = `%${query.search}%`;
     conditions.push(Prisma.sql`(

@@ -1,10 +1,12 @@
-import { Controller, Get, Query, UseGuards, Version } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Req, UseGuards, Version } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { USER_REPOSITORY, type UserRepository } from '../../../identity/application/ports/user-repository.port';
+import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
 import { RequireRoles, RolesGuard } from '../../../identity/presentation/rest/roles.guard';
 import { ObservabilityService } from '../../application/observability.service';
 import { DeveloperLogsQueryDto } from './dto/developer-logs-query.dto';
+import { EntityOptionsQueryDto } from './dto/entity-options-query.dto';
 
 @ApiTags('developer-logs')
 @ApiBearerAuth()
@@ -12,37 +14,44 @@ import { DeveloperLogsQueryDto } from './dto/developer-logs-query.dto';
 @RequireRoles('developer')
 @Controller('developer/logs')
 export class DeveloperLogsController {
-  constructor(private readonly observability: ObservabilityService) {}
+  constructor(
+    private readonly observability: ObservabilityService,
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+  ) {}
 
   @Get('summary')
   @Version('1')
   @ApiOkResponse()
-  async summary(@Query() query: DeveloperLogsQueryDto) {
+  async summary(@Query() query: DeveloperLogsQueryDto, @Req() request: AuthenticatedRequest) {
     const { from, to } = resolveRange(query);
-    return this.observability.getSummary(from, to, query);
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
+    return this.observability.getSummary(from, to, { ...query, restrictToUserIds });
   }
 
   @Get('timeline')
   @Version('1')
   @ApiOkResponse()
-  async timeline(@Query() query: DeveloperLogsQueryDto) {
+  async timeline(@Query() query: DeveloperLogsQueryDto, @Req() request: AuthenticatedRequest) {
     const { from, to } = resolveRange(query);
-    return this.observability.getTimeline(from, to, query);
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
+    return this.observability.getTimeline(from, to, { ...query, restrictToUserIds });
   }
 
   @Get('breakdown')
   @Version('1')
   @ApiOkResponse()
-  async breakdown(@Query() query: DeveloperLogsQueryDto) {
+  async breakdown(@Query() query: DeveloperLogsQueryDto, @Req() request: AuthenticatedRequest) {
     const { from, to } = resolveRange(query);
-    return this.observability.getBreakdown(from, to, query);
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
+    return this.observability.getBreakdown(from, to, { ...query, restrictToUserIds });
   }
 
   @Get('events')
   @Version('1')
   @ApiOkResponse()
-  async events(@Query() query: DeveloperLogsQueryDto) {
+  async events(@Query() query: DeveloperLogsQueryDto, @Req() request: AuthenticatedRequest) {
     const { from, to } = resolveRange(query);
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
     return this.observability.listEvents({
       from,
       to,
@@ -56,9 +65,32 @@ export class DeveloperLogsController {
       entityType: query.entityType,
       entityId: query.entityId,
       search: query.search,
+      restrictToUserIds,
       page: query.page,
       pageSize: query.pageSize,
     });
+  }
+
+  @Get('entity-options')
+  @Version('1')
+  @ApiOkResponse()
+  async entityOptions(@Query() query: EntityOptionsQueryDto, @Req() request: AuthenticatedRequest) {
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
+    return this.observability.listEntityOptions(query.entityType, query.restaurantId, restrictToUserIds);
+  }
+
+  @Get('actor-options')
+  @Version('1')
+  @ApiOkResponse()
+  async actorOptions(@Req() request: AuthenticatedRequest) {
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
+    return this.observability.listActorOptions(restrictToUserIds);
+  }
+
+  private async resolveRestrictToUserIds(request: AuthenticatedRequest): Promise<string[] | undefined> {
+    if (request.auth.accountType !== 'demo') return undefined;
+    const allUsers = await this.users.findAll();
+    return allUsers.filter((user) => user.accountType === 'demo').map((user) => user.id);
   }
 }
 
