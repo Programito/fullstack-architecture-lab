@@ -74,6 +74,16 @@
       "invalidCredentials": "No s'ha pogut iniciar la sessió. Revisa l'email i la contrasenya.",
       "demoUnavailable": "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquí a uns minuts."
     },
+    "readiness": {
+      "warmingUp": {
+        "title": "Estem despertant la base de dades",
+        "description": "El primer accés pot trigar uns segons. Ho reintentem en segon pla perquè puguis entrar tan aviat com tot respongui."
+      },
+      "down": {
+        "title": "Ara mateix els serveis no responen",
+        "description": "L'aplicació continua intentant recuperar la connexió. Si persisteix, revisa l'estat de la base de dades i torna-ho a provar."
+      }
+    },
     "seed": {
       "label": "Carregar dades de demostració",
       "loading": "Carregant dades...",
@@ -85,11 +95,113 @@
     "eyebrow": "Espai tècnic",
     "title": "Recursos per a Developer",
     "description": "Documentació tècnica disponible només per a comptes amb rol Developer.",
+    "platformStatus": {
+      "eyebrow": "Plataforma",
+      "action": "Veure logs",
+      "duration": "Última comprovació: {{ durationMs }} ms",
+      "ready": {
+        "title": "Serveis operatius",
+        "description": "Base de dades llesta per respondre."
+      },
+      "warming_up": {
+        "title": "Base de dades despertant-se",
+        "description": "El primer accés pot trigar uns segons mentre la infraestructura torna a respondre."
+      },
+      "down": {
+        "title": "Serveis amb incidència",
+        "description": "La plataforma continua intentant recuperar la connexió amb la base de dades."
+      }
+    },
     "loading": "Carregant recursos...",
     "apiDocs": "Consulta els contractes i endpoints de l'API.",
     "storybook": "Explora els components, estats i patrons visuals.",
     "architectureTitle": "Arquitectura",
     "architecture": "Revisa les decisions i els fluxos principals del frontend.",
+    "logs": {
+      "cardTitle": "Logs i auditoria",
+      "cardDescription": "Revisa la salut operativa, els errors recents i l'activitat auditada.",
+      "eyebrow": "Observabilitat",
+      "title": "Logs operatius",
+      "description": "Supervisa peticions, errors i activitat d'auditoria des d'una vista tècnica simple.",
+      "back": "Tornar als recursos",
+      "filters": {
+        "from": "Des de",
+        "to": "Fins a",
+        "level": "Nivell",
+        "category": "Categoria",
+        "path": "Ruta",
+        "actorUserId": "Usuari actor",
+        "restaurantId": "Restaurant",
+        "entityType": "Entitat",
+        "entityId": "ID entitat",
+        "result": "Resultat",
+        "search": "Cercar",
+        "all": "Tots",
+        "apply": "Aplicar filtres",
+        "reset": "Restablir"
+      },
+      "views": {
+        "all": "Tot",
+        "operations": "Operació",
+        "audit": "Auditoria"
+      },
+      "ranges": {
+        "1h": "1h",
+        "6h": "6h",
+        "24h": "24h",
+        "3d": "3d",
+        "7d": "7d"
+      },
+      "metrics": {
+        "requests": "Peticions",
+        "errors": "Errors",
+        "errorRate": "Taxa d'error",
+        "audit": "Esdeveniments auditats",
+        "latency": "Latència p95"
+      },
+      "charts": {
+        "activity": "Activitat",
+        "levels": "Nivells",
+        "categories": "Categories",
+        "series": {
+          "events": "Esdeveniments",
+          "errors": "Errors",
+          "audit": "Auditoria",
+          "levels": "Nivells",
+          "categories": "Categories"
+        }
+      },
+      "table": {
+        "timestamp": "Hora",
+        "level": "Nivell",
+        "category": "Tipus",
+        "event": "Esdeveniment",
+        "message": "Detall",
+        "emptyTitle": "Sense esdeveniments",
+        "emptyDescription": "Encara no hi ha esdeveniments per a aquest rang."
+      },
+      "detail": {
+        "title": "Detall de l'esdeveniment",
+        "timestamp": "Data",
+        "source": "Origen",
+        "category": "Categoria",
+        "path": "Ruta",
+        "method": "Mètode",
+        "status": "Estat",
+        "duration": "Durada (ms)",
+        "requestId": "Request ID",
+        "actorUserId": "Usuari actor",
+        "actorRoles": "Rols actor",
+        "result": "Resultat",
+        "entityType": "Entitat",
+        "entityId": "ID entitat",
+        "entityLabel": "Etiqueta entitat",
+        "changedFields": "Camps modificats"
+      },
+      "events": {
+        "title": "Esdeveniments recents"
+      }
+    },
     "open": "Obrir recurs",
     "logout": "Tancar sessió"
   },
@@ -443,16 +555,16 @@
         "confirm": "Confirmar",
         "seat": "Asseure",
         "noShow": "No-show",
-        "cancel": "CancelÂ·lar"
+        "cancel": "Cancel·lar"
       },
       "create": {
         "open": "Nova reserva",
         "title": "Crear reserva",
         "customerName": "Client",
-        "customerPhone": "Telefon",
+        "customerPhone": "Telèfon",
         "partySize": "Comensals",
         "time": "Hora",
-        "duration": "Duracio",
+        "duration": "Duració",
         "notes": "Notes",
         "tables": "Taules",
         "timeSlots": "Hora d'arribada",
@@ -466,15 +578,15 @@
         "error": "No s'ha pogut crear la reserva.",
         "validation": {
           "customerNameRequired": "Introdueix el nom del client.",
-          "partySizeRequired": "Indica com a minim un comensal.",
-          "timeRequired": "Indica una hora valida."
+          "partySizeRequired": "Indica com a mínim un comensal.",
+          "timeRequired": "Indica una hora vàlida."
         },
         "capacityHint": "Capacitat total de les taules seleccionades: {{count}} places.",
         "capacityWarning": {
           "title": "El grup supera la capacitat de les taules",
-          "description": "Has indicat {{partySize}} comensals pero les taules seleccionades tenen capacitat per a {{capacity}}. Pots continuar igualment o revisar la seleccio.",
+          "description": "Has indicat {{partySize}} comensals però les taules seleccionades tenen capacitat per a {{capacity}}. Pots continuar igualment o revisar la selecció.",
           "confirm": "Continuar igualment",
-          "cancel": "Revisar seleccio"
+          "cancel": "Revisar selecció"
         }
       },
       "serviceWindowsDialog": {
@@ -485,7 +597,7 @@
         "windowName": "Nom",
         "windowStart": "Inici",
         "windowEnd": "Fi",
-        "errorAtLeastOne": "Cal tenir com a minim una franja de servei.",
+        "errorAtLeastOne": "Cal tenir com a mínim una franja de servei.",
         "useDefaults": "Restaurar valors predeterminats",
         "defaultLunch": "Dinars",
         "defaultDinner": "Sopars"

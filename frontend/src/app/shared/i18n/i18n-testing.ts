@@ -69,11 +69,38 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         invalidCredentials: 'No se ha podido iniciar sesión. Revisa el email y la contraseña.',
         demoUnavailable: 'No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos.',
       },
+      readiness: {
+        warmingUp: {
+          title: 'Estamos despertando la base de datos',
+          description: 'El primer acceso puede tardar unos segundos. Reintentamos en segundo plano para que puedas entrar en cuanto todo responda.',
+        },
+        down: {
+          title: 'Ahora mismo los servicios no responden',
+          description: 'La aplicación sigue intentando recuperar la conexión. Si persiste, revisa el estado de la base de datos y vuelve a intentarlo.',
+        },
+      },
     },
     developer: {
       eyebrow: 'Espacio técnico',
       title: 'Recursos para Developer',
       description: 'Documentación técnica disponible únicamente para cuentas con rol Developer.',
+      platformStatus: {
+        eyebrow: 'Plataforma',
+        action: 'Ver logs',
+        duration: 'Última comprobación: {{ durationMs }} ms',
+        ready: {
+          title: 'Servicios operativos',
+          description: 'Base de datos lista para responder.',
+        },
+        warming_up: {
+          title: 'Base de datos despertando',
+          description: 'El primer acceso puede tardar unos segundos mientras la infraestructura vuelve a responder.',
+        },
+        down: {
+          title: 'Servicios con incidencia',
+          description: 'La plataforma sigue intentando recuperar la conexión con la base de datos.',
+        },
+      },
       loading: 'Cargando recursos...',
       apiDocs: 'Consulta los contratos y endpoints de la API.',
       storybook: 'Explora los componentes, estados y patrones visuales.',
@@ -790,11 +817,38 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         invalidCredentials: 'Sign-in failed. Check your email and password.',
         demoUnavailable: 'The demo could not be opened right now. Try again in a few minutes.',
       },
+      readiness: {
+        warmingUp: {
+          title: 'We are waking up the database',
+          description: 'The first access can take a few seconds. We keep retrying in the background so you can sign in as soon as everything responds.',
+        },
+        down: {
+          title: 'The services are not responding right now',
+          description: 'The app keeps trying to recover the connection. If it persists, review the database status and try again.',
+        },
+      },
     },
     developer: {
       eyebrow: 'Technical space',
       title: 'Developer resources',
       description: 'Technical documentation available only to accounts with the Developer role.',
+      platformStatus: {
+        eyebrow: 'Platform',
+        action: 'Open logs',
+        duration: 'Last check: {{ durationMs }} ms',
+        ready: {
+          title: 'Services operational',
+          description: 'Database ready to respond.',
+        },
+        warming_up: {
+          title: 'Database waking up',
+          description: 'The first access can take a few seconds while the infrastructure starts responding again.',
+        },
+        down: {
+          title: 'Services degraded',
+          description: 'The platform is still trying to recover the database connection.',
+        },
+      },
       loading: 'Loading resources...',
       apiDocs: 'Review API contracts and endpoints.',
       storybook: 'Explore components, states, and visual patterns.',
@@ -1358,11 +1412,38 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         invalidCredentials: "No s'ha pogut iniciar la sessió. Revisa l'email i la contrasenya.",
         demoUnavailable: "No s'ha pogut obrir la demo ara mateix. Torna-ho a provar d'aquí a uns minuts.",
       },
+      readiness: {
+        warmingUp: {
+          title: 'Estem despertant la base de dades',
+          description: 'El primer accés pot trigar uns segons. Ho reintentem en segon pla perquè puguis entrar tan aviat com tot respongui.',
+        },
+        down: {
+          title: 'Ara mateix els serveis no responen',
+          description: "L'aplicació continua intentant recuperar la connexió. Si persisteix, revisa l'estat de la base de dades i torna-ho a provar.",
+        },
+      },
     },
     developer: {
       eyebrow: 'Espai tècnic',
       title: 'Recursos per a Developer',
       description: 'Documentació tècnica disponible només per a comptes amb rol Developer.',
+      platformStatus: {
+        eyebrow: 'Plataforma',
+        action: 'Veure logs',
+        duration: 'Última comprovació: {{ durationMs }} ms',
+        ready: {
+          title: 'Serveis operatius',
+          description: 'Base de dades llesta per respondre.',
+        },
+        warming_up: {
+          title: 'Base de dades despertant-se',
+          description: 'El primer accés pot trigar uns segons mentre la infraestructura torna a respondre.',
+        },
+        down: {
+          title: 'Serveis amb incidència',
+          description: 'La plataforma continua intentant recuperar la connexió amb la base de dades.',
+        },
+      },
       loading: 'Carregant recursos...',
       apiDocs: "Consulta els contractes i endpoints de l'API.",
       storybook: 'Explora els components, estats i patrons visuals.',

@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Res, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 type HttpResponse = { status(code: number): HttpResponse };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
-import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
+import { AuditService } from '../../../observability/application/audit.service';
+import { auditContext } from '../../../observability/application/audit-context';
 import { PermissionsGuard, RequirePermissions } from '../../../identity/presentation/rest/permissions.guard';
 import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
@@ -42,6 +44,7 @@ export class RestaurantMenuController {
     private readonly removeMenuSectionItem: RemoveMenuSectionItemUseCase,
     private readonly reorderMenuSections: ReorderMenuSectionsUseCase,
     private readonly reorderMenuSectionItems: ReorderMenuSectionItemsUseCase,
+    private readonly audit: AuditService,
   ) {}
 
   @Get(':id/menu')
@@ -84,10 +87,23 @@ export class RestaurantMenuController {
     @Param('id') id: string,
     @Param('menuId') menuId: string,
     @Body() body: CreateMenuSectionDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<MenuSectionResponseDto> {
-    return unwrapResultOrThrow(
+    const section = unwrapResultOrThrow(
       await this.createMenuSection.execute({ restaurantId: id, menuId, name: body.name, isVisible: body.isVisible }),
     );
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.section.created',
+      message: `Section ${section.name} created.`,
+      result: 'succeeded',
+      entityType: 'menu-section',
+      entityId: section.id,
+      entityLabel: section.name,
+      changedFields: ['name', 'isVisible'],
+      metadata: { menuId, sectionId: section.id, name: section.name },
+    });
+    return section;
   }
 
   @Patch(':id/menus/:menuId/sections/:sectionId')
@@ -103,10 +119,23 @@ export class RestaurantMenuController {
     @Param('menuId') menuId: string,
     @Param('sectionId') sectionId: string,
     @Body() body: UpdateMenuSectionDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<MenuSectionResponseDto> {
-    return unwrapResultOrThrow(
+    const section = unwrapResultOrThrow(
       await this.updateMenuSection.execute({ restaurantId: id, menuId, sectionId, name: body.name, isVisible: body.isVisible }),
     );
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.section.updated',
+      message: `Section ${section.name} updated.`,
+      result: 'succeeded',
+      entityType: 'menu-section',
+      entityId: sectionId,
+      entityLabel: section.name,
+      changedFields: collectChangedFields(body, ['name', 'isVisible']),
+      metadata: { menuId, sectionId, name: section.name },
+    });
+    return section;
   }
 
   @Delete(':id/menus/:menuId/sections/:sectionId')
@@ -121,9 +150,21 @@ export class RestaurantMenuController {
     @Param('id') id: string,
     @Param('menuId') menuId: string,
     @Param('sectionId') sectionId: string,
+    @Req() request: AuthenticatedRequest,
     @Res() res: HttpResponse,
   ): Promise<void> {
     unwrapResultOrThrow(await this.deleteMenuSection.execute({ restaurantId: id, menuId, sectionId }));
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.section.deleted',
+      message: `Section ${sectionId} deleted.`,
+      result: 'succeeded',
+      entityType: 'menu-section',
+      entityId: sectionId,
+      entityLabel: sectionId,
+      changedFields: ['deleted'],
+      metadata: { menuId, sectionId },
+    });
     res.status(HttpStatus.NO_CONTENT);
   }
 
@@ -141,8 +182,9 @@ export class RestaurantMenuController {
     @Param('menuId') menuId: string,
     @Param('sectionId') sectionId: string,
     @Body() body: AddMenuSectionItemDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<MenuItemResponseDto> {
-    return unwrapResultOrThrow(
+    const item = unwrapResultOrThrow(
       await this.addMenuSectionItem.execute({
         restaurantId: id,
         menuId,
@@ -152,6 +194,18 @@ export class RestaurantMenuController {
         priceOverrideCents: body.priceOverrideCents,
       }),
     );
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.section-item.created',
+      message: `Menu item added to section ${sectionId}.`,
+      result: 'succeeded',
+      entityType: 'menu-section',
+      entityId: sectionId,
+      entityLabel: sectionId,
+      changedFields: ['items'],
+      metadata: { menuId, sectionId, itemId: item.id, restaurantProductId: body.restaurantProductId },
+    });
+    return item;
   }
 
   @Patch(':id/menus/:menuId/sections/:sectionId/items/:itemId')
@@ -168,8 +222,9 @@ export class RestaurantMenuController {
     @Param('sectionId') sectionId: string,
     @Param('itemId') itemId: string,
     @Body() body: UpdateMenuSectionItemDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<MenuItemResponseDto> {
-    return unwrapResultOrThrow(
+    const item = unwrapResultOrThrow(
       await this.updateMenuSectionItem.execute({
         restaurantId: id,
         menuId,
@@ -180,6 +235,18 @@ export class RestaurantMenuController {
         isVisible: body.isVisible,
       }),
     );
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.section-item.updated',
+      message: `Menu item ${itemId} updated.`,
+      result: 'succeeded',
+      entityType: 'menu-section',
+      entityId: sectionId,
+      entityLabel: sectionId,
+      changedFields: collectChangedFields(body, ['displayNameOverride', 'priceOverrideCents', 'isVisible']),
+      metadata: { menuId, sectionId, itemId },
+    });
+    return item;
   }
 
   @Delete(':id/menus/:menuId/sections/:sectionId/items/:itemId')
@@ -195,9 +262,21 @@ export class RestaurantMenuController {
     @Param('menuId') menuId: string,
     @Param('sectionId') sectionId: string,
     @Param('itemId') itemId: string,
+    @Req() request: AuthenticatedRequest,
     @Res() res: HttpResponse,
   ): Promise<void> {
     unwrapResultOrThrow(await this.removeMenuSectionItem.execute({ restaurantId: id, menuId, sectionId, itemId }));
+    await this.audit.record({
+      ...auditContext(request, id),
+      event: 'menu.section-item.deleted',
+      message: `Menu item ${itemId} removed.`,
+      result: 'succeeded',
+      entityType: 'menu-section',
+      entityId: sectionId,
+      entityLabel: sectionId,
+      changedFields: ['items'],
+      metadata: { menuId, sectionId, itemId },
+    });
     res.status(HttpStatus.NO_CONTENT);
   }
 
@@ -237,4 +316,8 @@ export class RestaurantMenuController {
     unwrapResultOrThrow(await this.reorderMenuSectionItems.execute({ restaurantId: id, menuId, sectionId, items: body.items }));
     res.status(HttpStatus.NO_CONTENT);
   }
+}
+
+function collectChangedFields<T extends object>(input: T, keys: Array<keyof T>): string[] {
+  return keys.filter((key) => input[key] !== undefined).map((key) => String(key));
 }

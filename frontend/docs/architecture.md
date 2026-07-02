@@ -941,3 +941,93 @@ pero no persiste en base de datos.
 
 Usa esta carpeta para arquitectura frontend, estrategia de testing y notas técnicas del producto.
 Usa `frontend/src/app/shared/ui/docs/` para documentación MDX de Storybook sobre el sistema UI.
+
+## Observabilidad frontend
+
+La capa de cliente para observabilidad vive en:
+
+```txt
+src/app/core/observability/
+```
+
+Responsabilidades:
+
+- capturar errores globales
+- capturar errores HTTP de API
+- registrar navegacion principal
+- registrar cambios online/offline
+- enviar eventos ligeros saneados a `POST /api/v1/observability/client-events`
+
+El dashboard operativo para `developer` vive en:
+
+```txt
+src/app/features/developer/pages/developer-logs-page/
+```
+
+La pantalla `/developer/logs` consume:
+
+- resumen de KPIs
+- timeline
+- breakdown
+- listado paginado de eventos
+
+Filtros expuestos en UI:
+
+- rango fecha/hora
+- presets rapidos `1h`, `6h`, `24h`, `3d`, `7d`
+- nivel
+- categoria
+- ruta
+- usuario actor
+- tipo de entidad
+- id de entidad
+- resultado
+- texto libre
+
+Para detalles de backend, contrato de auditoria y retencion, ver
+[backend/docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).
+
+## Readiness en login
+
+La pantalla de acceso tambien consulta `GET /api/v1/health/readiness` para detectar cuando una base gratuita sigue despertando.
+
+Comportamiento:
+
+- hace una comprobacion inicial al cargar `/login`
+- si recibe `warming_up`, mantiene polling corto hasta que el backend responda `ready`
+- muestra un banner de estado dentro de la tarjeta de acceso
+- si recibe `down`, mantiene un aviso mas severo sin tocar el flujo de autenticacion
+
+La intencion es operativa: reducir confusion cuando el primer acceso tarda por cold start, sin meter esta logica dentro del servicio de login.
+
+## Readiness compartido en frontend
+
+La logica de sondeo de readiness no vive ya en cada page por separado. Se centraliza en:
+
+```txt
+src/app/features/identity/api/platform-readiness.service.ts
+```
+
+Responsabilidades:
+
+- consultar `GET /api/v1/health/readiness`
+- aplicar polling corto (`5s`)
+- degradar a `warming_up` si la comprobacion falla
+- permitir dos modos:
+  - `stopWhenReady: true` para pantallas como `login`
+  - observacion continua para pantallas tecnicas como `developer`
+
+Esto evita duplicar temporizadores y deja una unica frontera para cambiar la politica de sondeo mas adelante.
+
+## Estado de plataforma en developer
+
+La pantalla `DeveloperPage` reutiliza `PlatformReadinessService` para mostrar un estado compacto de plataforma antes de los recursos tecnicos.
+
+Comportamiento:
+
+- muestra `ready`, `warming_up` o `down`
+- enseña la duracion de la ultima comprobacion
+- mantiene observacion continua aunque la base ya este `ready`
+- ofrece una accion directa a `/developer/logs`
+
+La idea es que `login` resuelva incertidumbre para el acceso, mientras `developer` mantenga contexto operativo y enlace rapido con los logs.

@@ -74,6 +74,16 @@
       "invalidCredentials": "Sign-in failed. Check your email and password.",
       "demoUnavailable": "The demo could not be opened right now. Try again in a few minutes."
     },
+    "readiness": {
+      "warmingUp": {
+        "title": "We are waking up the database",
+        "description": "The first access can take a few seconds. We keep retrying in the background so you can sign in as soon as everything responds."
+      },
+      "down": {
+        "title": "The services are not responding right now",
+        "description": "The app keeps trying to recover the connection. If it persists, review the database status and try again."
+      }
+    },
     "seed": {
       "label": "Load demo data",
       "loading": "Loading data...",
@@ -85,11 +95,113 @@
     "eyebrow": "Technical space",
     "title": "Developer resources",
     "description": "Technical documentation available only to accounts with the Developer role.",
+    "platformStatus": {
+      "eyebrow": "Platform",
+      "action": "Open logs",
+      "duration": "Last check: {{ durationMs }} ms",
+      "ready": {
+        "title": "Services operational",
+        "description": "Database ready to respond."
+      },
+      "warming_up": {
+        "title": "Database waking up",
+        "description": "The first access can take a few seconds while the infrastructure starts responding again."
+      },
+      "down": {
+        "title": "Services degraded",
+        "description": "The platform is still trying to recover the database connection."
+      }
+    },
     "loading": "Loading resources...",
     "apiDocs": "Review API contracts and endpoints.",
     "storybook": "Explore components, states, and visual patterns.",
     "architectureTitle": "Architecture",
     "architecture": "Review the main frontend decisions and flows.",
+    "logs": {
+      "cardTitle": "Logs and audit",
+      "cardDescription": "Review operational health, recent errors, and audited activity.",
+      "eyebrow": "Observability",
+      "title": "Operational logs",
+      "description": "Monitor requests, errors, and audit activity from a simple technical view.",
+      "back": "Back to resources",
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "level": "Level",
+        "category": "Category",
+        "path": "Path",
+        "actorUserId": "Actor user",
+        "restaurantId": "Restaurant",
+        "entityType": "Entity",
+        "entityId": "Entity ID",
+        "result": "Result",
+        "search": "Search",
+        "all": "All",
+        "apply": "Apply filters",
+        "reset": "Reset"
+      },
+      "views": {
+        "all": "All",
+        "operations": "Operations",
+        "audit": "Audit"
+      },
+      "ranges": {
+        "1h": "1h",
+        "6h": "6h",
+        "24h": "24h",
+        "3d": "3d",
+        "7d": "7d"
+      },
+      "metrics": {
+        "requests": "Requests",
+        "errors": "Errors",
+        "errorRate": "Error rate",
+        "audit": "Audit events",
+        "latency": "p95 latency"
+      },
+      "charts": {
+        "activity": "Activity",
+        "levels": "Levels",
+        "categories": "Categories",
+        "series": {
+          "events": "Events",
+          "errors": "Errors",
+          "audit": "Audit",
+          "levels": "Levels",
+          "categories": "Categories"
+        }
+      },
+      "table": {
+        "timestamp": "Time",
+        "level": "Level",
+        "category": "Type",
+        "event": "Event",
+        "message": "Detail",
+        "emptyTitle": "No events",
+        "emptyDescription": "There are no events for this range yet."
+      },
+      "detail": {
+        "title": "Event detail",
+        "timestamp": "Timestamp",
+        "source": "Source",
+        "category": "Category",
+        "path": "Path",
+        "method": "Method",
+        "status": "Status",
+        "duration": "Duration (ms)",
+        "requestId": "Request ID",
+        "actorUserId": "Actor user",
+        "actorRoles": "Actor roles",
+        "result": "Result",
+        "entityType": "Entity",
+        "entityId": "Entity ID",
+        "entityLabel": "Entity label",
+        "changedFields": "Changed fields"
+      },
+      "events": {
+        "title": "Recent events"
+      }
+    },
     "open": "Open resource",
     "logout": "Sign out"
   },

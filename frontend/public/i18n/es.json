@@ -74,6 +74,16 @@
       "invalidCredentials": "No se ha podido iniciar sesión. Revisa el email y la contraseña.",
       "demoUnavailable": "No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos."
     },
+    "readiness": {
+      "warmingUp": {
+        "title": "Estamos despertando la base de datos",
+        "description": "El primer acceso puede tardar unos segundos. Reintentamos en segundo plano para que puedas entrar en cuanto todo responda."
+      },
+      "down": {
+        "title": "Ahora mismo los servicios no responden",
+        "description": "La aplicación sigue intentando recuperar la conexión. Si persiste, revisa el estado de la base de datos y vuelve a intentarlo."
+      }
+    },
     "seed": {
       "label": "Cargar datos de demostración",
       "loading": "Cargando datos...",
@@ -85,11 +95,113 @@
     "eyebrow": "Espacio técnico",
     "title": "Recursos para Developer",
     "description": "Documentación técnica disponible únicamente para cuentas con rol Developer.",
+    "platformStatus": {
+      "eyebrow": "Plataforma",
+      "action": "Ver logs",
+      "duration": "Última comprobación: {{ durationMs }} ms",
+      "ready": {
+        "title": "Servicios operativos",
+        "description": "Base de datos lista para responder."
+      },
+      "warming_up": {
+        "title": "Base de datos despertando",
+        "description": "El primer acceso puede tardar unos segundos mientras la infraestructura vuelve a responder."
+      },
+      "down": {
+        "title": "Servicios con incidencia",
+        "description": "La plataforma sigue intentando recuperar la conexión con la base de datos."
+      }
+    },
     "loading": "Cargando recursos...",
     "apiDocs": "Consulta los contratos y endpoints de la API.",
     "storybook": "Explora los componentes, estados y patrones visuales.",
     "architectureTitle": "Arquitectura",
     "architecture": "Revisa las decisiones y flujos principales del frontend.",
+    "logs": {
+      "cardTitle": "Logs y auditoría",
+      "cardDescription": "Revisa salud operativa, errores recientes y actividad auditada.",
+      "eyebrow": "Observabilidad",
+      "title": "Logs operativos",
+      "description": "Supervisa peticiones, errores y actividad de auditoría desde una vista técnica simple.",
+      "back": "Volver a recursos",
+      "filters": {
+        "from": "Desde",
+        "to": "Hasta",
+        "level": "Nivel",
+        "category": "Categoría",
+        "path": "Ruta",
+        "actorUserId": "Usuario actor",
+        "restaurantId": "Restaurante",
+        "entityType": "Entidad",
+        "entityId": "ID entidad",
+        "result": "Resultado",
+        "search": "Buscar",
+        "all": "Todos",
+        "apply": "Aplicar filtros",
+        "reset": "Restablecer"
+      },
+      "views": {
+        "all": "Todo",
+        "operations": "Operación",
+        "audit": "Auditoría"
+      },
+      "ranges": {
+        "1h": "1h",
+        "6h": "6h",
+        "24h": "24h",
+        "3d": "3d",
+        "7d": "7d"
+      },
+      "metrics": {
+        "requests": "Peticiones",
+        "errors": "Errores",
+        "errorRate": "Tasa de error",
+        "audit": "Eventos auditados",
+        "latency": "Latencia p95"
+      },
+      "charts": {
+        "activity": "Actividad",
+        "levels": "Niveles",
+        "categories": "Categorías",
+        "series": {
+          "events": "Eventos",
+          "errors": "Errores",
+          "audit": "Auditoría",
+          "levels": "Niveles",
+          "categories": "Categorías"
+        }
+      },
+      "table": {
+        "timestamp": "Hora",
+        "level": "Nivel",
+        "category": "Tipo",
+        "event": "Evento",
+        "message": "Detalle",
+        "emptyTitle": "Sin eventos",
+        "emptyDescription": "Todavía no hay eventos para este rango."
+      },
+      "detail": {
+        "title": "Detalle del evento",
+        "timestamp": "Fecha",
+        "source": "Origen",
+        "category": "Categoría",
+        "path": "Ruta",
+        "method": "Método",
+        "status": "Estado",
+        "duration": "Duración (ms)",
+        "requestId": "Request ID",
+        "actorUserId": "Usuario actor",
+        "actorRoles": "Roles actor",
+        "result": "Resultado",
+        "entityType": "Entidad",
+        "entityId": "ID entidad",
+        "entityLabel": "Etiqueta entidad",
+        "changedFields": "Campos modificados"
+      },
+      "events": {
+        "title": "Eventos recientes"
+      }
+    },
     "open": "Abrir recurso",
     "logout": "Cerrar sesión"
   },

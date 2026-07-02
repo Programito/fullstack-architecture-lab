@@ -6,7 +6,9 @@ import { vi } from 'vitest';
 
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
+import type { ReadinessStatusDto } from '../../api/identity-api.models';
 import { IdentityApiService } from '../../api/identity-api.service';
+import { PlatformReadinessService } from '../../api/platform-readiness.service';
 import { IdentitySessionStore } from '../../identity-session.store';
 import { DeveloperPage } from './developer-page';
 
@@ -24,9 +26,11 @@ describe('DeveloperPage', () => {
       architectureUrl: '/developer/architecture/',
     }),
     logout = vi.fn(() => of(undefined)),
+    readiness$ = of({ status: 'ready', database: 'ready', durationMs: 42 } satisfies ReadinessStatusDto),
   }: {
     resources$?: DeveloperResourcesStream;
     logout?: ReturnType<typeof vi.fn>;
+    readiness$?: Observable<ReadinessStatusDto>;
   } = {}) => {
     const storage = new MemoryKeyValueStorage();
     storage.setItem('locale', 'es');
@@ -45,6 +49,9 @@ describe('DeveloperPage', () => {
       getDeveloperResources: vi.fn(() => resources$),
       logout,
     };
+    const readiness = {
+      watch: vi.fn(() => readiness$),
+    };
 
     const result = await render(DeveloperPage, {
       imports: [...i18n.imports],
@@ -52,6 +59,7 @@ describe('DeveloperPage', () => {
         ...i18n.providers,
         { provide: KEY_VALUE_STORAGE, useValue: storage },
         { provide: IdentityApiService, useValue: api },
+        { provide: PlatformReadinessService, useValue: readiness },
         provideRouter([]),
       ],
     });
@@ -85,7 +93,9 @@ describe('DeveloperPage', () => {
     });
     resources$.complete();
 
-    expect(await screen.findAllByRole('link')).toHaveLength(3);
+    expect(await screen.findAllByRole('link')).toHaveLength(4);
+    expect(screen.getByText('Plataforma')).toBeTruthy();
+    expect(screen.getByText('Servicios operativos')).toBeTruthy();
     expect(screen.queryByRole('status')).toBeNull();
   });
 
@@ -96,9 +106,10 @@ describe('DeveloperPage', () => {
     const navigateSpy = vi.spyOn(router, 'navigate');
 
     expect(screen.getByRole('heading', { name: /Recursos para Developer/i })).toBeTruthy();
-    expect(screen.getAllByRole('link')).toHaveLength(3);
+    expect(screen.getAllByRole('link')).toHaveLength(4);
     expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('href')).toBe('/developer/api-docs/');
     expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('href')).toBe('/developer/storybook/');
+    expect(screen.getByText('Base de datos lista para responder.')).toBeTruthy();
 
     const logoutButton = screen.getByRole('button', { name: /Cerrar sesi.n/i });
     fireEvent.click(logoutButton);
@@ -107,5 +118,19 @@ describe('DeveloperPage', () => {
     expect(logout).toHaveBeenCalledTimes(1);
     expect(storage.getItem('identity.session')).toBeNull();
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('shows a warning platform banner and opens logs when the database is warming up', async () => {
+    const { router } = await renderPage({
+      readiness$: of({ status: 'warming_up', database: 'warming_up', durationMs: 1800 }),
+    });
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    expect(screen.getByText('Base de datos despertando')).toBeTruthy();
+    expect(screen.getByText('El primer acceso puede tardar unos segundos mientras la infraestructura vuelve a responder.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver logs' }));
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/developer/logs']);
   });
 });

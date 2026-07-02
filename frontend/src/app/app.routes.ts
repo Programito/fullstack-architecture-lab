@@ -17,6 +17,14 @@ export const routes: Routes = [
       import('./features/identity/pages/login-page/login-page').then((module) => module.LoginPage),
   },
   {
+    path: 'developer/logs',
+    canActivate: [developerGuard],
+    loadComponent: () =>
+      import('./features/developer/pages/developer-logs-page/developer-logs-page').then(
+        (module) => module.DeveloperLogsPage,
+      ),
+  },
+  {
     path: 'developer',
     canActivate: [developerGuard],
     loadComponent: () =>

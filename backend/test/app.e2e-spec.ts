@@ -12,14 +12,17 @@ import { Role } from '../src/identity/domain/role.entity';
 import { InMemoryRoleRepository } from '../src/identity/infrastructure/persistence/in-memory-role.repository';
 import { InMemoryUserRepository } from '../src/identity/infrastructure/persistence/in-memory-user.repository';
 import { InMemoryAuthSessionRepository } from '../src/identity/infrastructure/persistence/in-memory-auth-session.repository';
+import { ObservabilityService } from '../src/observability/application/observability.service';
 import { EVENT_BUS } from '../src/shared/events/event-bus.port';
 import { InMemoryEventBus } from '../src/shared/events/in-memory-event-bus';
 import { RESTAURANT_ORDER_CATALOG_REPOSITORY } from '../src/restaurants/application/ports/restaurant-order-catalog-repository.port';
 import type { RestaurantOrderCatalogRepository } from '../src/restaurants/application/ports/restaurant-order-catalog-repository.port';
 import { RESTAURANT_ORDER_REPOSITORY } from '../src/restaurants/application/ports/restaurant-order-repository.port';
 import type { RestaurantOrderRepository } from '../src/restaurants/application/ports/restaurant-order-repository.port';
+import { RESTAURANT_MENU_ADMIN_REPOSITORY } from '../src/restaurants/application/ports/restaurant-menu-admin-repository.port';
 import { RESTAURANT_READ_REPOSITORY } from '../src/restaurants/application/ports/restaurant-read-repository.port';
 import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from '../src/restaurants/application/ports/restaurant-service-windows-repository.port';
+import { CUSTOMER_REPOSITORY } from '../src/restaurants/application/ports/customer-repository.port';
 import { DemoRestaurantReadRepository } from '../src/restaurants/infrastructure/demo-restaurant-read.repository';
 
 class TestPasswordHasher implements PasswordHasher {
@@ -33,6 +36,164 @@ class TestPasswordHasher implements PasswordHasher {
 }
 
 let e2eRoleRepository: InMemoryRoleRepository | null = null;
+const DEMO_RESTAURANT_ID = 'restaurant-mesaflow-centro';
+
+const IN_MEMORY_PRODUCTS = [
+  {
+    id: 'restaurant-product-burger',
+    productId: 'product-burger',
+    name: 'Hamburguesa craft',
+    displayName: 'Hamburguesa craft',
+    imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg',
+    modifierGroupIds: [],
+    productType: 'simple' as const,
+    course: 'main' as const,
+    preparationRoute: 'kitchen' as const,
+    priceCents: 1250,
+    currency: 'EUR',
+    isAvailable: true,
+    isVisible: true,
+  },
+];
+
+const IN_MEMORY_CUSTOMERS = [
+  {
+    id: 'customer-laura',
+    name: 'Laura Gomez',
+    phone: '+34 600 111 222',
+    email: null,
+    visitCount: 3,
+    noShowCount: 0,
+    cancelCount: 0,
+    lateCount: 0,
+  },
+];
+
+const inMemoryMenuAdminRepository = {
+  async listRestaurantProducts(restaurantId: string) {
+    return restaurantId === DEMO_RESTAURANT_ID ? IN_MEMORY_PRODUCTS : [];
+  },
+};
+
+const inMemoryCustomerRepository = {
+  async searchByRestaurantId(restaurantId: string, q: string) {
+    if (restaurantId !== DEMO_RESTAURANT_ID) {
+      return null;
+    }
+
+    const query = q.trim().toLowerCase();
+    if (!query) {
+      return IN_MEMORY_CUSTOMERS;
+    }
+
+    return IN_MEMORY_CUSTOMERS.filter((customer) => customer.name.toLowerCase().includes(query));
+  },
+};
+
+class InMemoryObservabilityService {
+  private readonly items: Array<Record<string, unknown>> = [];
+
+  clear() {
+    this.items.length = 0;
+  }
+
+  async record(input: {
+    timestamp?: Date;
+    source: string;
+    category: string;
+    level: string;
+    event: string;
+    message: string;
+    requestId?: string | null;
+    organizationId?: string | null;
+    userId?: string | null;
+    restaurantId?: string | null;
+    method?: string | null;
+    path?: string | null;
+    statusCode?: number | null;
+    durationMs?: number | null;
+    metadata?: unknown;
+  }): Promise<void> {
+    const timestamp = input.timestamp ?? new Date();
+    const metadata = isRecord(input.metadata) ? input.metadata : null;
+    this.items.unshift({
+      id: `log-${this.items.length + 1}`,
+      timestamp: timestamp.toISOString(),
+      source: input.source,
+      category: input.category,
+      level: input.level,
+      event: input.event,
+      message: input.message,
+      path: input.path ?? null,
+      method: input.method ?? null,
+      statusCode: input.statusCode ?? null,
+      durationMs: input.durationMs ?? null,
+      userId: input.userId ?? null,
+      restaurantId: input.restaurantId ?? null,
+      requestId: input.requestId ?? null,
+      actorRoles: Array.isArray(metadata?.['actorRoles']) ? metadata['actorRoles'] : [],
+      result: typeof metadata?.['result'] === 'string' ? metadata['result'] : null,
+      entityType: typeof metadata?.['entityType'] === 'string' ? metadata['entityType'] : null,
+      entityId: typeof metadata?.['entityId'] === 'string' ? metadata['entityId'] : null,
+      entityLabel: typeof metadata?.['entityLabel'] === 'string' ? metadata['entityLabel'] : null,
+      changedFields: Array.isArray(metadata?.['changedFields']) ? metadata['changedFields'] : [],
+      metadata,
+    });
+  }
+
+  async getSummary() {
+    return {
+      totalRequests: 0,
+      errorCount: 0,
+      errorRate: 0,
+      auditEvents: this.items.filter((item) => item['category'] === 'audit').length,
+      p95DurationMs: 0,
+    };
+  }
+
+  async getTimeline() {
+    return [];
+  }
+
+  async getBreakdown() {
+    return { levels: [], categories: [] };
+  }
+
+  async listEvents(query: {
+    category?: string;
+    actorUserId?: string;
+    userId?: string;
+    entityType?: string;
+    entityId?: string;
+    result?: string;
+    search?: string;
+    page: number;
+    pageSize: number;
+  }) {
+    const actorUserId = query.actorUserId ?? query.userId;
+    const search = query.search?.toLowerCase() ?? null;
+    const filtered = this.items.filter((item) => {
+      if (query.category && item['category'] !== query.category) return false;
+      if (actorUserId && item['userId'] !== actorUserId) return false;
+      if (query.entityType && item['entityType'] !== query.entityType) return false;
+      if (query.entityId && item['entityId'] !== query.entityId) return false;
+      if (query.result && item['result'] !== query.result) return false;
+      if (search) {
+        const haystack = [item['event'], item['message'], item['path'], item['entityLabel']]
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.toLowerCase());
+        if (!haystack.some((value) => value.includes(search))) return false;
+      }
+      return true;
+    });
+
+    const start = (query.page - 1) * query.pageSize;
+    return {
+      total: filtered.length,
+      items: filtered.slice(start, start + query.pageSize),
+    };
+  }
+}
 
 async function createAndLoginAdmin(app: INestApplication) {
   if (!e2eRoleRepository) {
@@ -1213,6 +1374,7 @@ describe('App e2e', () => {
 describe('App e2e with in-memory identity seed', () => {
   let app: INestApplication;
   let demoReadRepo: DemoRestaurantReadRepository;
+  let observability: InMemoryObservabilityService;
 
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = 'http://localhost:4200';
@@ -1225,12 +1387,19 @@ describe('App e2e with in-memory identity seed', () => {
     process.env.IDENTITY_MEMORY_SEED_VALUE = '12345';
     process.env.DEMO_LOGIN_ENABLED = 'true';
     demoReadRepo = new DemoRestaurantReadRepository();
+    observability = new InMemoryObservabilityService();
 
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PASSWORD_HASHER)
       .useValue(new TestPasswordHasher())
+      .overrideProvider(ObservabilityService)
+      .useValue(observability)
+      .overrideProvider(RESTAURANT_MENU_ADMIN_REPOSITORY)
+      .useValue(inMemoryMenuAdminRepository)
+      .overrideProvider(CUSTOMER_REPOSITORY)
+      .useValue(inMemoryCustomerRepository)
       .overrideProvider(RESTAURANT_READ_REPOSITORY)
       .useValue(demoReadRepo)
       .overrideProvider(RESTAURANT_SERVICE_WINDOWS_REPOSITORY)
@@ -1255,6 +1424,7 @@ describe('App e2e with in-memory identity seed', () => {
 
   beforeEach(() => {
     demoReadRepo.reset();
+    observability.clear();
   });
 
   afterAll(async () => {
@@ -1309,6 +1479,139 @@ describe('App e2e with in-memory identity seed', () => {
       .get('/api/v1/auth/developer-resources')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
+  });
+
+  it('exposes structured auth audit metadata in developer logs', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const logsResponse = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/events')
+      .query({
+        category: 'audit',
+        actorUserId: login.body.user.id,
+        entityType: 'auth',
+        result: 'succeeded',
+        search: 'auth.demo-login.succeeded',
+        page: 1,
+        pageSize: 20,
+      })
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
+
+    expect(logsResponse.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: 'auth.demo-login.succeeded',
+          category: 'audit',
+          entityType: 'auth',
+          entityId: login.body.user.id,
+          entityLabel: login.body.user.email,
+          result: 'succeeded',
+          changedFields: expect.arrayContaining(['session']),
+        }),
+      ]),
+    );
+  });
+
+  it('audits failed login attempts without leaking the submitted password', async () => {
+    const developer = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'wrong-password' })
+      .expect(401);
+
+    const logsResponse = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/events')
+      .query({
+        category: 'audit',
+        entityType: 'auth',
+        result: 'failed',
+        search: 'auth.login.failed',
+        page: 1,
+        pageSize: 20,
+      })
+      .set('Authorization', `Bearer ${developer.body.accessToken}`)
+      .expect(200);
+
+    expect(logsResponse.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: 'auth.login.failed',
+          category: 'audit',
+          entityType: 'auth',
+          entityLabel: 'admin@example.com',
+          result: 'failed',
+        }),
+      ]),
+    );
+    expect(JSON.stringify(logsResponse.body.items)).not.toContain('wrong-password');
+  });
+
+  it('audits refresh token reuse after rotation', async () => {
+    const developer = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'admin1234' })
+      .expect(200);
+    const staleCookie = login.headers['set-cookie']?.[0];
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', staleCookie)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', staleCookie)
+      .expect(401);
+
+    const logsResponse = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/events')
+      .query({
+        category: 'audit',
+        entityType: 'auth',
+        result: 'failed',
+        search: 'auth.refresh.reuse-detected',
+        page: 1,
+        pageSize: 20,
+      })
+      .set('Authorization', `Bearer ${developer.body.accessToken}`)
+      .expect(200);
+
+    expect(logsResponse.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: 'auth.refresh.reuse-detected',
+          category: 'audit',
+          entityType: 'auth',
+          result: 'failed',
+        }),
+      ]),
+    );
+  });
+
+  it('rejects a developer logs page size above the allowed maximum', async () => {
+    const developer = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/events')
+      .query({ page: 1, pageSize: 500 })
+      .set('Authorization', `Bearer ${developer.body.accessToken}`)
+      .expect(400);
   });
 
   it('rejects reservations access when the token lacks restaurant scope', async () => {
@@ -1401,6 +1704,17 @@ describe('App e2e with in-memory identity seed', () => {
       .expect(401);
   });
 
+  it('returns 401 when sending client log events without authentication', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/observability/client-events')
+      .send({
+        level: 'info',
+        event: 'frontend.navigation',
+        message: 'Navigation to /developer/logs',
+      })
+      .expect(401);
+  });
+
   it('returns 401 when creating a menu section without authentication', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/menus/any-menu/sections')
@@ -1477,4 +1791,26 @@ describe('App e2e with in-memory identity seed', () => {
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
   });
+
+  it('accepts client log events from authenticated users', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/observability/client-events')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({
+        level: 'info',
+        event: 'frontend.navigation',
+        message: 'Navigation to /developer/logs',
+        path: '/developer/logs',
+      })
+      .expect(202);
+  });
 });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}

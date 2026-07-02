@@ -252,3 +252,27 @@ flowchart TB
 | Spec de caso de uso (Vitest) | Lógica nueva en un use case, reglas de negocio |
 | Spec de repositorio (Testcontainers) | Query Prisma nueva, transacción, relación |
 | Spec e2e (Supertest) | Contrato REST, cookie de auth, guard, flujo completo |
+
+---
+
+## Observabilidad
+
+El backend incluye un mÃ³dulo `observability` dedicado a:
+
+- persistir logs tÃ©cnicos y auditorÃ­a en `app_logs`
+- registrar request/response con interceptor global
+- registrar excepciones con filtro global
+- almacenar eventos ligeros del frontend
+- exponer agregados y listados para el dashboard developer
+- limpiar datos expirados segÃºn retenciÃ³n configurable
+
+Campos de auditorÃ­a estructurada:
+
+- `actorRoles`
+- `result`
+- `entityType`
+- `entityId`
+- `entityLabel`
+- `changedFields`
+
+Consulta la documentaciÃ³n operativa en [observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).

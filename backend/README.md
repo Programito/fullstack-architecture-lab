@@ -73,6 +73,27 @@ creation and update. The signed payload is used for direct browser uploads to
 Cloudinary, while the resulting `secure_url` is stored in
 `RestaurantProduct.imageUrl`.
 
+## Observability
+
+The project includes a persisted observability module for technical logs,
+frontend client events, and structured audit events.
+
+Environment variables:
+
+- `LOG_RETENTION_DAYS=30`
+- `AUDIT_RETENTION_DAYS=30`
+- `OBSERVABILITY_DB_COLD_START_ENABLED=false`
+
+Developer-only endpoints live under `/api/v1/developer/logs/*`, and the
+developer dashboard is available in the frontend at `/developer/logs`.
+
+The database cold-start observer is optional and disabled by default. Enable it
+only in environments where a free or sleeping database tier causes slow first
+queries or recoverable connection timeouts.
+
+Operational details, filters, audit fields, and retention behavior are
+documented in [docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).
+
 When changing database providers, update the provider in `prisma/schema.prisma`
 and generate a new provider-specific migration history. Keep shared seed data in
 TypeScript so it remains independent from SQL dialects.

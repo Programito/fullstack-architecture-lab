@@ -16,6 +16,7 @@ import type {
   DeveloperResourcesDto,
   AuthMeResponseDto,
   PermissionResponseDto,
+  ReadinessStatusDto,
   RoleResponseDto,
   UserResponseDto,
 } from './identity-api.models';
@@ -30,6 +31,7 @@ export class IdentityApiService {
   private readonly rolesUrl = `${this.apiBaseUrl}/roles`;
   private readonly permissionsUrl = `${this.apiBaseUrl}/permissions`;
   private readonly authUrl = `${this.apiBaseUrl}/auth`;
+  private readonly healthUrl = `${this.apiBaseUrl}/health`;
 
   listUsers(): Observable<User[]> {
     return this.http.get<UserResponseDto[]>(this.usersUrl).pipe(map((users) => users.map(UserMapper.fromDto)));
@@ -80,6 +82,10 @@ export class IdentityApiService {
 
   getAuthPublicConfig(): Observable<AuthPublicConfigDto> {
     return this.http.get<AuthPublicConfigDto>(`${this.authUrl}/public-config`);
+  }
+
+  getReadiness(): Observable<ReadinessStatusDto> {
+    return this.http.get<ReadinessStatusDto>(`${this.healthUrl}/readiness`);
   }
 
   login(email: string, password: string): Observable<AuthResponseDto> {

@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
-import { AuthGuard } from '../../../identity/presentation/rest/auth.guard';
+import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
 import { RestaurantAccessGuard } from '../../../identity/presentation/rest/restaurant-access.guard';
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
+import { AuditService } from '../../../observability/application/audit.service';
+import { auditContext } from '../../../observability/application/audit-context';
 import { ListRestaurantReservationsUseCase } from '../../application/use-cases/list-restaurant-reservations.use-case';
 import { CreateRestaurantReservationUseCase } from '../../application/use-cases/create-restaurant-reservation.use-case';
 import { UpdateRestaurantReservationStatusUseCase } from '../../application/use-cases/update-restaurant-reservation-status.use-case';
@@ -18,6 +20,7 @@ export class RestaurantReservationsController {
     private readonly listRestaurantReservations: ListRestaurantReservationsUseCase,
     private readonly createRestaurantReservation: CreateRestaurantReservationUseCase,
     private readonly updateRestaurantReservationStatus: UpdateRestaurantReservationStatusUseCase,
+    private readonly audit: AuditService,
   ) {}
 
   @Get(':id/reservations')
@@ -43,21 +46,32 @@ export class RestaurantReservationsController {
   async createReservation(
     @Param('id') restaurantId: string,
     @Body() body: CreateRestaurantReservationDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantReservationResponseDto> {
-    return RestaurantReservationResponseDto.fromDomain(
-      unwrapResultOrThrow(
-        await this.createRestaurantReservation.execute({
-          restaurantId,
-          customerNameSnapshot: body.customerNameSnapshot,
-          customerPhoneSnapshot: body.customerPhoneSnapshot ?? null,
-          partySize: body.partySize,
-          reservationAt: body.reservationAt,
-          durationMinutes: body.durationMinutes ?? 90,
-          notes: body.notes ?? null,
-          tableIds: body.tableIds ?? [],
-        }),
-      ),
+    const reservation = unwrapResultOrThrow(
+      await this.createRestaurantReservation.execute({
+        restaurantId,
+        customerNameSnapshot: body.customerNameSnapshot,
+        customerPhoneSnapshot: body.customerPhoneSnapshot ?? null,
+        partySize: body.partySize,
+        reservationAt: body.reservationAt,
+        durationMinutes: body.durationMinutes ?? 90,
+        notes: body.notes ?? null,
+        tableIds: body.tableIds ?? [],
+      }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'reservation.created',
+      message: `Reservation ${reservation.id} created.`,
+      result: 'succeeded',
+      entityType: 'reservation',
+      entityId: reservation.id,
+      entityLabel: reservation.customerNameSnapshot,
+      changedFields: ['customerNameSnapshot', 'customerPhoneSnapshot', 'partySize', 'reservationAt', 'durationMinutes', 'notes', 'tableIds', 'status'],
+      metadata: { reservationId: reservation.id, partySize: reservation.partySize, status: reservation.status },
+    });
+    return RestaurantReservationResponseDto.fromDomain(reservation);
   }
 
   @Patch(':id/reservations/:reservationId/confirm')
@@ -70,10 +84,9 @@ export class RestaurantReservationsController {
   async confirmReservation(
     @Param('id') restaurantId: string,
     @Param('reservationId') reservationId: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantReservationResponseDto> {
-    return RestaurantReservationResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.updateRestaurantReservationStatus.execute({ restaurantId, reservationId, status: 'confirmed' })),
-    );
+    return this.updateReservationStatus(request, restaurantId, reservationId, 'confirmed');
   }
 
   @Patch(':id/reservations/:reservationId/seat')
@@ -86,10 +99,9 @@ export class RestaurantReservationsController {
   async seatReservation(
     @Param('id') restaurantId: string,
     @Param('reservationId') reservationId: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantReservationResponseDto> {
-    return RestaurantReservationResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.updateRestaurantReservationStatus.execute({ restaurantId, reservationId, status: 'seated' })),
-    );
+    return this.updateReservationStatus(request, restaurantId, reservationId, 'seated');
   }
 
   @Patch(':id/reservations/:reservationId/no-show')
@@ -102,10 +114,9 @@ export class RestaurantReservationsController {
   async markReservationNoShow(
     @Param('id') restaurantId: string,
     @Param('reservationId') reservationId: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantReservationResponseDto> {
-    return RestaurantReservationResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.updateRestaurantReservationStatus.execute({ restaurantId, reservationId, status: 'no_show' })),
-    );
+    return this.updateReservationStatus(request, restaurantId, reservationId, 'no_show');
   }
 
   @Patch(':id/reservations/:reservationId/cancel')
@@ -118,9 +129,31 @@ export class RestaurantReservationsController {
   async cancelReservation(
     @Param('id') restaurantId: string,
     @Param('reservationId') reservationId: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantReservationResponseDto> {
-    return RestaurantReservationResponseDto.fromDomain(
-      unwrapResultOrThrow(await this.updateRestaurantReservationStatus.execute({ restaurantId, reservationId, status: 'cancelled' })),
+    return this.updateReservationStatus(request, restaurantId, reservationId, 'cancelled');
+  }
+
+  private async updateReservationStatus(
+    request: AuthenticatedRequest,
+    restaurantId: string,
+    reservationId: string,
+    status: 'confirmed' | 'seated' | 'no_show' | 'cancelled',
+  ): Promise<RestaurantReservationResponseDto> {
+    const reservation = unwrapResultOrThrow(
+      await this.updateRestaurantReservationStatus.execute({ restaurantId, reservationId, status }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'reservation.updated',
+      message: `Reservation ${reservationId} changed to ${status}.`,
+      result: 'succeeded',
+      entityType: 'reservation',
+      entityId: reservationId,
+      entityLabel: reservation.customerNameSnapshot,
+      changedFields: ['status'],
+      metadata: { reservationId, status },
+    });
+    return RestaurantReservationResponseDto.fromDomain(reservation);
   }
 }
