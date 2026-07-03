@@ -22,6 +22,7 @@
             <th scope="col">{{ 'userAdmin.user' | transloco }}</th>
             <th scope="col">{{ 'userAdmin.status' | transloco }}</th>
             <th scope="col">{{ 'userAdmin.accountType' | transloco }}</th>
+            <th scope="col">{{ 'userAdmin.scope' | transloco }}</th>
           </tr>
         </thead>
         <tbody>
@@ -31,7 +32,16 @@
                 <strong>{{ user.firstName }} {{ user.lastName }}</strong>
                 <small>{{ user.email }}</small>
               </td>
-              <td>{{ (user.enabled ? 'userAdmin.enabled' : 'userAdmin.disabled') | transloco }}</td>
+              <td class="user-admin__status">
+                {{ (user.enabled ? 'userAdmin.enabled' : 'userAdmin.disabled') | transloco }}
+                <app-switch
+                  [label]="'userAdmin.enabledFor' | transloco: { name: user.firstName + ' ' + user.lastName }"
+                  labelClass="sr-only"
+                  [checked]="user.enabled"
+                  [disabled]="accountTypeChangesBlocked()"
+                  (checkedChange)="toggleEnabled(user, $event)"
+                />
+              </td>
               <td>
                 <label class="sr-only" [for]="'account-type-' + user.id">
                   {{ 'userAdmin.accountTypeFor' | transloco: { name: user.firstName + ' ' + user.lastName } }}
@@ -47,10 +57,39 @@
                   }
                 </select>
               </td>
+              <td class="user-admin__scope">
+                <app-select
+                  [label]="'userAdmin.scopeOrganizationFor' | transloco: { name: user.firstName + ' ' + user.lastName }"
+                  [placeholder]="'userAdmin.scopeSelectOrganization' | transloco"
+                  [options]="organizationOptions()"
+                  [value]="draftFor(user.id).organizationId"
+                  [disabled]="accountTypeChangesBlocked()"
+                  (valueChange)="selectScopeOrganization(user.id, $event)"
+                />
+                <app-select
+                  [label]="'userAdmin.scopeRestaurantFor' | transloco: { name: user.firstName + ' ' + user.lastName }"
+                  [placeholder]="'userAdmin.scopeSelectRestaurant' | transloco"
+                  [options]="restaurantOptionsFor(draftFor(user.id).organizationId)"
+                  [value]="draftFor(user.id).restaurantId"
+                  [disabled]="accountTypeChangesBlocked() || !draftFor(user.id).organizationId"
+                  (valueChange)="selectScopeRestaurant(user.id, $event)"
+                />
+                <button
+                  type="button"
+                  [attr.aria-label]="'userAdmin.scopeSaveFor' | transloco: { name: user.firstName + ' ' + user.lastName }"
+                  [disabled]="accountTypeChangesBlocked() || !draftFor(user.id).organizationId"
+                  (click)="saveScope(user)"
+                >
+                  {{ 'userAdmin.scopeSave' | transloco }}
+                </button>
+                @if (savedScopeUserIds().has(user.id)) {
+                  <span role="status">{{ 'userAdmin.scopeSaved' | transloco }}</span>
+                }
+              </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="3">{{ (loading() ? 'userAdmin.loading' : 'userAdmin.empty') | transloco }}</td>
+              <td colspan="4">{{ (loading() ? 'userAdmin.loading' : 'userAdmin.empty') | transloco }}</td>
             </tr>
           }
         </tbody>

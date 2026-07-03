@@ -8,6 +8,7 @@ import { ListPermissionsUseCase } from '../../application/use-cases/list-permiss
 import { ListRolesUseCase } from '../../application/use-cases/list-roles.use-case';
 import { SetRoleEnabledUseCase } from '../../application/use-cases/set-role-enabled.use-case';
 import { AuthGuard } from './auth.guard';
+import { BlockDemoAccountGuard } from './block-demo-account.guard';
 import { BootstrapOrAdminGuard } from './bootstrap-or-admin.guard';
 import { RolesGuard, RequireRoles } from './roles.guard';
 import { AssignRolePermissionsDto } from './dto/assign-role-permissions.dto';
@@ -28,7 +29,7 @@ export class RolesController {
 
   @Post()
   @Version('1')
-  @UseGuards(BootstrapOrAdminGuard)
+  @UseGuards(BootstrapOrAdminGuard, BlockDemoAccountGuard)
   @ApiCreatedResponse({ type: RoleResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid role name.' })
   @ApiConflictResponse({ description: 'Role name already taken.' })
@@ -50,7 +51,7 @@ export class RolesController {
 
   @Patch(':id/permissions')
   @Version('1')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, BlockDemoAccountGuard)
   @RequireRoles('admin')
   @ApiBearerAuth()
   @ApiOkResponse({ type: RoleResponseDto })
@@ -64,7 +65,7 @@ export class RolesController {
 
   @Patch(':id/enabled')
   @Version('1')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, BlockDemoAccountGuard)
   @RequireRoles('admin')
   @ApiBearerAuth()
   @ApiOkResponse({ type: RoleResponseDto })

@@ -4,6 +4,7 @@ export type RestaurantElementShape = 'round' | 'square' | 'rectangle' | 'long';
 
 export type RestaurantSummaryDto = {
   id: string;
+  organizationId: string;
   name: string;
   displayName: string | null;
   timezone: string;

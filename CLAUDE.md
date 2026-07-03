@@ -245,7 +245,7 @@ src/shared/                    # preocupaciones transversales (Prisma, eventos, 
 
 Preferir extender un módulo existente (`identity`, `tasks`, `restaurants`) antes de crear un módulo nuevo. Al crear un módulo nuevo, reflejar la estructura existente.
 
-Módulos actuales: `health`, `identity`, `tasks`, `restaurants`.
+Módulos actuales: `health`, `identity`, `tasks`, `restaurants`, `organizations` (solo lectura, alimenta el selector de organización de la administración de usuarios).
 
 ### Guards y autorización
 
@@ -256,7 +256,7 @@ AuthGuard → RestaurantAccessGuard → PermissionsGuard
 ```
 
 - **`AuthGuard`**: valida JWT Bearer, carga usuario + sesión + roles/permisos + scopes en `request.auth`. Los scopes se extraen de `UserRoleAssignment` (campo `organizationId` o `restaurantId`).
-- **`RestaurantAccessGuard`**: activado por el decorador `@RequireRestaurantScope()`. Comprueba `request.auth.scopes.restaurants` o si hay alguna organización en scope. **Limitación conocida:** con scope de organización permite acceso a cualquier restaurante sin verificar que el restaurante pertenezca a esa organización.
+- **`RestaurantAccessGuard`**: activado por el decorador `@RequireRestaurantScope()`. Delega en `RestaurantScopeService.canAccessRestaurant`: concede acceso si `request.auth.scopes.restaurants` incluye el restaurante, o si alguna organización en `scopes.organizations` coincide con el `organizationId` real del restaurante (verificado contra Prisma). Un scope totalmente vacío deniega acceso. `GET /restaurants` aplica el mismo criterio para listar solo los restaurantes accesibles.
 - **`PermissionsGuard`**: activado por `@RequirePermissions(...permissions)`. Comprueba permisos globales del usuario, no ligados a scope.
 - **`RolesGuard`**: activado por `@RequireRoles(...)`. Comprueba roles globales.
 
@@ -268,7 +268,9 @@ Patrón habitual en controladores de restaurante:
 @RequirePermissions('orders')
 ```
 
-La respuesta de autenticación (`AuthResponseDto` backend) incluye `scopes: { organizations: string[]; restaurants: string[] }`. El modelo frontend `AuthResponseDto` en `identity-api.models.ts` **aún no incluye el campo `scopes`** y `IdentitySessionStore` tampoco lo persiste.
+La respuesta de autenticación (`AuthResponseDto` backend) incluye `scopes: { organizations: string[]; restaurants: string[] }`. El modelo frontend `AuthResponseDto` en `identity-api.models.ts` ya incluye `scopes` y `IdentitySessionStore` lo persiste y expone vía `scopes()`.
+
+Asignar un usuario a una organización/restaurante concreto se hace con `PATCH /users/:id/scope` (`SetUserRestaurantScopeUseCase`), que reemplaza sus filas en `UserRoleAssignment` para todos sus roles actuales. Es independiente de `PATCH /users/:id/roles` (que solo cambia `User.roleIds`, sin tocar el scope). `GET /organizations` (módulo `organizations`, solo lectura) alimenta el selector de organización en la página de administración de usuarios.
 
 ### Directrices NestJS
 

@@ -35,6 +35,7 @@ describe('RestaurantPosApiService', () => {
     request.flush([
       {
         id: 'restaurant-mesaflow-centro',
+        organizationId: 'org-demo',
         name: 'MesaFlow Centro',
         displayName: 'MesaFlow Centro',
         timezone: 'Europe/Madrid',
@@ -46,6 +47,7 @@ describe('RestaurantPosApiService', () => {
     expect(result).toEqual([
       {
         id: 'restaurant-mesaflow-centro',
+        organizationId: 'org-demo',
         name: 'MesaFlow Centro',
         displayName: 'MesaFlow Centro',
         timezone: 'Europe/Madrid',

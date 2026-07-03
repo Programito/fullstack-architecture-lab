@@ -19,7 +19,7 @@ const API_MOCK = new Proxy({}, { get: () => () => EMPTY }) as RestaurantPosApiSe
 })
 class TestHostComponent {}
 
-const makeRestaurantA = () => ({ id: 'r-1', name: 'MesaFlow Centro', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true });
+const makeRestaurantA = () => ({ id: 'r-1', organizationId: 'org-demo', name: 'MesaFlow Centro', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true });
 
 describe('restaurant POS route permissions', () => {
   const renderApp = async (

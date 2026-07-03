@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import type { UserRoleAssignmentRecord, UserRoleAssignmentRepository } from '../../application/ports/user-role-assignment-repository.port';
+import type {
+  UserRestaurantScope,
+  UserRoleAssignmentRecord,
+  UserRoleAssignmentRepository,
+} from '../../application/ports/user-role-assignment-repository.port';
 
 @Injectable()
 export class PrismaUserRoleAssignmentRepository implements UserRoleAssignmentRepository {
@@ -19,6 +23,21 @@ export class PrismaUserRoleAssignmentRepository implements UserRoleAssignmentRep
         restaurantId: true,
       },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async replaceScopeForUser(userId: string, roleIds: string[], scope: UserRestaurantScope): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userRoleAssignment.deleteMany({ where: { userId } });
+      await tx.userRoleAssignment.createMany({
+        data: roleIds.map((roleId) => ({
+          userId,
+          roleId,
+          scopeType: scope.restaurantId ? ('restaurant' as const) : ('organization' as const),
+          organizationId: scope.organizationId,
+          restaurantId: scope.restaurantId,
+        })),
+      });
     });
   }
 }

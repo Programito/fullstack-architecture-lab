@@ -27,14 +27,24 @@ import type {
 export class PrismaRestaurantReadRepository implements RestaurantReadRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listRestaurants(restaurantIds: string[]): Promise<RestaurantSummary[]> {
+  async listRestaurants(restaurantIds: string[], organizationIds: string[]): Promise<RestaurantSummary[]> {
+    if (restaurantIds.length === 0 && organizationIds.length === 0) {
+      return [];
+    }
+
     const restaurants = await this.prisma.restaurant.findMany({
-      where: restaurantIds.length > 0 ? { id: { in: restaurantIds } } : undefined,
+      where: {
+        OR: [
+          ...(restaurantIds.length > 0 ? [{ id: { in: restaurantIds } }] : []),
+          ...(organizationIds.length > 0 ? [{ organizationId: { in: organizationIds } }] : []),
+        ],
+      },
       orderBy: { name: 'asc' },
     });
 
     return restaurants.map((restaurant) => ({
       id: restaurant.id,
+      organizationId: restaurant.organizationId,
       name: restaurant.name,
       displayName: restaurant.displayName,
       timezone: restaurant.timezone,

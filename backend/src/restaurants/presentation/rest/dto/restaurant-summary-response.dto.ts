@@ -6,6 +6,9 @@ export class RestaurantSummaryResponseDto {
   @ApiProperty({ example: 'restaurant-mesaflow-centro' })
   id!: string;
 
+  @ApiProperty({ example: 'org-demo' })
+  organizationId!: string;
+
   @ApiProperty({ example: 'MesaFlow Centro' })
   name!: string;
 

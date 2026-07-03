@@ -15,9 +15,11 @@ import type {
   DemoRoleName,
   DeveloperResourcesDto,
   AuthMeResponseDto,
+  OrganizationSummaryDto,
   PermissionResponseDto,
   ReadinessStatusDto,
   RoleResponseDto,
+  SetUserScopeRequest,
   UserResponseDto,
 } from './identity-api.models';
 
@@ -30,6 +32,7 @@ export class IdentityApiService {
   private readonly usersUrl = `${this.apiBaseUrl}/users`;
   private readonly rolesUrl = `${this.apiBaseUrl}/roles`;
   private readonly permissionsUrl = `${this.apiBaseUrl}/permissions`;
+  private readonly organizationsUrl = `${this.apiBaseUrl}/organizations`;
   private readonly authUrl = `${this.apiBaseUrl}/auth`;
   private readonly healthUrl = `${this.apiBaseUrl}/health`;
 
@@ -51,6 +54,22 @@ export class IdentityApiService {
     return this.http
       .patch<UserResponseDto>(`${this.usersUrl}/${userId}/account-type`, { accountType })
       .pipe(map(UserMapper.fromDto));
+  }
+
+  setUserEnabled(userId: string, enabled: boolean): Observable<User> {
+    return this.http
+      .patch<UserResponseDto>(`${this.usersUrl}/${userId}/enabled`, { enabled })
+      .pipe(map(UserMapper.fromDto));
+  }
+
+  setUserRestaurantScope(userId: string, scope: SetUserScopeRequest): Observable<User> {
+    return this.http
+      .patch<UserResponseDto>(`${this.usersUrl}/${userId}/scope`, scope)
+      .pipe(map(UserMapper.fromDto));
+  }
+
+  listOrganizations(): Observable<OrganizationSummaryDto[]> {
+    return this.http.get<OrganizationSummaryDto[]>(this.organizationsUrl);
   }
 
   listRoles(): Observable<Role[]> {

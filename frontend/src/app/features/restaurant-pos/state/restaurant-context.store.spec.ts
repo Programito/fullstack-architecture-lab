@@ -20,6 +20,7 @@ describe('RestaurantContextStore', () => {
               of([
                 {
                   id: 'restaurant-mesaflow-centro',
+                  organizationId: 'org-demo',
                   name: 'MesaFlow Centro',
                   displayName: 'MesaFlow Centro',
                   timezone: 'Europe/Madrid',
@@ -50,8 +51,8 @@ describe('RestaurantContextStore', () => {
           useValue: {
             listRestaurants: () =>
               of([
-                { id: 'restaurant-1', name: 'Centro', displayName: 'Centro', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
-                { id: 'restaurant-2', name: 'Norte', displayName: 'Norte', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
+                { id: 'restaurant-1', organizationId: 'org-demo', name: 'Centro', displayName: 'Centro', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
+                { id: 'restaurant-2', organizationId: 'org-demo', name: 'Norte', displayName: 'Norte', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
               ]),
           },
         },
@@ -97,8 +98,8 @@ describe('RestaurantContextStore', () => {
           useValue: {
             listRestaurants: () =>
               of([
-                { id: 'restaurant-1', name: 'Centro', displayName: 'Centro', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
-                { id: 'restaurant-2', name: 'Norte', displayName: 'Norte', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
+                { id: 'restaurant-1', organizationId: 'org-demo', name: 'Centro', displayName: 'Centro', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
+                { id: 'restaurant-2', organizationId: 'org-demo', name: 'Norte', displayName: 'Norte', timezone: 'Europe/Madrid', currency: 'EUR', isActive: true },
               ]),
           },
         },

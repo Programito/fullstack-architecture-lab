@@ -263,6 +263,31 @@ async function createAndLoginAdmin(app: INestApplication) {
     .expect(200);
 }
 
+async function createAndLoginOrganizationScopedUser(app: INestApplication) {
+  if (!e2eRoleRepository) {
+    throw new Error('Expected e2e role repository to be initialized.');
+  }
+
+  const developerRole = Role.create({ name: 'developer', permissionIds: [] });
+  await e2eRoleRepository.save(developerRole);
+
+  await request(app.getHttpServer())
+    .post('/api/v1/users')
+    .send({
+      email: 'org-scoped@example.com',
+      firstName: 'Org',
+      lastName: 'Scoped',
+      password: 'supersecret',
+      roleIds: [developerRole.id],
+    })
+    .expect(201);
+
+  return request(app.getHttpServer())
+    .post('/api/v1/auth/login')
+    .send({ email: 'org-scoped@example.com', password: 'supersecret' })
+    .expect(200);
+}
+
 describe('App e2e', () => {
   let app: INestApplication;
   let userRepository: InMemoryUserRepository;
@@ -434,6 +459,22 @@ describe('App e2e', () => {
           status: 'confirmed',
         }),
       ]),
+    );
+  });
+
+  it('scopes the restaurant list to the caller organization and excludes other tenants', async () => {
+    const orgScopedLogin = await createAndLoginOrganizationScopedUser(app);
+
+    const restaurantsResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants')
+      .set('Authorization', `Bearer ${orgScopedLogin.body.accessToken}`)
+      .expect(200);
+
+    expect(restaurantsResponse.body.map((restaurant: { id: string }) => restaurant.id)).toEqual([
+      'restaurant-mesaflow-centro',
+    ]);
+    expect(restaurantsResponse.body).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'restaurant-other-tenant' })]),
     );
   });
 
@@ -1295,6 +1336,49 @@ describe('App e2e', () => {
     expect(rolesResponse.body.map((role: { id: string }) => role.id)).toContain(roleResponse.body.id);
   });
 
+  it('assigns a restaurant scope to a user, granting them access to that restaurant only', async () => {
+    const admin = await createAndLoginAdmin(app);
+    const adminToken = admin.body.accessToken;
+
+    const roleResponse = await request(app.getHttpServer())
+      .post('/api/v1/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'scoped-waiter' })
+      .expect(201);
+
+    const userResponse = await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        email: 'scoped-staff@example.com',
+        firstName: 'Scoped',
+        lastName: 'Staff',
+        password: 'supersecret',
+        roleIds: [roleResponse.body.id],
+      })
+      .expect(201);
+
+    const scopeResponse = await request(app.getHttpServer())
+      .patch(`/api/v1/users/${userResponse.body.id}/scope`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ organizationId: 'org-demo', restaurantId: 'restaurant-mesaflow-centro' })
+      .expect(200);
+    expect(scopeResponse.body).toMatchObject({ id: userResponse.body.id });
+
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'scoped-staff@example.com', password: 'supersecret' })
+      .expect(200);
+
+    const restaurantsResponse = await request(app.getHttpServer())
+      .get('/api/v1/restaurants')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(200);
+    expect(restaurantsResponse.body.map((restaurant: { id: string }) => restaurant.id)).toEqual([
+      'restaurant-mesaflow-centro',
+    ]);
+  });
+
   it('lists permissions, assigns them to a role, includes them in auth/me and invalidates a disabled session immediately', async () => {
     const role = await request(app.getHttpServer())
       .post('/api/v1/roles')
@@ -2003,6 +2087,89 @@ describe('App e2e with in-memory identity seed', () => {
         path: '/developer/logs',
       })
       .expect(202);
+  });
+
+  it('blocks a demo admin from mutating other users (roles, enabled, account type, scope, creation)', async () => {
+    const admin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'admin1234' })
+      .expect(200);
+    const adminToken = admin.body.accessToken;
+
+    const roleResponse = await request(app.getHttpServer())
+      .post('/api/v1/roles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'demo-block-target-role' })
+      .expect(201);
+
+    const targetUser = await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'demo-block-target@example.com', firstName: 'Target', lastName: 'User', password: 'supersecret' })
+      .expect(201);
+
+    const demoAdmin = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'admin' })
+      .expect(200);
+    const demoToken = demoAdmin.body.accessToken;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/users')
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ email: 'demo-created@example.com', firstName: 'Demo', lastName: 'Created', password: 'supersecret' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/users/${targetUser.body.id}/roles`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ roleIds: [roleResponse.body.id] })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/users/${targetUser.body.id}/enabled`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ enabled: false })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/users/${targetUser.body.id}/account-type`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ accountType: 'system' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/users/${targetUser.body.id}/scope`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ organizationId: 'org-demo', restaurantId: 'restaurant-mesaflow-centro' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/roles')
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ name: 'demo-created-role' })
+      .expect(403);
+
+    const permissions = await request(app.getHttpServer()).get('/api/v1/permissions').expect(200);
+    const permissionId = permissions.body[0].id;
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/roles/${roleResponse.body.id}/permissions`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ permissionIds: [permissionId] })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/roles/${roleResponse.body.id}/enabled`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ enabled: false })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/permissions/${permissionId}/enabled`)
+      .set('Authorization', `Bearer ${demoToken}`)
+      .send({ enabled: false })
+      .expect(403);
   });
 });
 

@@ -219,6 +219,7 @@
     "accountTypeFor": "Account type for {{name}}",
     "enabled": "Enabled",
     "disabled": "Disabled",
+    "enabledFor": "Account enabled for {{name}}",
     "loading": "Loading users...",
     "empty": "No users are available.",
     "confirmRevocation": "This change may close the user's active sessions.",
@@ -231,7 +232,17 @@
     "demoRestriction": {
       "title": "Account type changes are disabled",
       "description": "Demo accounts cannot change other users' account type."
-    }
+    },
+    "scope": "Access",
+    "scopeOrganization": "Organization",
+    "scopeOrganizationFor": "Organization for {{name}}",
+    "scopeSelectOrganization": "Select an organization",
+    "scopeRestaurant": "Restaurant",
+    "scopeRestaurantFor": "Restaurant for {{name}}",
+    "scopeSelectRestaurant": "All restaurants in the organization",
+    "scopeSave": "Save access",
+    "scopeSaveFor": "Save access for {{name}}",
+    "scopeSaved": "The access has been updated successfully."
   },
   "languageSelect": {
     "label": "Language",

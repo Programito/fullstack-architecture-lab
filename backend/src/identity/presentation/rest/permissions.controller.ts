@@ -5,6 +5,7 @@ import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapp
 import { ListPermissionsUseCase } from '../../application/use-cases/list-permissions.use-case';
 import { SetPermissionEnabledUseCase } from '../../application/use-cases/set-permission-enabled.use-case';
 import { AuthGuard } from './auth.guard';
+import { BlockDemoAccountGuard } from './block-demo-account.guard';
 import { RolesGuard, RequireRoles } from './roles.guard';
 import { PermissionResponseDto } from './dto/permission-response.dto';
 import { SetEnabledDto } from './dto/set-enabled.dto';
@@ -27,7 +28,7 @@ export class PermissionsController {
 
   @Patch(':id/enabled')
   @Version('1')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, BlockDemoAccountGuard)
   @RequireRoles('admin')
   @ApiBearerAuth()
   @ApiOkResponse({ type: PermissionResponseDto })

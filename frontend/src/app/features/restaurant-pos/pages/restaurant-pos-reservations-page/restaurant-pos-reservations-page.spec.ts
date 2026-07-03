@@ -98,6 +98,7 @@ describe('RestaurantPosReservationsPage', () => {
         of([
           {
             id: 'restaurant-mesaflow-centro',
+            organizationId: 'org-demo',
             name: 'MesaFlow Centro',
             displayName: 'MesaFlow Centro',
             timezone: 'Europe/Madrid',
@@ -211,6 +212,7 @@ describe('RestaurantPosReservationsPage', () => {
         of([
           {
             id: 'restaurant-mesaflow-centro',
+            organizationId: 'org-demo',
             name: 'MesaFlow Centro',
             displayName: 'MesaFlow Centro',
             timezone: 'Europe/Madrid',

@@ -3,6 +3,32 @@ import { describe, expect, it } from 'vitest';
 import { DemoRestaurantReadRepository } from './demo-restaurant-read.repository';
 
 describe('DemoRestaurantReadRepository', () => {
+  it('returns nothing when the caller has no restaurant or organization scope', async () => {
+    const repository = new DemoRestaurantReadRepository();
+
+    const restaurants = await repository.listRestaurants([], []);
+
+    expect(restaurants).toEqual([]);
+  });
+
+  it('returns restaurants matching an explicit restaurant scope', async () => {
+    const repository = new DemoRestaurantReadRepository();
+
+    const restaurants = await repository.listRestaurants(['restaurant-mesaflow-centro'], []);
+
+    expect(restaurants.map((r) => r.id)).toEqual(['restaurant-mesaflow-centro']);
+  });
+
+  it('returns restaurants belonging to an organization in scope, and none from other organizations', async () => {
+    const repository = new DemoRestaurantReadRepository();
+
+    const ownOrgRestaurants = await repository.listRestaurants([], ['org-demo']);
+    const otherOrgRestaurants = await repository.listRestaurants([], ['org-other-tenant']);
+
+    expect(ownOrgRestaurants.map((r) => r.id)).toEqual(['restaurant-mesaflow-centro']);
+    expect(otherOrgRestaurants.map((r) => r.id)).toEqual(['restaurant-other-tenant']);
+  });
+
   it('returns reservations sorted by time and enriched with readable table data', async () => {
     const repository = new DemoRestaurantReadRepository();
 

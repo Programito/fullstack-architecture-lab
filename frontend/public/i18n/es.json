@@ -219,6 +219,7 @@
     "accountTypeFor": "Tipo de cuenta de {{name}}",
     "enabled": "Activa",
     "disabled": "Desactivada",
+    "enabledFor": "Cuenta activa de {{name}}",
     "loading": "Cargando usuarios...",
     "empty": "No hay usuarios disponibles.",
     "confirmRevocation": "El cambio puede cerrar las sesiones activas de este usuario.",
@@ -231,7 +232,17 @@
     "demoRestriction": {
       "title": "Cambio de tipo de cuenta deshabilitado",
       "description": "Las cuentas de demostración no pueden cambiar el tipo de cuenta de otros usuarios."
-    }
+    },
+    "scope": "Acceso",
+    "scopeOrganization": "Organización",
+    "scopeOrganizationFor": "Organización de {{name}}",
+    "scopeSelectOrganization": "Selecciona una organización",
+    "scopeRestaurant": "Restaurante",
+    "scopeRestaurantFor": "Restaurante de {{name}}",
+    "scopeSelectRestaurant": "Todos los restaurantes de la organización",
+    "scopeSave": "Guardar acceso",
+    "scopeSaveFor": "Guardar acceso de {{name}}",
+    "scopeSaved": "El acceso se ha actualizado correctamente."
   },
   "languageSelect": {
     "label": "Idioma",

@@ -219,6 +219,7 @@
     "accountTypeFor": "Tipus de compte de {{name}}",
     "enabled": "Actiu",
     "disabled": "Desactivat",
+    "enabledFor": "Compte actiu de {{name}}",
     "loading": "Carregant usuaris...",
     "empty": "No hi ha usuaris disponibles.",
     "confirmRevocation": "El canvi pot tancar les sessions actives d'aquest usuari.",
@@ -231,7 +232,17 @@
     "demoRestriction": {
       "title": "El canvi de tipus de compte està desactivat",
       "description": "Els comptes de demostració no poden canviar el tipus de compte d'altres usuaris."
-    }
+    },
+    "scope": "Accés",
+    "scopeOrganization": "Organització",
+    "scopeOrganizationFor": "Organització de {{name}}",
+    "scopeSelectOrganization": "Selecciona una organització",
+    "scopeRestaurant": "Restaurant",
+    "scopeRestaurantFor": "Restaurant de {{name}}",
+    "scopeSelectRestaurant": "Tots els restaurants de l'organització",
+    "scopeSave": "Desa l'accés",
+    "scopeSaveFor": "Desa l'accés de {{name}}",
+    "scopeSaved": "L'accés s'ha actualitzat correctament."
   },
   "languageSelect": {
     "label": "Idioma",

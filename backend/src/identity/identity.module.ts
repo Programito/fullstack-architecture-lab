@@ -24,6 +24,7 @@ import { SetPermissionEnabledUseCase } from './application/use-cases/set-permiss
 import { SetRoleEnabledUseCase } from './application/use-cases/set-role-enabled.use-case';
 import { SetUserEnabledUseCase } from './application/use-cases/set-user-enabled.use-case';
 import { SetUserAccountTypeUseCase } from './application/use-cases/set-user-account-type.use-case';
+import { SetUserRestaurantScopeUseCase } from './application/use-cases/set-user-restaurant-scope.use-case';
 import { InMemoryAuthSessionRepository } from './infrastructure/persistence/in-memory-auth-session.repository';
 import { InMemoryPermissionRepository } from './infrastructure/persistence/in-memory-permission.repository';
 import { InMemoryRoleRepository } from './infrastructure/persistence/in-memory-role.repository';
@@ -39,6 +40,7 @@ import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password-
 import { RestaurantScopeService } from './infrastructure/security/restaurant-scope.service';
 import { AuthController } from './presentation/rest/auth.controller';
 import { AuthGuard } from './presentation/rest/auth.guard';
+import { BlockDemoAccountGuard } from './presentation/rest/block-demo-account.guard';
 import { BootstrapOrAdminGuard } from './presentation/rest/bootstrap-or-admin.guard';
 import { PermissionsController } from './presentation/rest/permissions.controller';
 import { PermissionsGuard } from './presentation/rest/permissions.guard';
@@ -60,6 +62,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
     RestaurantScopeService,
     AuthGuard,
     BootstrapOrAdminGuard,
+    BlockDemoAccountGuard,
     RolesGuard,
     PermissionsGuard,
     RestaurantAccessGuard,
@@ -74,6 +77,7 @@ import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persisten
     SetUserAccountTypeUseCase,
     SetRoleEnabledUseCase,
     SetPermissionEnabledUseCase,
+    SetUserRestaurantScopeUseCase,
     InMemoryUserRepository,
     InMemoryRoleRepository,
     InMemoryUserRoleAssignmentRepository,

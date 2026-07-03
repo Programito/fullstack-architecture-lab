@@ -92,6 +92,16 @@ export interface AssignUserRolesRequest {
   roleIds: string[];
 }
 
+export interface OrganizationSummaryDto {
+  id: string;
+  name: string;
+}
+
+export interface SetUserScopeRequest {
+  organizationId: string;
+  restaurantId?: string;
+}
+
 export interface AssignRolePermissionsRequest {
   permissionIds: string[];
 }

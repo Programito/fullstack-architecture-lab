@@ -10,6 +10,7 @@ import { ORDER_SYNC_POLL_INTERVAL_MS, OrderSyncService } from './order-sync.serv
 
 const RESTAURANT: RestaurantSummaryDto = {
   id: 'r-1',
+  organizationId: 'org-demo',
   name: 'MesaFlow',
   displayName: null,
   timezone: 'Europe/Madrid',

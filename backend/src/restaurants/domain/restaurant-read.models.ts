@@ -1,5 +1,6 @@
 export type RestaurantSummary = {
   id: string;
+  organizationId: string;
   name: string;
   displayName: string | null;
   timezone: string;

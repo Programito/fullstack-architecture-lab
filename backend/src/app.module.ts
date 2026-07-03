@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './health/health.module';
 import { IdentityModule } from './identity/identity.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 
@@ -16,6 +17,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
     HealthModule,
     IdentityModule,
     ObservabilityModule,
+    OrganizationsModule,
     RestaurantsModule,
   ],
 })

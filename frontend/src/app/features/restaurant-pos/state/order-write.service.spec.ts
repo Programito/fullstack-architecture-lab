@@ -8,7 +8,7 @@ import { RestaurantContextStore } from './restaurant-context.store';
 import { RestaurantPosStore } from './restaurant-pos.store';
 import { OrderWriteService } from './order-write.service';
 
-const RESTAURANT = { id: 'r-1', name: 'MesaFlow', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
+const RESTAURANT = { id: 'r-1', organizationId: 'org-demo', name: 'MesaFlow', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
 const TABLE_ID = 'table-1';
 const ORDER_ID = 'order-existing';
 const NEW_ORDER_ID = 'order-new-1';

@@ -17,7 +17,9 @@ export class RestaurantsController {
   @ApiOkResponse({ type: RestaurantSummaryResponseDto, isArray: true })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   async list(@Req() req: AuthenticatedRequest): Promise<RestaurantSummaryResponseDto[]> {
-    const restaurants = unwrapResultOrThrow(await this.listRestaurants.execute(req.auth.scopes.restaurants));
+    const restaurants = unwrapResultOrThrow(
+      await this.listRestaurants.execute(req.auth.scopes.restaurants, req.auth.scopes.organizations),
+    );
     return restaurants.map(RestaurantSummaryResponseDto.fromDomain);
   }
 }

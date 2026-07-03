@@ -11,7 +11,7 @@ import type { ServiceFloorView, ServicePointDetailView, ServicePointOrderView } 
 export const RESTAURANT_READ_REPOSITORY = Symbol('RESTAURANT_READ_REPOSITORY');
 
 export interface RestaurantReadRepository {
-  listRestaurants(restaurantIds: string[]): Promise<RestaurantSummary[]>;
+  listRestaurants(restaurantIds: string[], organizationIds: string[]): Promise<RestaurantSummary[]>;
   findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null>;
   findFloorsByRestaurantId(restaurantId: string): Promise<RestaurantFloors | null>;
   listReservationsByRestaurantId(restaurantId: string, date?: string): Promise<RestaurantReservation[] | null>;

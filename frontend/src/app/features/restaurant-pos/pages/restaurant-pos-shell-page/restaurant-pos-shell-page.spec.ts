@@ -16,8 +16,8 @@ import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 
 const API_MOCK = new Proxy({}, { get: () => () => EMPTY }) as RestaurantPosApiService;
 
-const RESTAURANT_A = { id: 'r-a', name: 'MesaFlow Centro', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
-const RESTAURANT_B = { id: 'r-b', name: 'MesaFlow Norte', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
+const RESTAURANT_A = { id: 'r-a', organizationId: 'org-demo', name: 'MesaFlow Centro', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
+const RESTAURANT_B = { id: 'r-b', organizationId: 'org-demo', name: 'MesaFlow Norte', displayName: null, timezone: 'Europe/Madrid', currency: 'EUR', isActive: true };
 
 function makeContextMock(opts: {
   restaurants?: typeof RESTAURANT_A[];

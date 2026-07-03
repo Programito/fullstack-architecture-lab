@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import type { UserRoleAssignmentRecord, UserRoleAssignmentRepository } from '../../application/ports/user-role-assignment-repository.port';
+import type {
+  UserRestaurantScope,
+  UserRoleAssignmentRecord,
+  UserRoleAssignmentRepository,
+} from '../../application/ports/user-role-assignment-repository.port';
 import { DEMO_ACCOUNT_CATALOG } from '../../domain/demo-account-catalog';
 import type { RoleName } from '../../domain/role-catalog';
 import { ROLE_REPOSITORY, type RoleRepository } from '../../application/ports/role-repository.port';
@@ -11,12 +15,34 @@ const DEMO_RESTAURANT_ID = 'restaurant-mesaflow-centro';
 
 @Injectable()
 export class InMemoryUserRoleAssignmentRepository implements UserRoleAssignmentRepository {
+  private readonly explicitAssignmentsByUserId = new Map<string, UserRoleAssignmentRecord[]>();
+
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(ROLE_REPOSITORY) private readonly roles: RoleRepository,
   ) {}
 
+  async replaceScopeForUser(userId: string, roleIds: string[], scope: UserRestaurantScope): Promise<void> {
+    const scopeType = scope.restaurantId ? 'restaurant' : 'organization';
+    this.explicitAssignmentsByUserId.set(
+      userId,
+      roleIds.map((roleId) => ({
+        id: `${userId}:${roleId}:${scopeType}`,
+        userId,
+        roleId,
+        scopeType,
+        organizationId: scope.organizationId,
+        restaurantId: scope.restaurantId,
+      })),
+    );
+  }
+
   async findByUserId(userId: string): Promise<UserRoleAssignmentRecord[]> {
+    const explicit = this.explicitAssignmentsByUserId.get(userId);
+    if (explicit) {
+      return explicit;
+    }
+
     const [user, allRoles] = await Promise.all([this.users.findById(userId), this.roles.findAll()]);
     if (!user) {
       return [];

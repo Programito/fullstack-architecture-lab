@@ -44,6 +44,7 @@ class ChartStub {
 function createRestaurantContextMock() {
   const restaurant = {
     id: 'restaurant-mesaflow-centro',
+    organizationId: 'org-demo',
     name: 'MesaFlow Centro',
     displayName: 'MesaFlow Centro',
     timezone: TIMEZONE,

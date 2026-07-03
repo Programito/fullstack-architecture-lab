@@ -28,12 +28,23 @@ import type {
 } from '../domain/service-floor.models';
 
 const DEMO_RESTAURANT_ID = 'restaurant-mesaflow-centro';
+const DEMO_ORGANIZATION_ID = 'org-demo';
 
 const INITIAL_RESTAURANTS: RestaurantSummary[] = [
   {
     id: DEMO_RESTAURANT_ID,
+    organizationId: DEMO_ORGANIZATION_ID,
     name: 'MesaFlow Centro',
     displayName: 'MesaFlow Centro',
+    timezone: 'Europe/Madrid',
+    currency: 'EUR',
+    isActive: true,
+  },
+  {
+    id: 'restaurant-other-tenant',
+    organizationId: 'org-other-tenant',
+    name: 'Otro Inquilino',
+    displayName: 'Otro Inquilino',
     timezone: 'Europe/Madrid',
     currency: 'EUR',
     isActive: true,
@@ -421,10 +432,10 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     return structuredClone(updated);
   }
 
-  async listRestaurants(restaurantIds: string[]): Promise<RestaurantSummary[]> {
+  async listRestaurants(restaurantIds: string[], organizationIds: string[]): Promise<RestaurantSummary[]> {
+    if (restaurantIds.length === 0 && organizationIds.length === 0) return [];
     const all = this.restaurants.map((restaurant) => ({ ...restaurant }));
-    if (restaurantIds.length === 0) return all;
-    return all.filter((r) => restaurantIds.includes(r.id));
+    return all.filter((r) => restaurantIds.includes(r.id) || organizationIds.includes(r.organizationId));
   }
 
   async findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null> {

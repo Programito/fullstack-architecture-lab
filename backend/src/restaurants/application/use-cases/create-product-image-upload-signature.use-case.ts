@@ -20,7 +20,7 @@ export class CreateProductImageUploadSignatureUseCase {
   async execute(
     command: CreateProductImageUploadSignatureCommand,
   ): Promise<Result<ProductImageSigningPayload, ApplicationError>> {
-    const restaurants = await this.restaurantReadRepository.listRestaurants([command.restaurantId]);
+    const restaurants = await this.restaurantReadRepository.listRestaurants([command.restaurantId], []);
     if (restaurants.length === 0) {
       return err(restaurantNotFound(command.restaurantId));
     }
