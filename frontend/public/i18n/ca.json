@@ -125,6 +125,9 @@
       "description": "Supervisa peticions, errors i activitat d'auditoria des d'una vista tècnica simple.",
       "back": "Tornar als recursos",
       "filters": {
+        "title": "Filtres",
+        "show": "Mostrar filtres",
+        "hide": "Amagar filtres",
         "from": "Des de",
         "to": "Fins a",
         "level": "Nivell",

@@ -404,4 +404,35 @@ describe('DeveloperLogsPage', () => {
     }));
     expect(api.getEvents).toHaveBeenCalledWith(expect.anything(), 2, 20);
   });
+
+  it('collapses and expands the filters panel', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({ totalRequests: 0, errorCount: 0, errorRate: 0, auditEvents: 0, p95DurationMs: 0 })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByLabelText('developer.logs.filters.from')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.hide' }));
+
+    expect(screen.queryByLabelText('developer.logs.filters.from')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.show' }));
+
+    expect(screen.getByLabelText('developer.logs.filters.from')).toBeTruthy();
+  });
 });

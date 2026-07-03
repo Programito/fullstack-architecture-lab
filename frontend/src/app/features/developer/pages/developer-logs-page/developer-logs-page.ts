@@ -11,6 +11,7 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Card } from '../../../../shared/ui/card/card';
 import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/combobox';
+import { Icon } from '../../../../shared/ui/icon/icon';
 import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { AUDIT_ENTITY_TYPES, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
@@ -26,7 +27,7 @@ import type {
 
 @Component({
   selector: 'app-developer-logs-page',
-  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, Badge, Button, Card, Chart, Combobox, Table],
+  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, Badge, Button, Card, Chart, Combobox, Icon, Table],
   templateUrl: './developer-logs-page.html',
   styleUrl: './developer-logs-page.css',
 })
@@ -56,6 +57,7 @@ export class DeveloperLogsPage {
   protected readonly view = signal<DeveloperLogsView>('all');
   protected readonly quickRange = signal<DeveloperLogsQuickRange>('custom');
   protected readonly selectedEvent = signal<DeveloperLogEventDto | null>(null);
+  protected readonly filtersExpanded = signal(true);
 
   protected readonly timelineCategories = computed(() => this.timeline().map((point) => shortBucket(point.bucket)));
   protected readonly timelineSeries = computed<ChartSeries[]>(() => {
@@ -127,6 +129,10 @@ export class DeveloperLogsPage {
         error: () => this.entityOptions.set([]),
       });
     });
+  }
+
+  protected toggleFilters(): void {
+    this.filtersExpanded.update((expanded) => !expanded);
   }
 
   protected applyFilters(): void {

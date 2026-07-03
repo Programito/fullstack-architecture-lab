@@ -117,6 +117,14 @@ describe('RestaurantPosShellPage', () => {
     }
   });
 
+  it('keeps marking the active section as current when the route carries query params', async () => {
+    await renderPage(['service', 'layout'], '/restaurant-pos/layout?range=30d');
+
+    for (const link of screen.getAllByRole('link', { name: /Plano/i })) {
+      expect(link.getAttribute('aria-current')).toBe('page');
+    }
+  });
+
   it('shows the user admin link for admins and transitions on logout', async () => {
     vi.useFakeTimers();
     const logout = vi.fn(() => of(undefined));

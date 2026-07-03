@@ -38,7 +38,7 @@
             routerLinkActive="theme-nav-link-active"
             ariaCurrentWhenActive="page"
             [routerLink]="item.path"
-            [routerLinkActiveOptions]="{ exact: true }"
+            [routerLinkActiveOptions]="navActiveOptions"
           >
             <app-icon [name]="item.icon" size="sm" />
             <span class="truncate">{{ item.labelKey | transloco }}</span>
@@ -52,7 +52,7 @@
           routerLinkActive="theme-nav-link-active"
           ariaCurrentWhenActive="page"
           routerLink="/restaurant-pos/admin/users"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="navActiveOptions"
         >
           <app-icon name="manage_accounts" size="sm" />
           <span>{{ 'userAdmin.navigation' | transloco }}</span>
@@ -115,7 +115,7 @@
         routerLinkActive="theme-nav-link-active"
         ariaCurrentWhenActive="page"
         [routerLink]="item.path"
-        [routerLinkActiveOptions]="{ exact: true }"
+        [routerLinkActiveOptions]="navActiveOptions"
       >
         <app-icon [name]="item.icon" size="sm" />
         <span class="line-clamp-1 leading-tight">{{ item.labelKey | transloco }}</span>
@@ -127,7 +127,7 @@
         routerLinkActive="theme-nav-link-active"
         ariaCurrentWhenActive="page"
         routerLink="/restaurant-pos/admin/users"
-        [routerLinkActiveOptions]="{ exact: true }"
+        [routerLinkActiveOptions]="navActiveOptions"
       >
         <app-icon name="manage_accounts" size="sm" />
         <span class="line-clamp-1 leading-tight">{{ 'userAdmin.navigation' | transloco }}</span>

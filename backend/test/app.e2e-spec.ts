@@ -1880,6 +1880,34 @@ describe('App e2e with in-memory identity seed', () => {
     expect(asDeveloper.body.some((option: { id: string }) => option.id === realLogin.body.user.id)).toBe(false);
   });
 
+  it('keeps the actor label as an email after logout instead of falling back to the raw user id', async () => {
+    const manager = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'manager' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/logout')
+      .set('Authorization', `Bearer ${manager.body.accessToken}`)
+      .expect(204);
+
+    const developer = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'developer' })
+      .expect(200);
+
+    const options = await request(app.getHttpServer())
+      .get('/api/v1/developer/logs/actor-options')
+      .set('Authorization', `Bearer ${developer.body.accessToken}`)
+      .expect(200);
+
+    expect(options.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: manager.body.user.id, label: manager.body.user.email }),
+      ]),
+    );
+  });
+
   it('rejects a developer logs page size above the allowed maximum', async () => {
     const developer = await request(app.getHttpServer())
       .post('/api/v1/auth/demo-login')

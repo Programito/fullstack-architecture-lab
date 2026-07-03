@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res, UnauthorizedException, UseGuards, Version } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { AuditService } from '../../../observability/application/audit.service';
 import { auditContext } from '../../../observability/application/audit-context';
 import { AuthService } from '../../application/use-cases/auth.service';
 import { AuthTokenService } from '../../infrastructure/security/auth-token.service';
+import { USER_REPOSITORY, type UserRepository } from '../../application/ports/user-repository.port';
 import { UserResponseDto } from './dto/user-response.dto';
 import { AuthGuard, type AuthenticatedRequest } from './auth.guard';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -24,6 +25,7 @@ export class AuthController {
     private readonly tokens: AuthTokenService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
   ) {}
 
   @Post('login')
@@ -149,14 +151,16 @@ export class AuthController {
   @ApiBearerAuth()
   async logout(@Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: CookieResponse): Promise<void> {
     await this.auth.logout(request.auth.sessionId);
+    const user = await this.users.findById(request.auth.userId);
+    const label = user?.email ?? request.auth.userId;
     await this.audit.record({
       ...auditContext(request),
       event: 'auth.logout.succeeded',
-      message: `User ${request.auth.userId} signed out.`,
+      message: `User ${label} signed out.`,
       result: 'succeeded',
       entityType: 'auth',
       entityId: request.auth.userId,
-      entityLabel: request.auth.userId,
+      entityLabel: label,
       changedFields: ['session'],
       metadata: { sessionId: request.auth.sessionId },
     });
