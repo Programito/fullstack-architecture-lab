@@ -19,6 +19,10 @@ export const PERMISSION_CATALOG = [
     name: 'reservations',
     description: 'Acceso al modulo de reservas.',
   },
+  {
+    name: 'dashboard',
+    description: 'Acceso al panel de analiticas.',
+  },
 ] as const;
 
 export type PermissionName = (typeof PERMISSION_CATALOG)[number]['name'];

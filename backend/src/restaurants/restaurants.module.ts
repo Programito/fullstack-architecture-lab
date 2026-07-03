@@ -19,6 +19,7 @@ import { UpdateFloorElementUseCase } from './application/use-cases/update-floor-
 import { UpdateRestaurantFloorUseCase } from './application/use-cases/update-restaurant-floor.use-case';
 import { RESTAURANT_ORDER_CATALOG_REPOSITORY } from './application/ports/restaurant-order-catalog-repository.port';
 import { RESTAURANT_ORDER_REPOSITORY } from './application/ports/restaurant-order-repository.port';
+import { RESTAURANT_ANALYTICS_REPOSITORY } from './application/ports/restaurant-analytics-repository.port';
 import { RESTAURANT_READ_REPOSITORY } from './application/ports/restaurant-read-repository.port';
 import { RESTAURANT_MENU_ADMIN_REPOSITORY } from './application/ports/restaurant-menu-admin-repository.port';
 import { CreateMenuSectionUseCase } from './application/use-cases/create-menu-section.use-case';
@@ -54,9 +55,11 @@ import { CancelRestaurantOrderLineUseCase } from './application/use-cases/cancel
 import { UpdateRestaurantOrderLineStatusUseCase } from './application/use-cases/update-restaurant-order-line-status.use-case';
 import { FreeRestaurantServicePointUseCase } from './application/use-cases/free-restaurant-service-point.use-case';
 import { RegisterRestaurantOrderPaymentUseCase } from './application/use-cases/register-restaurant-order-payment.use-case';
+import { GetRestaurantAnalyticsReportUseCase } from './application/use-cases/get-restaurant-analytics-report.use-case';
 import { PrismaRestaurantOrderCatalogRepository } from './infrastructure/persistence/prisma-restaurant-order-catalog.repository';
 import { PrismaRestaurantOrderRepository } from './infrastructure/persistence/prisma-restaurant-order.repository';
 import { PrismaRestaurantReadRepository } from './infrastructure/persistence/prisma-restaurant-read.repository';
+import { PrismaRestaurantAnalyticsRepository } from './infrastructure/persistence/prisma-restaurant-analytics.repository';
 import { PrismaRestaurantServiceWindowsRepository } from './infrastructure/persistence/prisma-restaurant-service-windows.repository';
 import { RestaurantsController } from './presentation/rest/restaurants.controller';
 import { RestaurantMenuController } from './presentation/rest/restaurant-menu.controller';
@@ -73,6 +76,7 @@ import { DeleteModifierGroupUseCase } from './application/use-cases/delete-modif
 import { MODIFIER_GROUP_REPOSITORY } from './application/ports/modifier-group-repository.port';
 import { PrismaModifierGroupRepository } from './infrastructure/persistence/prisma-modifier-group.repository';
 import { RestaurantModifierGroupsController } from './presentation/rest/restaurant-modifier-groups.controller';
+import { RestaurantAnalyticsController } from './presentation/rest/restaurant-analytics.controller';
 
 @Module({
   imports: [IdentityModule],
@@ -86,9 +90,11 @@ import { RestaurantModifierGroupsController } from './presentation/rest/restaura
     RestaurantCustomersController,
     RestaurantServiceController,
     RestaurantModifierGroupsController,
+    RestaurantAnalyticsController,
   ],
   providers: [
     ListRestaurantsUseCase,
+    GetRestaurantAnalyticsReportUseCase,
     GetRestaurantMenuUseCase,
     SetRestaurantMenuItemAvailabilityUseCase,
     OpenRestaurantOrderUseCase,
@@ -113,6 +119,7 @@ import { RestaurantModifierGroupsController } from './presentation/rest/restaura
     UpdateFloorElementUseCase,
     UpdateRestaurantFloorUseCase,
     PrismaRestaurantReadRepository,
+    PrismaRestaurantAnalyticsRepository,
     PrismaRestaurantOrderCatalogRepository,
     PrismaRestaurantOrderRepository,
     PrismaRestaurantMenuAdminRepository,
@@ -153,6 +160,10 @@ import { RestaurantModifierGroupsController } from './presentation/rest/restaura
     {
       provide: RESTAURANT_READ_REPOSITORY,
       useExisting: PrismaRestaurantReadRepository,
+    },
+    {
+      provide: RESTAURANT_ANALYTICS_REPOSITORY,
+      useExisting: PrismaRestaurantAnalyticsRepository,
     },
     {
       provide: RESTAURANT_SERVICE_WINDOWS_REPOSITORY,

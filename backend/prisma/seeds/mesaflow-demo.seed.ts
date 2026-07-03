@@ -391,7 +391,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     create: { comboDefinitionId: comboDefinition.id, name: 'Acompañamiento', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3 },
   });
 
-  for (const opt of [
+  const comboSlotOptions = [
     { slotId: comboBurgerSlot.id, productName: 'Hamburguesa clasica', supplementPriceCents: 0, isDefault: true, sortOrder: 1 },
     { slotId: comboBurgerSlot.id, productName: 'Hamburguesa craft', supplementPriceCents: 100, isDefault: false, sortOrder: 2 },
     { slotId: comboBurgerSlot.id, productName: 'Hamburguesa vegetal', supplementPriceCents: 50, isDefault: false, sortOrder: 3 },
@@ -400,15 +400,26 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     { slotId: comboDrinkSlot.id, productName: 'Cerveza', supplementPriceCents: 150, isDefault: false, sortOrder: 3 },
     { slotId: comboSideSlot.id, productName: 'Patatas fritas', supplementPriceCents: 0, isDefault: true, sortOrder: 1 },
     { slotId: comboSideSlot.id, productName: 'Ensalada', supplementPriceCents: 50, isDefault: false, sortOrder: 2 },
-  ]) {
+  ].map((opt) => {
     const restaurantProductId = saleIdByProductName.get(opt.productName);
     if (!restaurantProductId) throw new Error(`Missing combo slot option product "${opt.productName}".`);
-    await prisma.comboSlotOption.upsert({
-      where: { comboSlotId_restaurantProductId: { comboSlotId: opt.slotId, restaurantProductId } },
-      update: { supplementPriceCents: opt.supplementPriceCents, isDefault: opt.isDefault, isAvailable: true, sortOrder: opt.sortOrder },
-      create: { comboSlotId: opt.slotId, restaurantProductId, supplementPriceCents: opt.supplementPriceCents, isDefault: opt.isDefault, isAvailable: true, sortOrder: opt.sortOrder },
-    });
-  }
+    return {
+      comboSlotId: opt.slotId,
+      restaurantProductId,
+      supplementPriceCents: opt.supplementPriceCents,
+      isDefault: opt.isDefault,
+      isAvailable: true,
+      sortOrder: opt.sortOrder,
+    };
+  });
+
+  // `sortOrder` is unique per combo slot, so a plain upsert can collide with a
+  // stale row left by an earlier seed run with a different product at the same
+  // position. Replace each slot's options wholesale instead.
+  await prisma.comboSlotOption.deleteMany({
+    where: { comboSlotId: { in: [comboBurgerSlot.id, comboDrinkSlot.id, comboSideSlot.id] } },
+  });
+  await prisma.comboSlotOption.createMany({ data: comboSlotOptions });
 
   // ── Platters ─────────────────────────────────────────────────────────────────
 

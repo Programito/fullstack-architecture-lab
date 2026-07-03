@@ -210,7 +210,6 @@
   },
   "userAdmin": {
     "navigation": "Users",
-    "back": "Back to POS",
     "eyebrow": "Administration",
     "title": "User accounts",
     "description": "Review account types and control which users may sign in.",
@@ -228,6 +227,10 @@
       "demo": "Demo",
       "system": "System",
       "test": "Test"
+    },
+    "demoRestriction": {
+      "title": "Account type changes are disabled",
+      "description": "Demo accounts cannot change other users' account type."
     }
   },
   "languageSelect": {
@@ -270,6 +273,7 @@
       "menu": "Menu",
       "kitchen": "Kitchen",
       "reservations": "Reservations",
+      "dashboard": "Analytics",
       "pos": "Restaurant POS",
       "navigation": "Primary navigation",
       "logout": "Sign out",
@@ -763,6 +767,61 @@
     "selector": {
       "title": "Select a restaurant",
       "description": "Choose the restaurant you want to work in."
+    },
+    "dashboard": {
+      "title": "Restaurant analytics",
+      "description": "Check the restaurant's historical performance: sales, products, and occupancy.",
+      "ranges": {
+        "today": "Today",
+        "7d": "7 days",
+        "30d": "30 days"
+      },
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "rangeLabel": "Date range",
+        "rangeClamped": "The maximum range is 1 year; the date has been adjusted.",
+        "viewAsTable": "View as table",
+        "viewAsChart": "View as chart"
+      },
+      "tableHeaders": {
+        "date": "Date",
+        "product": "Product",
+        "method": "Method",
+        "hour": "Hour"
+      },
+      "metrics": {
+        "revenue": "Revenue",
+        "orders": "Orders",
+        "averageTicket": "Average ticket",
+        "tableTurnover": "Average table turnover",
+        "tableTurnoverValue": "{{minutes}} min",
+        "loading": "Loading metric",
+        "vsIncrease": "{{pct}}% higher than the previous period",
+        "vsDecrease": "{{pct}}% lower than the previous period",
+        "vsFlat": "Same as the previous period"
+      },
+      "charts": {
+        "salesByDay": "Sales by day",
+        "topProducts": "Top products",
+        "paymentBreakdown": "Revenue by payment method",
+        "peakHours": "Peak hours",
+        "revenue": "Revenue",
+        "quantity": "Quantity",
+        "amount": "Amount",
+        "orders": "Orders"
+      },
+      "paymentMethods": {
+        "cash": "Cash",
+        "card": "Card",
+        "bizum": "Bizum",
+        "other": "Other"
+      },
+      "errors": {
+        "title": "The analytics could not be loaded"
+      },
+      "emptyTitle": "No sales data",
+      "empty": "There is no sales data for the selected period."
     }
   },
   "menu": {

@@ -1,0 +1,180 @@
+<main class="theme-page min-h-dvh">
+  <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+    <div class="mx-auto w-full max-w-7xl">
+      <h1 class="theme-title text-2xl font-semibold">{{ 'restaurantPos.dashboard.title' | transloco }}</h1>
+      <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.dashboard.description' | transloco }}</p>
+    </div>
+  </header>
+
+  <div class="mx-auto grid w-full max-w-7xl gap-4 px-4 pt-4 lg:grid-cols-3 lg:items-end lg:px-6">
+    <div class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+      <span class="theme-muted mb-2 block text-xs font-semibold uppercase tracking-[0.18em]">
+        {{ 'restaurantPos.dashboard.filters.rangeLabel' | transloco }}
+      </span>
+      <app-segmented-control
+        [options]="quickRangeOptions()"
+        [value]="quickRange()"
+        [ariaLabel]="'restaurantPos.dashboard.filters.rangeLabel' | transloco"
+        (valueChange)="setQuickRange($event)"
+      />
+    </div>
+    <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+      <span class="theme-muted block text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.filters.from' | transloco }}</span>
+      <input
+        type="date"
+        class="restaurant-pos-dashboard-page__date-input"
+        [ngModel]="dateInputs().from"
+        (ngModelChange)="setFilter('from', $event)"
+      />
+    </label>
+    <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+      <span class="theme-muted block text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.filters.to' | transloco }}</span>
+      <input
+        type="date"
+        class="restaurant-pos-dashboard-page__date-input"
+        [ngModel]="dateInputs().to"
+        (ngModelChange)="setFilter('to', $event)"
+      />
+    </label>
+  </div>
+
+  @if (rangeClamped()) {
+    <p class="theme-muted mx-auto w-full max-w-7xl px-4 pt-2 text-xs lg:px-6">
+      {{ 'restaurantPos.dashboard.filters.rangeClamped' | transloco }}
+    </p>
+  }
+
+  @if (error(); as message) {
+    <div class="mx-auto w-full max-w-7xl px-4 py-4 lg:px-6">
+      <app-alert
+        variant="danger"
+        [role]="'alert'"
+        [title]="'restaurantPos.dashboard.errors.title' | transloco"
+        [description]="message"
+      />
+    </div>
+  } @else {
+    <div class="mx-auto grid w-full max-w-7xl grid-cols-2 gap-4 px-4 py-4 lg:grid-cols-4 lg:px-6">
+      <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.revenue' | transloco }}</p>
+        @if (loading()) {
+          <app-skeleton shape="text" width="6rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+        } @else {
+          <p class="theme-title mt-2 text-2xl font-semibold">{{ formatCurrency(report()?.summary?.revenueCents ?? 0) }}</p>
+          @if (revenueDelta(); as delta) {
+            <app-badge [variant]="delta.variant" class="mt-1 inline-block">{{ deltaLabel(delta) }}</app-badge>
+          }
+        }
+      </div>
+      <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.orders' | transloco }}</p>
+        @if (loading()) {
+          <app-skeleton shape="text" width="4rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+        } @else {
+          <p class="theme-title mt-2 text-2xl font-semibold">{{ report()?.summary?.ordersCount ?? 0 }}</p>
+          @if (ordersDelta(); as delta) {
+            <app-badge [variant]="delta.variant" class="mt-1 inline-block">{{ deltaLabel(delta) }}</app-badge>
+          }
+        }
+      </div>
+      <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.averageTicket' | transloco }}</p>
+        @if (loading()) {
+          <app-skeleton shape="text" width="6rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+        } @else {
+          <p class="theme-title mt-2 text-2xl font-semibold">{{ formatCurrency(report()?.summary?.averageTicketCents ?? 0) }}</p>
+          @if (averageTicketDelta(); as delta) {
+            <app-badge [variant]="delta.variant" class="mt-1 inline-block">{{ deltaLabel(delta) }}</app-badge>
+          }
+        }
+      </div>
+      <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.tableTurnover' | transloco }}</p>
+        @if (loading()) {
+          <app-skeleton shape="text" width="5rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+        } @else {
+          <p class="theme-title mt-2 text-2xl font-semibold">
+            {{ 'restaurantPos.dashboard.metrics.tableTurnoverValue' | transloco: { minutes: report()?.summary?.averageTableTurnoverMinutes ?? 0 } }}
+          </p>
+          @if (turnoverDelta(); as delta) {
+            <app-badge [variant]="delta.variant" class="mt-1 inline-block">{{ deltaLabel(delta) }}</app-badge>
+          }
+        }
+      </div>
+    </div>
+
+    @if (!loading() && !hasData()) {
+      <div class="mx-auto w-full max-w-7xl px-4 pb-8 lg:px-6">
+        <app-empty-state
+          icon="bar_chart"
+          [title]="'restaurantPos.dashboard.emptyTitle' | transloco"
+          [description]="'restaurantPos.dashboard.empty' | transloco"
+        />
+      </div>
+    } @else {
+      <div class="mx-auto flex w-full max-w-7xl justify-end px-4 lg:px-6">
+        <app-button variant="neutral" fill="outline" size="sm" (pressed)="toggleDataView()">
+          {{ (showDataTables() ? 'restaurantPos.dashboard.filters.viewAsChart' : 'restaurantPos.dashboard.filters.viewAsTable') | transloco }}
+        </app-button>
+      </div>
+      <div class="mx-auto grid w-full max-w-7xl gap-4 px-4 pb-8 lg:grid-cols-2 lg:px-6">
+        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+          @if (showDataTables()) {
+            <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.salesByDay' | transloco }}</p>
+            <app-table [columns]="salesByDayColumns()" [rows]="salesByDayRows()" [loading]="loading()" />
+          } @else {
+            <app-chart
+              type="line"
+              [loading]="loading()"
+              [title]="'restaurantPos.dashboard.charts.salesByDay' | transloco"
+              [categories]="salesByDayCategories()"
+              [data]="salesByDaySeries()"
+            />
+          }
+        </div>
+        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+          @if (showDataTables()) {
+            <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.topProducts' | transloco }}</p>
+            <app-table [columns]="topProductsColumns()" [rows]="topProductsRows()" [loading]="loading()" />
+          } @else {
+            <app-chart
+              type="bar"
+              [loading]="loading()"
+              [title]="'restaurantPos.dashboard.charts.topProducts' | transloco"
+              [categories]="topProductsCategories()"
+              [data]="topProductsSeries()"
+            />
+          }
+        </div>
+        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+          @if (showDataTables()) {
+            <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.paymentBreakdown' | transloco }}</p>
+            <app-table [columns]="paymentBreakdownColumns()" [rows]="paymentBreakdownRows()" [loading]="loading()" />
+          } @else {
+            <app-chart
+              type="donut"
+              [loading]="loading()"
+              [title]="'restaurantPos.dashboard.charts.paymentBreakdown' | transloco"
+              [categories]="paymentBreakdownCategories()"
+              [data]="paymentBreakdownSeries()"
+            />
+          }
+        </div>
+        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+          @if (showDataTables()) {
+            <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.peakHours' | transloco }}</p>
+            <app-table [columns]="peakHoursColumns()" [rows]="peakHoursRows()" [loading]="loading()" />
+          } @else {
+            <app-chart
+              type="bar"
+              [loading]="loading()"
+              [title]="'restaurantPos.dashboard.charts.peakHours' | transloco"
+              [categories]="peakHoursCategories()"
+              [data]="peakHoursSeries()"
+            />
+          }
+        </div>
+      </div>
+    }
+  }
+</main>

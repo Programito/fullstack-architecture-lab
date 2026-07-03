@@ -2,12 +2,12 @@ export const ROLE_CATALOG = [
   {
     name: 'admin',
     description: 'Control completo del restaurante.',
-    permissionNames: ['service', 'menu', 'kitchen', 'layout', 'reservations'],
+    permissionNames: ['service', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
   },
   {
     name: 'manager',
     description: 'Gestión de turnos, descuentos y caja.',
-    permissionNames: ['service', 'menu', 'kitchen', 'layout', 'reservations'],
+    permissionNames: ['service', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
   },
   {
     name: 'waiter',

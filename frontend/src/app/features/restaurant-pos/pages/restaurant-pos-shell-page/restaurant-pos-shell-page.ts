@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { filter, map } from 'rxjs';
 import { IdentitySessionStore } from '../../../identity/identity-session.store';
 import { IdentityApiService } from '../../../identity/api/identity-api.service';
 import { ColorModeMenu } from '../../../../shared/ui/color-mode-menu/color-mode-menu';
@@ -49,8 +51,19 @@ export class RestaurantPosShellPage {
   });
   protected readonly isAdmin = computed(() => this.identity.hasRole('admin'));
   protected readonly loggingOut = signal(false);
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  // User administration is org-wide, not scoped to a restaurant, so it must
+  // stay reachable even before an active restaurant has been selected.
+  private readonly isAdminUsersRoute = computed(() => this.currentUrl().includes('/admin/users'));
   protected readonly needsRestaurantSelection = computed(
     () =>
+      !this.isAdminUsersRoute() &&
       !this.restaurantContext.isLoading() &&
       this.restaurantContext.multipleRestaurants() &&
       !this.restaurantContext.activeRestaurant(),

@@ -29,6 +29,7 @@
     "@fontsource/roboto": "^5.2.10",
     "@jsverse/transloco": "^8.3.0",
     "date-fns": "^4.3.0",
+    "date-fns-tz": "^3.2.0",
     "echarts": "^6.1.0",
     "libphonenumber-js": "^1.13.3",
     "ngx-echarts": "^21.0.0",

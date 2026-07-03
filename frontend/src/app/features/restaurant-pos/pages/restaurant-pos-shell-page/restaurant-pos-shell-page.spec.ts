@@ -91,11 +91,20 @@ describe('RestaurantPosShellPage', () => {
   it('renders only the allowed restaurant POS navigation items', async () => {
     await renderPage(['service', 'layout', 'reservations']);
 
+    // Desktop sidebar nav and the mobile bottom-bar nav render the same items
+    // twice (one hidden by CSS per breakpoint), so navigation queries return
+    // two matches here in jsdom, where the hidden copy still has a display box.
     expect(screen.getByRole('link', { name: /TPV restaurante/i })).toBeTruthy();
-    expect(screen.getByRole('navigation', { name: /Navegaci.n principal/i })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Servicio/i }).getAttribute('href')).toBe('/restaurant-pos/service');
-    expect(screen.getByRole('link', { name: /Plano/i }).getAttribute('href')).toBe('/restaurant-pos/layout');
-    expect(screen.getByRole('link', { name: /Reservas/i }).getAttribute('href')).toBe('/restaurant-pos/reservations');
+    expect(screen.getAllByRole('navigation', { name: /Navegaci.n principal/i }).length).toBe(2);
+    for (const link of screen.getAllByRole('link', { name: /Servicio/i })) {
+      expect(link.getAttribute('href')).toBe('/restaurant-pos/service');
+    }
+    for (const link of screen.getAllByRole('link', { name: /Plano/i })) {
+      expect(link.getAttribute('href')).toBe('/restaurant-pos/layout');
+    }
+    for (const link of screen.getAllByRole('link', { name: /Reservas/i })) {
+      expect(link.getAttribute('href')).toBe('/restaurant-pos/reservations');
+    }
     expect(screen.queryByRole('link', { name: /MenÃº/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /Cocina/i })).toBeNull();
   });
@@ -103,7 +112,9 @@ describe('RestaurantPosShellPage', () => {
   it('marks the active section as the current page', async () => {
     await renderPage(['service', 'layout'], '/restaurant-pos/layout');
 
-    expect(screen.getByRole('link', { name: /Plano/i }).getAttribute('aria-current')).toBe('page');
+    for (const link of screen.getAllByRole('link', { name: /Plano/i })) {
+      expect(link.getAttribute('aria-current')).toBe('page');
+    }
   });
 
   it('shows the user admin link for admins and transitions on logout', async () => {
@@ -114,7 +125,7 @@ describe('RestaurantPosShellPage', () => {
     const navigateSpy = vi.spyOn(router, 'navigate');
     const logoutButtons = screen.getAllByRole('button', { name: /Cerrar sesi.n/i });
 
-    expect(screen.getByRole('link', { name: /Usuarios/i })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /Usuarios/i }).length).toBe(2);
 
     fireEvent.click(logoutButtons[0]);
     fixture.detectChanges();

@@ -52,6 +52,7 @@ describe('IdentitySessionStore', () => {
       permissions: ['layout', 'service', 'layout'],
       accessToken: 'token',
       scopes: { organizations: ['org-1'], restaurants: [] },
+      accountType: 'regular',
     });
 
     expect(store.roles()).toEqual(['waiter']);
@@ -69,6 +70,7 @@ describe('IdentitySessionStore', () => {
       permissions: ['service'],
       accessToken: 'token',
       scopes: { organizations: [], restaurants: ['rest-1'] },
+      accountType: 'regular',
     });
     store.clear();
 
@@ -78,8 +80,60 @@ describe('IdentitySessionStore', () => {
       permissions: [],
       accessToken: null,
       scopes: { organizations: [], restaurants: [] },
+      accountType: null,
     });
     expect(storage.getItem('identity.session')).toBeNull();
+  });
+
+  it('exposes accountType and isDemoAccount from an auth response', () => {
+    const { store } = setup();
+
+    const authResponse: AuthResponseDto = {
+      accessToken: 'tok-demo',
+      tokenType: 'Bearer',
+      expiresIn: 900,
+      user: {
+        id: 'user-3',
+        email: 'admin@mesaflow.demo',
+        firstName: 'Admin',
+        lastName: 'Demo',
+        enabled: true,
+        accountType: 'demo',
+        roles: ['admin'],
+        createdAt: '',
+        updatedAt: '',
+      },
+      roles: ['admin'],
+      permissions: ['service'],
+      scopes: { organizations: [], restaurants: [] },
+    };
+
+    store.setAuthResponse(authResponse);
+
+    expect(store.accountType()).toBe('demo');
+    expect(store.isDemoAccount()).toBe(true);
+  });
+
+  it('defaults accountType to null when reading old storage without the field', () => {
+    const storage = new MemoryKeyValueStorage();
+    storage.setItem(
+      'identity.session',
+      JSON.stringify({
+        userId: 'user-1',
+        roles: ['waiter'],
+        permissions: ['service'],
+        accessToken: 'token',
+      }),
+    );
+
+    TestBed.configureTestingModule({
+      providers: [{ provide: KEY_VALUE_STORAGE, useValue: storage }],
+    });
+
+    const store = TestBed.inject(IdentitySessionStore);
+
+    expect(store.accountType()).toBeNull();
+    expect(store.isDemoAccount()).toBe(false);
   });
 
   it('stores scopes from setAuthResponse and exposes them', () => {

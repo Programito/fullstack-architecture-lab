@@ -1,0 +1,9 @@
+.restaurant-pos-dashboard-page__date-input {
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  padding: 0.625rem 0.75rem;
+}

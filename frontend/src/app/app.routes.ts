@@ -31,12 +31,6 @@ export const routes: Routes = [
       import('./features/identity/pages/developer-page/developer-page').then((module) => module.DeveloperPage),
   },
   {
-    path: 'admin/users',
-    canActivate: [adminGuard],
-    loadComponent: () =>
-      import('./features/identity/pages/user-admin-page/user-admin-page').then((module) => module.UserAdminPage),
-  },
-  {
     path: RESTAURANT_POS_BASE_PATH,
     canActivate: [authenticatedGuard],
     loadComponent: () =>
@@ -50,6 +44,12 @@ export const routes: Routes = [
         canActivate: [restaurantPosSectionGuard, restaurantScopeGuard],
         data: { requiredPermission },
       })),
+      {
+        path: 'admin/users',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/identity/pages/user-admin-page/user-admin-page').then((module) => module.UserAdminPage),
+      },
       {
         path: RESTAURANT_POS_ACCESS_PATH,
         loadComponent: () =>

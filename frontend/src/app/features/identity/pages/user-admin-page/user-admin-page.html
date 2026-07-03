@@ -1,10 +1,18 @@
 <main class="user-admin">
-  <a routerLink="/restaurant-pos/service">{{ 'userAdmin.back' | transloco }}</a>
   <header>
     <p>{{ 'userAdmin.eyebrow' | transloco }}</p>
     <h1>{{ 'userAdmin.title' | transloco }}</h1>
     <span>{{ 'userAdmin.description' | transloco }}</span>
   </header>
+
+  @if (accountTypeChangesBlocked()) {
+    <app-alert
+      variant="warning"
+      [role]="'status'"
+      [title]="'userAdmin.demoRestriction.title' | transloco"
+      [description]="'userAdmin.demoRestriction.description' | transloco"
+    />
+  }
 
   <app-card variant="outlined" padding="none">
     <div class="user-admin__table-wrap">
@@ -31,6 +39,7 @@
                 <select
                   [id]="'account-type-' + user.id"
                   [value]="user.accountType"
+                  [disabled]="accountTypeChangesBlocked()"
                   (change)="changeAccountType(user, $event)"
                 >
                   @for (accountType of accountTypes; track accountType) {

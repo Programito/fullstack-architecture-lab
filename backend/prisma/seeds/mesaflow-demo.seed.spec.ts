@@ -28,7 +28,8 @@ describe('seedMesaFlowDemo', () => {
     const restaurantProductModifierGroupUpsert = vi.fn().mockResolvedValue(undefined);
     const comboDefinitionUpsert = vi.fn().mockResolvedValue({ id: 'combo-definition' });
     const comboSlotUpsert = vi.fn().mockImplementation(async () => ({ id: `combo-slot-${++comboSlotSeq}` }));
-    const comboSlotOptionUpsert = vi.fn().mockResolvedValue(undefined);
+    const comboSlotOptionDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
+    const comboSlotOptionCreateMany = vi.fn().mockResolvedValue({ count: 0 });
     const platterDefinitionUpsert = vi.fn().mockResolvedValue({ id: 'platter-definition' });
     const platterComponentUpsert = vi.fn().mockResolvedValue(undefined);
     const prisma = {
@@ -45,7 +46,7 @@ describe('seedMesaFlowDemo', () => {
       restaurantProductModifierGroup: { upsert: restaurantProductModifierGroupUpsert },
       comboDefinition: { upsert: comboDefinitionUpsert },
       comboSlot: { upsert: comboSlotUpsert },
-      comboSlotOption: { upsert: comboSlotOptionUpsert },
+      comboSlotOption: { deleteMany: comboSlotOptionDeleteMany, createMany: comboSlotOptionCreateMany },
       platterDefinition: { upsert: platterDefinitionUpsert },
       platterComponent: { upsert: platterComponentUpsert },
     } as unknown as PrismaClient;
@@ -118,9 +119,14 @@ describe('seedMesaFlowDemo', () => {
 
     // 3 combo slots
     expect(comboSlotUpsert).toHaveBeenCalledTimes(3);
-    expect(comboSlotOptionUpsert).toHaveBeenCalledWith(
+    expect(comboSlotOptionDeleteMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({ supplementPriceCents: 150 }),
+        where: { comboSlotId: { in: ['combo-slot-1', 'combo-slot-2', 'combo-slot-3'] } },
+      }),
+    );
+    expect(comboSlotOptionCreateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([expect.objectContaining({ supplementPriceCents: 150 })]),
       }),
     );
 

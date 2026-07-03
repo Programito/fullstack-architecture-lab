@@ -1,26 +1,31 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Card } from '../../../../shared/ui/card/card';
 import type { AccountType } from '../../api/identity-api.models';
 import { IdentityApiService } from '../../api/identity-api.service';
+import { IdentitySessionStore } from '../../identity-session.store';
 import type { User } from '../../models/user.model';
 
 @Component({
   selector: 'app-user-admin-page',
-  imports: [Card, RouterLink, TranslocoPipe],
+  imports: [Alert, Card, TranslocoPipe],
   templateUrl: './user-admin-page.html',
   styleUrl: './user-admin-page.css',
 })
 export class UserAdminPage {
   private readonly api = inject(IdentityApiService);
   private readonly transloco = inject(TranslocoService);
+  private readonly session = inject(IdentitySessionStore);
 
   protected readonly users = signal<User[]>([]);
   protected readonly loading = signal(true);
   protected readonly demoLoginEnabled = signal(false);
   protected readonly accountTypes: readonly AccountType[] = ['regular', 'demo', 'system', 'test'];
+  // Demo admin accounts (public showcase logins) must not be able to change
+  // other users' account types, to keep the shared demo environment intact.
+  protected readonly accountTypeChangesBlocked = this.session.isDemoAccount;
 
   constructor() {
     this.loadUsers();
@@ -31,6 +36,10 @@ export class UserAdminPage {
 
   protected changeAccountType(user: User, event: Event): void {
     const select = event.target as HTMLSelectElement;
+    if (this.accountTypeChangesBlocked()) {
+      select.value = user.accountType;
+      return;
+    }
     const accountType = select.value as AccountType;
     if (accountType === user.accountType) return;
     const revokesSessions = accountType === 'system'

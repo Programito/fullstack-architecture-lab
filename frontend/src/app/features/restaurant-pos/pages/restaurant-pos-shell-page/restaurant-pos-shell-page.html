@@ -29,27 +29,30 @@
       </div>
 
       <nav
-        class="flex gap-2 overflow-x-auto pb-1 lg:grid lg:overflow-visible lg:pb-0"
+        class="hidden lg:flex lg:flex-col lg:gap-1.5"
         [attr.aria-label]="'restaurantPos.common.navigation' | transloco"
       >
         @for (item of navigationItems(); track item.path) {
           <a
-            class="theme-nav-link inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium"
+            class="theme-nav-link inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors duration-150"
             routerLinkActive="theme-nav-link-active"
             ariaCurrentWhenActive="page"
             [routerLink]="item.path"
             [routerLinkActiveOptions]="{ exact: true }"
           >
             <app-icon [name]="item.icon" size="sm" />
-            <span>{{ item.labelKey | transloco }}</span>
+            <span class="truncate">{{ item.labelKey | transloco }}</span>
           </a>
         }
       </nav>
 
       @if (isAdmin()) {
         <a
-          class="theme-nav-link inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium"
-          routerLink="/admin/users"
+          class="theme-nav-link hidden min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium lg:inline-flex"
+          routerLinkActive="theme-nav-link-active"
+          ariaCurrentWhenActive="page"
+          routerLink="/restaurant-pos/admin/users"
+          [routerLinkActiveOptions]="{ exact: true }"
         >
           <app-icon name="manage_accounts" size="sm" />
           <span>{{ 'userAdmin.navigation' | transloco }}</span>
@@ -75,7 +78,7 @@
     </div>
   </aside>
 
-  <div class="min-w-0">
+  <div class="min-w-0 pb-16 lg:pb-0">
     @if (needsRestaurantSelection()) {
       <div class="flex min-h-dvh flex-col items-center justify-center gap-6 p-8">
         <div class="w-full max-w-sm text-center">
@@ -100,4 +103,35 @@
       <router-outlet />
     }
   </div>
+
+  <nav
+    class="theme-header fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t px-1 pt-1.5 shadow-[0_-4px_16px_rgb(0_0_0/0.06)] lg:hidden"
+    style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom))"
+    [attr.aria-label]="'restaurantPos.common.navigation' | transloco"
+  >
+    @for (item of navigationItems(); track item.path) {
+      <a
+        class="theme-nav-link flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-center text-[0.6875rem] font-medium transition-colors duration-150"
+        routerLinkActive="theme-nav-link-active"
+        ariaCurrentWhenActive="page"
+        [routerLink]="item.path"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <app-icon [name]="item.icon" size="sm" />
+        <span class="line-clamp-1 leading-tight">{{ item.labelKey | transloco }}</span>
+      </a>
+    }
+    @if (isAdmin()) {
+      <a
+        class="theme-nav-link flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-center text-[0.6875rem] font-medium transition-colors duration-150"
+        routerLinkActive="theme-nav-link-active"
+        ariaCurrentWhenActive="page"
+        routerLink="/restaurant-pos/admin/users"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <app-icon name="manage_accounts" size="sm" />
+        <span class="line-clamp-1 leading-tight">{{ 'userAdmin.navigation' | transloco }}</span>
+      </a>
+    }
+  </nav>
 </div>

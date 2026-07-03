@@ -40,7 +40,8 @@ export type ApplicationErrorCode =
   | 'outside_service_hours'
   | 'modifier_group_not_found'
   | 'modifier_group_name_taken'
-  | 'modifier_group_in_use';
+  | 'modifier_group_in_use'
+  | 'invalid_analytics_range';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -166,4 +167,12 @@ export function modifierGroupNameTaken(name: string): ApplicationError {
 
 export function modifierGroupInUse(groupId: string): ApplicationError {
   return applicationError('modifier_group_in_use', `Modifier group "${groupId}" is assigned to products and cannot be deleted.`, { groupId });
+}
+
+export function invalidAnalyticsRange(from: string, to: string): ApplicationError {
+  return applicationError('invalid_analytics_range', `Date range is invalid: "from" (${from}) must not be after "to" (${to}).`, { from, to });
+}
+
+export function analyticsRangeTooWide(from: string, to: string, maxDays: number): ApplicationError {
+  return applicationError('invalid_analytics_range', `Date range is too wide: the maximum allowed range is ${maxDays} days.`, { from, to, maxDays });
 }

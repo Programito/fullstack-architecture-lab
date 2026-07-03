@@ -210,7 +210,6 @@
   },
   "userAdmin": {
     "navigation": "Usuaris",
-    "back": "Tornar al TPV",
     "eyebrow": "Administració",
     "title": "Comptes d'usuari",
     "description": "Consulta el tipus de compte i controla quins usuaris poden iniciar sessió.",
@@ -228,6 +227,10 @@
       "demo": "Demo",
       "system": "Sistema",
       "test": "Proves"
+    },
+    "demoRestriction": {
+      "title": "El canvi de tipus de compte està desactivat",
+      "description": "Els comptes de demostració no poden canviar el tipus de compte d'altres usuaris."
     }
   },
   "languageSelect": {
@@ -270,6 +273,7 @@
       "menu": "Menú",
       "kitchen": "Cuina",
       "reservations": "Reserves",
+      "dashboard": "Analítiques",
       "pos": "TPV restaurant",
       "navigation": "Navegació principal",
       "logout": "Tancar sessió",
@@ -763,6 +767,61 @@
     "selector": {
       "title": "Selecciona un restaurant",
       "description": "Tria el restaurant en el qual vols treballar."
+    },
+    "dashboard": {
+      "title": "Analítiques del restaurant",
+      "description": "Consulta el rendiment històric del restaurant: vendes, productes i ocupació.",
+      "ranges": {
+        "today": "Avui",
+        "7d": "7 dies",
+        "30d": "30 dies"
+      },
+      "filters": {
+        "from": "Des de",
+        "to": "Fins a",
+        "rangeLabel": "Interval de dates",
+        "rangeClamped": "El rang màxim és d'1 any; s'ha ajustat la data.",
+        "viewAsTable": "Veure com a taula",
+        "viewAsChart": "Veure com a gràfic"
+      },
+      "tableHeaders": {
+        "date": "Data",
+        "product": "Producte",
+        "method": "Mètode",
+        "hour": "Hora"
+      },
+      "metrics": {
+        "revenue": "Ingressos",
+        "orders": "Comandes",
+        "averageTicket": "Tiquet mitjà",
+        "tableTurnover": "Rotació mitjana de taula",
+        "tableTurnoverValue": "{{minutes}} min",
+        "loading": "Carregant mètrica",
+        "vsIncrease": "{{pct}}% més que el període anterior",
+        "vsDecrease": "{{pct}}% menys que el període anterior",
+        "vsFlat": "Igual que el període anterior"
+      },
+      "charts": {
+        "salesByDay": "Vendes per dia",
+        "topProducts": "Productes més venuts",
+        "paymentBreakdown": "Ingressos per mètode de pagament",
+        "peakHours": "Hores punta",
+        "revenue": "Ingressos",
+        "quantity": "Quantitat",
+        "amount": "Import",
+        "orders": "Comandes"
+      },
+      "paymentMethods": {
+        "cash": "Efectiu",
+        "card": "Targeta",
+        "bizum": "Bizum",
+        "other": "Altre"
+      },
+      "errors": {
+        "title": "No s'han pogut carregar les analítiques"
+      },
+      "emptyTitle": "Sense dades de vendes",
+      "empty": "No hi ha dades de vendes per al període seleccionat."
     }
   },
   "menu": {

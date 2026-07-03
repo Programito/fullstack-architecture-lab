@@ -6,7 +6,7 @@ import { IdentitySessionStore } from '../identity/identity-session.store';
 import type { PermissionName } from '../identity/models/permission.model';
 import { RestaurantContextStore } from './state/restaurant-context.store';
 
-export type RestaurantPosSectionPath = 'service' | 'menu' | 'kitchen' | 'layout' | 'reservations';
+export type RestaurantPosSectionPath = 'service' | 'menu' | 'kitchen' | 'layout' | 'reservations' | 'dashboard';
 
 export type RestaurantPosSection = {
   path: RestaurantPosSectionPath;
@@ -62,6 +62,16 @@ export const RESTAURANT_POS_SECTIONS: readonly RestaurantPosSection[] = [
     loadComponent: () =>
       import('./pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page').then(
         (module) => module.RestaurantPosReservationsPage,
+      ),
+  },
+  {
+    path: 'dashboard',
+    labelKey: 'restaurantPos.common.dashboard',
+    icon: 'monitoring',
+    requiredPermission: 'dashboard',
+    loadComponent: () =>
+      import('./pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page').then(
+        (module) => module.RestaurantPosDashboardPage,
       ),
   },
 ] as const;

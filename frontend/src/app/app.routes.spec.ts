@@ -40,10 +40,16 @@ describe('app routes', () => {
     );
   });
 
-  it('defines login, developer and user administration routes', () => {
+  it('defines login and developer routes', () => {
     expect(routes.find((route) => route.path === 'login')?.loadComponent).toBeTypeOf('function');
     expect(routes.find((route) => route.path === 'developer')?.loadComponent).toBeTypeOf('function');
-    expect(routes.find((route) => route.path === 'admin/users')?.loadComponent).toBeTypeOf('function');
+  });
+
+  it('wraps user administration in the restaurant shell', () => {
+    const adminUsersRoute = restaurantPosRoute()?.children?.find((route) => route.path === 'admin/users');
+
+    expect(adminUsersRoute?.loadComponent).toBeTypeOf('function');
+    expect(adminUsersRoute?.canActivate).toBeDefined();
   });
 
   it('defines restaurant-pos section routes from the shared config', () => {

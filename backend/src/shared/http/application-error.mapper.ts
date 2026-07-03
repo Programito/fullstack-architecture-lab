@@ -26,6 +26,7 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_order_configuration':
     case 'invalid_service_windows':
     case 'invalid_customer':
+    case 'invalid_analytics_range':
       return new BadRequestException(error.message);
 
     case 'user_not_found':

@@ -210,7 +210,6 @@
   },
   "userAdmin": {
     "navigation": "Usuarios",
-    "back": "Volver al TPV",
     "eyebrow": "Administración",
     "title": "Cuentas de usuario",
     "description": "Consulta el tipo de cuenta y controla qué usuarios pueden iniciar sesión.",
@@ -228,6 +227,10 @@
       "demo": "Demo",
       "system": "Sistema",
       "test": "Pruebas"
+    },
+    "demoRestriction": {
+      "title": "Cambio de tipo de cuenta deshabilitado",
+      "description": "Las cuentas de demostración no pueden cambiar el tipo de cuenta de otros usuarios."
     }
   },
   "languageSelect": {
@@ -270,6 +273,7 @@
       "menu": "Menú",
       "kitchen": "Cocina",
       "reservations": "Reservas",
+      "dashboard": "Analíticas",
       "pos": "TPV restaurante",
       "navigation": "Navegación principal",
       "logout": "Cerrar sesión",
@@ -763,6 +767,61 @@
     "selector": {
       "title": "Selecciona un restaurante",
       "description": "Elige el restaurante en el que quieres trabajar."
+    },
+    "dashboard": {
+      "title": "Analíticas del restaurante",
+      "description": "Consulta el rendimiento histórico del restaurante: ventas, productos y ocupación.",
+      "ranges": {
+        "today": "Hoy",
+        "7d": "7 días",
+        "30d": "30 días"
+      },
+      "filters": {
+        "from": "Desde",
+        "to": "Hasta",
+        "rangeLabel": "Rango de fechas",
+        "rangeClamped": "El rango máximo es de 1 año; se ha ajustado la fecha.",
+        "viewAsTable": "Ver como tabla",
+        "viewAsChart": "Ver como gráfico"
+      },
+      "tableHeaders": {
+        "date": "Fecha",
+        "product": "Producto",
+        "method": "Método",
+        "hour": "Hora"
+      },
+      "metrics": {
+        "revenue": "Ingresos",
+        "orders": "Pedidos",
+        "averageTicket": "Ticket medio",
+        "tableTurnover": "Rotación media de mesa",
+        "tableTurnoverValue": "{{minutes}} min",
+        "loading": "Cargando métrica",
+        "vsIncrease": "{{pct}}% más que el periodo anterior",
+        "vsDecrease": "{{pct}}% menos que el periodo anterior",
+        "vsFlat": "Igual que el periodo anterior"
+      },
+      "charts": {
+        "salesByDay": "Ventas por día",
+        "topProducts": "Productos más vendidos",
+        "paymentBreakdown": "Ingresos por método de pago",
+        "peakHours": "Horas punta",
+        "revenue": "Ingresos",
+        "quantity": "Cantidad",
+        "amount": "Importe",
+        "orders": "Pedidos"
+      },
+      "paymentMethods": {
+        "cash": "Efectivo",
+        "card": "Tarjeta",
+        "bizum": "Bizum",
+        "other": "Otro"
+      },
+      "errors": {
+        "title": "No se han podido cargar las analíticas"
+      },
+      "emptyTitle": "Sin datos de ventas",
+      "empty": "No hay datos de ventas para el periodo seleccionado."
     }
   },
   "menu": {

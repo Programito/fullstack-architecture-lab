@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 
 import { KEY_VALUE_STORAGE } from '../../shared/utils/storage/key-value-storage';
 import type { PermissionName } from './models/permission.model';
-import type { AuthResponseDto } from './api/identity-api.models';
+import type { AccountType, AuthResponseDto } from './api/identity-api.models';
 
 const STORAGE_KEY = 'identity.session';
 
@@ -17,6 +17,7 @@ export type IdentitySessionSnapshot = {
   permissions: PermissionName[];
   accessToken: string | null;
   scopes: SessionScopes;
+  accountType: AccountType | null;
 };
 
 const EMPTY_SESSION: IdentitySessionSnapshot = {
@@ -25,6 +26,7 @@ const EMPTY_SESSION: IdentitySessionSnapshot = {
   permissions: [],
   accessToken: null,
   scopes: { organizations: [], restaurants: [] },
+  accountType: null,
 };
 
 @Injectable({
@@ -39,6 +41,8 @@ export class IdentitySessionStore {
   readonly permissions = computed(() => this.sessionState().permissions);
   readonly scopes = computed(() => this.sessionState().scopes);
   readonly isAuthenticated = computed(() => Boolean(this.sessionState().userId));
+  readonly accountType = computed(() => this.sessionState().accountType);
+  readonly isDemoAccount = computed(() => this.accountType() === 'demo');
 
   hasPermission(permission: PermissionName): boolean {
     return this.permissions().includes(permission);
@@ -55,6 +59,7 @@ export class IdentitySessionStore {
       permissions: response.permissions,
       accessToken: response.accessToken,
       scopes: response.scopes ?? { organizations: [], restaurants: [] },
+      accountType: response.user.accountType,
     });
   }
 
@@ -68,6 +73,7 @@ export class IdentitySessionStore {
         organizations: Array.isArray(session.scopes?.organizations) ? [...new Set(session.scopes.organizations)] : [],
         restaurants: Array.isArray(session.scopes?.restaurants) ? [...new Set(session.scopes.restaurants)] : [],
       },
+      accountType: isAccountType(session.accountType) ? session.accountType : null,
     };
     this.sessionState.set(normalized);
     this.storage.setItem(STORAGE_KEY, JSON.stringify(normalized));
@@ -98,6 +104,7 @@ export class IdentitySessionStore {
           organizations: Array.isArray(rawScopes?.organizations) ? rawScopes.organizations.filter(isString) : [],
           restaurants: Array.isArray(rawScopes?.restaurants) ? rawScopes.restaurants.filter(isString) : [],
         },
+        accountType: isAccountType(parsed.accountType) ? parsed.accountType : null,
       };
     } catch {
       this.storage.removeItem(STORAGE_KEY);
@@ -111,5 +118,16 @@ function isString(value: unknown): value is string {
 }
 
 function isPermissionName(value: unknown): value is PermissionName {
-  return value === 'service' || value === 'menu' || value === 'kitchen' || value === 'layout' || value === 'reservations';
+  return (
+    value === 'service' ||
+    value === 'menu' ||
+    value === 'kitchen' ||
+    value === 'layout' ||
+    value === 'reservations' ||
+    value === 'dashboard'
+  );
+}
+
+function isAccountType(value: unknown): value is AccountType {
+  return value === 'regular' || value === 'demo' || value === 'system' || value === 'test';
 }
