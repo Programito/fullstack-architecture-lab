@@ -19,6 +19,8 @@ skill, then add secondary skills only when they provide distinct procedural valu
 - Prisma schema, migrations, seeds, or Prisma repository changes:
   use `prisma-backend-data`.
 - New Angular shared UI component scaffolding: use `ui-component-scaffold`.
+- Backend logging capture, structured audit trail, log/audit aggregation queries, retention/purge,
+  or the `/developer/logs` dashboard: use `observability-audit-workflow`.
 - Final verification for Angular frontend work: use `frontend-quality-check`.
 - Final verification for backend work: use `backend-quality-check`.
 - Creating or updating Codex skills: use `skill-creator`.
@@ -36,6 +38,8 @@ skill, then add secondary skills only when they provide distinct procedural valu
   database model or Prisma repositories.
 - Use `backend-quality-check` after `nestjs-backend-workflow` or `prisma-backend-data` work to close
   with the right tests and Prisma commands.
+- Use `nestjs-backend-workflow` plus `observability-audit-workflow` when a feature change needs new
+  structured audit entries or touches the `/developer/logs` endpoints.
 - Use `ui-component-scaffold` plus `angular-tdd-frontend` when creating a new shared UI component.
 - Use `frontend-quality-check` after `angular-tdd-frontend` or `ui-component-scaffold` work to close
   with the right tests and builds.
@@ -52,6 +56,8 @@ skill, then add secondary skills only when they provide distinct procedural valu
   `nestjs-backend-workflow` for project-wide backend workflow.
 - For a new shared UI component, use `ui-component-scaffold` as primary and `angular-tdd-frontend`
   for project-wide Angular workflow.
+- For observability/audit logging work, use `observability-audit-workflow` as primary and
+  `nestjs-backend-workflow` for project-wide backend workflow.
 - For final verification of frontend work, use `frontend-quality-check`.
 - For final verification of backend work, use `backend-quality-check`.
 - For Markdown or MDX docs with Mermaid diagrams, use `mermaid-docs-validator`.

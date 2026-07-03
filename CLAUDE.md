@@ -72,6 +72,7 @@ No ejecutar servidores Angular ni Storybook ocultos en segundo plano. Mantenerlo
 | Backend NestJS: módulos, controladores, DTOs, guards, casos de uso | Workflow NestJS backend |
 | Schema Prisma, migraciones, seeds, repositorios Prisma | Workflow Prisma datos |
 | Nuevo componente UI compartido | Scaffold componente UI + TDD frontend |
+| Logs, auditoría, retención, dashboard `/developer/logs` | Workflow NestJS backend + §Observabilidad y auditoría |
 | Verificación final frontend | Lista de comprobación frontend |
 | Verificación final backend | Lista de comprobación backend |
 | Diagramas Mermaid en docs | Validador Mermaid |
@@ -135,6 +136,16 @@ RestaurantPosStore             — facade principal; delega en:
 `RestaurantOrderStore` usa `MenuMockService` como fallback de productos si `hydrateProducts()` no se ha llamado con datos reales del backend. Las mutaciones de líneas de pedido (addProduct, increaseOrderLine, etc.) actualmente son solo locales.
 
 `RestaurantContextStore` auto-selecciona el restaurante si solo hay uno. Si hay varios, `activeRestaurant` es `null` hasta que se llame a `setActiveRestaurantId()` (método aún no implementado — actualmente no existe selector de restaurante).
+
+### Dashboard de analytics del restaurante
+
+Ruta `/restaurant-pos/dashboard`, tras el permiso `dashboard` (admin/manager). Consume `GET /restaurants/:id/analytics/report` (módulo `restaurants`, no un módulo `analytics` aparte).
+
+- Los rangos rápidos (hoy/7 días/30 días) y el rango custom se resuelven en la **zona horaria del restaurante**, no la del navegador, vía el adaptador en `frontend/src/app/shared/utils/date/restaurant-timezone.ts` (envuelve `date-fns-tz`).
+- Rango máximo de 366 días, validado en backend y recortado en frontend antes de pedir.
+- El rango se persiste en los query params de la URL para sobrevivir a recarga o compartir enlace.
+- Cache de request de vida corta por rango para evitar llamadas repetidas al cambiar de pestaña sin cambiar filtros.
+- Estados distintos para error vs. vacío, skeleton de carga en los KPIs, y una vista de tabla accesible como alternativa a los gráficos.
 
 ### Directrices
 
@@ -245,7 +256,7 @@ src/shared/                    # preocupaciones transversales (Prisma, eventos, 
 
 Preferir extender un módulo existente (`identity`, `tasks`, `restaurants`) antes de crear un módulo nuevo. Al crear un módulo nuevo, reflejar la estructura existente.
 
-Módulos actuales: `health`, `identity`, `tasks`, `restaurants`, `organizations` (solo lectura, alimenta el selector de organización de la administración de usuarios).
+Módulos actuales: `health`, `identity`, `tasks`, `restaurants` (incluye analytics del restaurante), `organizations` (solo lectura, alimenta el selector de organización de la administración de usuarios), `observability` (logs y auditoría, ver más abajo).
 
 ### Guards y autorización
 
@@ -259,6 +270,8 @@ AuthGuard → RestaurantAccessGuard → PermissionsGuard
 - **`RestaurantAccessGuard`**: activado por el decorador `@RequireRestaurantScope()`. Delega en `RestaurantScopeService.canAccessRestaurant`: concede acceso si `request.auth.scopes.restaurants` incluye el restaurante, o si alguna organización en `scopes.organizations` coincide con el `organizationId` real del restaurante (verificado contra Prisma). Un scope totalmente vacío deniega acceso. `GET /restaurants` aplica el mismo criterio para listar solo los restaurantes accesibles.
 - **`PermissionsGuard`**: activado por `@RequirePermissions(...permissions)`. Comprueba permisos globales del usuario, no ligados a scope.
 - **`RolesGuard`**: activado por `@RequireRoles(...)`. Comprueba roles globales.
+- **`BootstrapOrAdminGuard`**: protege `GET/POST /users`, `PATCH /users/:id/roles` y `GET/POST /roles`. Deja las rutas abiertas solo mientras no exista ningún usuario en el sistema (bootstrap del primer admin); en cuanto existe al menos un usuario, exige rol `admin`. Nunca quitar este guard de un endpoint de identidad nuevo sin entender la ventana de bootstrap.
+- **`BlockDemoAccountGuard`**: lee `request.auth?.accountType` y lanza `ForbiddenException` si es `'demo'`; deja pasar si es `undefined` (compone con el bootstrap sin usuario). Cableado en los 8 endpoints de mutación de identidad (`UsersController`, `RolesController`, `PermissionsController`). Cualquier restricción de UI basada en `accountType` o modo demo debe replicarse aquí — el frontend nunca es el límite de seguridad real.
 
 Patrón habitual en controladores de restaurante:
 
@@ -303,6 +316,20 @@ Preferir el test más pequeño que pruebe el comportamiento:
 - Preferir migraciones Prisma comprometidas sobre `db push` para cambios duraderos.
 - Mantener seeds idempotentes cuando sea posible.
 - Añadir spec de integración cuando cambia una query Prisma, transacción, relación o mapeo.
+
+### Observabilidad y auditoría
+
+Módulo `observability`: tabla `app_logs` (Prisma), interceptor de request/response, filtro de excepciones, `AuditService` para auditoría estructurada de negocio (login/logout, CRUD de menú/productos/reservas/pedidos) y endpoints `/developer/logs/*` (rol `developer`). Dashboard en `/developer/logs`. Documentación completa en `backend/docs/observability.md`.
+
+Puntos que rompen fácil si se tocan sin cuidado:
+
+- Las cuentas demo (`accountType: 'demo'`) nunca deben ver auditoría de usuarios reales: `restrictToUserIds` se aplica como condición `AND` independiente en **todos** los métodos de lectura de `ObservabilityService`, combinable con cualquier filtro explícito (p. ej. `actorUserId=<id-real>` debe devolver vacío, no saltarse la restricción).
+- Las agregaciones (`getTimeline`, `getBreakdown`) usan SQL crudo/`groupBy`, no carga en memoria; al añadir un filtro genérico, no dejar que su `spread` pise el rango de fechas ya resuelto.
+- Toda metadata pasa por `observability-metadata.policy.ts` (elimina `authorization`, `cookie`, `password`, `token`, `refreshToken`, `accessToken` y limita tamaño) antes de persistir.
+- `AUDIT_RETENTION_DAYS` (365 por defecto) es mayor que `LOG_RETENTION_DAYS` (30) a propósito; la purga solo se dispara desde `observability-retention.runner.ts` — no añadir un segundo disparador.
+- Usar `pnpm test:integration -- observability.service.integration-spec.ts` (Testcontainers) al tocar cualquier query SQL/JSON cruda de este módulo.
+
+Usar `.codex/skills/observability-audit-workflow/SKILL.md` como referencia de flujo cuando el cambio se concentra en este módulo.
 
 ---
 
