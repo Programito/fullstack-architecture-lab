@@ -9,19 +9,22 @@ import 'reflect-metadata';
 
 import { AppModule } from './app.module';
 import { DeveloperAccessService } from './identity/application/use-cases/developer-access.service';
+import { ConfigDrivenIoAdapter } from './realtime/infrastructure/config-driven-io-adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
   const developerAccess = app.get(DeveloperAccessService);
+  const frontendOrigin = config.get<string>('FRONTEND_ORIGIN') ?? 'http://localhost:4200';
 
+  app.useWebSocketAdapter(new ConfigDrivenIoAdapter(app, frontendOrigin));
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
   app.enableCors({
-    origin: config.get<string>('FRONTEND_ORIGIN') ?? 'http://localhost:4200',
+    origin: frontendOrigin,
     credentials: true,
   });
   app.useGlobalPipes(

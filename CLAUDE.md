@@ -73,6 +73,7 @@ No ejecutar servidores Angular ni Storybook ocultos en segundo plano. Mantenerlo
 | Schema Prisma, migraciones, seeds, repositorios Prisma | Workflow Prisma datos |
 | Nuevo componente UI compartido | Scaffold componente UI + TDD frontend |
 | Logs, auditoría, retención, dashboard `/developer/logs` | Workflow NestJS backend + §Observabilidad y auditoría |
+| Realtime de pedidos, `RealtimeGateway`, `RealtimeService`, sockets | Workflow NestJS backend + TDD frontend + §Realtime de pedidos |
 | Verificación final frontend | Lista de comprobación frontend |
 | Verificación final backend | Lista de comprobación backend |
 | Diagramas Mermaid en docs | Validador Mermaid |
@@ -256,7 +257,7 @@ src/shared/                    # preocupaciones transversales (Prisma, eventos, 
 
 Preferir extender un módulo existente (`identity`, `tasks`, `restaurants`) antes de crear un módulo nuevo. Al crear un módulo nuevo, reflejar la estructura existente.
 
-Módulos actuales: `health`, `identity`, `tasks`, `restaurants` (incluye analytics del restaurante), `organizations` (solo lectura, alimenta el selector de organización de la administración de usuarios), `observability` (logs y auditoría, ver más abajo).
+Módulos actuales: `health`, `identity`, `tasks`, `restaurants` (incluye analytics del restaurante), `organizations` (solo lectura, alimenta el selector de organización de la administración de usuarios), `observability` (logs y auditoría, ver más abajo), `realtime` (sockets de invalidación de pedidos, ver más abajo).
 
 ### Guards y autorización
 
@@ -330,6 +331,18 @@ Puntos que rompen fácil si se tocan sin cuidado:
 - Usar `pnpm test:integration -- observability.service.integration-spec.ts` (Testcontainers) al tocar cualquier query SQL/JSON cruda de este módulo.
 
 Usar `.codex/skills/observability-audit-workflow/SKILL.md` como referencia de flujo cuando el cambio se concentra en este módulo.
+
+### Realtime de pedidos
+
+Módulo `realtime`: `RealtimeGateway` (Socket.IO, namespace `/realtime`) empuja invalidaciones de pedido a los clientes conectados para complementar el polling de 30s de `OrderSyncService` (frontend). Activado por `REALTIME_ENABLED` (`.env`); si es `false`, `RealtimeModule.register({enabled:false})` ni siquiera registra el gateway y todo sigue funcionando solo con polling. Documentación completa en `backend/docs/realtime.md`.
+
+Puntos que rompen fácil si se tocan sin cuidado:
+
+- El gateway valida JWT **y** sesión/usuario en BD (`AuthSession.isUsable()`, `USER_REPOSITORY`/`AUTH_SESSION_REPOSITORY`) al conectar, y repite ese chequeo cada `SESSION_REVALIDATION_INTERVAL_MS` (60s) mientras el socket sigue vivo — una sesión revocada no debe quedar autorizada más de un ciclo. `handleDisconnect` debe seguir limpiando tanto el timer de expiración del JWT como este intervalo, o quedan huérfanos.
+- `handleJoinRestaurant` no tiene un evento `leave-restaurant` separado: al pedir unirse a un restaurante distinto, primero abandona la room anterior (`client.data.joinedRestaurantId`) y luego se une a la nueva. Si se añade un segundo tipo de room en el futuro (no solo por restaurante), replicar este mismo patrón de "una room activa a la vez" o el usuario seguirá recibiendo eventos de algo que ya no está viendo.
+- `RestaurantOrderController` solo conoce el puerto `REALTIME_ORDER_EVENT_PUBLISHER`; `RealtimeService` (frontend) solo conoce la interfaz `RealtimeTransport`. No importar Socket.IO fuera de `SocketRealtimeOrderEventPublisher`/`SocketIoRealtimeTransport` — es la única capa pensada para poder cambiar de proveedor (p. ej. Ably/Pusher) sin tocar consumidores.
+- Cualquier test e2e que conecte un socket real necesita un usuario y sesión reales en el repositorio in-memory (`IDENTITY_PERSISTENCE=memory` + `InMemoryUserRepository`/`InMemoryAuthSessionRepository` sembrados) — un token minteado con un `userId`/`sessionId` que no existe en ningún repositorio se desconecta inmediatamente por el chequeo de sesión.
+- El payload de `order:invalidated` es ligero (`restaurantId`, `tableId`, `orderId`, `reason`, `occurredAt`), nunca el pedido completo; el frontend siempre reobtiene el estado fresco vía REST, nunca confiar en el payload del socket como fuente de verdad.
 
 ---
 

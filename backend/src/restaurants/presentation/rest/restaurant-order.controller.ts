@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req, Res, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Inject, Param, Patch, Post, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 type HttpResponse = { status(code: number): HttpResponse };
@@ -10,6 +10,10 @@ import { RestaurantAccessGuard } from '../../../identity/presentation/rest/resta
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { AuditService } from '../../../observability/application/audit.service';
 import { auditContext } from '../../../observability/application/audit-context';
+import {
+  REALTIME_ORDER_EVENT_PUBLISHER,
+  type RealtimeOrderEventPublisher,
+} from '../../application/ports/realtime-order-event-publisher.port';
 import { OpenRestaurantOrderUseCase } from '../../application/use-cases/open-restaurant-order.use-case';
 import { AddRestaurantOrderLineUseCase } from '../../application/use-cases/add-restaurant-order-line.use-case';
 import { UpdateRestaurantOrderLineUseCase } from '../../application/use-cases/update-restaurant-order-line.use-case';
@@ -46,6 +50,7 @@ export class RestaurantOrderController {
     private readonly sendRestaurantServicePointOrderToKitchen: SendRestaurantServicePointOrderToKitchenUseCase,
     private readonly markRestaurantServicePointOrderServed: MarkRestaurantServicePointOrderServedUseCase,
     private readonly audit: AuditService,
+    @Inject(REALTIME_ORDER_EVENT_PUBLISHER) private readonly realtime: RealtimeOrderEventPublisher,
   ) {}
 
   @Post(':id/service-points/:tableId/orders')
@@ -83,6 +88,7 @@ export class RestaurantOrderController {
       changedFields: result.created ? ['status', 'guestCount'] : ['guestCount'],
       metadata: { orderId: result.order.order.id, tableId, created: result.created, guestCount: result.order.order.guestCount },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId, orderId: result.order.order.id, reason: 'order.opened' });
     response.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
     return RestaurantOrderResponseDto.fromDomain(result.order);
   }
@@ -125,6 +131,7 @@ export class RestaurantOrderController {
       changedFields: ['lines'],
       metadata: { orderId, restaurantProductId: body.restaurantProductId, quantity: body.quantity },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId: order.order.tableId, orderId, reason: 'order.line.created' });
     return RestaurantOrderResponseDto.fromDomain(order);
   }
 
@@ -158,6 +165,7 @@ export class RestaurantOrderController {
       changedFields: collectChangedFields(body, ['quantity', 'kitchenNote']),
       metadata: { orderId, lineId, quantity: body.quantity },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId: order.order.tableId, orderId, reason: 'order.line.updated' });
     return RestaurantOrderResponseDto.fromDomain(order);
   }
 
@@ -187,6 +195,7 @@ export class RestaurantOrderController {
       changedFields: ['lines'],
       metadata: { orderId, lineId },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId: order.order.tableId, orderId, reason: 'order.line.deleted' });
     return RestaurantOrderResponseDto.fromDomain(order);
   }
 
@@ -220,6 +229,7 @@ export class RestaurantOrderController {
       changedFields: ['lines', 'status'],
       metadata: { orderId, lineId, reason: body.reason.trim() },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId: order.order.tableId, orderId, reason: 'order.line.cancelled' });
     return RestaurantOrderResponseDto.fromDomain(order);
   }
 
@@ -237,12 +247,29 @@ export class RestaurantOrderController {
     @Param('orderId') orderId: string,
     @Param('lineId') lineId: string,
     @Body() body: UpdateRestaurantOrderLineStatusDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantOrderResponseDto> {
-    return RestaurantOrderResponseDto.fromDomain(
-      unwrapResultOrThrow(
-        await this.updateRestaurantOrderLineStatus.execute({ restaurantId, orderId, lineId, status: body.status }),
-      ),
+    const order = unwrapResultOrThrow(
+      await this.updateRestaurantOrderLineStatus.execute({ restaurantId, orderId, lineId, status: body.status }),
     );
+    await this.audit.record({
+      ...auditContext(request, restaurantId),
+      event: 'order.line.status-updated',
+      message: `Line ${lineId} status changed to ${body.status}.`,
+      result: 'succeeded',
+      entityType: 'order',
+      entityId: orderId,
+      entityLabel: orderId,
+      changedFields: ['lines', 'status'],
+      metadata: { orderId, lineId, status: body.status },
+    });
+    this.realtime.publishOrderInvalidated({
+      restaurantId,
+      tableId: order.order.tableId,
+      orderId,
+      reason: 'order.line.status-updated',
+    });
+    return RestaurantOrderResponseDto.fromDomain(order);
   }
 
   @Post(':id/orders/:orderId/payments')
@@ -274,6 +301,7 @@ export class RestaurantOrderController {
       changedFields: ['payments'],
       metadata: { orderId, amountCents: body.amountCents, method: body.method },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId: order.order.tableId, orderId, reason: 'order.payment.recorded' });
     return RestaurantOrderResponseDto.fromDomain(order);
   }
 
@@ -302,6 +330,7 @@ export class RestaurantOrderController {
       changedFields: ['status'],
       metadata: { tableId },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId: id, tableId, orderId: null, reason: 'order.service-point.sent-to-kitchen' });
     return ServicePointDetailResponseDto.fromDomain(detail);
   }
 
@@ -330,6 +359,7 @@ export class RestaurantOrderController {
       changedFields: ['status'],
       metadata: { tableId },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId: id, tableId, orderId: null, reason: 'order.service-point.marked-served' });
     return ServicePointDetailResponseDto.fromDomain(detail);
   }
 
@@ -358,6 +388,7 @@ export class RestaurantOrderController {
       changedFields: ['payments', 'status'],
       metadata: { tableId },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId: id, tableId, orderId: null, reason: 'order.service-point.charged' });
     return ServicePointDetailResponseDto.fromDomain(detail);
   }
 
@@ -386,6 +417,7 @@ export class RestaurantOrderController {
       changedFields: ['status'],
       metadata: { tableId },
     });
+    this.realtime.publishOrderInvalidated({ restaurantId, tableId, orderId: null, reason: 'order.service-point.freed' });
     return ServicePointDetailResponseDto.fromDomain(detail);
   }
 }

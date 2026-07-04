@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
+import { RealtimeService, type OrderInvalidatedEvent } from '../../../core/realtime/realtime.service';
 import { RestaurantContextStore } from './restaurant-context.store';
 import { RestaurantPosStore } from './restaurant-pos.store';
 import { ORDER_SYNC_POLL_INTERVAL_MS, OrderSyncService } from './order-sync.service';
@@ -65,6 +66,7 @@ describe('OrderSyncService', () => {
   let mockHydrateServicePointOrder: ReturnType<typeof vi.fn>;
   let mockGetServiceFloor: ReturnType<typeof vi.fn>;
   let mockGetServicePointOrder: ReturnType<typeof vi.fn>;
+  let invalidated$: Subject<OrderInvalidatedEvent>;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -74,6 +76,7 @@ describe('OrderSyncService', () => {
     mockHydrateServicePointOrder = vi.fn();
     mockGetServiceFloor = vi.fn().mockReturnValue(of(FLOOR_WITH_LINES));
     mockGetServicePointOrder = vi.fn().mockReturnValue(of(ORDER));
+    invalidated$ = new Subject<OrderInvalidatedEvent>();
   });
 
   afterEach(() => {
@@ -96,6 +99,10 @@ describe('OrderSyncService', () => {
         {
           provide: RestaurantPosApiService,
           useValue: { getRestaurantServiceFloor: mockGetServiceFloor, getRestaurantServicePointOrder: mockGetServicePointOrder },
+        },
+        {
+          provide: RealtimeService,
+          useValue: { invalidated$: invalidated$.asObservable() },
         },
       ],
     });
@@ -144,6 +151,56 @@ describe('OrderSyncService', () => {
   });
 
   it('vuelve a obtener la planta tras el intervalo de sondeo', async () => {
+    setup();
+    activeRestaurant.set(RESTAURANT);
+    TestBed.flushEffects();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(ORDER_SYNC_POLL_INTERVAL_MS);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+  });
+
+  it('dispara un fetch inmediato cuando llega un evento de invalidación por socket', async () => {
+    setup();
+    activeRestaurant.set(RESTAURANT);
+    TestBed.flushEffects();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+
+    invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+  });
+
+  it('agrupa varios eventos de invalidación seguidos en un solo fetch extra (debounce)', async () => {
+    setup();
+    activeRestaurant.set(RESTAURANT);
+    TestBed.flushEffects();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+
+    invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
+    await vi.advanceTimersByTimeAsync(100);
+    invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.updated' });
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignora eventos de invalidación de un restaurante distinto al activo', async () => {
+    setup();
+    activeRestaurant.set(RESTAURANT);
+    TestBed.flushEffects();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+
+    invalidated$.next({ restaurantId: 'r-2', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+  });
+
+  it('se comporta igual que hoy cuando el socket nunca emite (desactivado o caído)', async () => {
     setup();
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();

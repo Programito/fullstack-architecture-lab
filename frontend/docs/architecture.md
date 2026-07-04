@@ -812,6 +812,21 @@ se activa automáticamente en cuanto `activeRestaurant` deja de ser `null`.
 `MenuApiService` lee `activeRestaurant()?.id` directamente desde el store; lanza en runtime
 si no hay restaurante activo.
 
+### Invalidación en tiempo real (`RealtimeService`)
+
+`OrderSyncService` no solo pollea cada 30s (`ORDER_SYNC_POLL_INTERVAL_MS`): también fusiona
+(`merge`) ese timer con `RealtimeService.invalidated$`, filtrado por `restaurantId` del
+restaurante activo y con `debounceTime(300)` para agrupar ráfagas de eventos. `RealtimeService`
+es un servicio opuesto en `core/realtime/` (fuera de `restaurant-pos/`) porque no depende de
+ningún estado del POS — solo conecta un socket (vía la interfaz `RealtimeTransport`, no
+`socket.io-client` directamente) cuando hay sesión autenticada y restaurante activo, y reenvía
+los eventos `order:invalidated` que recibe.
+
+El polling sigue siendo la fuente de verdad: si el flag de backend `REALTIME_ENABLED` está en
+`false`, o el socket nunca llega a conectar, `invalidated$` simplemente nunca emite y el
+comportamiento es idéntico al polling puro — no hay ninguna ruta de código que dependa de que el
+socket exista. Ver `backend/docs/realtime.md` para el flujo completo del lado servidor.
+
 ---
 
 ## Scopes de sesión en `IdentitySessionStore`

@@ -83,13 +83,21 @@ flowchart TB
   Health["HealthModule"]
   Identity["IdentityModule"]
   Restaurants["RestaurantsModule"]
+  Organizations["OrganizationsModule"]
+  Observability["ObservabilityModule"]
+  Realtime["RealtimeModule"]
   Shared["shared/\nPrismaService, errores, resultado"]
 
   App --> Health
   App --> Identity
   App --> Restaurants
+  App --> Organizations
+  App --> Observability
+  App --> Realtime
   Restaurants --> Shared
   Identity --> Shared
+  Realtime --> Identity
+  Observability --> Identity
 ```
 
 | Módulo | Descripción |
@@ -97,6 +105,9 @@ flowchart TB
 | `health` | Endpoint `GET /api/v1/health` sin auth |
 | `identity` | Registro, login, roles, `UserRoleAssignment`, `/auth/me` |
 | `restaurants` | Menú, suelo, pedidos, reservas, productos, clientes, service windows |
+| `organizations` | Solo lectura, alimenta el selector de organización de administración de usuarios |
+| `observability` | Logs, auditoría y retención — ver `backend/docs/observability.md` |
+| `realtime` | Sockets de invalidación de pedidos — ver `backend/docs/realtime.md` |
 
 ---
 
