@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import {
   ArgumentsHost,
   Catch,
@@ -26,6 +27,11 @@ export class ExceptionLoggingFilter implements ExceptionFilter {
     const message = exception instanceof Error ? exception.message : 'Unexpected error';
 
     request.requestId ??= crypto.randomUUID();
+
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      Sentry.captureException(exception, { extra: { requestId: request.requestId, path: request.originalUrl ?? request.url } });
+    }
+
     void this.observability.record({
       source: 'backend',
       category: 'request',

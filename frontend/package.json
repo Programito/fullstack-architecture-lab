@@ -28,6 +28,7 @@
     "@fontsource/material-symbols-rounded": "^5.2.45",
     "@fontsource/roboto": "^5.2.10",
     "@jsverse/transloco": "^8.3.0",
+    "@sentry/angular": "^10.63.0",
     "date-fns": "^4.3.0",
     "date-fns-tz": "^3.2.0",
     "echarts": "^6.1.0",

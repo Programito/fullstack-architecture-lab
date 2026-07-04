@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -10,6 +11,11 @@ import 'reflect-metadata';
 import { AppModule } from './app.module';
 import { DeveloperAccessService } from './identity/application/use-cases/developer-access.service';
 import { ConfigDrivenIoAdapter } from './realtime/infrastructure/config-driven-io-adapter';
+import { SENTRY_DSN } from './shared/observability/sentry.config';
+
+if (process.env.NODE_ENV === 'production') {
+  Sentry.init({ dsn: SENTRY_DSN });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);

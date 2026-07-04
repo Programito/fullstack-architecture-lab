@@ -51,17 +51,26 @@ Actualmente se registra auditoria estructurada en:
 ### Backend
 
 - `request-logging.interceptor.ts` registra request/response
-- `exception-logging.filter.ts` registra excepciones no controladas
+- `exception-logging.filter.ts` registra excepciones no controladas y las reenvia a Sentry cuando el status es >= 500
 - `observability-retention.runner.ts` aplica limpieza por retencion
 
 ### Frontend
 
 `frontend/src/app/core/observability/client-logs.service.ts` envia eventos ligeros de cliente:
 
-- errores globales
+- errores globales (tambien reenviados a Sentry desde `ClientLogErrorHandler`)
 - errores HTTP de API
 - navegacion principal
 - cambios online/offline
+
+## Sentry
+
+Sentry complementa el sistema de `AppLog`, no lo sustituye: `AppLog` sigue siendo la fuente de auditoria de negocio (quien hizo que, filtrable por restaurante/entidad/actor), mientras que Sentry aporta agrupacion automatica de errores repetidos, stack traces y alertas en tiempo real.
+
+- **Backend**: `@sentry/node`. DSN en `backend/src/shared/observability/sentry.config.ts`, `Sentry.init()` se llama en `main.ts` solo si `NODE_ENV === 'production'`. `exception-logging.filter.ts` llama a `Sentry.captureException` con `requestId` y `path` como contexto extra para cualquier excepcion con status >= 500; los logs de `AppLog` (todos los status) no cambian.
+- **Frontend**: `@sentry/angular`. DSN en `frontend/src/app/core/observability/sentry.config.ts`, `Sentry.init()` se llama en `main.ts` solo si `!isDevMode()`. `ClientLogErrorHandler.handleError` llama a `Sentry.captureException` ademas de registrar el error via `ClientLogsService`.
+- El DSN es de solo escritura (no permite leer datos del proyecto), por eso se mantiene en el codigo fuente en vez de en variables de entorno, igual en frontend y backend.
+- No hay integracion con el dashboard `/developer/logs`: son dos sistemas independientes, cada uno con su propia consulta (Sentry via su propio panel, `AppLog` via este dashboard).
 
 ## Dashboard developer
 
@@ -239,7 +248,7 @@ Casos comunes:
 
 - El dashboard es solo para rol `developer`
 - No hay streaming en tiempo real en esta fase
-- No se integran plataformas externas de logging en esta version
+- Sentry es la unica plataforma externa integrada (ver §Sentry); no sustituye a `AppLog`
 - La metadata debe evitar secretos y payloads completos sensibles
 
 ## Pendiente de verificar
@@ -247,6 +256,3 @@ Casos comunes:
 - `src/observability/application/observability.service.integration-spec.ts` (Testcontainers) cubre `getTimeline` (SQL crudo con `date_trunc`), `getBreakdown` (`groupBy`), `listEvents` (filtros JSON de Postgres), `listEntityOptions`/`listActorOptions` (incluyendo `restrictToUserIds`) y `purgeExpired` (las dos ventanas de retencion), pero no se ha podido ejecutar en el entorno donde se escribio por falta de Docker. Correr `pnpm test:integration -- observability.service.integration-spec.ts` con Docker disponible antes de darlo por validado en CI.
 - Mejora responsive del dashboard (`developer-logs-page.css`, breakpoints 960px/720px) verificada solo por build; no se ha comprobado visualmente en navegador.
 
-## Mejoras futuras
-
-- **Sentry** (`@sentry/nestjs` en backend, `@sentry/angular` en frontend): pensado como complemento de este sistema, no como sustituto. `AppLog` seguiria siendo la fuente de auditoria de negocio (quien hizo que, con filtros por restaurante/entidad), algo que Sentry no cubre de forma nativa. Sentry aportaria lo que hoy falta: agrupacion automatica de errores repetidos, stack traces con source maps, alertas en tiempo real (Slack/email/etc.) y breadcrumbs de sesion cuando algo rompe en produccion. Trade-off principal: anade una dependencia SaaS externa y la gestion de un DSN como secreto, algo a valorar en un proyecto de TFM autocontenido como este.

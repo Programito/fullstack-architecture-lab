@@ -1,6 +1,7 @@
 import { ErrorHandler, Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, type HttpInterceptorFn } from '@angular/common/http';
 import { NavigationEnd, Router } from '@angular/router';
+import * as Sentry from '@sentry/angular';
 import { catchError, filter, throwError } from 'rxjs';
 
 import { API_BASE_URL } from '../api/api.config';
@@ -93,6 +94,7 @@ export class ClientLogErrorHandler implements ErrorHandler {
 
   handleError(error: unknown): void {
     this.logs.logUnhandledError(error);
+    Sentry.captureException(error);
     console.error(error);
   }
 }
