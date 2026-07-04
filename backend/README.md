@@ -98,6 +98,22 @@ When changing database providers, update the provider in `prisma/schema.prisma`
 and generate a new provider-specific migration history. Keep shared seed data in
 TypeScript so it remains independent from SQL dialects.
 
+## Docker and integration tests
+
+`pnpm test:integration` requires Docker Desktop running. Each spec provisions and
+tears down its own ephemeral `postgres:16-alpine` container via Testcontainers —
+no manual database setup is needed, and the `docker-compose.yml` in this folder
+is unrelated to these tests.
+
+`docker-compose.yml` instead starts a persistent local Postgres for manual
+development (`pnpm dev`, `prisma studio`, etc.), matching the defaults already in
+`.env.example`:
+
+```bash
+docker compose up -d
+pnpm prisma:deploy
+```
+
 ## Useful Commands
 
 ```bash

@@ -25,11 +25,13 @@ describe('PrismaRestaurantAnalyticsRepository', () => {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
     execFileSync(pnpm, ['prisma', 'db', 'seed'], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
 
     prisma = new PrismaService();

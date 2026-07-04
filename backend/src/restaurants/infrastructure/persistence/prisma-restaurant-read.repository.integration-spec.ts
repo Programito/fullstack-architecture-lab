@@ -25,11 +25,13 @@ describe('PrismaRestaurantReadRepository', () => {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
     execFileSync(pnpm, ['prisma', 'db', 'seed'], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
 
     prisma = new PrismaService();
@@ -43,7 +45,7 @@ describe('PrismaRestaurantReadRepository', () => {
   });
 
   it('lists the seeded demo restaurant', async () => {
-    const restaurants = await repository.listRestaurants([]);
+    const restaurants = await repository.listRestaurants(['restaurant-mesaflow-centro'], []);
 
     expect(restaurants).toEqual(
       expect.arrayContaining([

@@ -19,10 +19,11 @@ describe('MesaFlow order write schema', () => {
     process.env.DATABASE_URL = container.getConnectionUri();
 
     const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-    execFileSync(pnpm, ['prisma', 'db', 'push', '--skip-generate'], {
+    execFileSync(pnpm, ['prisma', 'migrate', 'deploy'], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
 
     prisma = new PrismaService();

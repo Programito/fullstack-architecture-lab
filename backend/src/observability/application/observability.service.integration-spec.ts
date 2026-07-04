@@ -27,6 +27,7 @@ describe('ObservabilityService (integration)', () => {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
 
     prisma = new PrismaService();

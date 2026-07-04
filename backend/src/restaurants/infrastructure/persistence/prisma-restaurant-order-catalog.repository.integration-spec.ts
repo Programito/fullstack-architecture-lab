@@ -20,11 +20,13 @@ describe('PrismaRestaurantOrderCatalogRepository', () => {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
     execFileSync(pnpm, ['prisma', 'db', 'seed'], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
 
     prisma = new PrismaService();
@@ -68,7 +70,7 @@ describe('PrismaRestaurantOrderCatalogRepository', () => {
         expect.objectContaining({
           id: expect.any(String),
           options: expect.arrayContaining([
-            expect.objectContaining({ id: expect.any(String), name: 'Queso' }),
+            expect.objectContaining({ id: expect.any(String), name: 'Queso extra' }),
           ]),
         }),
       ]),

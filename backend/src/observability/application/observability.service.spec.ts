@@ -1,11 +1,24 @@
 import { LogCategory } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ObservabilityRetentionService } from './observability-retention.service';
 import { ObservabilityService } from './observability.service';
 
 describe('ObservabilityService', () => {
+  // The service logs via Logger.error() on the raw-query failure paths exercised
+  // below; silence it here so those expected failures don't spam test output.
+  let loggerErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    loggerErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    loggerErrorSpy.mockRestore();
+  });
+
   const buildService = () => {
     const prisma = {
       appLog: {
@@ -237,6 +250,7 @@ describe('ObservabilityService', () => {
     );
 
     expect(timeline).toEqual([]);
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Failed to compute log timeline.', expect.any(String));
   });
 
   it('lists distinct entity options for a given entity type via raw SQL', async () => {
@@ -278,6 +292,7 @@ describe('ObservabilityService', () => {
     const options = await service.listActorOptions();
 
     expect(options).toEqual([]);
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Failed to list actor options.', expect.any(String));
   });
 
   it('returns empty entity options when the raw query fails', async () => {
@@ -287,6 +302,7 @@ describe('ObservabilityService', () => {
     const options = await service.listEntityOptions('product');
 
     expect(options).toEqual([]);
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Failed to list entity options.', expect.any(String));
   });
 
   it('aggregates the breakdown by level and category via groupBy', async () => {

@@ -13,6 +13,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
     }),
     PrismaModule,
     HealthModule,

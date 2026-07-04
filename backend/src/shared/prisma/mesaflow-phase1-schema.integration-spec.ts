@@ -18,6 +18,7 @@ describe('MesaFlow Phase 1 Prisma schema', () => {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'pipe',
+      shell: true,
     });
 
     prisma = new PrismaService();

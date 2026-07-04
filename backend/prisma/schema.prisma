@@ -460,6 +460,9 @@ model Order {
 
   @@index([restaurantId, status, createdAt])
   @@index([openedByUserId, createdAt])
+  // Partial unique index "orders_one_active_per_table" (tableId WHERE status IN
+  // ('open', 'pending_payment')) is added via raw SQL migration; Prisma's schema
+  // DSL cannot express filtered unique indexes.
   @@map("orders")
 }
 
