@@ -83,6 +83,7 @@ Environment variables:
 - `LOG_RETENTION_DAYS=30`
 - `AUDIT_RETENTION_DAYS=365`
 - `OBSERVABILITY_DB_COLD_START_ENABLED=false`
+- `SENTRY_ENABLED=false`
 
 Developer-only endpoints live under `/api/v1/developer/logs/*`, and the
 developer dashboard is available in the frontend at `/developer/logs`.
@@ -90,6 +91,13 @@ developer dashboard is available in the frontend at `/developer/logs`.
 The database cold-start observer is optional and disabled by default. Enable it
 only in environments where a free or sleeping database tier causes slow first
 queries or recoverable connection timeouts.
+
+`SENTRY_ENABLED` turns Sentry error reporting on or off (`Sentry.init()` in
+`src/main.ts`); it's a complement to `AppLog`, not a replacement, since Sentry
+only receives 5xx exceptions, not the full audit trail. The DSN itself is not
+an environment variable — it's write-only (it can only submit events, never
+read project data) and lives in `src/shared/observability/sentry.config.ts`.
+See [docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md) for details.
 
 Operational details, filters, audit fields, and retention behavior are
 documented in [docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).
