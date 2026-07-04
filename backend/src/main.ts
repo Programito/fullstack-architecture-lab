@@ -13,7 +13,7 @@ import { DeveloperAccessService } from './identity/application/use-cases/develop
 import { ConfigDrivenIoAdapter } from './realtime/infrastructure/config-driven-io-adapter';
 import { SENTRY_DSN } from './shared/observability/sentry.config';
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.SENTRY_ENABLED === 'true') {
   Sentry.init({ dsn: SENTRY_DSN });
 }
 
