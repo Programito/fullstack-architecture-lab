@@ -1008,7 +1008,7 @@ derivan las opciones del propio rastro de auditoria en `app_logs`, lo que ademas
 automaticamente el aislamiento de cuentas demo.
 
 Para detalles de backend, contrato de auditoria y retencion, ver
-[backend/docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).
+[backend/docs/observability.md](../../backend/docs/observability.md).
 
 ## Readiness en login
 

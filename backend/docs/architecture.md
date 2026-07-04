@@ -315,4 +315,4 @@ Campos de auditorÃ­a estructurada:
 - `entityLabel`
 - `changedFields`
 
-Consulta la documentaciÃ³n operativa en [observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).
+Consulta la documentaciÃ³n operativa en [observability.md](observability.md).

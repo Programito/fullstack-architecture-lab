@@ -97,10 +97,10 @@ queries or recoverable connection timeouts.
 only receives 5xx exceptions, not the full audit trail. The DSN itself is not
 an environment variable — it's write-only (it can only submit events, never
 read project data) and lives in `src/shared/observability/sentry.config.ts`.
-See [docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md) for details.
+See [docs/observability.md](docs/observability.md) for details.
 
 Operational details, filters, audit fields, and retention behavior are
-documented in [docs/observability.md](/C:/Users/Thor_/Documents/Proyecto/backend/docs/observability.md).
+documented in [docs/observability.md](docs/observability.md).
 
 When changing database providers, update the provider in `prisma/schema.prisma`
 and generate a new provider-specific migration history. Keep shared seed data in
