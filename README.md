@@ -20,6 +20,8 @@ Full-stack restaurant POS. Signal-first Angular frontend and NestJS backend with
 `-- backend/    # NestJS, clean architecture, Prisma and tests
 ```
 
+See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/README.md) for app-specific setup and commands.
+
 ### Implemented features
 
 - **Floor plan:** interactive layout with tables and stools, selection and realtime status.
@@ -145,6 +147,8 @@ TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y 
 +-- frontend/   # Angular, UI compartida, Storybook y e2e
 `-- backend/    # NestJS, arquitectura limpia, Prisma y tests
 ```
+
+Consulta [frontend/README.md](frontend/README.md) y [backend/README.md](backend/README.md) para la configuración y comandos específicos de cada app.
 
 ### Funcionalidades implementadas
 
