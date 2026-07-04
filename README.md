@@ -27,6 +27,11 @@ TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y 
 - **Identidad:** autenticación JWT con roles, permisos granulares y scopes por restaurante u organización.
 - **Internacionalización:** español, inglés y catalán con Transloco.
 - **Tema:** modo claro y oscuro con tokens CSS semánticos `--ui-*`.
+- **Analytics:** dashboard de KPIs y gráficos por restaurante, con rangos de fecha resueltos en la zona horaria del restaurante.
+- **Observabilidad y auditoría:** logs técnicos, auditoría de negocio y dashboard `/developer/logs` (rol `developer`), con Sentry como complemento activable por variable de entorno.
+- **Realtime de pedidos:** invalidaciones por WebSocket con fallback a polling, feature-flagged.
+- **Imágenes de producto:** subida firmada desde el admin de menú, con almacenamiento externo.
+- **Cuentas demo:** acceso público sin credenciales, aisladas de los datos y la auditoría de usuarios reales.
 
 ## Requisitos
 
