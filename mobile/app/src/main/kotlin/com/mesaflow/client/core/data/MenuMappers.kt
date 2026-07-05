@@ -1,0 +1,99 @@
+package com.mesaflow.client.core.data
+
+import com.mesaflow.client.core.model.ComboDefinition
+import com.mesaflow.client.core.model.ComboSlot
+import com.mesaflow.client.core.model.ComboSlotOption
+import com.mesaflow.client.core.model.Menu
+import com.mesaflow.client.core.model.MenuItem
+import com.mesaflow.client.core.model.MenuSection
+import com.mesaflow.client.core.model.ModifierGroup
+import com.mesaflow.client.core.model.ModifierOption
+import com.mesaflow.client.core.model.PlatterComponent
+import com.mesaflow.client.core.model.ProductType
+import com.mesaflow.client.core.network.dto.RestaurantMenuDto
+
+/** Mapea el DTO del backend a dominio, descartando secciones/items no visibles. */
+internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
+    id = id,
+    restaurantId = restaurantId,
+    name = name,
+    sections = sections
+        .filter { it.isVisible }
+        .sortedBy { it.sortOrder }
+        .map { section ->
+            MenuSection(
+                id = section.id,
+                name = section.name,
+                sortOrder = section.sortOrder,
+                items = section.items.map { item ->
+                    MenuItem(
+                        id = item.id,
+                        restaurantProductId = item.restaurantProductId,
+                        name = item.name,
+                        description = item.description,
+                        imageUrl = item.imageUrl,
+                        productType = when (item.productType.lowercase()) {
+                            "combo" -> ProductType.COMBO
+                            "platter" -> ProductType.PLATTER
+                            else -> ProductType.SIMPLE
+                        },
+                        priceCents = item.priceCents,
+                        currency = item.currency,
+                        isAvailable = item.isAvailable,
+                        modifierGroups = item.modifierGroups.map { group ->
+                            ModifierGroup(
+                                id = group.id,
+                                name = group.name,
+                                singleSelection = group.selectionType.equals("single", ignoreCase = true),
+                                minSelections = group.minSelections,
+                                maxSelections = group.maxSelections,
+                                isRequired = group.isRequired,
+                                options = group.options.map { opt ->
+                                    ModifierOption(
+                                        id = opt.id,
+                                        name = opt.name,
+                                        priceDeltaCents = opt.priceDeltaCents,
+                                        isAvailable = opt.isAvailable,
+                                    )
+                                },
+                            )
+                        },
+                        comboDefinition = item.comboDefinition?.let { combo ->
+                            ComboDefinition(
+                                id = combo.id,
+                                slots = combo.slots.map { slot ->
+                                    ComboSlot(
+                                        id = slot.id,
+                                        name = slot.name,
+                                        minSelections = slot.minSelections,
+                                        maxSelections = slot.maxSelections,
+                                        isRequired = slot.isRequired,
+                                        options = slot.options.map { opt ->
+                                            ComboSlotOption(
+                                                id = opt.id,
+                                                restaurantProductId = opt.restaurantProductId,
+                                                name = opt.name,
+                                                supplementPriceCents = opt.supplementPriceCents,
+                                                isAvailable = opt.isAvailable,
+                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        },
+                        platterComponents = item.platterComponents
+                            .sortedBy { it.sortOrder }
+                            .map { comp ->
+                                PlatterComponent(
+                                    id = comp.id,
+                                    name = comp.name,
+                                    removable = comp.removable,
+                                    replaceable = comp.replaceable,
+                                    sortOrder = comp.sortOrder,
+                                )
+                            },
+                    )
+                },
+            )
+        },
+)

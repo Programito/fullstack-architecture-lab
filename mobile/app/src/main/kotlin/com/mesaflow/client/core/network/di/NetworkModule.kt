@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.mesaflow.client.BuildConfig
 import com.mesaflow.client.core.network.AuthApi
 import com.mesaflow.client.core.network.AuthInterceptor
+import com.mesaflow.client.core.network.MenuApi
 import com.mesaflow.client.core.network.RefreshApi
 import com.mesaflow.client.core.network.SessionCookieJar
 import com.mesaflow.client.core.network.TokenAuthenticator
@@ -91,6 +92,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideMenuApi(retrofit: Retrofit): MenuApi = retrofit.create(MenuApi::class.java)
 
     private fun retrofit(client: OkHttpClient, baseUrl: String, json: Json): Retrofit =
         Retrofit.Builder()

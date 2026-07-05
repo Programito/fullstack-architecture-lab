@@ -14,4 +14,9 @@
     <string name="entry_error_generic">Alguna cosa no ha anat bé. Torna-ho a provar.</string>
     <string name="menu_title">Carta</string>
     <string name="menu_table_label">Taula: %1$s</string>
+    <string name="menu_search_hint">Cerca a la carta</string>
+    <string name="menu_all_categories">Tot</string>
+    <string name="menu_unavailable">Esgotat</string>
+    <string name="menu_error_load">No s\'ha pogut carregar la carta.</string>
+    <string name="menu_empty_results">No hi ha resultats per a la teva cerca.</string>
 </resources>

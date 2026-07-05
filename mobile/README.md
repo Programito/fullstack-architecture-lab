@@ -55,7 +55,7 @@ app/src/main/kotlin/com/mesaflow/client/
 - [x] Fase 1 — Design system y tema Expressive (paleta teal/terracota, componentes base con previews)
 - [x] Fase 2 — Core de red y sesión (Retrofit + kotlinx.serialization, refresh por cookie httpOnly, DataStore, tests MockWebServer)
 - [x] Fase 3 — Entry: escáner QR (Google code scanner) + modo demo real + Navigation 3
-- [ ] Fase 4 — Carta: buscador y categorías
+- [x] Fase 4 — Carta real: buscador sin tildes, categorías, imágenes Coil, estados carga/vacío/error
 - [ ] Fase 5 — Configurador de producto + carrito Room
 - [ ] Fase 6 — Resumen y envío del pedido
 - [ ] Fase 7 — Cobro mock + pago aceptado

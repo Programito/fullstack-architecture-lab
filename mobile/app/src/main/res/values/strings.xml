@@ -15,4 +15,9 @@
     <string name="entry_error_generic">Algo no ha ido bien. Inténtalo de nuevo.</string>
     <string name="menu_title">Carta</string>
     <string name="menu_table_label">Mesa: %1$s</string>
+    <string name="menu_search_hint">Buscar en la carta</string>
+    <string name="menu_all_categories">Todo</string>
+    <string name="menu_unavailable">Agotado</string>
+    <string name="menu_error_load">No se ha podido cargar la carta.</string>
+    <string name="menu_empty_results">No hay resultados para tu búsqueda.</string>
 </resources>

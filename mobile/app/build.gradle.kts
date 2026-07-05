@@ -78,6 +78,10 @@ dependencies {
     // Escaner QR de Google (sin permiso de camara; UI de Play Services)
     implementation(libs.play.services.code.scanner)
 
+    // Imagenes de la carta
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

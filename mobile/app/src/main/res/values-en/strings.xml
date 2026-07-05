@@ -14,4 +14,9 @@
     <string name="entry_error_generic">Something went wrong. Please try again.</string>
     <string name="menu_title">Menu</string>
     <string name="menu_table_label">Table: %1$s</string>
+    <string name="menu_search_hint">Search the menu</string>
+    <string name="menu_all_categories">All</string>
+    <string name="menu_unavailable">Sold out</string>
+    <string name="menu_error_load">The menu could not be loaded.</string>
+    <string name="menu_empty_results">No results for your search.</string>
 </resources>
