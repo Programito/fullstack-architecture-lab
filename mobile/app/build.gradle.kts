@@ -21,7 +21,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Emulador -> host local. Para dispositivo fisico: adb reverse tcp:3000 tcp:3000
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/api/v1/\"")
+        }
         release {
+            buildConfigField("String", "BASE_URL", "\"https://api.mesaflow.example/api/v1/\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -35,6 +40,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -62,9 +68,19 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
 
+    // Red y persistencia ligera
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.androidx.datastore.preferences)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }

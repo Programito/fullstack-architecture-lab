@@ -34,11 +34,18 @@ app/src/main/kotlin/com/mesaflow/client/
 └── navigation/              # (Fase 3) claves de ruta serializables + back stack
 ```
 
+## Conexión al backend en desarrollo
+
+- La URL base en debug es `http://10.0.2.2:3000/api/v1/` (loopback del emulador hacia tu máquina).
+- En dispositivo físico: `adb reverse tcp:3000 tcp:3000` y arrancar el backend en local.
+- El backend necesita `DEMO_LOGIN_ENABLED=true` para el modo demo (rol `waiter`).
+- Solo el build de debug permite HTTP en claro (manifest de debug); release exige HTTPS.
+
 ## Estado por fases
 
 - [x] Fase 0 — Bootstrap: proyecto compila, tema base, Hilt cableado, i18n es/en/ca inicial
 - [x] Fase 1 — Design system y tema Expressive (paleta teal/terracota, componentes base con previews)
-- [ ] Fase 2 — Core de red y sesión (Retrofit, refresh por cookie, DataStore)
+- [x] Fase 2 — Core de red y sesión (Retrofit + kotlinx.serialization, refresh por cookie httpOnly, DataStore, tests MockWebServer)
 - [ ] Fase 3 — Entry: escáner QR + modo demo + Navigation 3
 - [ ] Fase 4 — Carta: buscador y categorías
 - [ ] Fase 5 — Configurador de producto + carrito Room
