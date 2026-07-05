@@ -7,4 +7,11 @@
     <string name="action_retry">Retry</string>
     <string name="stepper_decrease">Decrease quantity</string>
     <string name="stepper_increase">Increase quantity</string>
+    <string name="entry_signing_in">Entering the restaurant…</string>
+    <string name="entry_error_qr_invalid">That QR code does not look like a MesaFlow table.</string>
+    <string name="entry_error_network">No connection. Check your network and try again.</string>
+    <string name="entry_error_unauthorized">Could not sign in. Please try again.</string>
+    <string name="entry_error_generic">Something went wrong. Please try again.</string>
+    <string name="menu_title">Menu</string>
+    <string name="menu_table_label">Table: %1$s</string>
 </resources>

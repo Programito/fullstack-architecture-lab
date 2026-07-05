@@ -7,4 +7,11 @@
     <string name="action_retry">Torna-ho a provar</string>
     <string name="stepper_decrease">Redueix la quantitat</string>
     <string name="stepper_increase">Augmenta la quantitat</string>
+    <string name="entry_signing_in">Entrant al restaurant…</string>
+    <string name="entry_error_qr_invalid">Aquest codi QR no sembla d\'una taula de MesaFlow.</string>
+    <string name="entry_error_network">No hi ha connexió. Comprova la xarxa i torna-ho a provar.</string>
+    <string name="entry_error_unauthorized">No s\'ha pogut iniciar sessió. Torna-ho a provar.</string>
+    <string name="entry_error_generic">Alguna cosa no ha anat bé. Torna-ho a provar.</string>
+    <string name="menu_title">Carta</string>
+    <string name="menu_table_label">Taula: %1$s</string>
 </resources>

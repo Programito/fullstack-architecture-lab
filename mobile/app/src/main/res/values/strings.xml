@@ -8,4 +8,11 @@
     <string name="action_retry">Reintentar</string>
     <string name="stepper_decrease">Reducir cantidad</string>
     <string name="stepper_increase">Aumentar cantidad</string>
+    <string name="entry_signing_in">Entrando en el restaurante…</string>
+    <string name="entry_error_qr_invalid">Ese código QR no parece de una mesa de MesaFlow.</string>
+    <string name="entry_error_network">No hay conexión. Comprueba tu red e inténtalo de nuevo.</string>
+    <string name="entry_error_unauthorized">No se ha podido iniciar sesión. Inténtalo de nuevo.</string>
+    <string name="entry_error_generic">Algo no ha ido bien. Inténtalo de nuevo.</string>
+    <string name="menu_title">Carta</string>
+    <string name="menu_table_label">Mesa: %1$s</string>
 </resources>

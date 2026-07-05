@@ -75,6 +75,9 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.androidx.datastore.preferences)
 
+    // Escaner QR de Google (sin permiso de camara; UI de Play Services)
+    implementation(libs.play.services.code.scanner)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

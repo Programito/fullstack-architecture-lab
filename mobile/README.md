@@ -22,12 +22,12 @@ App nativa Android para que el cliente del restaurante pida desde su mesa. Kotli
 | kotlinx-serialization-json | 1.11.0 |
 | androidx.lifecycle (runtime/viewmodel-compose) | 2.10.0 (2.11.0 exige AGP 9.2; ver nota abajo) |
 
-> **Nota AGP 9:** varias librerias de Google (Hilt 2.59+, lifecycle 2.11+) ya
+> **Nota AGP 9:** varias librerías de Google (Hilt 2.59+, lifecycle 2.11+) ya
 > exigen AGP 9.x en su metadata. Este proyecto se queda deliberadamente en
-> AGP 8.13 mientras sea viable, fijando esas dependencias a la ultima version
-> compatible. Cuando el ecosistema lo haga insostenible (cada vez mas cerca),
-> la migracion es: AGP 9.2.x + Gradle 9.4.1+ + Hilt 2.60 + lifecycle 2.11+,
-> y requiere Android Studio Otter 3 Feature Drop (2025.2.3) o mas reciente.
+> AGP 8.13 mientras sea viable, fijando esas dependencias a la última versión
+> compatible. Cuando el ecosistema lo haga insostenible (cada vez más cerca),
+> la migración es: AGP 9.2.x + Gradle 9.4.1+ + Hilt 2.60 + lifecycle 2.11+,
+> y requiere Android Studio Otter 3 Feature Drop (2025.2.3) o más reciente.
 
 Room, Retrofit/OkHttp, DataStore, Coil y CameraX/ML Kit se añaden al catalog en las fases 2–5, cuando se usan.
 
@@ -54,7 +54,7 @@ app/src/main/kotlin/com/mesaflow/client/
 - [x] Fase 0 — Bootstrap: proyecto compila, tema base, Hilt cableado, i18n es/en/ca inicial
 - [x] Fase 1 — Design system y tema Expressive (paleta teal/terracota, componentes base con previews)
 - [x] Fase 2 — Core de red y sesión (Retrofit + kotlinx.serialization, refresh por cookie httpOnly, DataStore, tests MockWebServer)
-- [ ] Fase 3 — Entry: escáner QR + modo demo + Navigation 3
+- [x] Fase 3 — Entry: escáner QR (Google code scanner) + modo demo real + Navigation 3
 - [ ] Fase 4 — Carta: buscador y categorías
 - [ ] Fase 5 — Configurador de producto + carrito Room
 - [ ] Fase 6 — Resumen y envío del pedido

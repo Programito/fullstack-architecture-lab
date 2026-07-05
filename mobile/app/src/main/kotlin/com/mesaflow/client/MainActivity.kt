@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.mesaflow.client.core.designsystem.MesaFlowTheme
-import com.mesaflow.client.feature.entry.EntryScreen
+import com.mesaflow.client.navigation.MesaFlowNavigation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -16,8 +16,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MesaFlowTheme {
-                // Fase 3: aquí vivirá el NavDisplay de Navigation 3.
-                EntryScreen()
+                MesaFlowNavigation()
             }
         }
     }
