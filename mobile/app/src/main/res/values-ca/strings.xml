@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_tagline">Demana des de la teva taula</string>
+    <string name="entry_scan_qr">Escaneja el QR de la taula</string>
+    <string name="entry_demo_mode">Entra en mode demo</string>
+    <string name="entry_coming_soon">Disponible en una propera fase.</string>
+    <string name="action_retry">Torna-ho a provar</string>
+    <string name="stepper_decrease">Redueix la quantitat</string>
+    <string name="stepper_increase">Augmenta la quantitat</string>
+</resources>

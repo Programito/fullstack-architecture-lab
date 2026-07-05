@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MesaFlow</string>
+    <string name="entry_tagline">Pide desde tu mesa</string>
+    <string name="entry_scan_qr">Escanear QR de la mesa</string>
+    <string name="entry_demo_mode">Entrar en modo demo</string>
+    <string name="entry_coming_soon">Disponible en una próxima fase.</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="stepper_decrease">Reducir cantidad</string>
+    <string name="stepper_increase">Aumentar cantidad</string>
+</resources>

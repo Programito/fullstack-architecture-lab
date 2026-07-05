@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_tagline">Order from your table</string>
+    <string name="entry_scan_qr">Scan the table QR</string>
+    <string name="entry_demo_mode">Enter demo mode</string>
+    <string name="entry_coming_soon">Available in an upcoming phase.</string>
+    <string name="action_retry">Retry</string>
+    <string name="stepper_decrease">Decrease quantity</string>
+    <string name="stepper_increase">Increase quantity</string>
+</resources>

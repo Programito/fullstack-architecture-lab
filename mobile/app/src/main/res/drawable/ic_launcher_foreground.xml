@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Placeholder: una "M" simple sobre el fondo de marca. Se sustituirá en la Fase 1. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,72 L34,38 L41,38 L54,58 L67,38 L74,38 L74,72 L67,72 L67,50 L56,67 L52,67 L41,50 L41,72 Z" />
+</vector>
