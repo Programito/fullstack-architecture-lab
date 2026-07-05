@@ -20,6 +20,14 @@ App nativa Android para que el cliente del restaurante pida desde su mesa. Kotli
 | Navigation 3 | 1.1.3 (se cablea en la Fase 3) |
 | Hilt | 2.58 (última compatible con AGP 8.x; Hilt 2.59+ exige AGP 9) |
 | kotlinx-serialization-json | 1.11.0 |
+| androidx.lifecycle (runtime/viewmodel-compose) | 2.10.0 (2.11.0 exige AGP 9.2; ver nota abajo) |
+
+> **Nota AGP 9:** varias librerias de Google (Hilt 2.59+, lifecycle 2.11+) ya
+> exigen AGP 9.x en su metadata. Este proyecto se queda deliberadamente en
+> AGP 8.13 mientras sea viable, fijando esas dependencias a la ultima version
+> compatible. Cuando el ecosistema lo haga insostenible (cada vez mas cerca),
+> la migracion es: AGP 9.2.x + Gradle 9.4.1+ + Hilt 2.60 + lifecycle 2.11+,
+> y requiere Android Studio Otter 3 Feature Drop (2025.2.3) o mas reciente.
 
 Room, Retrofit/OkHttp, DataStore, Coil y CameraX/ML Kit se añaden al catalog en las fases 2–5, cuando se usan.
 
