@@ -308,7 +308,9 @@ export class RestaurantOrderController {
   @Post(':id/service-points/:tableId/send-to-kitchen')
   @Version('1')
   @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
-  @RequirePermissions('kitchen')
+  // El envio a cocina es una accion de sala (camarero/app cliente), no de cocina.
+  // TODO: cuando exista un rol/permiso dedicado de cliente, diferenciarlo aqui.
+  @RequirePermissions('service')
   @RequireRestaurantScope()
   @ApiCreatedResponse({ type: ServicePointDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Service point has no pending lines to send.' })

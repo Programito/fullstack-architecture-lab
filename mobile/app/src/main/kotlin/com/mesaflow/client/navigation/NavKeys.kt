@@ -10,3 +10,14 @@ data object EntryKey : NavKey
 
 @Serializable
 data object MenuKey : NavKey
+
+@Serializable
+data object CartKey : NavKey
+
+/** Cobro del pedido recién enviado; lleva lo mínimo para no depender de red. */
+@Serializable
+data class CheckoutKey(
+    val orderId: String,
+    val totalCents: Long,
+    val currency: String,
+) : NavKey

@@ -17,13 +17,14 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.mesaflow.client.HiltTestRunner"
     }
 
     buildTypes {
         debug {
-            // Emulador -> host local. Para dispositivo fisico: adb reverse tcp:3000 tcp:3000
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/api/v1/\"")
+            // Host local via tunel ADB: requiere "adb reverse tcp:3000 tcp:3000" en cada
+            // reinicio del emulador/dispositivo. Ver README para detalles y alternativa 10.0.2.2.
+            buildConfigField("String", "BASE_URL", "\"http://127.0.0.1:3000/api/v1/\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://api.mesaflow.example/api/v1/\"")
@@ -55,6 +56,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
@@ -75,6 +77,11 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.androidx.datastore.preferences)
 
+    // Carrito persistente (Fase 5)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
     // Escaner QR de Google (sin permiso de camara; UI de Play Services)
     implementation(libs.play.services.code.scanner)
 
@@ -90,4 +97,16 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+
+    // Tests de UI (Compose) de los flujos críticos (Fase 8): backend real
+    // sustituido por MockWebServer, Hilt de verdad con HiltTestRunner.
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
+    androidTestImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

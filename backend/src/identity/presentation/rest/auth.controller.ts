@@ -101,7 +101,9 @@ export class AuthController {
     return {
       demoLoginEnabled,
       demoRoles: demoLoginEnabled
-        ? DEMO_ACCOUNT_CATALOG.map(({ role, label, description, icon }) => ({ role, label, description, icon }))
+        ? DEMO_ACCOUNT_CATALOG.filter((account) => account.channel === 'staff').map(
+            ({ role, label, description, icon }) => ({ role, label, description, icon }),
+          )
         : [],
     };
   }

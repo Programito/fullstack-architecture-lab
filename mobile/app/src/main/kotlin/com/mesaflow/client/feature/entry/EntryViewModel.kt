@@ -19,10 +19,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Mesa usada en modo demo. Debe existir en el seed del restaurante demo del
- * backend; se ajustara cuando la Fase 6 envie pedidos reales a una mesa.
+ * Mesa usada en modo demo: debe coincidir con un id real del seed
+ * (prisma/seeds/mesaflow-layout.seed.ts crea table-1..table-4 y stool-1..3).
+ * Antes de la Fase 6 no importaba porque no se enviaban pedidos reales a
+ * ninguna mesa; ahora sí, así que tiene que ser un id que exista de verdad.
  */
-const val DEMO_TABLE_ID = "mesa-1"
+const val DEMO_TABLE_ID = "table-1"
 
 data class EntryUiState(
     val isLoading: Boolean = false,
@@ -68,7 +70,8 @@ class EntryViewModel @Inject constructor(
 
         viewModelScope.launch {
             // Autenticacion: mientras no exista un acceso publico de cliente,
-            // tanto QR como demo usan el demo-login del backend (rol waiter).
+            // tanto QR como demo usan el demo-login del backend con el rol
+            // dedicado "customer" (solo permiso `service`, ver DEMO_CLIENT_ROLE).
             when (val result = authRepository.demoLogin()) {
                 is AppResult.Success -> {
                     val context = table ?: TableContext(

@@ -17,8 +17,15 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
-/** Rol demo con permiso `service` (mesas, pedidos y cobros) en el backend. */
-const val DEMO_CLIENT_ROLE = "waiter"
+/**
+ * Rol demo dedicado a la app cliente: solo tiene el permiso `service`
+ * (pedidos y cobros de su propia mesa), sin `layout` ni `reservations`
+ * como el rol `waiter` del personal. Así, si alguien extrae este token
+ * de la APK, no sirve para explorar ni diagnosticar el resto del backend
+ * (plano de sala, reservas, etc.) más allá de lo que ya puede hacer un
+ * cliente desde la app.
+ */
+const val DEMO_CLIENT_ROLE = "customer"
 
 @Singleton
 class AuthRepository @Inject constructor(

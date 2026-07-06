@@ -37,7 +37,7 @@ fun QuantityStepper(
             onClick = { onQuantityChange(quantity - 1) },
             enabled = quantity > min,
             modifier = Modifier
-                .size(40.dp)
+                .size(48.dp)
                 .semantics { contentDescription = decreaseLabel },
         ) {
             Text("−", style = MaterialTheme.typography.titleLarge)
@@ -52,7 +52,7 @@ fun QuantityStepper(
             onClick = { onQuantityChange(quantity + 1) },
             enabled = quantity < max,
             modifier = Modifier
-                .size(40.dp)
+                .size(48.dp)
                 .semantics { contentDescription = increaseLabel },
         ) {
             Text("+", style = MaterialTheme.typography.titleLarge)

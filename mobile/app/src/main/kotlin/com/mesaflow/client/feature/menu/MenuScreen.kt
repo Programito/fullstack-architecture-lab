@@ -1,5 +1,13 @@
 package com.mesaflow.client.feature.menu
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,24 +26,30 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.mesaflow.client.R
+import com.mesaflow.client.core.common.PriceFormatter
 import com.mesaflow.client.core.designsystem.components.CategoryChip
 import com.mesaflow.client.core.designsystem.components.EmptyState
 import com.mesaflow.client.core.designsystem.components.ErrorState
@@ -43,20 +57,35 @@ import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.components.SkeletonBox
 import com.mesaflow.client.core.model.MenuItem
 import com.mesaflow.client.core.model.MenuSection
+import com.mesaflow.client.feature.product.ProductConfiguratorSheet
 
 /**
  * Carta del restaurante: buscador por texto (sin tildes), chips de categoria
  * y lista de productos con imagen y precio. Los items agotados se muestran
- * deshabilitados. El tap en producto abre el configurador (Fase 5).
+ * deshabilitados. El tap en producto abre el configurador; la barra flotante
+ * inferior resume el carrito (la pantalla de resumen llega en la Fase 6).
  */
 @Composable
 fun MenuScreen(
     modifier: Modifier = Modifier,
+    onCartClick: () -> Unit = {},
     viewModel: MenuViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val cartSummary by viewModel.cartSummary.collectAsStateWithLifecycle()
 
-    Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = !cartSummary.isEmpty,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut(),
+            ) {
+                CartFab(summary = cartSummary, onClick = onCartClick)
+            }
+        },
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,11 +137,45 @@ fun MenuScreen(
                     if (sections.isEmpty()) {
                         EmptyState(message = stringResource(R.string.menu_empty_results))
                     } else {
-                        MenuList(sections = sections, onItemClick = { /* Fase 5: configurador */ })
+                        MenuList(sections = sections, onItemClick = viewModel::onItemClick)
                     }
                 }
             }
         }
+
+        uiState.configuringItem?.let { item ->
+            ProductConfiguratorSheet(
+                item = item,
+                onDismiss = viewModel::onConfiguratorDismiss,
+                onAddToCart = viewModel::onAddToCart,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CartFab(summary: CartSummary, onClick: () -> Unit) {
+    // Pequeño "rebote" cada vez que cambia el nº de artículos, para que
+    // añadir algo al carrito se note en la barra sin ser intrusivo.
+    val bounceScale = remember { Animatable(1f) }
+    LaunchedEffect(summary.itemCount) {
+        bounceScale.snapTo(0.85f)
+        bounceScale.animateTo(1f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+    }
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        modifier = Modifier.scale(bounceScale.value),
+    ) {
+        Text(
+            text = stringResource(
+                R.string.cart_fab_label,
+                summary.itemCount,
+                PriceFormatter.format(summary.totalCents, summary.currency),
+            ),
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
 }
 
@@ -161,6 +224,7 @@ private fun MenuList(
 
 @Composable
 private fun MenuItemCard(item: MenuItem, onClick: () -> Unit) {
+    val openLabel = stringResource(R.string.menu_item_open)
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -168,7 +232,12 @@ private fun MenuItemCard(item: MenuItem, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .clickable(enabled = item.isAvailable, onClick = onClick)
+            .clickable(
+                enabled = item.isAvailable,
+                onClickLabel = openLabel,
+                role = Role.Button,
+                onClick = onClick,
+            )
             .alpha(if (item.isAvailable) 1f else 0.5f),
     ) {
         Row(

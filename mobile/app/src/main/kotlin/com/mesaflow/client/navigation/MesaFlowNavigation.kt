@@ -1,18 +1,29 @@
 package com.mesaflow.client.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.mesaflow.client.feature.cart.CartScreen
+import com.mesaflow.client.feature.checkout.CheckoutScreen
 import com.mesaflow.client.feature.entry.EntryScreen
 import com.mesaflow.client.feature.menu.MenuScreen
+
+private const val TRANSITION_DURATION_MS = 220
 
 /**
  * Arbol de navegacion (Navigation 3): el back stack es estado propio.
  * Entry -> Menu reemplaza el stack (no se vuelve "atras" al login);
  * sessionExpired vacia el stack y devuelve a Entry.
+ * Las transiciones entre pantallas son un fundido + deslizamiento sutil,
+ * coherente en ambas direcciones (avanzar hacia el inicio, volver hacia el final).
  */
 @Composable
 fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
@@ -28,6 +39,30 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
+        transitionSpec = {
+            fadeIn(tween(TRANSITION_DURATION_MS)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(TRANSITION_DURATION_MS),
+            ) togetherWith fadeOut(tween(TRANSITION_DURATION_MS))
+        },
+        popTransitionSpec = {
+            fadeIn(tween(TRANSITION_DURATION_MS)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(TRANSITION_DURATION_MS),
+            ) togetherWith fadeOut(tween(TRANSITION_DURATION_MS)) + slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(TRANSITION_DURATION_MS),
+            )
+        },
+        predictivePopTransitionSpec = {
+            fadeIn(tween(TRANSITION_DURATION_MS)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(TRANSITION_DURATION_MS),
+            ) togetherWith fadeOut(tween(TRANSITION_DURATION_MS)) + slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(TRANSITION_DURATION_MS),
+            )
+        },
         entryProvider = entryProvider {
             entry<EntryKey> {
                 EntryScreen(
@@ -38,7 +73,36 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                 )
             }
             entry<MenuKey> {
-                MenuScreen()
+                MenuScreen(
+                    onCartClick = { backStack.add(CartKey) },
+                )
+            }
+            entry<CartKey> {
+                CartScreen(
+                    onBack = { backStack.removeLastOrNull() },
+                    onCheckout = { submitted ->
+                        backStack.add(
+                            CheckoutKey(
+                                orderId = submitted.orderId,
+                                totalCents = submitted.totalCents,
+                                currency = submitted.currency,
+                            ),
+                        )
+                    },
+                )
+            }
+            entry<CheckoutKey> { key ->
+                CheckoutScreen(
+                    orderId = key.orderId,
+                    totalCents = key.totalCents,
+                    currency = key.currency,
+                    onBack = { backStack.removeLastOrNull() },
+                    onDone = {
+                        // Pago aceptado: vuelta limpia a la carta (sin carrito ni cobro detrás).
+                        backStack.clear()
+                        backStack.add(MenuKey)
+                    },
+                )
             }
         },
     )

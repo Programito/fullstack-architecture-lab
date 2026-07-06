@@ -20,6 +20,11 @@ export const ROLE_CATALOG = [
     permissionNames: ['kitchen'],
   },
   {
+    name: 'customer',
+    description: 'Cliente en mesa: pide y paga desde la app móvil (sin acceso a plano ni reservas).',
+    permissionNames: ['service'],
+  },
+  {
     name: 'developer',
     description: 'Documentación, Storybook, arquitectura y demo técnica.',
     permissionNames: [],

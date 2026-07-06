@@ -193,6 +193,16 @@ Scenario: Configurar un menú con extra y elemento quitado
 
 **Cierre:** el pedido hecho desde el móvil aparece en el POS Angular en la mesa correcta.
 
+> **Nota de implementación (post-Fase 7):** además de abrir el pedido y añadir las
+> líneas, hace falta un tercer paso: `POST .../service-points/:tableId/send-to-kitchen`.
+> Las líneas nacen en `pending` y cocina solo ve las disparadas con esa llamada
+> (pasan a `preparing` y la mesa a `waiting_kitchen`). `submitCart()` lo hace al final
+> y el carrito solo se vacía si también ese paso confirma. En el backend,
+> `send-to-kitchen` pasó de exigir el permiso `kitchen` a exigir `service` (es una
+> acción de sala: camarero o app cliente); queda un TODO en
+> `restaurant-order.controller.ts` para diferenciar un rol de cliente dedicado
+> en el futuro.
+
 ### Fase 7 — Cobro mock y pago aceptado (≈ 1–1,5 días)
 
 1. Puerto `PaymentGateway` en `feature/checkout` con una sola implementación por ahora: `MockPaymentGateway` (delay 1,5 s + resultado configurable éxito/rechazo). Hilt elige la implementación en el módulo — cambiar a Stripe/Adyen mañana no toca ninguna pantalla.
@@ -212,12 +222,12 @@ Scenario: Pago simulado aceptado
 
 ### Fase 8 — Pulido, i18n y entrega (≈ 1,5–2 días)
 
-1. i18n completa es/en/ca (`values/`, `values-en/`, `values-ca/`), formato de moneda por locale; tono de los textos igual que el resto de MesaFlow (formal, amable, sin culpar al usuario).
-2. Animaciones de transición entre pantallas con Nav3 y micro-animaciones (añadir al carrito → badge de la barra).
-3. Accesibilidad: `contentDescription`, tamaños táctiles ≥48 dp, TalkBack por el flujo completo, contraste en ambos temas.
+1. ~~i18n completa es/en/ca (`values/`, `values-en/`, `values-ca/`), formato de moneda por locale; tono de los textos igual que el resto de MesaFlow (formal, amable, sin culpar al usuario).~~ **Hecho** — auditoría sin strings hardcodeados.
+2. ~~Animaciones de transición entre pantallas con Nav3 y micro-animaciones (añadir al carrito → badge de la barra).~~ **Hecho** — `transitionSpec`/`popTransitionSpec`/`predictivePopTransitionSpec` (fundido + deslizamiento, 220 ms) en `MesaFlowNavigation.kt`; `CartFab` con `AnimatedVisibility` de entrada/salida y un rebote (`Animatable` + `spring`) cada vez que cambia el nº de artículos.
+3. ~~Accesibilidad: `contentDescription`, tamaños táctiles ≥48 dp, TalkBack por el flujo completo, contraste en ambos temas.~~ **Hecho** — `QuantityStepper` a 48dp, `Role.Button` en la tarjeta de producto, semántica única (`selectable`/`toggleable`) en el configurador.
 4. Tests de UI (Compose) de los dos flujos críticos: demo → carta → configurar → pedir, y pedir → pagar → aceptado.
 5. APK: `release` firmado con keystore propio, R8 activado; documentar el build en `mobile/README.md`.
-6. Docs: `docs/mobile-app.md` (o `mobile/docs/`) con arquitectura + 2–3 diagramas Mermaid pequeños, validados con el validador del repo.
+6. ~~Docs: `docs/mobile-app.md` (o `mobile/docs/`) con arquitectura + 2–3 diagramas Mermaid pequeños, validados con el validador del repo.~~ **Hecho** — `docs/mobile-app.md` (arquitectura por capas, navegación entre pantallas, flujo de envío a cocina); pendiente que el usuario ejecute el validador local (ver nota abajo, la máquina de validación no es accesible desde este entorno).
 
 **Cierre:** checklist final tipo frontend del CLAUDE.md — i18n completa, dark/light, accesibilidad, tests de flujos críticos en verde, APK instalable.
 
