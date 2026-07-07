@@ -582,6 +582,27 @@ describe('RestaurantPosDashboardPage', () => {
     expect(screen.getByRole('region', { name: 'Operativa' })).toBeTruthy();
   });
 
+  it('adds mobile layout hooks for summary cards, page actions and payments', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    const view = await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(view.container.querySelectorAll('.restaurant-pos-dashboard-page__summary-card').length).toBe(4);
+    expect(view.container.querySelector('.restaurant-pos-dashboard-page__page-actions')).toBeTruthy();
+    expect(view.container.querySelector('.restaurant-pos-dashboard-page__payment-panel')).toBeTruthy();
+  });
+
   it('shows section-level empty states when the report has partial analytics data', async () => {
     const i18n = provideI18nTesting();
     const restaurantContext = createRestaurantContextMock();

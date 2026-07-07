@@ -96,7 +96,7 @@
   } @else {
     <section class="mx-auto w-full max-w-7xl px-4 py-4 lg:px-6" aria-label="{{ 'restaurantPos.dashboard.sections.summary' | transloco }}">
       <div class="restaurant-pos-dashboard-page__summary-grid">
-        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.revenue' | transloco }}</p>
           @if (loading()) {
             <app-skeleton shape="text" width="6rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
@@ -107,7 +107,7 @@
             }
           }
         </div>
-        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.orders' | transloco }}</p>
           @if (loading()) {
             <app-skeleton shape="text" width="4rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
@@ -118,7 +118,7 @@
             }
           }
         </div>
-        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.averageTicket' | transloco }}</p>
           @if (loading()) {
             <app-skeleton shape="text" width="6rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
@@ -129,7 +129,7 @@
             }
           }
         </div>
-        <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+        <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.dominantPayment' | transloco }}</p>
           @if (loading()) {
             <app-skeleton shape="text" width="5rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
@@ -154,14 +154,14 @@
         />
       </div>
     } @else {
-      <div class="mx-auto flex w-full max-w-7xl justify-end px-4 lg:px-6">
+      <div class="restaurant-pos-dashboard-page__page-actions mx-auto flex w-full max-w-7xl justify-end px-4 lg:px-6">
         <app-button variant="neutral" fill="outline" size="sm" (pressed)="toggleDataView()">
           {{ (showDataTables() ? 'restaurantPos.dashboard.filters.viewAsChart' : 'restaurantPos.dashboard.filters.viewAsTable') | transloco }}
         </app-button>
       </div>
       <div class="mx-auto w-full max-w-7xl px-4 pb-8 lg:px-6">
         <section class="restaurant-pos-dashboard-page__trends" aria-label="{{ 'restaurantPos.dashboard.sections.trends' | transloco }}">
-          <div class="theme-panel rounded-2xl border p-4 shadow-sm">
+          <div class="theme-panel restaurant-pos-dashboard-page__payment-panel rounded-2xl border p-4 shadow-sm">
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.salesByDay' | transloco }}</p>
               @if (loading() || salesByDayRows().length) {
