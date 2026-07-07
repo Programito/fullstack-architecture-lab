@@ -132,6 +132,7 @@
         "to": "Fins a",
         "level": "Nivell",
         "category": "Categoria",
+        "clientOrigin": "Origen",
         "path": "Ruta",
         "actorUserId": "Usuari actor",
         "actorUserIdHint": "Nomes apareixen usuaris amb activitat auditada.",
@@ -158,29 +159,47 @@
         "3d": "3d",
         "7d": "7d"
       },
+      "shortcuts": {
+        "apkCustomer": "APK client",
+        "webDemo": "Web demo",
+        "webPos": "Web TPV",
+        "auth": "Login i auth",
+        "payments": "Pagaments"
+      },
       "metrics": {
         "requests": "Peticions",
         "errors": "Errors",
         "errorRate": "Taxa d'error",
         "audit": "Esdeveniments auditats",
-        "latency": "Latència p95"
+        "latency": "Lat�ncia p95",
+        "loginSucceeded": "Login correcte",
+        "loginFailed": "Login fallit"
+      },
+      "sections": {
+        "topSlowPaths": "Top rutes lentes",
+        "topErrors": "Top errors per canal",
+        "requests": "peticions",
+        "occurrences": "ocurr�ncies"
       },
       "charts": {
         "activity": "Activitat",
         "levels": "Nivells",
         "categories": "Categories",
+        "origins": "Canals",
         "series": {
           "events": "Esdeveniments",
           "errors": "Errors",
           "audit": "Auditoria",
           "levels": "Nivells",
-          "categories": "Categories"
+          "categories": "Categories",
+          "origins": "Canals"
         }
       },
       "table": {
         "timestamp": "Hora",
         "level": "Nivell",
         "category": "Tipus",
+        "clientOrigin": "Origen",
         "event": "Esdeveniment",
         "message": "Detall",
         "emptyTitle": "Sense esdeveniments",
@@ -190,6 +209,7 @@
         "title": "Detall de l'esdeveniment",
         "timestamp": "Data",
         "source": "Origen",
+        "clientOrigin": "Canal",
         "category": "Categoria",
         "path": "Ruta",
         "method": "Mètode",
@@ -206,6 +226,13 @@
       },
       "events": {
         "title": "Esdeveniments recents"
+      },
+      "origins": {
+        "web-admin": "Web admin",
+        "web-demo": "Web demo",
+        "web-pos": "Web TPV",
+        "apk-customer": "APK client",
+        "backend": "Backend"
       }
     },
     "open": "Obrir recurs",
@@ -783,42 +810,52 @@
       "description": "Tria el restaurant en el qual vols treballar."
     },
     "dashboard": {
-      "title": "Analítiques del restaurant",
-      "description": "Consulta el rendiment històric del restaurant: vendes, productes i ocupació.",
+      "title": "Anal\u00edtiques del restaurant",
+      "description": "Consulta el rendiment hist\u00f2ric del restaurant: vendes, productes i ocupaci\u00f3.",
       "ranges": {
         "today": "Avui",
         "7d": "7 dies",
         "30d": "30 dies"
       },
       "filters": {
+        "title": "Filtres",
+        "active": "Filtres actius",
         "from": "Des de",
         "to": "Fins a",
         "rangeLabel": "Interval de dates",
-        "rangeClamped": "El rang màxim és d'1 any; s'ha ajustat la data.",
+        "rangeClamped": "El rang m\u00e0xim \u00e9s d'1 any; s'ha ajustat la data.",
+        "show": "Mostrar filtres",
+        "hide": "Amagar filtres",
+        "reset": "Netejar filtres",
         "viewAsTable": "Veure com a taula",
-        "viewAsChart": "Veure com a gràfic"
+        "viewAsChart": "Veure com a gr\u00e0fic"
       },
       "tableHeaders": {
         "date": "Data",
         "product": "Producte",
-        "method": "Mètode",
-        "hour": "Hora"
+        "method": "M\u00e8tode",
+        "hour": "Hora",
+        "share": "Mix",
+        "operations": "Operacions",
+        "averageTicket": "Tiquet mitj\u00e0"
       },
       "metrics": {
         "revenue": "Ingressos",
         "orders": "Comandes",
-        "averageTicket": "Tiquet mitjà",
-        "tableTurnover": "Rotació mitjana de taula",
+        "averageTicket": "Tiquet mitj\u00e0",
+        "tableTurnover": "Rotaci\u00f3 mitjana de taula",
         "tableTurnoverValue": "{{minutes}} min",
-        "loading": "Carregant mètrica",
-        "vsIncrease": "{{pct}}% més que el període anterior",
-        "vsDecrease": "{{pct}}% menys que el període anterior",
-        "vsFlat": "Igual que el període anterior"
+        "loading": "Carregant m\u00e8trica",
+        "vsIncrease": "{{pct}}% m\u00e9s que el per\u00edode anterior",
+        "vsDecrease": "{{pct}}% menys que el per\u00edode anterior",
+        "vsFlat": "Igual que el per\u00edode anterior"
       },
       "charts": {
         "salesByDay": "Vendes per dia",
-        "topProducts": "Productes més venuts",
-        "paymentBreakdown": "Ingressos per mètode de pagament",
+        "topProducts": "Productes m\u00e9s venuts",
+        "paymentBreakdown": "Ingressos per m\u00e8tode de pagament",
+        "paymentShare": "Mix de pagaments",
+        "averageTicketByDay": "Tiquet mitj\u00e0 per dia",
         "peakHours": "Hores punta",
         "revenue": "Ingressos",
         "quantity": "Quantitat",
@@ -831,11 +868,20 @@
         "bizum": "Bizum",
         "other": "Altre"
       },
+      "payments": {
+        "dominant": "M\u00e8tode dominant: {{method}}"
+      },
+      "sections": {
+        "summary": "Resum",
+        "trends": "Tend\u00e8ncies",
+        "payments": "Pagaments",
+        "secondary": "Operativa"
+      },
       "errors": {
-        "title": "No s'han pogut carregar les analítiques"
+        "title": "No s'han pogut carregar les anal\u00edtiques"
       },
       "emptyTitle": "Sense dades de vendes",
-      "empty": "No hi ha dades de vendes per al període seleccionat."
+      "empty": "No hi ha dades de vendes per al periode seleccionat."
     }
   },
   "menu": {

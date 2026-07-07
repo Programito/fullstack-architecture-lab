@@ -21,6 +21,15 @@ import { RestaurantContextStore } from '../../state/restaurant-context.store';
 type QuickRange = 'today' | '7d' | '30d' | 'custom';
 type DateInputs = { from: string; to: string };
 type Delta = { pct: number; variant: BadgeVariant; direction: 'up' | 'down' | 'flat' };
+type DailyAverageTicketPoint = { date: string; revenueCents: number; ordersCount: number; averageTicketCents: number };
+type DashboardViewMode = 'chart' | 'table';
+type ActiveFilterChip = { key: 'range' | 'from' | 'to'; label: string };
+type DashboardUiState = {
+  quickRange: QuickRange;
+  dateInputs: DateInputs;
+  viewMode: DashboardViewMode;
+  filtersExpanded: boolean;
+};
 
 const MAX_RANGE_DAYS = 366;
 const QUICK_RANGES = ['today', '7d', '30d'] as const;
@@ -44,7 +53,8 @@ export class RestaurantPosDashboardPage {
   protected readonly error = signal<string | null>(null);
   protected readonly report = signal<RestaurantAnalyticsReportDto | null>(null);
   protected readonly rangeClamped = signal(false);
-  protected readonly showDataTables = signal(false);
+  protected readonly showDataTables: ReturnType<typeof signal<boolean>>;
+  protected readonly filtersExpanded: ReturnType<typeof signal<boolean>>;
   protected readonly quickRange: ReturnType<typeof signal<QuickRange>>;
   protected readonly dateInputs: ReturnType<typeof signal<DateInputs>>;
 
@@ -106,6 +116,15 @@ export class RestaurantPosDashboardPage {
       },
     ];
   });
+  protected readonly paymentShareSeries = computed<ChartSeries[]>(() => {
+    this.activeLang();
+    return [
+      {
+        name: this.transloco.translate('restaurantPos.dashboard.tableHeaders.share'),
+        values: (this.report()?.paymentBreakdown ?? []).map((entry) => Math.round(this.paymentShare(entry.amountCents) * 100)),
+      },
+    ];
+  });
 
   protected readonly peakHoursCategories = computed(() => (this.report()?.peakHours ?? []).map((entry) => `${entry.hour}h`));
   protected readonly peakHoursSeries = computed<ChartSeries[]>(() => {
@@ -155,16 +174,42 @@ export class RestaurantPosDashboardPage {
     return [
       { key: 'method', header: this.transloco.translate('restaurantPos.dashboard.tableHeaders.method') },
       { key: 'amount', header: this.transloco.translate('restaurantPos.dashboard.charts.amount') },
-      { key: 'orders', header: this.transloco.translate('restaurantPos.dashboard.charts.orders') },
+      { key: 'share', header: this.transloco.translate('restaurantPos.dashboard.tableHeaders.share') },
+      { key: 'operations', header: this.transloco.translate('restaurantPos.dashboard.tableHeaders.operations') },
+      { key: 'averageTicket', header: this.transloco.translate('restaurantPos.dashboard.tableHeaders.averageTicket') },
     ];
   });
   protected readonly paymentBreakdownRows = computed<TableRow[]>(() =>
     (this.report()?.paymentBreakdown ?? []).map((entry) => ({
       method: this.paymentMethodLabel(entry.method),
       amount: this.formatCurrency(entry.amountCents),
-      orders: entry.count,
+      share: this.formatPercentage(this.paymentShare(entry.amountCents)),
+      operations: entry.count,
+      averageTicket: this.formatCurrency(this.averageTicketForPayment(entry.amountCents, entry.count)),
+      })),
+  );
+  protected readonly dominantPaymentMethod = computed(() => {
+    const entries = this.report()?.paymentBreakdown ?? [];
+    if (entries.length === 0) return null;
+    return entries.reduce((current, candidate) => candidate.amountCents > current.amountCents ? candidate : current);
+  });
+
+  protected readonly averageTicketByDayPoints = computed<DailyAverageTicketPoint[]>(() =>
+    (this.report()?.salesByDay ?? []).map((point) => ({
+      ...point,
+      averageTicketCents: point.ordersCount > 0 ? Math.round(point.revenueCents / point.ordersCount) : 0,
     })),
   );
+  protected readonly averageTicketByDayCategories = computed(() => this.averageTicketByDayPoints().map((point) => point.date));
+  protected readonly averageTicketByDaySeries = computed<ChartSeries[]>(() => {
+    this.activeLang();
+    return [
+      {
+        name: this.transloco.translate('restaurantPos.dashboard.metrics.averageTicket'),
+        values: this.averageTicketByDayPoints().map((point) => point.averageTicketCents / 100),
+      },
+    ];
+  });
 
   protected readonly peakHoursColumns = computed<TableColumn[]>(() => {
     this.activeLang();
@@ -176,6 +221,58 @@ export class RestaurantPosDashboardPage {
   protected readonly peakHoursRows = computed<TableRow[]>(() =>
     (this.report()?.peakHours ?? []).map((entry) => ({ hour: `${entry.hour}h`, orders: entry.ordersCount })),
   );
+  protected readonly averageTicketByDayColumns = computed<TableColumn[]>(() => {
+    this.activeLang();
+    return [
+      { key: 'date', header: this.transloco.translate('restaurantPos.dashboard.tableHeaders.date') },
+      { key: 'orders', header: this.transloco.translate('restaurantPos.dashboard.charts.orders') },
+      { key: 'revenue', header: this.transloco.translate('restaurantPos.dashboard.charts.revenue') },
+      { key: 'averageTicket', header: this.transloco.translate('restaurantPos.dashboard.tableHeaders.averageTicket') },
+    ];
+  });
+  protected readonly averageTicketByDayRows = computed<TableRow[]>(() =>
+    this.averageTicketByDayPoints().map((point) => ({
+      date: point.date,
+      orders: point.ordersCount,
+      revenue: this.formatCurrency(point.revenueCents),
+      averageTicket: this.formatCurrency(point.averageTicketCents),
+    })),
+  );
+  protected readonly activeFilterChips = computed<ActiveFilterChip[]>(() => {
+    this.activeLang();
+    const chips: ActiveFilterChip[] = [];
+    const range = this.quickRange();
+    const { from, to } = this.dateInputs();
+
+    if (range !== 'custom') {
+      chips.push({
+        key: 'range',
+        label: this.transloco.translate(`restaurantPos.dashboard.ranges.${range}`),
+      });
+      return chips;
+    }
+
+    if (from) {
+      chips.push({
+        key: 'from',
+        label: `${this.transloco.translate('restaurantPos.dashboard.filters.from')}: ${from}`,
+      });
+    }
+
+    if (to) {
+      chips.push({
+        key: 'to',
+        label: `${this.transloco.translate('restaurantPos.dashboard.filters.to')}: ${to}`,
+      });
+    }
+
+    return chips;
+  });
+  protected readonly bestRevenueDay = computed(() => {
+    const points = this.report()?.salesByDay ?? [];
+    if (points.length === 0) return null;
+    return points.reduce((best, point) => point.revenueCents > best.revenueCents ? point : best);
+  });
 
   constructor() {
     this.restaurantContext.load();
@@ -183,6 +280,8 @@ export class RestaurantPosDashboardPage {
     const initial = parseInitialState(this.route.snapshot.queryParamMap);
     this.quickRange = signal<QuickRange>(initial.quickRange);
     this.dateInputs = signal<DateInputs>(initial.dateInputs);
+    this.showDataTables = signal(initial.viewMode === 'table');
+    this.filtersExpanded = signal(initial.filtersExpanded);
 
     // The quick-range presets need the restaurant's timezone to resolve to
     // concrete dates; until it loads, dateInputs stays empty (unless a valid
@@ -252,11 +351,42 @@ export class RestaurantPosDashboardPage {
   }
 
   protected toggleDataView(): void {
-    this.showDataTables.update((current) => !current);
+    const next = !this.showDataTables();
+    this.showDataTables.set(next);
+    this.updateUrl({ view: next ? 'table' : 'chart' });
+  }
+
+  protected toggleFilters(): void {
+    const next = !this.filtersExpanded();
+    this.filtersExpanded.set(next);
+    this.updateUrl({ filters: next ? 'open' : 'closed' });
+  }
+
+  protected resetFilters(): void {
+    this.rangeClamped.set(false);
+    this.quickRange.set('7d');
+    const restaurant = this.restaurantContext.activeRestaurant();
+    this.dateInputs.set(restaurant ? quickRangeDates('7d', restaurant.timezone) : { from: '', to: '' });
+    this.updateUrl({ range: '7d', from: null, to: null });
   }
 
   protected formatCurrency(cents: number): string {
     return new Intl.NumberFormat(this.activeLang(), { style: 'currency', currency: 'EUR' }).format(cents / 100);
+  }
+
+  protected formatPercentage(value: number): string {
+    return new Intl.NumberFormat(this.activeLang(), { style: 'percent', maximumFractionDigits: 0 }).format(value);
+  }
+
+  protected paymentShare(amountCents: number): number {
+    const total = this.report()?.summary.revenueCents ?? 0;
+    if (total <= 0) return 0;
+    return amountCents / total;
+  }
+
+  protected averageTicketForPayment(amountCents: number, count: number): number {
+    if (count <= 0) return 0;
+    return Math.round(amountCents / count);
   }
 
   protected paymentMethodLabel(method: string): string {
@@ -274,13 +404,23 @@ export class RestaurantPosDashboardPage {
     return this.transloco.translate(key, { pct: delta.pct });
   }
 
-  private updateUrl(patch: { range: QuickRange; from: string | null; to: string | null }): void {
+  private updateUrl(
+    patch: Partial<{ range: QuickRange; from: string | null; to: string | null; view: DashboardViewMode; filters: 'open' | 'closed' }>,
+  ): void {
+    const range = patch.range ?? this.quickRange();
+    const filters = patch.filters ?? (this.filtersExpanded() ? 'open' : 'closed');
+    const view = patch.view ?? (this.showDataTables() ? 'table' : 'chart');
+    const from = patch.from ?? (range === 'custom' ? this.dateInputs().from : null);
+    const to = patch.to ?? (range === 'custom' ? this.dateInputs().to : null);
+
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
-        range: patch.range !== '7d' ? patch.range : null,
-        from: patch.range === 'custom' ? patch.from : null,
-        to: patch.range === 'custom' ? patch.to : null,
+        range: range !== '7d' ? range : null,
+        from: range === 'custom' ? from : null,
+        to: range === 'custom' ? to : null,
+        view: view !== 'chart' ? view : null,
+        filters: filters !== 'open' ? filters : null,
       },
       queryParamsHandling: '',
       replaceUrl: false,
@@ -314,21 +454,23 @@ function quickRangeDates(range: ConcreteQuickRange, timeZone: string): DateInput
   return { from: addDaysToIsoDate(today, -daysBack), to: today };
 }
 
-function parseInitialState(params: { get(name: string): string | null }): { quickRange: QuickRange; dateInputs: DateInputs } {
+function parseInitialState(params: { get(name: string): string | null }): DashboardUiState {
   const rawRange = params.get('range');
   const isValidRange = rawRange === 'today' || rawRange === '7d' || rawRange === '30d' || rawRange === 'custom';
   let quickRange: QuickRange = isValidRange ? (rawRange as QuickRange) : '7d';
+  const viewMode: DashboardViewMode = params.get('view') === 'table' ? 'table' : 'chart';
+  const filtersExpanded = params.get('filters') !== 'closed';
 
   if (quickRange === 'custom') {
     const from = params.get('from');
     const to = params.get('to');
     if (isValidIsoDate(from) && isValidIsoDate(to) && from <= to) {
-      return { quickRange, dateInputs: { from, to } };
+      return { quickRange, dateInputs: { from, to }, viewMode, filtersExpanded };
     }
     quickRange = '7d';
   }
 
-  return { quickRange, dateInputs: { from: '', to: '' } };
+  return { quickRange, dateInputs: { from: '', to: '' }, viewMode, filtersExpanded };
 }
 
 function isValidIsoDate(value: string | null): value is string {

@@ -79,9 +79,15 @@ function createReport(): RestaurantAnalyticsReportDto {
   return {
     summary: { revenueCents: 120000, ordersCount: 40, averageTicketCents: 3000, averageTableTurnoverMinutes: 52 },
     previousSummary: { revenueCents: 100000, ordersCount: 40, averageTicketCents: 2500, averageTableTurnoverMinutes: 52 },
-    salesByDay: [{ date: '2026-06-24', revenueCents: 120000, ordersCount: 40 }],
+    salesByDay: [
+      { date: '2026-06-23', revenueCents: 60000, ordersCount: 20 },
+      { date: '2026-06-24', revenueCents: 60000, ordersCount: 20 },
+    ],
     topProducts: [{ productName: 'Paella', quantity: 20, revenueCents: 40000 }],
-    paymentBreakdown: [{ method: 'card', amountCents: 90000, count: 30 }],
+    paymentBreakdown: [
+      { method: 'cash', amountCents: 30000, count: 10 },
+      { method: 'card', amountCents: 90000, count: 30 },
+    ],
     peakHours: [{ hour: 21, ordersCount: 15 }],
   };
 }
@@ -153,9 +159,9 @@ describe('RestaurantPosDashboardPage', () => {
     });
 
     // Revenue (120000 vs 100000) and average ticket (3000 vs 2500) both grew 20%.
-    expect(screen.getAllByText('restaurantPos.dashboard.metrics.vsIncrease').length).toBe(2);
+    expect(screen.getAllByText('20% mas que el periodo anterior').length).toBe(2);
     // Orders count (40 vs 40) and table turnover (52 vs 52) are unchanged.
-    expect(screen.getAllByText('restaurantPos.dashboard.metrics.vsFlat').length).toBe(2);
+    expect(screen.getAllByText('Igual que el periodo anterior').length).toBe(2);
   });
 
   it('does not show a variation badge when there is no previous-period baseline', async () => {
@@ -174,8 +180,8 @@ describe('RestaurantPosDashboardPage', () => {
       ],
     });
 
-    expect(screen.queryByText('restaurantPos.dashboard.metrics.vsIncrease')).toBeNull();
-    expect(screen.queryByText('restaurantPos.dashboard.metrics.vsFlat')).toBeNull();
+    expect(screen.queryByText('20% mas que el periodo anterior')).toBeNull();
+    expect(screen.queryByText('Igual que el periodo anterior')).toBeNull();
   });
 
   it('shows an empty state when the report has no orders in range', async () => {
@@ -194,7 +200,7 @@ describe('RestaurantPosDashboardPage', () => {
       ],
     });
 
-    expect(screen.getByText('restaurantPos.dashboard.empty')).toBeTruthy();
+    expect(screen.getByText('No hay datos de ventas para el periodo seleccionado.')).toBeTruthy();
   });
 
   it('shows an error alert instead of the empty state when the report request fails', async () => {
@@ -213,9 +219,9 @@ describe('RestaurantPosDashboardPage', () => {
       ],
     });
 
-    expect(screen.getByText('restaurantPos.dashboard.errors.title')).toBeTruthy();
+    expect(screen.getByText('No se han podido cargar las analiticas')).toBeTruthy();
     expect(screen.getByText('Something went wrong.')).toBeTruthy();
-    expect(screen.queryByText('restaurantPos.dashboard.empty')).toBeNull();
+    expect(screen.queryByText('No hay datos de ventas para el periodo seleccionado.')).toBeNull();
   });
 
   it('hydrates a custom range from the URL query params on first load', async () => {
@@ -238,6 +244,37 @@ describe('RestaurantPosDashboardPage', () => {
       from: zonedDayRangeUtc('2026-01-01', TIMEZONE).from,
       to: zonedDayRangeUtc('2026-01-10', TIMEZONE).to,
     });
+  });
+
+  it('hydrates table view and collapsed filters from the URL query params on first load', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness({
+      range: 'custom',
+      from: '2026-06-01',
+      to: '2026-06-07',
+      view: 'table',
+      filters: 'closed',
+    });
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByRole('button', { name: 'Mostrar filtros' })).toBeTruthy();
+    expect(screen.getAllByRole('table').length).toBe(5);
   });
 
   it('reloads the report and updates the URL when a quick range option is selected', async () => {
@@ -264,7 +301,7 @@ describe('RestaurantPosDashboardPage', () => {
     });
 
     const initialCallCount = api.getReport.mock.calls.length;
-    fireEvent.click(screen.getByRole('radio', { name: 'restaurantPos.dashboard.ranges.30d' }));
+    fireEvent.click(screen.getByRole('radio', { name: '30 dias' }));
 
     expect(api.getReport.mock.calls.length).toBeGreaterThan(initialCallCount);
     const lastCallFilters = api.getReport.mock.calls.at(-1)?.[1];
@@ -299,9 +336,9 @@ describe('RestaurantPosDashboardPage', () => {
       ],
     });
 
-    fireEvent.input(screen.getByLabelText('restaurantPos.dashboard.filters.from'), { target: { value: '2020-01-01' } });
+    fireEvent.input(screen.getByLabelText('Desde'), { target: { value: '2020-01-01' } });
 
-    expect(screen.getByText('restaurantPos.dashboard.filters.rangeClamped')).toBeTruthy();
+    expect(screen.getByText('El rango maximo es de 1 ano; se ha ajustado la fecha.')).toBeTruthy();
     const lastCallFilters = api.getReport.mock.calls.at(-1)?.[1];
     expect(lastCallFilters).toBeDefined();
     const rangeDays = (new Date(lastCallFilters!.to).getTime() - new Date(lastCallFilters!.from).getTime()) / (24 * 60 * 60 * 1000);
@@ -309,6 +346,33 @@ describe('RestaurantPosDashboardPage', () => {
     // UTC start-of-day/end-of-day instants; assert well below the unclamped
     // ~2300-day span to confirm clamping actually happened.
     expect(rangeDays).toBeLessThan(400);
+  });
+
+  it('shows a compact active-filter summary when the filter card is collapsed', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness({
+      range: 'custom',
+      from: '2026-06-01',
+      to: '2026-06-07',
+      filters: 'closed',
+    });
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByText('Filtros activos')).toBeTruthy();
+    expect(screen.getByText('Desde: 2026-06-01')).toBeTruthy();
+    expect(screen.getByText('Hasta: 2026-06-07')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeTruthy();
   });
 
   it('switches to an accessible table view for the charts when toggled', async () => {
@@ -334,13 +398,194 @@ describe('RestaurantPosDashboardPage', () => {
 
     expect(screen.queryByRole('table')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'restaurantPos.dashboard.filters.viewAsTable' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
 
-    expect(screen.getAllByRole('table').length).toBe(4);
+    expect(screen.getAllByRole('table').length).toBe(5);
     expect(screen.getByText('Paella')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'restaurantPos.dashboard.filters.viewAsChart' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como grafico' }));
 
     expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('shows payment mix, operations and average ticket in the table view', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
+
+    expect(screen.getByText(/75/)).toBeTruthy();
+    expect(screen.getByText('30')).toBeTruthy();
+    expect(screen.getAllByText(/30,00/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Metodo dominante: Tarjeta')).toBeTruthy();
+  });
+
+  it('shows cash as Efectivo and formats payment revenue with currency in the table view', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
+
+    expect(screen.getByText('Efectivo')).toBeTruthy();
+    expect(screen.getAllByText(/300,00/).length).toBeGreaterThan(0);
+  });
+
+  it('keeps payment share calculations correct for each payment method', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
+
+    expect(screen.getByText(/25/)).toBeTruthy();
+    expect(screen.getByText(/75/)).toBeTruthy();
+  });
+
+  it('renders a daily average ticket row safely when a day has no orders', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const report = createReport();
+    report.salesByDay = [
+      { date: '2026-06-22', revenueCents: 0, ordersCount: 0 },
+      { date: '2026-06-23', revenueCents: 4500, ordersCount: 2 },
+    ];
+    const api = { getReport: vi.fn(() => of(report)) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
+
+    expect(screen.getAllByText('2026-06-22').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/0,00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2026-06-23').length).toBeGreaterThan(0);
+    expect(screen.getByText(/22,50/)).toBeTruthy();
+  });
+
+  it('renders the extra analytics charts for payment share and daily average ticket', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getAllByText('Ingresos por metodo de pago').length).toBeGreaterThan(0);
+    expect(screen.getByText('Mix de pagos')).toBeTruthy();
+    expect(screen.getByText('Ticket medio por dia')).toBeTruthy();
+  });
+
+  it('renders dashboard sections in the new hierarchy with payments as a dedicated section', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByRole('region', { name: 'Resumen' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Tendencias' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Pagos' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Operativa' })).toBeTruthy();
+  });
+
+  it('does not hide the error state behind the collapsed filter card', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness({ filters: 'closed' });
+    const api = {
+      getReport: vi.fn(() => throwError(() => new HttpErrorResponse({ status: 500, statusText: 'Internal Server Error' }))),
+    };
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByText('No se han podido cargar las analiticas')).toBeTruthy();
   });
 });

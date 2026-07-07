@@ -7,3 +7,88 @@
   color: var(--ui-fg);
   padding: 0.625rem 0.75rem;
 }
+
+.restaurant-pos-dashboard-page__filters-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.restaurant-pos-dashboard-page__filters-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.restaurant-pos-dashboard-page__filters-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.restaurant-pos-dashboard-page__filter-summary {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.restaurant-pos-dashboard-page__filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.restaurant-pos-dashboard-page__filter-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-bg-elevated) 82%, transparent);
+  color: var(--ui-fg);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.restaurant-pos-dashboard-page__filters-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.restaurant-pos-dashboard-page__summary-grid,
+.restaurant-pos-dashboard-page__trends,
+.restaurant-pos-dashboard-page__payments-section,
+.restaurant-pos-dashboard-page__secondary {
+  display: grid;
+  gap: 1rem;
+}
+
+.restaurant-pos-dashboard-page__payment-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.restaurant-pos-dashboard-page__payment-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .restaurant-pos-dashboard-page__filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .restaurant-pos-dashboard-page__summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .restaurant-pos-dashboard-page__trends,
+  .restaurant-pos-dashboard-page__secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .restaurant-pos-dashboard-page__payment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

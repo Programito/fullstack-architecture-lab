@@ -132,6 +132,7 @@
         "to": "To",
         "level": "Level",
         "category": "Category",
+        "clientOrigin": "Origin",
         "path": "Path",
         "actorUserId": "Actor user",
         "actorUserIdHint": "Only users with audited activity show up.",
@@ -158,29 +159,47 @@
         "3d": "3d",
         "7d": "7d"
       },
+      "shortcuts": {
+        "apkCustomer": "Customer APK",
+        "webDemo": "Demo web",
+        "webPos": "POS web",
+        "auth": "Login and auth",
+        "payments": "Payments"
+      },
       "metrics": {
         "requests": "Requests",
         "errors": "Errors",
         "errorRate": "Error rate",
         "audit": "Audit events",
-        "latency": "p95 latency"
+        "latency": "p95 latency",
+        "loginSucceeded": "Successful login",
+        "loginFailed": "Failed login"
+      },
+      "sections": {
+        "topSlowPaths": "Top slow routes",
+        "topErrors": "Top errors by channel",
+        "requests": "requests",
+        "occurrences": "occurrences"
       },
       "charts": {
         "activity": "Activity",
         "levels": "Levels",
         "categories": "Categories",
+        "origins": "Channels",
         "series": {
           "events": "Events",
           "errors": "Errors",
           "audit": "Audit",
           "levels": "Levels",
-          "categories": "Categories"
+          "categories": "Categories",
+          "origins": "Channels"
         }
       },
       "table": {
         "timestamp": "Time",
         "level": "Level",
         "category": "Type",
+        "clientOrigin": "Origin",
         "event": "Event",
         "message": "Detail",
         "emptyTitle": "No events",
@@ -190,6 +209,7 @@
         "title": "Event detail",
         "timestamp": "Timestamp",
         "source": "Source",
+        "clientOrigin": "Channel",
         "category": "Category",
         "path": "Path",
         "method": "Method",
@@ -206,6 +226,13 @@
       },
       "events": {
         "title": "Recent events"
+      },
+      "origins": {
+        "web-admin": "Admin web",
+        "web-demo": "Demo web",
+        "web-pos": "POS web",
+        "apk-customer": "Customer APK",
+        "backend": "Backend"
       }
     },
     "open": "Open resource",
@@ -791,10 +818,15 @@
         "30d": "30 days"
       },
       "filters": {
+        "title": "Filters",
+        "active": "Active filters",
         "from": "From",
         "to": "To",
         "rangeLabel": "Date range",
         "rangeClamped": "The maximum range is 1 year; the date has been adjusted.",
+        "show": "Show filters",
+        "hide": "Hide filters",
+        "reset": "Clear filters",
         "viewAsTable": "View as table",
         "viewAsChart": "View as chart"
       },
@@ -802,7 +834,10 @@
         "date": "Date",
         "product": "Product",
         "method": "Method",
-        "hour": "Hour"
+        "hour": "Hour",
+        "share": "Mix",
+        "operations": "Operations",
+        "averageTicket": "Average ticket"
       },
       "metrics": {
         "revenue": "Revenue",
@@ -819,6 +854,8 @@
         "salesByDay": "Sales by day",
         "topProducts": "Top products",
         "paymentBreakdown": "Revenue by payment method",
+        "paymentShare": "Payment mix",
+        "averageTicketByDay": "Average ticket by day",
         "peakHours": "Peak hours",
         "revenue": "Revenue",
         "quantity": "Quantity",
@@ -830,6 +867,15 @@
         "card": "Card",
         "bizum": "Bizum",
         "other": "Other"
+      },
+      "payments": {
+        "dominant": "Top method: {{method}}"
+      },
+      "sections": {
+        "summary": "Summary",
+        "trends": "Trends",
+        "payments": "Payments",
+        "secondary": "Operations"
       },
       "errors": {
         "title": "The analytics could not be loaded"
