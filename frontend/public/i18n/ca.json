@@ -311,6 +311,7 @@
     "common": {
       "layout": "Plànol",
       "service": "Servei",
+      "time": "Horari",
       "menu": "Menú",
       "kitchen": "Cuina",
       "reservations": "Reserves",
@@ -808,6 +809,86 @@
     "selector": {
       "title": "Selecciona un restaurant",
       "description": "Tria el restaurant en el qual vols treballar."
+    },
+    "time": {
+      "eyebrow": "Control horari",
+      "title": "Registre de jornada",
+      "description": "Fitxa entrada i sortida, revisa l'historial i gestiona sollicituds de correccio.",
+      "tabsLabel": "Vistes de control horari",
+      "tabs": {
+        "mine": "El meu fitxatge",
+        "team": "Equip"
+      },
+      "loading": "Carregant fitxatges...",
+      "errorTitle": "No s'ha pogut completar l'accio",
+      "errors": {
+        "load": "Ara mateix no s'han pogut carregar els fitxatges.",
+        "clockAction": "No s'ha pogut registrar el fitxatge.",
+        "changeRequest": "No s'ha pogut enviar la sollicitud de correccio.",
+        "review": "No s'ha pogut revisar la sollicitud."
+      },
+      "clockCard": {
+        "title": "Fitxatge actual",
+        "openState": "Torn obert des de {{ clockInAt }}.",
+        "closedState": "Ara mateix no hi ha cap torn obert.",
+        "noteLabel": "Observacions",
+        "clockIn": "Registrar entrada",
+        "clockOut": "Registrar sortida"
+      },
+      "history": {
+        "title": "Historial personal",
+        "description": "Consulta les hores registrades i demana correccions quan calgui.",
+        "empty": "Encara no hi ha fitxatges registrats.",
+        "duration": "Durada: {{ duration }}",
+        "clockIn": "Entrada",
+        "clockOut": "Sortida",
+        "clockInNote": "Observacio d'entrada",
+        "clockOutNote": "Observacio de sortida",
+        "requestChange": "Demanar correccio"
+      },
+      "changeRequest": {
+        "requestedClockInAt": "Nova hora d'entrada",
+        "requestedClockOutAt": "Nova hora de sortida",
+        "requestedClockInNote": "Nova observacio d'entrada",
+        "requestedClockOutNote": "Nova observacio de sortida",
+        "reason": "Motiu de la correccio",
+        "submit": "Enviar sollicitud"
+      },
+      "team": {
+        "title": "Fitxatges de l'equip",
+        "description": "Revisa els segellats del restaurant actiu i filtra per estat o treballador.",
+        "filters": {
+          "from": "Des de",
+          "to": "Fins a",
+          "status": "Estat",
+          "worker": "Treballador",
+          "allStatuses": "Tots els estats",
+          "allWorkers": "Tota la plantilla",
+          "apply": "Aplicar filtres"
+        },
+        "columns": {
+          "worker": "Treballador",
+          "clockIn": "Entrada",
+          "clockOut": "Sortida",
+          "duration": "Durada",
+          "status": "Estat"
+        }
+      },
+      "requests": {
+        "title": "Sollicituds pendents",
+        "description": "Aprova o rebutja canvis d'hora enviats per l'equip.",
+        "empty": "No hi ha sollicituds pendents.",
+        "approve": "Aprovar",
+        "reject": "Rebutjar"
+      },
+      "status": {
+        "open": "Obert",
+        "closed": "Tancat",
+        "corrected": "Corregit",
+        "pending": "Pendent",
+        "approved": "Aprovada",
+        "rejected": "Rebutjada"
+      }
     },
     "dashboard": {
       "title": "Analítiques del restaurant",

@@ -10,6 +10,8 @@ export type ApplicationErrorCode =
   | 'invalid_role_name'
   | 'task_not_found'
   | 'restaurant_not_found'
+  | 'time_entry_not_found'
+  | 'time_entry_change_request_not_found'
   | 'reservation_not_found'
   | 'invalid_reservation_creation'
   | 'table_not_found'
@@ -41,7 +43,11 @@ export type ApplicationErrorCode =
   | 'modifier_group_not_found'
   | 'modifier_group_name_taken'
   | 'modifier_group_in_use'
-  | 'invalid_analytics_range';
+  | 'invalid_analytics_range'
+  | 'time_entry_already_open'
+  | 'time_entry_not_open'
+  | 'time_entry_change_request_already_reviewed'
+  | 'forbidden_time_entry_access';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -63,6 +69,16 @@ export function taskNotFound(taskId: string): ApplicationError {
 
 export function restaurantNotFound(restaurantId: string): ApplicationError {
   return applicationError('restaurant_not_found', `Restaurant "${restaurantId}" was not found.`, { restaurantId });
+}
+
+export function timeEntryNotFound(timeEntryId: string): ApplicationError {
+  return applicationError('time_entry_not_found', `Time entry "${timeEntryId}" was not found.`, { timeEntryId });
+}
+
+export function timeEntryChangeRequestNotFound(requestId: string): ApplicationError {
+  return applicationError('time_entry_change_request_not_found', `Time entry change request "${requestId}" was not found.`, {
+    requestId,
+  });
 }
 
 export function reservationNotFound(reservationId: string): ApplicationError {
@@ -175,4 +191,28 @@ export function invalidAnalyticsRange(from: string, to: string): ApplicationErro
 
 export function analyticsRangeTooWide(from: string, to: string, maxDays: number): ApplicationError {
   return applicationError('invalid_analytics_range', `Date range is too wide: the maximum allowed range is ${maxDays} days.`, { from, to, maxDays });
+}
+
+export function timeEntryAlreadyOpen(userId: string, restaurantId: string): ApplicationError {
+  return applicationError(
+    'time_entry_already_open',
+    `User "${userId}" already has an open time entry in restaurant "${restaurantId}".`,
+    { userId, restaurantId },
+  );
+}
+
+export function timeEntryNotOpen(timeEntryId: string): ApplicationError {
+  return applicationError('time_entry_not_open', `Time entry "${timeEntryId}" is not open.`, { timeEntryId });
+}
+
+export function timeEntryChangeRequestAlreadyReviewed(requestId: string): ApplicationError {
+  return applicationError(
+    'time_entry_change_request_already_reviewed',
+    `Time entry change request "${requestId}" has already been reviewed.`,
+    { requestId },
+  );
+}
+
+export function forbiddenTimeEntryAccess(reason: string, details?: Record<string, unknown>): ApplicationError {
+  return applicationError('forbidden_time_entry_access', `Time tracking access denied: ${reason}.`, details);
 }

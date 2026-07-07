@@ -187,6 +187,80 @@ export type RestaurantReservationDto = {
   tables: RestaurantReservationTableDto[];
 };
 
+export type TimeEntryStatusDto = 'open' | 'closed' | 'corrected';
+export type TimeEntryChangeRequestStatusDto = 'pending' | 'approved' | 'rejected';
+
+export type TimeEntryDto = {
+  id: string;
+  userId: string;
+  restaurantId: string;
+  clockInAt: string;
+  clockOutAt: string | null;
+  clockInNote: string | null;
+  clockOutNote: string | null;
+  status: TimeEntryStatusDto;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+};
+
+export type TimeEntryChangeRequestDto = {
+  id: string;
+  restaurantId: string;
+  status: TimeEntryChangeRequestStatusDto;
+  reason: string;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  requestedClockInAt: string | null;
+  requestedClockOutAt: string | null;
+  requestedClockInNote: string | null;
+  requestedClockOutNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+  timeEntry: TimeEntryDto;
+  requestedByUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  reviewedByUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+};
+
+export type CreateTimeEntryRequest = {
+  clockInAt: string;
+  clockInNote: string | null;
+};
+
+export type CloseTimeEntryRequest = {
+  clockOutAt: string;
+  clockOutNote: string | null;
+};
+
+export type CreateTimeEntryChangeRequest = {
+  timeEntryId: string;
+  reason: string;
+  requestedClockInAt?: string | null;
+  requestedClockOutAt?: string | null;
+  requestedClockInNote?: string | null;
+  requestedClockOutNote?: string | null;
+};
+
+export type ReviewTimeEntryChangeRequest = {
+  status: 'approved' | 'rejected';
+  reviewNote?: string | null;
+};
+
 export type CreateRestaurantReservationRequest = {
   customerNameSnapshot: string;
   customerPhoneSnapshot: string | null;

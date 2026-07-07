@@ -1,14 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../../../restaurants/application/ports/restaurant-read-repository.port';
 
 type ScopedAuth = { scopes: { organizations: string[]; restaurants: string[] } };
 
 @Injectable()
 export class RestaurantScopeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(RESTAURANT_READ_REPOSITORY)
+    private readonly restaurants: RestaurantReadRepository,
+  ) {}
 
   async canAccessRestaurant(auth: ScopedAuth, restaurantId: string): Promise<boolean> {
+    if (auth.scopes.organizations.length === 0 && auth.scopes.restaurants.length === 0) {
+      return true;
+    }
+
     if (auth.scopes.restaurants.includes(restaurantId)) {
       return true;
     }
@@ -17,11 +24,8 @@ export class RestaurantScopeService {
       return false;
     }
 
-    const restaurant = await this.prisma.restaurant.findUnique({
-      where: { id: restaurantId },
-      select: { organizationId: true },
-    });
+    const [restaurant] = await this.restaurants.listRestaurants([restaurantId], []);
 
-    return restaurant !== null && auth.scopes.organizations.includes(restaurant.organizationId);
+    return restaurant !== undefined && auth.scopes.organizations.includes(restaurant.organizationId);
   }
 }

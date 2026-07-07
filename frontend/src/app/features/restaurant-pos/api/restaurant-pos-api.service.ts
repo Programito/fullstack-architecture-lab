@@ -6,7 +6,10 @@ import { API_BASE_URL } from '../../../core/api/api.config';
 import type {
   AddMenuSectionItemRequest,
   AddRestaurantOrderLineRequest,
+  CloseTimeEntryRequest,
   CancelRestaurantOrderLineRequest,
+  CreateTimeEntryChangeRequest,
+  CreateTimeEntryRequest,
   CreateCustomerRequest,
   CreateFloorElementRequest,
   CreateMenuSectionRequest,
@@ -27,6 +30,8 @@ import type {
   RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
   RestaurantSummaryDto,
+  TimeEntryChangeRequestDto,
+  TimeEntryDto,
   ServiceFloorDto,
   ServicePointDetailDto,
   ServicePointOrderDto,
@@ -40,6 +45,7 @@ import type {
   UpdateRestaurantProductRequest,
   UpdateServiceWindowsRequest,
   CreateModifierGroupRequest,
+  ReviewTimeEntryChangeRequest,
   RestaurantMenuModifierGroupDto,
 } from './restaurant-pos-api.models';
 
@@ -87,6 +93,59 @@ export class RestaurantPosApiService {
     request: CreateRestaurantReservationRequest,
   ): Observable<RestaurantReservationDto> {
     return this.http.post<RestaurantReservationDto>(`${this.restaurantsUrl}/${restaurantId}/reservations`, request);
+  }
+
+  clockInRestaurantTimeEntry(restaurantId: string, request: CreateTimeEntryRequest): Observable<TimeEntryDto> {
+    return this.http.post<TimeEntryDto>(`${this.restaurantsUrl}/${restaurantId}/time-entries/clock-in`, request);
+  }
+
+  clockOutRestaurantTimeEntry(restaurantId: string, timeEntryId: string, request: CloseTimeEntryRequest): Observable<TimeEntryDto> {
+    return this.http.patch<TimeEntryDto>(`${this.restaurantsUrl}/${restaurantId}/time-entries/${timeEntryId}/clock-out`, request);
+  }
+
+  getMyRestaurantTimeEntries(restaurantId: string, dateFrom?: string, dateTo?: string): Observable<TimeEntryDto[]> {
+    const params: Record<string, string> = {};
+    if (dateFrom) params['dateFrom'] = dateFrom;
+    if (dateTo) params['dateTo'] = dateTo;
+    return this.http.get<TimeEntryDto[]>(`${this.restaurantsUrl}/${restaurantId}/time-entries/me`, { params });
+  }
+
+  getTeamRestaurantTimeEntries(
+    restaurantId: string,
+    filters?: { dateFrom?: string; dateTo?: string; status?: 'open' | 'closed' | 'corrected'; workerUserId?: string },
+  ): Observable<TimeEntryDto[]> {
+    const params: Record<string, string> = {};
+    if (filters?.dateFrom) params['dateFrom'] = filters.dateFrom;
+    if (filters?.dateTo) params['dateTo'] = filters.dateTo;
+    if (filters?.status) params['status'] = filters.status;
+    if (filters?.workerUserId) params['workerUserId'] = filters.workerUserId;
+    return this.http.get<TimeEntryDto[]>(`${this.restaurantsUrl}/${restaurantId}/time-entries/team`, { params });
+  }
+
+  createRestaurantTimeEntryChangeRequest(
+    restaurantId: string,
+    request: CreateTimeEntryChangeRequest,
+  ): Observable<TimeEntryChangeRequestDto> {
+    return this.http.post<TimeEntryChangeRequestDto>(`${this.restaurantsUrl}/${restaurantId}/time-entry-change-requests`, request);
+  }
+
+  getRestaurantTimeEntryChangeRequests(
+    restaurantId: string,
+    status?: 'pending' | 'approved' | 'rejected',
+  ): Observable<TimeEntryChangeRequestDto[]> {
+    const params = status ? { status } : undefined;
+    return this.http.get<TimeEntryChangeRequestDto[]>(`${this.restaurantsUrl}/${restaurantId}/time-entry-change-requests`, { params });
+  }
+
+  reviewRestaurantTimeEntryChangeRequest(
+    restaurantId: string,
+    requestId: string,
+    request: ReviewTimeEntryChangeRequest,
+  ): Observable<TimeEntryChangeRequestDto> {
+    return this.http.patch<TimeEntryChangeRequestDto>(
+      `${this.restaurantsUrl}/${restaurantId}/time-entry-change-requests/${requestId}/review`,
+      request,
+    );
   }
 
   confirmRestaurantReservation(restaurantId: string, reservationId: string): Observable<RestaurantReservationDto> {

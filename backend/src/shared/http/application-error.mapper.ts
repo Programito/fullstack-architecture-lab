@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, HttpException, InternalServerErrorException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, InternalServerErrorException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import type { ApplicationError } from '../errors/application-error';
 import type { Result } from '../result/result';
@@ -33,6 +33,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'role_not_found':
     case 'task_not_found':
     case 'restaurant_not_found':
+    case 'time_entry_not_found':
+    case 'time_entry_change_request_not_found':
     case 'reservation_not_found':
     case 'table_not_found':
     case 'floor_not_found':
@@ -56,6 +58,9 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'reservation_conflict':
     case 'modifier_group_name_taken':
     case 'modifier_group_in_use':
+    case 'time_entry_already_open':
+    case 'time_entry_not_open':
+    case 'time_entry_change_request_already_reviewed':
       return new ConflictException(error.message);
 
     case 'payment_exceeds_balance':
@@ -63,6 +68,9 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'insufficient_table_capacity':
     case 'outside_service_hours':
       return new UnprocessableEntityException(error.message);
+
+    case 'forbidden_time_entry_access':
+      return new ForbiddenException(error.message);
 
     default:
       return new InternalServerErrorException('Unexpected application error.');

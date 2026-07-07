@@ -7,11 +7,15 @@ import { AppModule } from '../src/app.module';
 import { PASSWORD_HASHER, type PasswordHasher } from '../src/identity/application/ports/password-hasher.port';
 import { ROLE_REPOSITORY } from '../src/identity/application/ports/role-repository.port';
 import { USER_REPOSITORY } from '../src/identity/application/ports/user-repository.port';
+import { DEMO_ACCOUNT_CATALOG } from '../src/identity/domain/demo-account-catalog';
 import { ROLE_CATALOG } from '../src/identity/domain/role-catalog';
 import { Role } from '../src/identity/domain/role.entity';
 import { InMemoryRoleRepository } from '../src/identity/infrastructure/persistence/in-memory-role.repository';
 import { InMemoryUserRepository } from '../src/identity/infrastructure/persistence/in-memory-user.repository';
 import { InMemoryAuthSessionRepository } from '../src/identity/infrastructure/persistence/in-memory-auth-session.repository';
+import { InMemoryPermissionRepository } from '../src/identity/infrastructure/persistence/in-memory-permission.repository';
+import { InMemoryUserRoleAssignmentRepository } from '../src/identity/infrastructure/persistence/in-memory-user-role-assignment.repository';
+import { InMemoryIdentitySeed } from '../src/identity/infrastructure/seed/in-memory-identity.seed';
 import { ObservabilityService } from '../src/observability/application/observability.service';
 import { EVENT_BUS } from '../src/shared/events/event-bus.port';
 import { InMemoryEventBus } from '../src/shared/events/in-memory-event-bus';
@@ -24,6 +28,8 @@ import { RESTAURANT_READ_REPOSITORY } from '../src/restaurants/application/ports
 import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from '../src/restaurants/application/ports/restaurant-service-windows-repository.port';
 import { CUSTOMER_REPOSITORY } from '../src/restaurants/application/ports/customer-repository.port';
 import { DemoRestaurantReadRepository } from '../src/restaurants/infrastructure/demo-restaurant-read.repository';
+import { TIME_TRACKING_REPOSITORY } from '../src/time-tracking/application/ports/time-tracking-repository.port';
+import { InMemoryTimeTrackingRepository } from '../src/time-tracking/infrastructure/persistence/in-memory-time-tracking.repository';
 
 class TestPasswordHasher implements PasswordHasher {
   async hash(plainPassword: string): Promise<string> {
@@ -295,6 +301,8 @@ describe('App e2e', () => {
   let eventBus: InMemoryEventBus;
   let sessionRepository: InMemoryAuthSessionRepository;
   let demoReadRepo: DemoRestaurantReadRepository;
+  let observability: InMemoryObservabilityService;
+  let timeTrackingRepository: InMemoryTimeTrackingRepository;
 
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = 'http://localhost:4200';
@@ -307,6 +315,8 @@ describe('App e2e', () => {
     e2eRoleRepository = roleRepository;
     eventBus = new InMemoryEventBus();
     demoReadRepo = new DemoRestaurantReadRepository();
+    observability = new InMemoryObservabilityService();
+    timeTrackingRepository = new InMemoryTimeTrackingRepository(userRepository);
 
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
@@ -317,8 +327,12 @@ describe('App e2e', () => {
       .useValue(roleRepository)
       .overrideProvider(PASSWORD_HASHER)
       .useValue(new TestPasswordHasher())
+      .overrideProvider(ObservabilityService)
+      .useValue(observability)
       .overrideProvider(EVENT_BUS)
       .useValue(eventBus)
+      .overrideProvider(TIME_TRACKING_REPOSITORY)
+      .useValue(timeTrackingRepository)
       .overrideProvider(RESTAURANT_ORDER_CATALOG_REPOSITORY)
       .useValue({
         findActiveMenu: async (restaurantId: string) => {
@@ -378,6 +392,8 @@ describe('App e2e', () => {
     eventBus.clear();
     sessionRepository.clear();
     demoReadRepo.reset();
+    observability.clear();
+    timeTrackingRepository.clear();
   });
 
   afterAll(async () => {
@@ -1406,11 +1422,13 @@ describe('App e2e', () => {
 
     const permissions = await request(app.getHttpServer()).get('/api/v1/permissions').expect(200);
     expect(permissions.body.map((permission: { name: string }) => permission.name).sort()).toEqual([
+      'dashboard',
       'kitchen',
       'layout',
       'menu',
       'reservations',
       'service',
+      'time_tracking',
     ]);
 
     const assignPermissions = await request(app.getHttpServer())
@@ -1418,7 +1436,15 @@ describe('App e2e', () => {
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .send({ permissionIds: permissions.body.map((permission: { id: string }) => permission.id) })
       .expect(200);
-    expect(assignPermissions.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'reservations', 'service']);
+    expect(assignPermissions.body.permissions.sort()).toEqual([
+      'dashboard',
+      'kitchen',
+      'layout',
+      'menu',
+      'reservations',
+      'service',
+      'time_tracking',
+    ]);
 
     await request(app.getHttpServer())
       .get('/api/v1/auth/me')
@@ -1427,7 +1453,7 @@ describe('App e2e', () => {
       .expect({
         userId: login.body.user.id,
         roles: ['admin'],
-        permissions: ['service', 'menu', 'kitchen', 'layout', 'reservations'],
+        permissions: ['service', 'time_tracking', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
         scopes: {
           organizations: ['org-demo'],
           restaurants: ['restaurant-mesaflow-centro'],
@@ -1439,7 +1465,15 @@ describe('App e2e', () => {
       .set('Cookie', firstCookie)
       .expect(200);
     expect(refresh.body.accessToken).not.toBe(login.body.accessToken);
-    expect(refresh.body.permissions.sort()).toEqual(['kitchen', 'layout', 'menu', 'reservations', 'service']);
+    expect(refresh.body.permissions.sort()).toEqual([
+      'dashboard',
+      'kitchen',
+      'layout',
+      'menu',
+      'reservations',
+      'service',
+      'time_tracking',
+    ]);
 
     const sessions = await request(app.getHttpServer())
       .get('/api/v1/sessions')
@@ -1552,6 +1586,20 @@ describe('App e2e with in-memory identity seed', () => {
   let app: INestApplication;
   let demoReadRepo: DemoRestaurantReadRepository;
   let observability: InMemoryObservabilityService;
+  let timeTrackingRepository: InMemoryTimeTrackingRepository;
+  let seededUsers: InMemoryUserRepository;
+  let seededRoles: InMemoryRoleRepository;
+  let seededPermissions: InMemoryPermissionRepository;
+  let seededSessions: InMemoryAuthSessionRepository;
+  let seededAssignments: InMemoryUserRoleAssignmentRepository;
+  let seededIdentity: InMemoryIdentitySeed;
+  let seededUserRepository:
+    | {
+        findById(id: string): Promise<unknown>;
+        findByEmail(email: string): Promise<unknown>;
+        findAll(): Promise<unknown[]>;
+      }
+    | null = null;
 
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = 'http://localhost:4200';
@@ -1565,6 +1613,12 @@ describe('App e2e with in-memory identity seed', () => {
     process.env.DEMO_LOGIN_ENABLED = 'true';
     demoReadRepo = new DemoRestaurantReadRepository();
     observability = new InMemoryObservabilityService();
+    timeTrackingRepository = new InMemoryTimeTrackingRepository({
+      save: async () => undefined,
+      findById: async (id: string) => (seededUserRepository ? seededUserRepository.findById(id) : null),
+      findByEmail: async (email: string) => (seededUserRepository ? seededUserRepository.findByEmail(email) : null),
+      findAll: async () => (seededUserRepository ? seededUserRepository.findAll() : []),
+    });
 
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
@@ -1573,6 +1627,8 @@ describe('App e2e with in-memory identity seed', () => {
       .useValue(new TestPasswordHasher())
       .overrideProvider(ObservabilityService)
       .useValue(observability)
+      .overrideProvider(TIME_TRACKING_REPOSITORY)
+      .useValue(timeTrackingRepository)
       .overrideProvider(RESTAURANT_MENU_ADMIN_REPOSITORY)
       .useValue(inMemoryMenuAdminRepository)
       .overrideProvider(CUSTOMER_REPOSITORY)
@@ -1597,11 +1653,25 @@ describe('App e2e with in-memory identity seed', () => {
       }),
     );
     await app.init();
+    seededUserRepository = app.get(USER_REPOSITORY);
+    seededUsers = app.get(InMemoryUserRepository);
+    seededRoles = app.get(InMemoryRoleRepository);
+    seededPermissions = app.get(InMemoryPermissionRepository);
+    seededSessions = app.get(InMemoryAuthSessionRepository);
+    seededAssignments = app.get(InMemoryUserRoleAssignmentRepository);
+    seededIdentity = app.get(InMemoryIdentitySeed);
   }, 60_000);
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    seededUsers.clear();
+    seededRoles.clear();
+    seededPermissions.clear();
+    seededSessions.clear();
+    seededAssignments.clear();
+    await seededIdentity.onApplicationBootstrap();
     demoReadRepo.reset();
     observability.clear();
+    timeTrackingRepository.clear();
   });
 
   afterAll(async () => {
@@ -1628,21 +1698,24 @@ describe('App e2e with in-memory identity seed', () => {
       .expect(200);
 
     expect(permissionsResponse.body.map((permission: { name: string }) => permission.name).sort()).toEqual([
+      'dashboard',
       'kitchen',
       'layout',
       'menu',
       'reservations',
       'service',
+      'time_tracking',
     ]);
     expect(rolesResponse.body.map((role: { name: string }) => role.name).sort()).toEqual(
       ROLE_CATALOG.map((role) => role.name).sort(),
     );
     expect(rolesResponse.body.find((role: { name: string; permissions: string[] }) => role.name === 'waiter')?.permissions).toEqual([
       'service',
+      'time_tracking',
       'layout',
       'reservations',
     ]);
-    expect(usersResponse.body).toHaveLength(8);
+    expect(usersResponse.body).toHaveLength(DEMO_ACCOUNT_CATALOG.length + 1 + 2);
     expect(usersResponse.body.find((user: { email: string }) => user.email === 'admin@example.com')).toMatchObject({
       email: 'admin@example.com',
       firstName: 'Admin',
@@ -1921,7 +1994,7 @@ describe('App e2e with in-memory identity seed', () => {
       .expect(400);
   });
 
-  it('rejects reservations access when the token lacks restaurant scope', async () => {
+  it('allows reservations access when the token has organization scope for the active restaurant', async () => {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/demo-login')
       .send({ role: 'developer' })
@@ -1930,7 +2003,7 @@ describe('App e2e with in-memory identity seed', () => {
     await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
-      .expect(403);
+      .expect(200);
   });
 
   it('allows reservations access when the token has restaurant scope', async () => {
@@ -1945,7 +2018,7 @@ describe('App e2e with in-memory identity seed', () => {
       .expect(200);
   });
 
-  it('rejects service-floor access when the token lacks restaurant scope', async () => {
+  it('allows service-floor access when the token has organization scope for the active restaurant', async () => {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/demo-login')
       .send({ role: 'developer' })
@@ -1954,7 +2027,7 @@ describe('App e2e with in-memory identity seed', () => {
     await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/service-floor')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
-      .expect(403);
+      .expect(200);
   });
 
   it('allows service-floor access when the token has restaurant scope', async () => {
@@ -1991,6 +2064,218 @@ describe('App e2e with in-memory identity seed', () => {
       .post('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/stool-1/occupy')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(201);
+  });
+
+  it('allows a waiter to clock in, list personal entries, and clock out inside the active restaurant', async () => {
+    const waiter = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+    const token = waiter.body.accessToken as string;
+
+    const clockInResponse = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/clock-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        clockInAt: '2026-07-07T08:00:00.000Z',
+        clockInNote: 'Inicio servicio',
+      })
+      .expect(201);
+
+    expect(clockInResponse.body).toEqual(
+      expect.objectContaining({
+        restaurantId: 'restaurant-mesaflow-centro',
+        userId: waiter.body.user.id,
+        status: 'open',
+        clockInNote: 'Inicio servicio',
+      }),
+    );
+
+    const ownEntries = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(ownEntries.body).toEqual([
+      expect.objectContaining({
+        id: clockInResponse.body.id,
+        userId: waiter.body.user.id,
+        status: 'open',
+      }),
+    ]);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/${clockInResponse.body.id}/clock-out`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        clockOutAt: '2026-07-07T16:00:00.000Z',
+        clockOutNote: 'Fin servicio',
+      })
+      .expect(200);
+
+    const closedEntries = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(closedEntries.body).toEqual([
+      expect.objectContaining({
+        id: clockInResponse.body.id,
+        status: 'closed',
+        clockOutNote: 'Fin servicio',
+      }),
+    ]);
+  });
+
+  it('prevents a waiter from opening two concurrent time entries in the same restaurant', async () => {
+    const waiter = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+    const token = waiter.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/clock-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        clockInAt: '2026-07-07T08:00:00.000Z',
+        clockInNote: 'Inicio servicio',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/clock-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        clockInAt: '2026-07-07T09:00:00.000Z',
+        clockInNote: 'Segundo intento',
+      })
+      .expect(409);
+  });
+
+  it('restricts team time entry visibility to manager and admin roles', async () => {
+    const waiter = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/clock-in')
+      .set('Authorization', `Bearer ${waiter.body.accessToken}`)
+      .send({
+        clockInAt: '2026-07-07T08:00:00.000Z',
+        clockInNote: 'Inicio servicio',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/team')
+      .set('Authorization', `Bearer ${waiter.body.accessToken}`)
+      .expect(403);
+
+    const manager = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'manager' })
+      .expect(200);
+
+    const teamEntries = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/team')
+      .set('Authorization', `Bearer ${manager.body.accessToken}`)
+      .expect(200);
+
+    expect(teamEntries.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          userId: waiter.body.user.id,
+          restaurantId: 'restaurant-mesaflow-centro',
+        }),
+      ]),
+    );
+  });
+
+  it('lets a worker request a correction and a manager approve it for the active restaurant team', async () => {
+    const waiter = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'waiter' })
+      .expect(200);
+    const waiterToken = waiter.body.accessToken as string;
+
+    const clockInResponse = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/clock-in')
+      .set('Authorization', `Bearer ${waiterToken}`)
+      .send({
+        clockInAt: '2026-07-07T08:00:00.000Z',
+        clockInNote: 'Inicio servicio',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/${clockInResponse.body.id}/clock-out`)
+      .set('Authorization', `Bearer ${waiterToken}`)
+      .send({
+        clockOutAt: '2026-07-07T16:00:00.000Z',
+        clockOutNote: 'Fin servicio',
+      })
+      .expect(200);
+
+    const createRequestResponse = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/time-entry-change-requests')
+      .set('Authorization', `Bearer ${waiterToken}`)
+      .send({
+        timeEntryId: clockInResponse.body.id,
+        requestedClockInAt: '2026-07-07T07:55:00.000Z',
+        requestedClockOutAt: '2026-07-07T16:05:00.000Z',
+        requestedClockInNote: 'Apertura real',
+        requestedClockOutNote: 'Cierre real',
+        reason: 'Ajuste de horas reales',
+      })
+      .expect(201);
+
+    const manager = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'manager' })
+      .expect(200);
+
+    const pendingRequests = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/time-entry-change-requests')
+      .query({ status: 'pending' })
+      .set('Authorization', `Bearer ${manager.body.accessToken}`)
+      .expect(200);
+
+    expect(pendingRequests.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: createRequestResponse.body.id,
+          status: 'pending',
+          reason: 'Ajuste de horas reales',
+        }),
+      ]),
+    );
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/restaurants/restaurant-mesaflow-centro/time-entry-change-requests/${createRequestResponse.body.id}/review`)
+      .set('Authorization', `Bearer ${manager.body.accessToken}`)
+      .send({
+        status: 'approved',
+        reviewNote: 'Validado',
+      })
+      .expect(200);
+
+    const teamEntries = await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/time-entries/team')
+      .set('Authorization', `Bearer ${manager.body.accessToken}`)
+      .expect(200);
+
+    expect(teamEntries.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: clockInResponse.body.id,
+          status: 'corrected',
+          clockInAt: '2026-07-07T07:55:00.000Z',
+          clockOutAt: '2026-07-07T16:05:00.000Z',
+        }),
+      ]),
+    );
   });
 
   it('returns 401 when fetching products without authentication', async () => {

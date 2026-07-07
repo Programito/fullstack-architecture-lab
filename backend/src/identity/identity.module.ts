@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 
+import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { EVENT_BUS } from '../shared/events/event-bus.port';
 import { InMemoryEventBus } from '../shared/events/in-memory-event-bus';
 import { FAKE_DATA_GENERATOR } from '../shared/fake-data/fake-data-generator.port';
@@ -53,7 +54,7 @@ import { USER_ROLE_ASSIGNMENT_REPOSITORY } from './application/ports/user-role-a
 import { InMemoryUserRoleAssignmentRepository } from './infrastructure/persistence/in-memory-user-role-assignment.repository';
 
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [JwtModule.register({}), forwardRef(() => RestaurantsModule)],
   controllers: [UsersController, RolesController, PermissionsController, AuthController, SessionsController],
   providers: [
     AuthService,

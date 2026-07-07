@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import * as Sentry from '@sentry/angular';
 
 import { routes } from './app.routes';
+import { refreshIdentitySessionOnStartup } from './features/identity/identity-session-refresh';
 import { provideAppI18n } from './shared/i18n/i18n.providers';
 import { provideAppTheme } from './shared/theme/theme.providers';
 import { authInterceptor } from './features/identity/auth.interceptor';
@@ -22,6 +23,9 @@ export const appConfig: ApplicationConfig = {
       useClass: ClientLogErrorHandler,
     },
     provideEnvironmentInitializer(() => {
+      refreshIdentitySessionOnStartup();
+    }),
+    provideEnvironmentInitializer(() => {
       inject(ClientLogsService).start();
     }),
     provideEnvironmentInitializer(() => {
@@ -30,5 +34,5 @@ export const appConfig: ApplicationConfig = {
       }
     }),
     ...provideAppI18n(),
-  ]
+  ],
 };

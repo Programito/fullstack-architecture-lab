@@ -1,4 +1,11 @@
-export type PermissionName = 'service' | 'menu' | 'kitchen' | 'layout' | 'reservations' | 'dashboard';
+export type PermissionName =
+  | 'service'
+  | 'time_tracking'
+  | 'menu'
+  | 'kitchen'
+  | 'layout'
+  | 'reservations'
+  | 'dashboard';
 
 export interface Permission {
   id: string;

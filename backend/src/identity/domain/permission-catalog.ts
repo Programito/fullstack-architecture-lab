@@ -1,19 +1,23 @@
 export const PERMISSION_CATALOG = [
   {
     name: 'service',
-    description: 'Acceso al módulo de servicio.',
+    description: 'Acceso al modulo de servicio.',
+  },
+  {
+    name: 'time_tracking',
+    description: 'Acceso al modulo de control horario.',
   },
   {
     name: 'menu',
-    description: 'Acceso al módulo de menú.',
+    description: 'Acceso al modulo de menu.',
   },
   {
     name: 'kitchen',
-    description: 'Acceso al módulo de cocina.',
+    description: 'Acceso al modulo de cocina.',
   },
   {
     name: 'layout',
-    description: 'Acceso al módulo de plano.',
+    description: 'Acceso al modulo de plano.',
   },
   {
     name: 'reservations',

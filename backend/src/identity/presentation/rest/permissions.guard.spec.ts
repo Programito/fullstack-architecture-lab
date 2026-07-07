@@ -2,6 +2,7 @@ import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { RestaurantReadRepository } from '../../../restaurants/application/ports/restaurant-read-repository.port';
 import type { AuthenticatedRequest } from './auth.guard';
 import { PermissionsGuard } from './permissions.guard';
 
@@ -35,15 +36,15 @@ function makeContext(auth: AuthenticatedRequest['auth'], restaurantId?: string):
   } as unknown as ExecutionContext;
 }
 
-function makeGuard(findUnique: ReturnType<typeof vi.fn> = vi.fn()) {
+function makeGuard(listRestaurants: ReturnType<typeof vi.fn> = vi.fn()) {
   const reflector = new Reflector();
   vi.spyOn(reflector, 'getAllAndOverride');
-  const prisma = { restaurant: { findUnique } } as any;
-  const guard = new PermissionsGuard(reflector, prisma);
+  const restaurants = { listRestaurants } as unknown as RestaurantReadRepository;
+  const guard = new PermissionsGuard(reflector, restaurants);
   function withRequired(required: string[]) {
     (reflector.getAllAndOverride as ReturnType<typeof vi.spyOn>).mockReturnValue(required);
   }
-  return { guard, withRequired, findUnique };
+  return { guard, withRequired, listRestaurants };
 }
 
 describe('PermissionsGuard', () => {
@@ -72,50 +73,47 @@ describe('PermissionsGuard', () => {
 
   describe('con restaurantId en params', () => {
     it('pasa cuando el restaurante tiene el permiso en restaurantPermissions', async () => {
-      const { guard, withRequired, findUnique } = makeGuard();
+      const { guard, withRequired, listRestaurants } = makeGuard();
       withRequired(['service']);
       const auth = makeAuth({ restaurantPermissions: { [RESTAURANT_ID]: ['service', 'layout'] } });
       await expect(guard.canActivate(makeContext(auth, RESTAURANT_ID))).resolves.toBe(true);
-      expect(findUnique).not.toHaveBeenCalled();
+      expect(listRestaurants).not.toHaveBeenCalled();
     });
 
     it('lanza ForbiddenException cuando el restaurante no tiene el permiso y no hay org scope', async () => {
-      const { guard, withRequired, findUnique } = makeGuard();
+      const { guard, withRequired, listRestaurants } = makeGuard();
       withRequired(['service']);
       const auth = makeAuth({ restaurantPermissions: { [RESTAURANT_ID]: ['layout'] } });
       await expect(guard.canActivate(makeContext(auth, RESTAURANT_ID))).rejects.toThrow(ForbiddenException);
-      expect(findUnique).not.toHaveBeenCalled();
+      expect(listRestaurants).not.toHaveBeenCalled();
     });
 
-    it('lanza ForbiddenException sin consultar DB cuando la org no tiene permisos (caso developer)', async () => {
-      const { guard, withRequired, findUnique } = makeGuard();
+    it('lanza ForbiddenException sin consultar repositorio cuando la org no tiene permisos', async () => {
+      const { guard, withRequired, listRestaurants } = makeGuard();
       withRequired(['service']);
       const auth = makeAuth({
         scopes: { organizations: [ORG_ID], restaurants: [] },
         organizationPermissions: { [ORG_ID]: [] },
       });
       await expect(guard.canActivate(makeContext(auth, RESTAURANT_ID))).rejects.toThrow(ForbiddenException);
-      expect(findUnique).not.toHaveBeenCalled();
+      expect(listRestaurants).not.toHaveBeenCalled();
     });
 
-    it('pasa por org scope cuando el restaurante pertenece a la organización del usuario', async () => {
-      const findUnique = vi.fn().mockResolvedValue({ organizationId: ORG_ID });
-      const { guard, withRequired } = makeGuard(findUnique);
+    it('pasa por org scope cuando el restaurante pertenece a la organizacion del usuario', async () => {
+      const listRestaurants = vi.fn().mockResolvedValue([{ id: RESTAURANT_ID, organizationId: ORG_ID }]);
+      const { guard, withRequired } = makeGuard(listRestaurants);
       withRequired(['service']);
       const auth = makeAuth({
         scopes: { organizations: [ORG_ID], restaurants: [] },
         organizationPermissions: { [ORG_ID]: ['service', 'layout'] },
       });
       await expect(guard.canActivate(makeContext(auth, RESTAURANT_ID))).resolves.toBe(true);
-      expect(findUnique).toHaveBeenCalledWith({
-        where: { id: RESTAURANT_ID },
-        select: { organizationId: true },
-      });
+      expect(listRestaurants).toHaveBeenCalledWith([RESTAURANT_ID], []);
     });
 
-    it('lanza ForbiddenException cuando el restaurante pertenece a otra organización', async () => {
-      const findUnique = vi.fn().mockResolvedValue({ organizationId: 'org-otro' });
-      const { guard, withRequired } = makeGuard(findUnique);
+    it('lanza ForbiddenException cuando el restaurante pertenece a otra organizacion', async () => {
+      const listRestaurants = vi.fn().mockResolvedValue([{ id: RESTAURANT_ID, organizationId: 'org-otro' }]);
+      const { guard, withRequired } = makeGuard(listRestaurants);
       withRequired(['service']);
       const auth = makeAuth({
         scopes: { organizations: [ORG_ID], restaurants: [] },
@@ -124,9 +122,9 @@ describe('PermissionsGuard', () => {
       await expect(guard.canActivate(makeContext(auth, RESTAURANT_ID))).rejects.toThrow(ForbiddenException);
     });
 
-    it('lanza ForbiddenException cuando el restaurante no existe en DB', async () => {
-      const findUnique = vi.fn().mockResolvedValue(null);
-      const { guard, withRequired } = makeGuard(findUnique);
+    it('lanza ForbiddenException cuando el restaurante no existe', async () => {
+      const listRestaurants = vi.fn().mockResolvedValue([]);
+      const { guard, withRequired } = makeGuard(listRestaurants);
       withRequired(['service']);
       const auth = makeAuth({
         scopes: { organizations: [ORG_ID], restaurants: [] },
