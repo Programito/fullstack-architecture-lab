@@ -422,6 +422,32 @@ describe('RestaurantPosDashboardPage', () => {
     expect(screen.queryByRole('table')).toBeNull();
   });
 
+  it('uses denser compact tables for payment breakdown and daily average ticket in table view', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    const view = await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
+
+    expect(view.container.querySelectorAll('.table.table--sm.table--minimal').length).toBeGreaterThanOrEqual(2);
+  });
+
   it('shows payment mix, operations and average ticket in the table view', async () => {
     const i18n = provideI18nTesting();
     const restaurantContext = createRestaurantContextMock();

@@ -191,7 +191,13 @@
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.averageTicketByDay' | transloco }}</p>
               @if (loading() || averageTicketByDayRows().length) {
-                <app-table [columns]="averageTicketByDayColumns()" [rows]="averageTicketByDayRows()" [loading]="loading()" />
+                <app-table
+                  size="sm"
+                  appearance="minimal"
+                  [columns]="averageTicketByDayColumns()"
+                  [rows]="averageTicketByDayRows()"
+                  [loading]="loading()"
+                />
               } @else {
                 <app-empty-state
                   icon="bar_chart"
@@ -225,7 +231,13 @@
                     {{ 'restaurantPos.dashboard.payments.dominant' | transloco: { method: paymentMethodLabel(dominantMethod.method) } }}
                   </p>
                 }
-                <app-table [columns]="paymentBreakdownColumns()" [rows]="paymentBreakdownRows()" [loading]="loading()" />
+                <app-table
+                  size="sm"
+                  appearance="minimal"
+                  [columns]="paymentBreakdownColumns()"
+                  [rows]="paymentBreakdownRows()"
+                  [loading]="loading()"
+                />
               } @else {
                 <app-empty-state
                   icon="payments"
