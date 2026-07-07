@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/angular';
 import { ActivatedRoute, Router, convertToParamMap, type Params } from '@angular/router';
+import { Component, input } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
+import { Chart } from '../../../../shared/ui/chart/chart';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { DeveloperLogsPage } from './developer-logs-page';
 
@@ -10,6 +13,22 @@ class TestResizeObserver {
   observe(): void {}
   unobserve(): void {}
   disconnect(): void {}
+}
+
+@Component({ selector: 'app-chart', template: '' })
+class ChartStub {
+  readonly type = input('line');
+  readonly appearance = input('default');
+  readonly size = input('md');
+  readonly variant = input('primary');
+  readonly data = input<unknown[]>([]);
+  readonly categories = input<string[]>([]);
+  readonly title = input('');
+  readonly description = input('');
+  readonly loading = input(false);
+  readonly emptyTitle = input('');
+  readonly emptyDescription = input('');
+  readonly max = input(100);
 }
 
 function pickerApiMocks() {
@@ -46,6 +65,13 @@ describe('DeveloperLogsPage', () => {
     globalThis.ResizeObserver = TestResizeObserver;
   });
 
+  beforeEach(() => {
+    TestBed.overrideComponent(DeveloperLogsPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+  });
+
   it('renders the main metrics and recent events table', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
@@ -57,11 +83,22 @@ describe('DeveloperLogsPage', () => {
         errorRate: 6.7,
         auditEvents: 20,
         p95DurationMs: 340,
+        authByOrigin: [
+          { key: 'web-admin', succeeded: 3, failed: 1 },
+          { key: 'apk-customer', succeeded: 2, failed: 0 },
+        ],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [
+          { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 5 },
+        ],
       })),
       getTimeline: vi.fn(() => of([{ bucket: '2026-07-02T10:00', total: 12, errors: 1, audit: 2 }])),
       getBreakdown: vi.fn(() => of({
         levels: [{ key: 'error', count: 8 }],
         categories: [{ key: 'request', count: 50 }],
+        origins: [{ key: 'web-admin', count: 20 }],
       })),
       getEvents: vi.fn(() => of({
         total: 1,
@@ -82,6 +119,7 @@ describe('DeveloperLogsPage', () => {
           requestId: 'req-1',
           actorRoles: [],
           result: null,
+          clientOrigin: 'web-admin',
           entityType: null,
           entityId: null,
           entityLabel: null,
@@ -103,6 +141,15 @@ describe('DeveloperLogsPage', () => {
     expect(screen.getByText('120')).toBeTruthy();
     expect(screen.getByText('340 ms')).toBeTruthy();
     expect(screen.getByText('http.request.completed')).toBeTruthy();
+    expect(screen.getAllByText('developer.logs.metrics.loginSucceeded').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('developer.logs.metrics.loginFailed').length).toBeGreaterThan(0);
+    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+    expect(screen.getByText('developer.logs.sections.topSlowPaths')).toBeTruthy();
+    expect(screen.getByText('developer.logs.sections.topErrors')).toBeTruthy();
+    expect(screen.getAllByText('/api/v1/orders/:id/payments').length).toBeGreaterThan(0);
+    expect(screen.getByText('880 ms')).toBeTruthy();
+    expect(screen.getByText('http.request.failed')).toBeTruthy();
     expect(api.getSummary).toHaveBeenCalled();
     expect(api.getEvents).toHaveBeenCalled();
   });
@@ -118,11 +165,15 @@ describe('DeveloperLogsPage', () => {
         errorRate: 6.7,
         auditEvents: 20,
         p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
       })),
       getTimeline: vi.fn(() => of([{ bucket: '2026-07-02T10:00', total: 12, errors: 1, audit: 2 }])),
       getBreakdown: vi.fn(() => of({
         levels: [{ key: 'error', count: 8 }],
         categories: [{ key: 'request', count: 50 }],
+        origins: [{ key: 'web-admin', count: 10 }],
       })),
       getEvents: vi.fn(() => of({
         total: 1,
@@ -143,6 +194,7 @@ describe('DeveloperLogsPage', () => {
           requestId: 'req-1',
           actorRoles: ['developer'],
           result: 'succeeded',
+          clientOrigin: 'web-admin',
           entityType: 'auth',
           entityId: 'user-1',
           entityLabel: 'developer@mesaflow.demo',
@@ -180,11 +232,15 @@ describe('DeveloperLogsPage', () => {
         errorRate: 6.7,
         auditEvents: 20,
         p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
       })),
       getTimeline: vi.fn(() => of([{ bucket: '2026-07-02T10:00', total: 12, errors: 1, audit: 2 }])),
       getBreakdown: vi.fn(() => of({
         levels: [{ key: 'error', count: 8 }],
         categories: [{ key: 'request', count: 50 }],
+        origins: [{ key: 'web-admin', count: 8 }],
       })),
       getEvents: vi.fn(() => of({
         total: 1,
@@ -205,6 +261,7 @@ describe('DeveloperLogsPage', () => {
           requestId: 'req-1',
           actorRoles: [],
           result: null,
+          clientOrigin: 'web-admin',
           entityType: null,
           entityId: null,
           entityLabel: null,
@@ -247,9 +304,12 @@ describe('DeveloperLogsPage', () => {
         errorRate: 3.3,
         auditEvents: 5,
         p95DurationMs: 210,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
       })),
       getTimeline: vi.fn(() => of([])),
-      getBreakdown: vi.fn(() => of({ levels: [], categories: [] })),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
       getEvents: vi.fn(() => of({ total: 0, items: [] })),
     };
 
@@ -286,11 +346,15 @@ describe('DeveloperLogsPage', () => {
         errorRate: 0,
         auditEvents: 4,
         p95DurationMs: 0,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
       })),
       getTimeline: vi.fn(() => of([])),
       getBreakdown: vi.fn(() => of({
         levels: [{ key: 'info', count: 4 }],
         categories: [{ key: 'audit', count: 4 }],
+        origins: [{ key: 'apk-customer', count: 4 }],
       })),
       getEvents: vi.fn(() => of({
         total: 1,
@@ -311,6 +375,7 @@ describe('DeveloperLogsPage', () => {
           requestId: 'req-1',
           actorRoles: ['developer'],
           result: 'succeeded',
+          clientOrigin: 'apk-customer',
           entityType: 'auth',
           entityId: 'user-1',
           entityLabel: 'developer@mesaflow.demo',
@@ -379,9 +444,12 @@ describe('DeveloperLogsPage', () => {
         errorRate: 0,
         auditEvents: 1,
         p95DurationMs: 0,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
       })),
       getTimeline: vi.fn(() => of([])),
-      getBreakdown: vi.fn(() => of({ levels: [], categories: [] })),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
       getEvents: vi.fn(() => of({ total: 0, items: [] })),
     };
 
@@ -410,9 +478,9 @@ describe('DeveloperLogsPage', () => {
     const routeHarness = createRouteHarness();
     const api = {
       ...pickerApiMocks(),
-      getSummary: vi.fn(() => of({ totalRequests: 0, errorCount: 0, errorRate: 0, auditEvents: 0, p95DurationMs: 0 })),
+      getSummary: vi.fn(() => of({ totalRequests: 0, errorCount: 0, errorRate: 0, auditEvents: 0, p95DurationMs: 0, authByOrigin: [], topSlowPaths: [], topErrorEvents: [] })),
       getTimeline: vi.fn(() => of([])),
-      getBreakdown: vi.fn(() => of({ levels: [], categories: [] })),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
       getEvents: vi.fn(() => of({ total: 0, items: [] })),
     };
 
@@ -434,5 +502,446 @@ describe('DeveloperLogsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.show' }));
 
     expect(screen.getByLabelText('developer.logs.filters.from')).toBeTruthy();
+  });
+
+  it('applies a client-origin filter and shows it in the event detail', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 8,
+        errorCount: 1,
+        errorRate: 12.5,
+        auditEvents: 2,
+        p95DurationMs: 250,
+        authByOrigin: [{ key: 'apk-customer', succeeded: 1, failed: 0 }],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({
+        levels: [{ key: 'info', count: 2 }],
+        categories: [{ key: 'audit', count: 2 }],
+        origins: [{ key: 'apk-customer', count: 2 }],
+      })),
+      getEvents: vi.fn(() => of({
+        total: 1,
+        items: [{
+          id: 'log-1',
+          timestamp: '2026-07-02T10:00:00.000Z',
+          source: 'backend',
+          category: 'audit',
+          level: 'info',
+          event: 'auth.demo-login.succeeded',
+          message: 'Customer signed in.',
+          path: '/api/v1/auth/demo-login',
+          method: 'POST',
+          statusCode: 200,
+          durationMs: 18,
+          userId: 'user-1',
+          restaurantId: null,
+          requestId: 'req-1',
+          actorRoles: ['customer'],
+          result: 'succeeded',
+          clientOrigin: 'apk-customer',
+          entityType: 'auth',
+          entityId: 'user-1',
+          entityLabel: 'customer@mesaflow.demo',
+          changedFields: ['session'],
+          metadata: { clientOrigin: 'apk-customer' },
+        }],
+      })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    const clientOriginSelect = screen.getByLabelText('developer.logs.filters.clientOrigin') as HTMLSelectElement;
+    clientOriginSelect.value = 'apk-customer';
+    clientOriginSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
+
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({ clientOrigin: 'apk-customer' }), 1, 20);
+
+    fireEvent.click(screen.getByText('auth.demo-login.succeeded'));
+    expect(screen.getAllByText('developer.logs.origins.apk-customer').length).toBeGreaterThan(0);
+  });
+
+  it('applies quick shortcut filters for apk and payments', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 12,
+        errorCount: 2,
+        errorRate: 16.7,
+        auditEvents: 3,
+        p95DurationMs: 280,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.shortcuts.apkCustomer' }));
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'apk-customer',
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.shortcuts.payments' }));
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      path: '/payments',
+    }));
+  });
+
+  it('applies operational filters when the errors kpi is clicked', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 42,
+        errorCount: 6,
+        errorRate: 14.3,
+        auditEvents: 7,
+        p95DurationMs: 310,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.metrics.errors' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+    }), 1, 20);
+  });
+
+  it('applies filters from a slow-path insight item', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 21,
+        errorCount: 3,
+        errorRate: 14.3,
+        auditEvents: 5,
+        p95DurationMs: 420,
+        authByOrigin: [],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /\/api\/v1\/orders\/:id\/payments/i }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      path: '/api/v1/orders/:id/payments',
+      clientOrigin: 'web-pos',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      path: '/api/v1/orders/:id/payments',
+      clientOrigin: 'web-pos',
+    }), 1, 20);
+  });
+
+  it('applies filters from a top-error insight item', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 21,
+        errorCount: 3,
+        errorRate: 14.3,
+        auditEvents: 5,
+        p95DurationMs: 420,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [
+          { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 5 },
+        ],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /http\.request\.failed/i }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+      path: '/api/v1/orders/:id/payments',
+      clientOrigin: 'web-pos',
+      search: 'http.request.failed',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+      path: '/api/v1/orders/:id/payments',
+      clientOrigin: 'web-pos',
+      search: 'http.request.failed',
+    }), 1, 20);
+  });
+
+  it('applies filters from an origin breakdown card', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 18,
+        errorCount: 2,
+        errorRate: 11.1,
+        auditEvents: 4,
+        p95DurationMs: 230,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({
+        levels: [],
+        categories: [],
+        origins: [{ key: 'apk-customer', count: 7 }],
+      })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.origins.apk-customer developer.logs.charts.origins' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'apk-customer',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'apk-customer',
+    }), 1, 20);
+  });
+
+  it('applies auth filters from an auth-by-origin card', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 18,
+        errorCount: 2,
+        errorRate: 11.1,
+        auditEvents: 4,
+        p95DurationMs: 230,
+        authByOrigin: [{ key: 'web-demo', succeeded: 5, failed: 1 }],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.origins.web-demo developer.logs.metrics.loginSucceeded' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'web-demo',
+      category: 'audit',
+      entityType: 'auth',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'web-demo',
+      category: 'audit',
+      entityType: 'auth',
+    }), 1, 20);
+  });
+
+  it('keeps all log cards inside a single ordered cards grid', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [
+          { key: 'web-admin', succeeded: 3, failed: 1 },
+          { key: 'apk-customer', succeeded: 2, failed: 0 },
+        ],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({
+        levels: [],
+        categories: [],
+        origins: [
+          { key: 'web-admin', count: 20 },
+          { key: 'web-pos', count: 12 },
+        ],
+      })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    const cardsGrid = container.querySelector('.developer-logs-page__cards');
+    expect(cardsGrid).toBeTruthy();
+
+    const legacyKpiSections = container.querySelectorAll('.developer-logs-page__kpis');
+    expect(legacyKpiSections.length).toBe(0);
+
+    const cards = cardsGrid?.querySelectorAll('app-card') ?? [];
+    expect(cards.length).toBe(9);
+    expect(cardsGrid?.textContent).toContain('120');
+    expect(cardsGrid?.textContent).toContain('web-admin');
+    expect(cardsGrid?.textContent).toContain('apk-customer');
+  });
+
+  it('renders the events table with a compact table variant', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({
+        total: 1,
+        items: [{
+          id: 'log-1',
+          timestamp: '2026-07-02T10:00:00.000Z',
+          source: 'backend',
+          category: 'request',
+          level: 'info',
+          event: 'http.request.completed',
+          message: 'GET /api/v1/health completed with 200',
+          path: '/api/v1/health',
+          method: 'GET',
+          statusCode: 200,
+          durationMs: 12,
+          userId: null,
+          restaurantId: null,
+          requestId: 'req-1',
+          actorRoles: [],
+          result: null,
+          clientOrigin: 'web-admin',
+          entityType: null,
+          entityId: null,
+          entityLabel: null,
+          changedFields: [],
+          metadata: null,
+        }],
+      })),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.table.table--sm.table--minimal')).toBeTruthy();
   });
 });
