@@ -10,6 +10,7 @@ function makeReport(): RestaurantAnalyticsReport {
     summary: { revenueCents: 120000, ordersCount: 40, averageTicketCents: 3000, averageTableTurnoverMinutes: 52 },
     previousSummary: { revenueCents: 100000, ordersCount: 35, averageTicketCents: 2857, averageTableTurnoverMinutes: 55 },
     salesByDay: [{ date: '2026-06-24', revenueCents: 120000, ordersCount: 40 }],
+    previousSalesByDay: [{ date: '2026-06-23', revenueCents: 100000, ordersCount: 35 }],
     topProducts: [{ productName: 'Paella', quantity: 20, revenueCents: 40000 }],
     paymentBreakdown: [{ method: 'card', amountCents: 90000, count: 30 }],
     peakHours: [{ hour: 21, ordersCount: 15 }],

@@ -74,6 +74,9 @@ describe('PrismaRestaurantAnalyticsRepository', () => {
 
     expect(report.salesByDay).toEqual([{ date: '2026-06-21', revenueCents: 1071, ordersCount: 1 }]);
 
+    // Same reasoning as `previousSummary` above: 2026-06-20 has no paid orders seeded.
+    expect(report.previousSalesByDay).toEqual([]);
+
     expect(report.topProducts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ productName: 'Hamburguesa craft', quantity: 1, revenueCents: 1190 }),
@@ -83,6 +86,20 @@ describe('PrismaRestaurantAnalyticsRepository', () => {
     expect(report.paymentBreakdown).toEqual([{ method: 'cash', amountCents: 1071, count: 1 }]);
 
     expect(report.peakHours).toEqual(expect.arrayContaining([expect.objectContaining({ hour: 11, ordersCount: 1 })]));
+  });
+
+  it('reports the immediately preceding day as previousSalesByDay', async () => {
+    const report = await repository.getReport({
+      restaurantId: 'restaurant-mesaflow-centro',
+      from: '2026-06-22T00:00:00.000Z',
+      to: '2026-06-22T23:59:59.000Z',
+    });
+
+    // The current period (2026-06-22) has no paid orders seeded, but the
+    // immediately preceding day (2026-06-21) has the same seeded order used
+    // in the first test above.
+    expect(report.salesByDay).toEqual([]);
+    expect(report.previousSalesByDay).toEqual([{ date: '2026-06-21', revenueCents: 1071, ordersCount: 1 }]);
   });
 
   it('returns empty aggregates for a date range with no paid orders', async () => {
@@ -105,6 +122,7 @@ describe('PrismaRestaurantAnalyticsRepository', () => {
       averageTableTurnoverMinutes: 0,
     });
     expect(report.salesByDay).toEqual([]);
+    expect(report.previousSalesByDay).toEqual([]);
     expect(report.topProducts).toEqual([]);
     expect(report.paymentBreakdown).toEqual([]);
     expect(report.peakHours).toEqual([]);

@@ -25,16 +25,17 @@ export class PrismaRestaurantAnalyticsRepository implements RestaurantAnalyticsR
     const previousTo = new Date(from.getTime() - 1);
     const previousFrom = new Date(previousTo.getTime() - (to.getTime() - from.getTime()));
 
-    const [summary, previousSummary, salesByDay, topProducts, paymentBreakdown, peakHours] = await Promise.all([
+    const [summary, previousSummary, salesByDay, previousSalesByDay, topProducts, paymentBreakdown, peakHours] = await Promise.all([
       this.getSummary(restaurantId, from, to),
       this.getSummary(restaurantId, previousFrom, previousTo),
       this.getSalesByDay(restaurantId, from, to),
+      this.getSalesByDay(restaurantId, previousFrom, previousTo),
       this.getTopProducts(restaurantId, from, to),
       this.getPaymentBreakdown(restaurantId, from, to),
       this.getPeakHours(restaurantId, from, to),
     ]);
 
-    return { summary, previousSummary, salesByDay, topProducts, paymentBreakdown, peakHours };
+    return { summary, previousSummary, salesByDay, previousSalesByDay, topProducts, paymentBreakdown, peakHours };
   }
 
   private async getSummary(restaurantId: string, from: Date, to: Date) {

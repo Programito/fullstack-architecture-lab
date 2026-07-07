@@ -40,6 +40,9 @@ export type RestaurantAnalyticsReport = {
   summary: RestaurantAnalyticsSummary;
   previousSummary: RestaurantAnalyticsSummary;
   salesByDay: SalesByDayPoint[];
+  // Aligned to `salesByDay` by day offset, not calendar date: the previous
+  // period rarely shares dates with the current one.
+  previousSalesByDay: SalesByDayPoint[];
   topProducts: TopProductEntry[];
   paymentBreakdown: PaymentBreakdownEntry[];
   peakHours: PeakHourEntry[];

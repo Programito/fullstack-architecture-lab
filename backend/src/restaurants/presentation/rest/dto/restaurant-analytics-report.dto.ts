@@ -63,6 +63,7 @@ export class RestaurantAnalyticsReportDto {
   @ApiProperty({ type: RestaurantAnalyticsSummaryDto }) summary!: RestaurantAnalyticsSummaryDto;
   @ApiProperty({ type: RestaurantAnalyticsSummaryDto }) previousSummary!: RestaurantAnalyticsSummaryDto;
   @ApiProperty({ type: [SalesByDayPointDto] }) salesByDay!: SalesByDayPointDto[];
+  @ApiProperty({ type: [SalesByDayPointDto] }) previousSalesByDay!: SalesByDayPointDto[];
   @ApiProperty({ type: [TopProductEntryDto] }) topProducts!: TopProductEntryDto[];
   @ApiProperty({ type: [PaymentBreakdownEntryDto] }) paymentBreakdown!: PaymentBreakdownEntryDto[];
   @ApiProperty({ type: [PeakHourEntryDto] }) peakHours!: PeakHourEntryDto[];
@@ -72,6 +73,7 @@ export class RestaurantAnalyticsReportDto {
       summary: RestaurantAnalyticsSummaryDto.fromDomain(report.summary),
       previousSummary: RestaurantAnalyticsSummaryDto.fromDomain(report.previousSummary),
       salesByDay: report.salesByDay.map((point) => SalesByDayPointDto.fromDomain(point)),
+      previousSalesByDay: report.previousSalesByDay.map((point) => SalesByDayPointDto.fromDomain(point)),
       topProducts: report.topProducts.map((entry) => TopProductEntryDto.fromDomain(entry)),
       paymentBreakdown: report.paymentBreakdown.map((entry) => PaymentBreakdownEntryDto.fromDomain(entry)),
       peakHours: report.peakHours.map((entry) => PeakHourEntryDto.fromDomain(entry)),
