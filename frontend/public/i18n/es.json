@@ -879,6 +879,18 @@
         "payments": "Pagos",
         "secondary": "Operativa"
       },
+      "panelEmpty": {
+        "salesByDayTitle": "Sin ventas por día",
+        "salesByDayDescription": "No hay ventas diarias para este periodo.",
+        "averageTicketByDayTitle": "Sin ticket medio diario",
+        "averageTicketByDayDescription": "No hay tickets diarios para este periodo.",
+        "paymentBreakdownTitle": "Sin ingresos por pagos",
+        "paymentBreakdownDescription": "No hay ingresos por método para este periodo.",
+        "topProductsTitle": "Sin productos destacados",
+        "topProductsDescription": "No hay productos destacados para este periodo.",
+        "peakHoursTitle": "Sin horas punta",
+        "peakHoursDescription": "No hay horas punta registradas para este periodo."
+      },
       "errors": {
         "title": "No se han podido cargar las anal\u00edticas"
       },

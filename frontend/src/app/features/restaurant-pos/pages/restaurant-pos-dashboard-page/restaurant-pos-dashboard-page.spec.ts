@@ -103,6 +103,17 @@ function emptyReport(): RestaurantAnalyticsReportDto {
   };
 }
 
+function reportWithPartialSections(): RestaurantAnalyticsReportDto {
+  return {
+    summary: { revenueCents: 45000, ordersCount: 15, averageTicketCents: 3000, averageTableTurnoverMinutes: 48 },
+    previousSummary: { revenueCents: 40000, ordersCount: 14, averageTicketCents: 2857, averageTableTurnoverMinutes: 50 },
+    salesByDay: [{ date: '2026-06-24', revenueCents: 45000, ordersCount: 15 }],
+    topProducts: [],
+    paymentBreakdown: [],
+    peakHours: [],
+  };
+}
+
 describe('RestaurantPosDashboardPage', () => {
   beforeAll(() => {
     globalThis.ResizeObserver = TestResizeObserver;
@@ -569,6 +580,56 @@ describe('RestaurantPosDashboardPage', () => {
     expect(screen.getByRole('region', { name: 'Tendencias' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Pagos' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Operativa' })).toBeTruthy();
+  });
+
+  it('shows section-level empty states when the report has partial analytics data', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(reportWithPartialSections())) };
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByText('No hay ingresos por metodo para este periodo.')).toBeTruthy();
+    expect(screen.getByText('No hay productos destacados para este periodo.')).toBeTruthy();
+    expect(screen.getByText('No hay horas punta registradas para este periodo.')).toBeTruthy();
+  });
+
+  it('shows section-level empty states in table mode without breaking accessibility', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(reportWithPartialSections())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
+
+    expect(screen.getByText('No hay ingresos por metodo para este periodo.')).toBeTruthy();
+    expect(screen.getByText('No hay productos destacados para este periodo.')).toBeTruthy();
+    expect(screen.getByText('No hay horas punta registradas para este periodo.')).toBeTruthy();
+    expect(screen.getAllByRole('table').length).toBe(2);
   });
 
   it('does not hide the error state behind the collapsed filter card', async () => {

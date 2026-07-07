@@ -164,7 +164,17 @@
           <div class="theme-panel rounded-2xl border p-4 shadow-sm">
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.salesByDay' | transloco }}</p>
-              <app-table [columns]="salesByDayColumns()" [rows]="salesByDayRows()" [loading]="loading()" />
+              @if (loading() || salesByDayRows().length) {
+                <app-table [columns]="salesByDayColumns()" [rows]="salesByDayRows()" [loading]="loading()" />
+              } @else {
+                <app-empty-state
+                  icon="bar_chart"
+                  [title]="'restaurantPos.dashboard.panelEmpty.salesByDayTitle' | transloco"
+                  [description]="'restaurantPos.dashboard.panelEmpty.salesByDayDescription' | transloco"
+                  size="sm"
+                  appearance="minimal"
+                />
+              }
             } @else {
               <app-chart
                 type="line"
@@ -172,13 +182,25 @@
                 [title]="'restaurantPos.dashboard.charts.salesByDay' | transloco"
                 [categories]="salesByDayCategories()"
                 [data]="salesByDaySeries()"
+                [emptyTitle]="'restaurantPos.dashboard.panelEmpty.salesByDayTitle' | transloco"
+                [emptyDescription]="'restaurantPos.dashboard.panelEmpty.salesByDayDescription' | transloco"
               />
             }
           </div>
           <div class="theme-panel rounded-2xl border p-4 shadow-sm">
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.averageTicketByDay' | transloco }}</p>
-              <app-table [columns]="averageTicketByDayColumns()" [rows]="averageTicketByDayRows()" [loading]="loading()" />
+              @if (loading() || averageTicketByDayRows().length) {
+                <app-table [columns]="averageTicketByDayColumns()" [rows]="averageTicketByDayRows()" [loading]="loading()" />
+              } @else {
+                <app-empty-state
+                  icon="bar_chart"
+                  [title]="'restaurantPos.dashboard.panelEmpty.averageTicketByDayTitle' | transloco"
+                  [description]="'restaurantPos.dashboard.panelEmpty.averageTicketByDayDescription' | transloco"
+                  size="sm"
+                  appearance="minimal"
+                />
+              }
             } @else {
               <app-chart
                 type="area"
@@ -186,6 +208,8 @@
                 [title]="'restaurantPos.dashboard.charts.averageTicketByDay' | transloco"
                 [categories]="averageTicketByDayCategories()"
                 [data]="averageTicketByDaySeries()"
+                [emptyTitle]="'restaurantPos.dashboard.panelEmpty.averageTicketByDayTitle' | transloco"
+                [emptyDescription]="'restaurantPos.dashboard.panelEmpty.averageTicketByDayDescription' | transloco"
               />
             }
           </div>
@@ -195,40 +219,60 @@
           <div class="theme-panel rounded-2xl border p-4 shadow-sm">
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.paymentBreakdown' | transloco }}</p>
-              @if (dominantPaymentMethod(); as dominantMethod) {
-                <p class="theme-muted mb-3 text-sm">
-                  {{ 'restaurantPos.dashboard.payments.dominant' | transloco: { method: paymentMethodLabel(dominantMethod.method) } }}
-                </p>
-              }
-              <app-table [columns]="paymentBreakdownColumns()" [rows]="paymentBreakdownRows()" [loading]="loading()" />
-            } @else {
-              <div class="restaurant-pos-dashboard-page__payment-insights">
-                <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.paymentBreakdown' | transloco }}</p>
+              @if (loading() || paymentBreakdownRows().length) {
                 @if (dominantPaymentMethod(); as dominantMethod) {
-                  <p class="theme-muted text-sm">
+                  <p class="theme-muted mb-3 text-sm">
                     {{ 'restaurantPos.dashboard.payments.dominant' | transloco: { method: paymentMethodLabel(dominantMethod.method) } }}
                   </p>
                 }
-              </div>
-              <div class="restaurant-pos-dashboard-page__payment-grid">
-                <app-chart
-                  type="donut"
+                <app-table [columns]="paymentBreakdownColumns()" [rows]="paymentBreakdownRows()" [loading]="loading()" />
+              } @else {
+                <app-empty-state
+                  icon="payments"
+                  [title]="'restaurantPos.dashboard.panelEmpty.paymentBreakdownTitle' | transloco"
+                  [description]="'restaurantPos.dashboard.panelEmpty.paymentBreakdownDescription' | transloco"
+                  size="sm"
                   appearance="minimal"
-                  [loading]="loading()"
-                  [title]="'restaurantPos.dashboard.charts.paymentBreakdown' | transloco"
-                  [categories]="paymentBreakdownCategories()"
-                  [data]="paymentBreakdownSeries()"
                 />
-                <app-chart
-                  type="horizontalBar"
+              }
+            } @else {
+              @if (loading() || paymentBreakdownRows().length) {
+                <div class="restaurant-pos-dashboard-page__payment-insights">
+                  <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.paymentBreakdown' | transloco }}</p>
+                  @if (dominantPaymentMethod(); as dominantMethod) {
+                    <p class="theme-muted text-sm">
+                      {{ 'restaurantPos.dashboard.payments.dominant' | transloco: { method: paymentMethodLabel(dominantMethod.method) } }}
+                    </p>
+                  }
+                </div>
+                <div class="restaurant-pos-dashboard-page__payment-grid">
+                  <app-chart
+                    type="donut"
+                    appearance="minimal"
+                    [loading]="loading()"
+                    [title]="'restaurantPos.dashboard.charts.paymentBreakdown' | transloco"
+                    [categories]="paymentBreakdownCategories()"
+                    [data]="paymentBreakdownSeries()"
+                  />
+                  <app-chart
+                    type="horizontalBar"
+                    appearance="minimal"
+                    variant="secondary"
+                    [loading]="loading()"
+                    [title]="'restaurantPos.dashboard.charts.paymentShare' | transloco"
+                    [categories]="paymentBreakdownCategories()"
+                    [data]="paymentShareSeries()"
+                  />
+                </div>
+              } @else {
+                <app-empty-state
+                  icon="payments"
+                  [title]="'restaurantPos.dashboard.panelEmpty.paymentBreakdownTitle' | transloco"
+                  [description]="'restaurantPos.dashboard.panelEmpty.paymentBreakdownDescription' | transloco"
+                  size="sm"
                   appearance="minimal"
-                  variant="secondary"
-                  [loading]="loading()"
-                  [title]="'restaurantPos.dashboard.charts.paymentShare' | transloco"
-                  [categories]="paymentBreakdownCategories()"
-                  [data]="paymentShareSeries()"
                 />
-              </div>
+              }
             }
           </div>
         </section>
@@ -237,7 +281,17 @@
           <div class="theme-panel rounded-2xl border p-4 shadow-sm">
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.topProducts' | transloco }}</p>
-              <app-table [columns]="topProductsColumns()" [rows]="topProductsRows()" [loading]="loading()" />
+              @if (loading() || topProductsRows().length) {
+                <app-table [columns]="topProductsColumns()" [rows]="topProductsRows()" [loading]="loading()" />
+              } @else {
+                <app-empty-state
+                  icon="restaurant"
+                  [title]="'restaurantPos.dashboard.panelEmpty.topProductsTitle' | transloco"
+                  [description]="'restaurantPos.dashboard.panelEmpty.topProductsDescription' | transloco"
+                  size="sm"
+                  appearance="minimal"
+                />
+              }
             } @else {
               <app-chart
                 type="bar"
@@ -245,13 +299,25 @@
                 [title]="'restaurantPos.dashboard.charts.topProducts' | transloco"
                 [categories]="topProductsCategories()"
                 [data]="topProductsSeries()"
+                [emptyTitle]="'restaurantPos.dashboard.panelEmpty.topProductsTitle' | transloco"
+                [emptyDescription]="'restaurantPos.dashboard.panelEmpty.topProductsDescription' | transloco"
               />
             }
           </div>
           <div class="theme-panel rounded-2xl border p-4 shadow-sm">
             @if (showDataTables()) {
               <p class="theme-title mb-3 text-sm font-semibold">{{ 'restaurantPos.dashboard.charts.peakHours' | transloco }}</p>
-              <app-table [columns]="peakHoursColumns()" [rows]="peakHoursRows()" [loading]="loading()" />
+              @if (loading() || peakHoursRows().length) {
+                <app-table [columns]="peakHoursColumns()" [rows]="peakHoursRows()" [loading]="loading()" />
+              } @else {
+                <app-empty-state
+                  icon="schedule"
+                  [title]="'restaurantPos.dashboard.panelEmpty.peakHoursTitle' | transloco"
+                  [description]="'restaurantPos.dashboard.panelEmpty.peakHoursDescription' | transloco"
+                  size="sm"
+                  appearance="minimal"
+                />
+              }
             } @else {
               <app-chart
                 type="bar"
@@ -259,6 +325,8 @@
                 [title]="'restaurantPos.dashboard.charts.peakHours' | transloco"
                 [categories]="peakHoursCategories()"
                 [data]="peakHoursSeries()"
+                [emptyTitle]="'restaurantPos.dashboard.panelEmpty.peakHoursTitle' | transloco"
+                [emptyDescription]="'restaurantPos.dashboard.panelEmpty.peakHoursDescription' | transloco"
               />
             }
           </div>

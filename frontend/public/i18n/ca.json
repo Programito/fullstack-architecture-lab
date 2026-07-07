@@ -879,6 +879,18 @@
         "payments": "Pagaments",
         "secondary": "Operativa"
       },
+      "panelEmpty": {
+        "salesByDayTitle": "Sense vendes per dia",
+        "salesByDayDescription": "No hi ha vendes diaries per a aquest periode.",
+        "averageTicketByDayTitle": "Sense tiquet mitja diari",
+        "averageTicketByDayDescription": "No hi ha tiquets diaris per a aquest periode.",
+        "paymentBreakdownTitle": "Sense ingressos per pagaments",
+        "paymentBreakdownDescription": "No hi ha ingressos per metode en aquest periode.",
+        "topProductsTitle": "Sense productes destacats",
+        "topProductsDescription": "No hi ha productes destacats per a aquest periode.",
+        "peakHoursTitle": "Sense hores punta",
+        "peakHoursDescription": "No hi ha hores punta registrades per a aquest periode."
+      },
       "errors": {
         "title": "No s'han pogut carregar les anal\u00edtiques"
       },

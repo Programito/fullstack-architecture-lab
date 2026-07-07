@@ -879,6 +879,18 @@
         "payments": "Payments",
         "secondary": "Operations"
       },
+      "panelEmpty": {
+        "salesByDayTitle": "No daily sales",
+        "salesByDayDescription": "There are no daily sales for this period.",
+        "averageTicketByDayTitle": "No daily average ticket",
+        "averageTicketByDayDescription": "There are no daily tickets for this period.",
+        "paymentBreakdownTitle": "No payment revenue",
+        "paymentBreakdownDescription": "There is no payment revenue for this period.",
+        "topProductsTitle": "No top products",
+        "topProductsDescription": "There are no top products for this period.",
+        "peakHoursTitle": "No peak hours",
+        "peakHoursDescription": "There are no peak hours recorded for this period."
+      },
       "errors": {
         "title": "The analytics could not be loaded"
       },
