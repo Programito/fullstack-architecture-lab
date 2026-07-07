@@ -55,7 +55,7 @@
   - `activeFilterChips: Signal<Array<{ key: 'range' | 'from' | 'to'; label: string; removable: boolean }>>`
   - `removeFilterChip(key: 'range' | 'from' | 'to'): void`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add tests that prove:
 - clicking the `Desde` chip clears only `from` and keeps the remaining state valid
@@ -63,7 +63,7 @@ Add tests that prove:
 - clicking the quick-range chip returns to the default `7d` preset
 - chips remain keyboard-accessible buttons with localized `aria-label`
 
-- [ ] **Step 2: Run the focused dashboard spec and verify it fails**
+- [x] **Step 2: Run the focused dashboard spec and verify it fails**
 
 Run:
 
@@ -73,7 +73,7 @@ pnpm exec ng test --watch=false --include src/app/features/restaurant-pos/pages/
 
 Expected: FAIL because chips render as passive spans and there is no chip removal handler.
 
-- [ ] **Step 3: Implement the minimal chip interaction**
+- [x] **Step 3: Implement the minimal chip interaction**
 
 Implementation outline:
 
@@ -117,13 +117,13 @@ Render chips as buttons:
 </button>
 ```
 
-- [ ] **Step 4: Run the focused dashboard spec and verify it passes**
+- [x] **Step 4: Run the focused dashboard spec and verify it passes**
 
 Run the same `pnpm exec ng test ...restaurant-pos-dashboard-page.spec.ts` command.
 
 Expected: PASS for the new chip-removal tests and no regressions in filter URL sync.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.ts frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.html frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.css frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.spec.ts
@@ -142,14 +142,14 @@ git commit -m "feat: make analytics filter chips interactive"
 - Produces:
   - stable chart placeholder blocks for `salesByDay`, `averageTicketByDay`, `paymentBreakdown`, `paymentShare`, `topProducts`, `peakHours`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add tests that prove:
 - each chart panel keeps a reserved skeleton height while `loading() === true`
 - no chart empty-state copy is shown during the loading phase
 - table mode still uses table loading, not chart skeletons
 
-- [ ] **Step 2: Run the focused dashboard spec and verify it fails**
+- [x] **Step 2: Run the focused dashboard spec and verify it fails**
 
 Run:
 
@@ -159,7 +159,7 @@ pnpm exec ng test --watch=false --include src/app/features/restaurant-pos/pages/
 
 Expected: FAIL because chart panels currently flip directly between chart and empty state without dedicated skeleton placeholders.
 
-- [ ] **Step 3: Implement the minimal skeleton UI**
+- [x] **Step 3: Implement the minimal skeleton UI**
 
 Implementation outline:
 
@@ -187,13 +187,13 @@ Implementation outline:
 }
 ```
 
-- [ ] **Step 4: Run the focused dashboard spec and verify it passes**
+- [x] **Step 4: Run the focused dashboard spec and verify it passes**
 
 Run the same dashboard spec command.
 
 Expected: PASS and visible loading placeholders remain layout-stable.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.html frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.css frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.spec.ts
@@ -224,7 +224,7 @@ git commit -m "feat: add stable analytics chart skeletons"
   - `triggerRestaurantAnalyticsWorkbookDownload(filename: string, blob: Blob): void`
   - `exportExcel(): Promise<void>`
 
-- [ ] **Step 1: Write the failing export helper tests**
+- [x] **Step 1: Write the failing export helper tests**
 
 Add tests that prove:
 - workbook contains sheets `Resumen`, `Ventas por día`, `Pagos`, `Ticket medio diario`, `Top productos`, `Horas punta`
@@ -232,7 +232,7 @@ Add tests that prove:
 - payment rows label `cash` as `Efectivo`
 - daily average ticket rows use formatted monetary values derived from cents
 
-- [ ] **Step 2: Run the focused export helper spec and verify it fails**
+- [x] **Step 2: Run the focused export helper spec and verify it fails**
 
 Run:
 
@@ -242,7 +242,7 @@ pnpm exec ng test --watch=false --include src/app/features/restaurant-pos/pages/
 
 Expected: FAIL because the export helper file and workbook builder do not exist yet.
 
-- [ ] **Step 3: Install the minimal Excel dependency**
+- [x] **Step 3: Install the minimal Excel dependency**
 
 Use a single library suited to browser-side workbook generation, for example `exceljs`.
 
@@ -254,7 +254,7 @@ pnpm install exceljs
 
 Expected: dependency added to `frontend/package.json` and lockfile updated.
 
-- [ ] **Step 4: Implement the workbook builder**
+- [x] **Step 4: Implement the workbook builder**
 
 Create a focused helper:
 
@@ -278,7 +278,7 @@ export async function exportRestaurantAnalyticsWorkbook(
 }
 ```
 
-- [ ] **Step 5: Wire the dashboard action**
+- [x] **Step 5: Wire the dashboard action**
 
 Render an export action near the existing view toggle:
 
@@ -317,11 +317,11 @@ protected async exportExcel(): Promise<void> {
 }
 ```
 
-- [ ] **Step 6: Add the dashboard interaction test**
+- [x] **Step 6: Add the dashboard interaction test**
 
 Add a page spec that spies on `exportRestaurantAnalyticsWorkbook` and proves the export button is shown only when there is data and calls the helper with current report + period.
 
-- [ ] **Step 7: Run focused tests and verify they pass**
+- [x] **Step 7: Run focused tests and verify they pass**
 
 Run:
 
@@ -332,7 +332,7 @@ pnpm exec ng test --watch=false --include src/app/features/restaurant-pos/pages/
 
 Expected: PASS for workbook structure and dashboard export trigger behavior.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/package.json frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-export.ts frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-export.spec.ts frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.ts frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.html frontend/src/app/features/restaurant-pos/pages/restaurant-pos-dashboard-page/restaurant-pos-dashboard-page.spec.ts frontend/src/app/shared/i18n/i18n-testing.ts frontend/public/i18n/es.json frontend/public/i18n/en.json frontend/public/i18n/ca.json
