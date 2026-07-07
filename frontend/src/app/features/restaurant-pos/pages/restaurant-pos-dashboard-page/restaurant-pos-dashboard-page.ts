@@ -1,6 +1,5 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -10,20 +9,25 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
 import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
+import { DatePicker, type DateRangeValue } from '../../../../shared/ui/date-picker/date-picker';
 import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
+import { Icon } from '../../../../shared/ui/icon/icon';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Skeleton } from '../../../../shared/ui/skeleton/skeleton';
+import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
 import { RestaurantAnalyticsApiService } from '../../api/restaurant-analytics-api.service';
 import type { RestaurantAnalyticsReportDto } from '../../api/restaurant-analytics.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { exportRestaurantAnalyticsWorkbook, triggerRestaurantAnalyticsWorkbookDownload } from './restaurant-pos-dashboard-export';
 
 type QuickRange = 'today' | '7d' | '30d' | 'custom';
 type DateInputs = { from: string; to: string };
 type Delta = { pct: number; variant: BadgeVariant; direction: 'up' | 'down' | 'flat' };
 type DailyAverageTicketPoint = { date: string; revenueCents: number; ordersCount: number; averageTicketCents: number };
+type PaymentShareRow = { method: string; share: number; shareLabel: string };
 type DashboardViewMode = 'chart' | 'table';
-type ActiveFilterChip = { key: 'range' | 'from' | 'to'; label: string };
+type ActiveFilterChip = { key: 'range' | 'from' | 'to'; label: string; removable: boolean };
 type DashboardUiState = {
   quickRange: QuickRange;
   dateInputs: DateInputs;
@@ -37,7 +41,7 @@ type ConcreteQuickRange = (typeof QUICK_RANGES)[number];
 
 @Component({
   selector: 'app-restaurant-pos-dashboard-page',
-  imports: [FormsModule, TranslocoPipe, Alert, Badge, Button, Chart, EmptyState, SegmentedControl, Skeleton, Table],
+  imports: [TranslocoPipe, Alert, Badge, Button, Chart, DatePicker, EmptyState, Icon, SegmentedControl, Skeleton, Spinner, Table],
   templateUrl: './restaurant-pos-dashboard-page.html',
   styleUrl: './restaurant-pos-dashboard-page.css',
 })
@@ -53,12 +57,17 @@ export class RestaurantPosDashboardPage {
   protected readonly error = signal<string | null>(null);
   protected readonly report = signal<RestaurantAnalyticsReportDto | null>(null);
   protected readonly rangeClamped = signal(false);
+  protected readonly exportingExcel = signal(false);
   protected readonly showDataTables: ReturnType<typeof signal<boolean>>;
   protected readonly filtersExpanded: ReturnType<typeof signal<boolean>>;
   protected readonly quickRange: ReturnType<typeof signal<QuickRange>>;
   protected readonly dateInputs: ReturnType<typeof signal<DateInputs>>;
 
   protected readonly hasData = computed(() => (this.report()?.summary.ordersCount ?? 0) > 0);
+
+  // Reserves a stable number of rows for the payment-share skeleton so the
+  // panel does not collapse to zero height while the report is loading.
+  protected readonly paymentMixSkeletonRows = [0, 1, 2] as const;
 
   protected readonly revenueDelta = computed(() =>
     computeDelta(this.report()?.summary.revenueCents, this.report()?.previousSummary.revenueCents),
@@ -116,14 +125,16 @@ export class RestaurantPosDashboardPage {
       },
     ];
   });
-  protected readonly paymentShareSeries = computed<ChartSeries[]>(() => {
+  protected readonly paymentShareRows = computed<PaymentShareRow[]>(() => {
     this.activeLang();
-    return [
-      {
-        name: this.transloco.translate('restaurantPos.dashboard.tableHeaders.share'),
-        values: (this.report()?.paymentBreakdown ?? []).map((entry) => Math.round(this.paymentShare(entry.amountCents) * 100)),
-      },
-    ];
+    return (this.report()?.paymentBreakdown ?? []).map((entry) => {
+      const share = this.paymentShare(entry.amountCents);
+      return {
+        method: this.paymentMethodLabel(entry.method),
+        share: Math.round(share * 1000) / 10,
+        shareLabel: this.formatPercentage(share),
+      };
+    });
   });
 
   protected readonly peakHoursCategories = computed(() => (this.report()?.peakHours ?? []).map((entry) => `${entry.hour}h`));
@@ -248,6 +259,7 @@ export class RestaurantPosDashboardPage {
       chips.push({
         key: 'range',
         label: this.transloco.translate(`restaurantPos.dashboard.ranges.${range}`),
+        removable: true,
       });
       return chips;
     }
@@ -256,6 +268,7 @@ export class RestaurantPosDashboardPage {
       chips.push({
         key: 'from',
         label: `${this.transloco.translate('restaurantPos.dashboard.filters.from')}: ${from}`,
+        removable: true,
       });
     }
 
@@ -263,10 +276,17 @@ export class RestaurantPosDashboardPage {
       chips.push({
         key: 'to',
         label: `${this.transloco.translate('restaurantPos.dashboard.filters.to')}: ${to}`,
+        removable: true,
       });
     }
 
     return chips;
+  });
+  protected readonly compactPeriodLabel = computed(() => {
+    const { from, to } = this.dateInputs();
+    const locale = this.activeLang();
+    if (!from || !to) return null;
+    return formatCompactPeriodLabel(from, to, locale);
   });
   protected readonly bestRevenueDay = computed(() => {
     const points = this.report()?.salesByDay ?? [];
@@ -317,8 +337,13 @@ export class RestaurantPosDashboardPage {
           this.loading.set(false);
         },
         error: (httpError: unknown) => {
+          const appError = mapHttpError(httpError);
           this.report.set(null);
-          this.error.set(mapHttpError(httpError).message);
+          this.error.set(
+            appError.code === 'invalid_analytics_range'
+              ? this.transloco.translate('restaurantPos.dashboard.errors.invalidRange')
+              : appError.message,
+          );
           this.loading.set(false);
         },
       });
@@ -343,11 +368,36 @@ export class RestaurantPosDashboardPage {
     let next: DateInputs = { ...this.dateInputs(), [key]: value };
     let clamped = false;
 
+    if (next.from && next.to && daysBetweenIsoDates(next.from, next.to) < 0) {
+      next = key === 'from'
+        ? { ...next, to: value }
+        : { ...next, from: value };
+    }
+
     if (daysBetweenIsoDates(next.from, next.to) > MAX_RANGE_DAYS) {
       clamped = true;
       next = key === 'from'
         ? { ...next, to: addDaysToIsoDate(value, MAX_RANGE_DAYS) }
         : { ...next, from: addDaysToIsoDate(value, -MAX_RANGE_DAYS) };
+    }
+
+    this.dateInputs.set(next);
+    this.rangeClamped.set(clamped);
+    this.quickRange.set('custom');
+    this.updateUrl({ range: 'custom', from: next.from, to: next.to });
+  }
+
+  protected setCustomRange(range: DateRangeValue): void {
+    if (!range.start || !range.end) {
+      return;
+    }
+
+    let next: DateInputs = { from: range.start, to: range.end };
+    let clamped = false;
+
+    if (daysBetweenIsoDates(next.from, next.to) > MAX_RANGE_DAYS) {
+      clamped = true;
+      next = { ...next, to: addDaysToIsoDate(next.from, MAX_RANGE_DAYS) };
     }
 
     this.dateInputs.set(next);
@@ -374,6 +424,43 @@ export class RestaurantPosDashboardPage {
     const restaurant = this.restaurantContext.activeRestaurant();
     this.dateInputs.set(restaurant ? quickRangeDates('7d', restaurant.timezone) : { from: '', to: '' });
     this.updateUrl({ range: '7d', from: null, to: null });
+  }
+
+  protected removeFilterChip(key: ActiveFilterChip['key']): void {
+    if (key === 'range') {
+      this.resetFilters();
+      return;
+    }
+
+    const next: DateInputs = { ...this.dateInputs(), [key]: '' };
+    this.quickRange.set('custom');
+    this.dateInputs.set(next);
+    this.updateUrl({
+      range: 'custom',
+      from: next.from || null,
+      to: next.to || null,
+    });
+  }
+
+  protected async exportExcel(): Promise<void> {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const report = this.report();
+    const { from, to } = this.dateInputs();
+    if (!restaurant || !report || !from || !to || this.exportingExcel()) return;
+
+    this.exportingExcel.set(true);
+    try {
+      const blob = await exportRestaurantAnalyticsWorkbook({
+        locale: this.activeLang(),
+        restaurantName: restaurant.displayName || restaurant.name,
+        period: { from, to },
+        report,
+        translate: (key, params) => this.transloco.translate(key, params),
+      });
+      triggerRestaurantAnalyticsWorkbookDownload(`analytics-${restaurant.id}-${from}-${to}.xlsx`, blob);
+    } finally {
+      this.exportingExcel.set(false);
+    }
   }
 
   protected formatCurrency(cents: number): string {
@@ -416,8 +503,8 @@ export class RestaurantPosDashboardPage {
     const range = patch.range ?? this.quickRange();
     const filters = patch.filters ?? (this.filtersExpanded() ? 'open' : 'closed');
     const view = patch.view ?? (this.showDataTables() ? 'table' : 'chart');
-    const from = patch.from ?? (range === 'custom' ? this.dateInputs().from : null);
-    const to = patch.to ?? (range === 'custom' ? this.dateInputs().to : null);
+    const from = 'from' in patch ? patch.from : range === 'custom' ? this.dateInputs().from : null;
+    const to = 'to' in patch ? patch.to : range === 'custom' ? this.dateInputs().to : null;
 
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -452,6 +539,16 @@ function computeDelta(current: number | undefined, previous: number | undefined,
 
 function isConcreteQuickRange(value: string): value is ConcreteQuickRange {
   return (QUICK_RANGES as readonly string[]).includes(value);
+}
+
+function formatCompactPeriodLabel(from: string, to: string, locale: string): string {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+
+  return `${formatter.format(new Date(`${from}T12:00:00.000Z`))} - ${formatter.format(new Date(`${to}T12:00:00.000Z`))}`;
 }
 
 function quickRangeDates(range: ConcreteQuickRange, timeZone: string): DateInputs {

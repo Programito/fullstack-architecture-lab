@@ -32,6 +32,24 @@ describe('mapHttpError', () => {
     });
   });
 
+  it('preserves the backend code for analytics range validation errors', () => {
+    const error = new HttpErrorResponse({
+      status: 400,
+      error: {
+        code: 'invalid_analytics_range',
+        message: 'Date range is invalid.',
+        statusCode: 400,
+      },
+    });
+
+    expect(mapHttpError(error)).toMatchObject({
+      type: 'validation',
+      code: 'invalid_analytics_range',
+      message: 'Date range is invalid.',
+      status: 400,
+    });
+  });
+
   it.each([
     [401, 'unauthorized'],
     [403, 'forbidden'],

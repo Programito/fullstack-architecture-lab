@@ -892,10 +892,37 @@
         "peakHoursDescription": "There are no peak hours recorded for this period."
       },
       "errors": {
-        "title": "The analytics could not be loaded"
+        "title": "The analytics could not be loaded",
+        "invalidRange": "Review the selected date range."
       },
       "emptyTitle": "No sales data",
-      "empty": "There is no sales data for the selected period."
+      "empty": "There is no sales data for the selected period.",
+      "export": {
+        "button": "Export to Excel",
+        "sheets": {
+          "summary": "Summary",
+          "salesByDay": "Sales by day",
+          "payments": "Payments",
+          "averageTicketByDay": "Daily average ticket",
+          "topProducts": "Top products",
+          "peakHours": "Peak hours"
+        },
+        "metadata": {
+          "restaurant": "Restaurant",
+          "period": "Period",
+          "generatedAt": "Exported on"
+        },
+        "summaryMetrics": {
+          "revenue": "Revenue",
+          "orders": "Orders",
+          "averageTicket": "Average ticket",
+          "tableTurnover": "Average table turnover (min)"
+        },
+        "columns": {
+          "metric": "Metric",
+          "value": "Value"
+        }
+      }
     }
   },
   "menu": {

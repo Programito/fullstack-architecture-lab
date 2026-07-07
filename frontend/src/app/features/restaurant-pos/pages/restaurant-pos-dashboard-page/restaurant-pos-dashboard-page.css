@@ -1,16 +1,6 @@
-.restaurant-pos-dashboard-page__date-input {
-  width: 100%;
-  margin-top: 0.5rem;
-  border: 1px solid var(--ui-border);
-  border-radius: 0.5rem;
-  background: var(--ui-bg);
-  color: var(--ui-fg);
-  padding: 0.625rem 0.75rem;
-}
-
 .restaurant-pos-dashboard-page__filters-card {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .restaurant-pos-dashboard-page__filters-header {
@@ -23,12 +13,32 @@
 
 .restaurant-pos-dashboard-page__filters-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: flex-end;
 }
 
 .restaurant-pos-dashboard-page__filters-actions app-button {
-  flex: 1 1 11rem;
+  flex: 0 0 auto;
+}
+
+.restaurant-pos-dashboard-page__filters-actions app-button:last-child {
+  flex: 0 0 auto;
+}
+
+.restaurant-pos-dashboard-page__period-summary {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 24%, var(--ui-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+  color: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-fg));
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .restaurant-pos-dashboard-page__filter-summary {
@@ -43,18 +53,53 @@
 }
 
 .restaurant-pos-dashboard-page__filter-chip {
-  border: 1px solid var(--ui-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 26%, var(--ui-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ui-bg-elevated) 82%, transparent);
-  color: var(--ui-fg);
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-bg));
+  color: color-mix(in srgb, var(--ui-primary) 78%, var(--ui-fg));
   padding: 0.35rem 0.65rem;
   font-size: 0.875rem;
+  font: inherit;
   line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.restaurant-pos-dashboard-page__filter-chip:hover {
+  border-color: color-mix(in srgb, var(--ui-primary) 40%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-bg));
+}
+
+.restaurant-pos-dashboard-page__filter-chip:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.restaurant-pos-dashboard-page__filter-chip app-icon {
+  color: inherit;
+}
+
+.restaurant-pos-dashboard-page__range-segmented {
+  --segment-accent: var(--ui-primary);
+  --segment-accent-ring: var(--ui-primary-ring);
+  --segment-accent-soft: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+  --segment-accent-strong: color-mix(in srgb, var(--ui-primary) 84%, white);
+  --segment-active-fg: var(--ui-accent-fg);
 }
 
 .restaurant-pos-dashboard-page__filters-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
+}
+
+.restaurant-pos-dashboard-page__date-picker-panel {
+  min-width: 0;
 }
 
 .restaurant-pos-dashboard-page__summary-grid,
@@ -62,7 +107,7 @@
 .restaurant-pos-dashboard-page__payments-section,
 .restaurant-pos-dashboard-page__secondary {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .restaurant-pos-dashboard-page__summary-card {
@@ -72,13 +117,22 @@
   justify-content: space-between;
 }
 
-.restaurant-pos-dashboard-page__page-actions {
+.restaurant-pos-dashboard-page__summary-loading {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
   margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
+}
+
+.restaurant-pos-dashboard-page__page-actions {
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .restaurant-pos-dashboard-page__page-actions app-button {
   width: 100%;
+  flex: 1 1 auto;
 }
 
 .restaurant-pos-dashboard-page__payment-insights {
@@ -95,7 +149,72 @@
 
 .restaurant-pos-dashboard-page__payment-grid {
   display: grid;
+  gap: 1rem;
+}
+
+.restaurant-pos-dashboard-page__payments-section,
+.restaurant-pos-dashboard-page__secondary {
+  margin-top: 1rem;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-panel {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-body {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 6.5rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 56%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--ui-surface) 24%, transparent);
+  padding: 0.875rem;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-list {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.restaurant-pos-dashboard-page__payment-mix-track {
+  position: relative;
+  overflow: hidden;
+  height: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 62%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-surface-strong) 28%, var(--ui-bg));
+}
+
+.restaurant-pos-dashboard-page__payment-mix-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-primary) 92%, white),
+    color-mix(in srgb, var(--ui-primary) 72%, var(--ui-secondary))
+  );
 }
 
 @media (min-width: 40rem) {
@@ -108,10 +227,24 @@
   }
 }
 
+@media (max-width: 39.99rem) {
+  .restaurant-pos-dashboard-page__filters-actions {
+    width: 100%;
+  }
+
+  .restaurant-pos-dashboard-page__filters-actions app-button:first-child {
+    flex: 1 1 auto;
+  }
+}
+
 @media (min-width: 1024px) {
   .restaurant-pos-dashboard-page__filters-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: end;
+  }
+
+  .restaurant-pos-dashboard-page__date-picker-panel {
+    grid-column: span 2;
   }
 
   .restaurant-pos-dashboard-page__summary-grid {

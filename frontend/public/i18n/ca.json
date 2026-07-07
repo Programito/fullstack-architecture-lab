@@ -132,7 +132,6 @@
         "to": "Fins a",
         "level": "Nivell",
         "category": "Categoria",
-        "clientOrigin": "Origen",
         "path": "Ruta",
         "actorUserId": "Usuari actor",
         "actorUserIdHint": "Nomes apareixen usuaris amb activitat auditada.",
@@ -145,7 +144,8 @@
         "search": "Cercar",
         "all": "Tots",
         "apply": "Aplicar filtres",
-        "reset": "Restablir"
+        "reset": "Restablir",
+        "clientOrigin": "Origen"
       },
       "views": {
         "all": "Tot",
@@ -159,33 +159,19 @@
         "3d": "3d",
         "7d": "7d"
       },
-      "shortcuts": {
-        "apkCustomer": "APK client",
-        "webDemo": "Web demo",
-        "webPos": "Web TPV",
-        "auth": "Login i auth",
-        "payments": "Pagaments"
-      },
       "metrics": {
         "requests": "Peticions",
         "errors": "Errors",
         "errorRate": "Taxa d'error",
         "audit": "Esdeveniments auditats",
-        "latency": "Lat�ncia p95",
+        "latency": "Latència p95",
         "loginSucceeded": "Login correcte",
         "loginFailed": "Login fallit"
-      },
-      "sections": {
-        "topSlowPaths": "Top rutes lentes",
-        "topErrors": "Top errors per canal",
-        "requests": "peticions",
-        "occurrences": "ocurr�ncies"
       },
       "charts": {
         "activity": "Activitat",
         "levels": "Nivells",
         "categories": "Categories",
-        "origins": "Canals",
         "series": {
           "events": "Esdeveniments",
           "errors": "Errors",
@@ -193,23 +179,23 @@
           "levels": "Nivells",
           "categories": "Categories",
           "origins": "Canals"
-        }
+        },
+        "origins": "Canals"
       },
       "table": {
         "timestamp": "Hora",
         "level": "Nivell",
         "category": "Tipus",
-        "clientOrigin": "Origen",
         "event": "Esdeveniment",
         "message": "Detall",
         "emptyTitle": "Sense esdeveniments",
-        "emptyDescription": "Encara no hi ha esdeveniments per a aquest rang."
+        "emptyDescription": "Encara no hi ha esdeveniments per a aquest rang.",
+        "clientOrigin": "Origen"
       },
       "detail": {
         "title": "Detall de l'esdeveniment",
         "timestamp": "Data",
         "source": "Origen",
-        "clientOrigin": "Canal",
         "category": "Categoria",
         "path": "Ruta",
         "method": "Mètode",
@@ -222,10 +208,24 @@
         "entityType": "Entitat",
         "entityId": "ID entitat",
         "entityLabel": "Etiqueta entitat",
-        "changedFields": "Camps modificats"
+        "changedFields": "Camps modificats",
+        "clientOrigin": "Canal"
       },
       "events": {
         "title": "Esdeveniments recents"
+      },
+      "shortcuts": {
+        "apkCustomer": "APK client",
+        "webDemo": "Web demo",
+        "webPos": "Web TPV",
+        "auth": "Login i auth",
+        "payments": "Pagaments"
+      },
+      "sections": {
+        "topSlowPaths": "Top rutes lentes",
+        "topErrors": "Top errors per canal",
+        "requests": "peticions",
+        "occurrences": "ocurrències"
       },
       "origins": {
         "web-admin": "Web admin",
@@ -810,59 +810,59 @@
       "description": "Tria el restaurant en el qual vols treballar."
     },
     "dashboard": {
-      "title": "Anal\u00edtiques del restaurant",
-      "description": "Consulta el rendiment hist\u00f2ric del restaurant: vendes, productes i ocupaci\u00f3.",
+      "title": "Analítiques del restaurant",
+      "description": "Consulta el rendiment històric del restaurant: vendes, productes i ocupació.",
       "ranges": {
         "today": "Avui",
         "7d": "7 dies",
         "30d": "30 dies"
       },
       "filters": {
-        "title": "Filtres",
-        "active": "Filtres actius",
         "from": "Des de",
         "to": "Fins a",
         "rangeLabel": "Interval de dates",
-        "rangeClamped": "El rang m\u00e0xim \u00e9s d'1 any; s'ha ajustat la data.",
+        "rangeClamped": "El rang màxim és d'1 any; s'ha ajustat la data.",
+        "viewAsTable": "Veure com a taula",
+        "viewAsChart": "Veure com a gràfic",
+        "title": "Filtres",
+        "active": "Filtres actius",
         "show": "Mostrar filtres",
         "hide": "Amagar filtres",
-        "reset": "Netejar filtres",
-        "viewAsTable": "Veure com a taula",
-        "viewAsChart": "Veure com a gr\u00e0fic"
+        "reset": "Netejar filtres"
       },
       "tableHeaders": {
         "date": "Data",
         "product": "Producte",
-        "method": "M\u00e8tode",
+        "method": "Mètode",
         "hour": "Hora",
         "share": "Mix",
         "operations": "Operacions",
-        "averageTicket": "Tiquet mitj\u00e0"
+        "averageTicket": "Tiquet mitjà"
       },
       "metrics": {
         "revenue": "Ingressos",
         "orders": "Comandes",
-        "averageTicket": "Tiquet mitj\u00e0",
-        "dominantPayment": "Metode dominant",
-        "bestDayValue": "Millor dia: {{date}}",
-        "tableTurnover": "Rotaci\u00f3 mitjana de taula",
+        "averageTicket": "Tiquet mitjà",
+        "tableTurnover": "Rotació mitjana de taula",
         "tableTurnoverValue": "{{minutes}} min",
-        "loading": "Carregant m\u00e8trica",
-        "vsIncrease": "{{pct}}% m\u00e9s que el per\u00edode anterior",
-        "vsDecrease": "{{pct}}% menys que el per\u00edode anterior",
-        "vsFlat": "Igual que el per\u00edode anterior"
+        "loading": "Carregant mètrica",
+        "vsIncrease": "{{pct}}% més que el període anterior",
+        "vsDecrease": "{{pct}}% menys que el període anterior",
+        "vsFlat": "Igual que el període anterior",
+        "dominantPayment": "Mètode dominant",
+        "bestDayValue": "Millor dia: {{date}}"
       },
       "charts": {
         "salesByDay": "Vendes per dia",
-        "topProducts": "Productes m\u00e9s venuts",
-        "paymentBreakdown": "Ingressos per m\u00e8tode de pagament",
-        "paymentShare": "Mix de pagaments",
-        "averageTicketByDay": "Tiquet mitj\u00e0 per dia",
+        "topProducts": "Productes més venuts",
+        "paymentBreakdown": "Ingressos per mètode de pagament",
         "peakHours": "Hores punta",
         "revenue": "Ingressos",
         "quantity": "Quantitat",
         "amount": "Import",
-        "orders": "Comandes"
+        "orders": "Comandes",
+        "paymentShare": "Mix de pagaments",
+        "averageTicketByDay": "Tiquet mitjà per dia"
       },
       "paymentMethods": {
         "cash": "Efectiu",
@@ -870,32 +870,59 @@
         "bizum": "Bizum",
         "other": "Altre"
       },
+      "errors": {
+        "title": "No s'han pogut carregar les analítiques",
+        "invalidRange": "Revisa l'interval de dates seleccionat."
+      },
+      "emptyTitle": "Sense dades de vendes",
+      "empty": "No hi ha dades de vendes per al període seleccionat.",
       "payments": {
-        "dominant": "M\u00e8tode dominant: {{method}}"
+        "dominant": "Mètode dominant: {{method}}"
       },
       "sections": {
         "summary": "Resum",
-        "trends": "Tend\u00e8ncies",
+        "trends": "Tendències",
         "payments": "Pagaments",
         "secondary": "Operativa"
       },
       "panelEmpty": {
         "salesByDayTitle": "Sense vendes per dia",
-        "salesByDayDescription": "No hi ha vendes diaries per a aquest periode.",
-        "averageTicketByDayTitle": "Sense tiquet mitja diari",
-        "averageTicketByDayDescription": "No hi ha tiquets diaris per a aquest periode.",
+        "salesByDayDescription": "No hi ha vendes diàries per a aquest període.",
+        "averageTicketByDayTitle": "Sense tiquet mitjà diari",
+        "averageTicketByDayDescription": "No hi ha tiquets diaris per a aquest període.",
         "paymentBreakdownTitle": "Sense ingressos per pagaments",
-        "paymentBreakdownDescription": "No hi ha ingressos per metode en aquest periode.",
+        "paymentBreakdownDescription": "No hi ha ingressos per mètode en aquest període.",
         "topProductsTitle": "Sense productes destacats",
-        "topProductsDescription": "No hi ha productes destacats per a aquest periode.",
+        "topProductsDescription": "No hi ha productes destacats per a aquest període.",
         "peakHoursTitle": "Sense hores punta",
-        "peakHoursDescription": "No hi ha hores punta registrades per a aquest periode."
+        "peakHoursDescription": "No hi ha hores punta registrades per a aquest període."
       },
-      "errors": {
-        "title": "No s'han pogut carregar les anal\u00edtiques"
-      },
-      "emptyTitle": "Sense dades de vendes",
-      "empty": "No hi ha dades de vendes per al periode seleccionat."
+      "export": {
+        "button": "Exportar a Excel",
+        "sheets": {
+          "summary": "Resum",
+          "salesByDay": "Vendes per dia",
+          "payments": "Pagaments",
+          "averageTicketByDay": "Tiquet mitjà diari",
+          "topProducts": "Top productes",
+          "peakHours": "Hores punta"
+        },
+        "metadata": {
+          "restaurant": "Restaurant",
+          "period": "Període",
+          "generatedAt": "Data d'exportació"
+        },
+        "summaryMetrics": {
+          "revenue": "Ingressos",
+          "orders": "Comandes",
+          "averageTicket": "Tiquet mitjà",
+          "tableTurnover": "Rotació mitjana de taula (min)"
+        },
+        "columns": {
+          "metric": "Mètrica",
+          "value": "Valor"
+        }
+      }
     }
   },
   "menu": {

@@ -12,19 +12,28 @@
         <div class="min-w-0">
           <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.dashboard.filters.title' | transloco }}</p>
           <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.dashboard.filters.rangeLabel' | transloco }}</p>
+          @if (compactPeriodLabel(); as periodLabel) {
+            <span class="restaurant-pos-dashboard-page__period-summary">{{ periodLabel }}</span>
+          }
         </div>
         <div class="restaurant-pos-dashboard-page__filters-actions">
-          <app-button variant="neutral" fill="outline" size="sm" (pressed)="resetFilters()">
-            {{ 'restaurantPos.dashboard.filters.reset' | transloco }}
-          </app-button>
           <app-button
             variant="neutral"
             fill="outline"
-            size="sm"
+            shape="round"
+            [ariaLabel]="'restaurantPos.dashboard.filters.reset' | transloco"
+            (pressed)="resetFilters()"
+          >
+            <app-icon name="delete" />
+          </app-button>
+          <app-button
+            variant="neutral"
+            fill="clear"
+            shape="round"
             [ariaLabel]="(filtersExpanded() ? 'restaurantPos.dashboard.filters.hide' : 'restaurantPos.dashboard.filters.show') | transloco"
             (pressed)="toggleFilters()"
           >
-            {{ (filtersExpanded() ? 'restaurantPos.dashboard.filters.hide' : 'restaurantPos.dashboard.filters.show') | transloco }}
+            <app-icon [name]="filtersExpanded() ? 'visibility_off' : 'visibility'" />
           </app-button>
         </div>
       </div>
@@ -36,7 +45,17 @@
           </span>
           <div class="restaurant-pos-dashboard-page__filter-chips">
             @for (chip of activeFilterChips(); track chip.key + chip.label) {
-              <span class="restaurant-pos-dashboard-page__filter-chip">{{ chip.label }}</span>
+              <button
+                type="button"
+                class="restaurant-pos-dashboard-page__filter-chip"
+                [attr.aria-label]="chip.label"
+                (click)="removeFilterChip(chip.key)"
+              >
+                <span>{{ chip.label }}</span>
+                @if (chip.removable) {
+                  <app-icon name="close" size="sm" />
+                }
+              </button>
             }
           </div>
         </div>
@@ -49,30 +68,24 @@
               {{ 'restaurantPos.dashboard.filters.rangeLabel' | transloco }}
             </span>
             <app-segmented-control
+              class="restaurant-pos-dashboard-page__range-segmented"
               [options]="quickRangeOptions()"
               [value]="quickRange()"
               [ariaLabel]="'restaurantPos.dashboard.filters.rangeLabel' | transloco"
               (valueChange)="setQuickRange($event)"
             />
           </div>
-          <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
-            <span class="theme-muted block text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.filters.from' | transloco }}</span>
-            <input
-              type="date"
-              class="restaurant-pos-dashboard-page__date-input"
-              [ngModel]="dateInputs().from"
-              (ngModelChange)="setFilter('from', $event)"
+          <div class="theme-panel restaurant-pos-dashboard-page__date-picker-panel rounded-2xl border px-4 py-3 shadow-sm">
+            <app-date-picker
+              mode="range"
+              [label]="'restaurantPos.dashboard.filters.rangeLabel' | transloco"
+              [startValue]="dateInputs().from"
+              [endValue]="dateInputs().to"
+              variant="primary"
+              fill="outline"
+              (rangeChange)="setCustomRange($event)"
             />
-          </label>
-          <label class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
-            <span class="theme-muted block text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.filters.to' | transloco }}</span>
-            <input
-              type="date"
-              class="restaurant-pos-dashboard-page__date-input"
-              [ngModel]="dateInputs().to"
-              (ngModelChange)="setFilter('to', $event)"
-            />
-          </label>
+          </div>
         </div>
       }
     </div>
@@ -99,7 +112,9 @@
         <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.revenue' | transloco }}</p>
           @if (loading()) {
-            <app-skeleton shape="text" width="6rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            <div class="restaurant-pos-dashboard-page__summary-loading">
+              <app-spinner size="sm" appearance="minimal" [label]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            </div>
           } @else {
             <p class="theme-title mt-2 text-2xl font-semibold">{{ formatCurrency(report()?.summary?.revenueCents ?? 0) }}</p>
             @if (revenueDelta(); as delta) {
@@ -110,7 +125,9 @@
         <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.orders' | transloco }}</p>
           @if (loading()) {
-            <app-skeleton shape="text" width="4rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            <div class="restaurant-pos-dashboard-page__summary-loading">
+              <app-spinner size="sm" appearance="minimal" [label]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            </div>
           } @else {
             <p class="theme-title mt-2 text-2xl font-semibold">{{ report()?.summary?.ordersCount ?? 0 }}</p>
             @if (ordersDelta(); as delta) {
@@ -121,7 +138,9 @@
         <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.averageTicket' | transloco }}</p>
           @if (loading()) {
-            <app-skeleton shape="text" width="6rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            <div class="restaurant-pos-dashboard-page__summary-loading">
+              <app-spinner size="sm" appearance="minimal" [label]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            </div>
           } @else {
             <p class="theme-title mt-2 text-2xl font-semibold">{{ formatCurrency(report()?.summary?.averageTicketCents ?? 0) }}</p>
             @if (averageTicketDelta(); as delta) {
@@ -132,7 +151,9 @@
         <div class="theme-panel restaurant-pos-dashboard-page__summary-card rounded-2xl border p-4 shadow-sm">
           <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.dominantPayment' | transloco }}</p>
           @if (loading()) {
-            <app-skeleton shape="text" width="5rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            <div class="restaurant-pos-dashboard-page__summary-loading">
+              <app-spinner size="sm" appearance="minimal" [label]="'restaurantPos.dashboard.metrics.loading' | transloco" />
+            </div>
           } @else {
             <p class="theme-title mt-2 text-2xl font-semibold">
               {{ paymentMethodLabel(dominantPaymentMethod()?.method ?? 'other') }}
@@ -154,7 +175,19 @@
         />
       </div>
     } @else {
-      <div class="restaurant-pos-dashboard-page__page-actions mx-auto flex w-full max-w-7xl justify-end px-4 lg:px-6">
+      <div class="restaurant-pos-dashboard-page__page-actions mx-auto flex w-full max-w-7xl justify-end gap-2 px-4 lg:px-6">
+        @if (hasData()) {
+          <app-button
+            variant="neutral"
+            fill="outline"
+            size="sm"
+            [disabled]="exportingExcel()"
+            (pressed)="exportExcel()"
+          >
+            <app-icon name="download" size="sm" />
+            {{ 'restaurantPos.dashboard.export.button' | transloco }}
+          </app-button>
+        }
         <app-button variant="neutral" fill="outline" size="sm" (pressed)="toggleDataView()">
           {{ (showDataTables() ? 'restaurantPos.dashboard.filters.viewAsChart' : 'restaurantPos.dashboard.filters.viewAsTable') | transloco }}
         </app-button>
@@ -266,15 +299,48 @@
                     [categories]="paymentBreakdownCategories()"
                     [data]="paymentBreakdownSeries()"
                   />
-                  <app-chart
-                    type="horizontalBar"
-                    appearance="minimal"
-                    variant="secondary"
-                    [loading]="loading()"
-                    [title]="'restaurantPos.dashboard.charts.paymentShare' | transloco"
-                    [categories]="paymentBreakdownCategories()"
-                    [data]="paymentShareSeries()"
-                  />
+                  <div class="restaurant-pos-dashboard-page__payment-mix-panel" aria-labelledby="payment-mix-title">
+                    <div class="restaurant-pos-dashboard-page__payment-mix-header">
+                      <p id="payment-mix-title" class="theme-title text-sm font-semibold">
+                        {{ 'restaurantPos.dashboard.charts.paymentShare' | transloco }}
+                      </p>
+                    </div>
+                    <div class="restaurant-pos-dashboard-page__payment-mix-body">
+                      <div class="restaurant-pos-dashboard-page__payment-mix-list" role="list">
+                        @if (loading()) {
+                          @for (row of paymentMixSkeletonRows; track row) {
+                            <div class="restaurant-pos-dashboard-page__payment-mix-row" aria-hidden="true">
+                              <div class="restaurant-pos-dashboard-page__payment-mix-meta">
+                                <app-skeleton shape="text" width="40%" [decorative]="true" />
+                                <app-skeleton shape="text" width="18%" [decorative]="true" />
+                              </div>
+                              <app-skeleton shape="rounded" height="0.625rem" [decorative]="true" />
+                            </div>
+                          }
+                        } @else {
+                          @for (entry of paymentShareRows(); track entry.method) {
+                            <div class="restaurant-pos-dashboard-page__payment-mix-row" role="listitem">
+                              <div class="restaurant-pos-dashboard-page__payment-mix-meta">
+                                <span class="theme-title text-sm">{{ entry.method }}</span>
+                                <span class="theme-muted text-sm">{{ entry.shareLabel }}</span>
+                              </div>
+                              <div
+                                class="restaurant-pos-dashboard-page__payment-mix-track"
+                                role="progressbar"
+                                [attr.aria-label]="entry.method"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                [attr.aria-valuenow]="entry.share"
+                                [attr.aria-valuetext]="entry.shareLabel"
+                              >
+                                <span class="restaurant-pos-dashboard-page__payment-mix-fill" [style.width.%]="entry.share"></span>
+                              </div>
+                            </div>
+                          }
+                        }
+                      </div>
+                    </div>
+                  </div>
                 </div>
               } @else {
                 <app-empty-state

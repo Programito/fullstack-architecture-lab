@@ -15,37 +15,37 @@
     "title": "Explora MesaFlow",
     "badge": "Restaurant Suite",
     "description": "Gestiona mesas, pedidos, cocina y cobros desde una experiencia pensada para restaurantes.",
-    "methodLabel": "M�todo de acceso",
+    "methodLabel": "Método de acceso",
     "benefits": {
       "floor": "Plano de mesas, pedidos y cobros",
-      "kitchen": "Cocina y preparaci�n en tiempo real",
-      "menu": "Carta, men�s y platos combinados"
+      "kitchen": "Cocina y preparación en tiempo real",
+      "menu": "Carta, menús y platos combinados"
     },
     "demo": {
-      "tab": "Demo r�pida",
-      "title": "Demo r�pida",
+      "tab": "Demo rápida",
+      "title": "Demo rápida",
       "description": "Elige un perfil para recorrer MesaFlow sin introducir credenciales.",
       "restaurantTitle": "Perfiles de restaurante",
-      "restaurantDescription": "Accede a operaci�n, servicio y cocina con un clic.",
-      "technicalTitle": "Perfil t�cnico",
-      "technicalDescription": "Revisa documentaci�n, Storybook y arquitectura.",
+      "restaurantDescription": "Accede a operación, servicio y cocina con un clic.",
+      "technicalTitle": "Perfil técnico",
+      "technicalDescription": "Revisa documentación, Storybook y arquitectura.",
       "action": "Entrar ahora",
       "loading": "Abriendo..."
     },
     "credentials": {
-      "tab": "Usuario y contrase�a",
-      "title": "Usuario y contrase�a",
+      "tab": "Usuario y contraseña",
+      "title": "Usuario y contraseña",
       "description": "Accede con las credenciales de tu cuenta para continuar donde lo dejaste.",
       "email": "Email",
-      "password": "Contrase�a",
+      "password": "Contraseña",
       "submit": "Entrar",
-      "showPassword": "Mostrar contrase�a",
-      "hidePassword": "Ocultar contrase�a",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
       "validation": {
         "emailRequired": "Introduce tu email.",
-        "emailInvalid": "Introduce un email v�lido.",
-        "passwordRequired": "Introduce tu contrase�a.",
-        "passwordMinLength": "La contrase�a debe tener al menos 8 caracteres."
+        "emailInvalid": "Introduce un email válido.",
+        "passwordRequired": "Introduce tu contraseña.",
+        "passwordMinLength": "La contraseña debe tener al menos 8 caracteres."
       }
     },
     "roles": {
@@ -55,7 +55,7 @@
       },
       "manager": {
         "label": "Encargado",
-        "description": "Turnos, descuentos, men� y caja."
+        "description": "Turnos, descuentos, menú y caja."
       },
       "waiter": {
         "label": "Camarero",
@@ -67,12 +67,12 @@
       },
       "developer": {
         "label": "Developer",
-        "description": "Documentaci�n, Storybook y arquitectura."
+        "description": "Documentación, Storybook y arquitectura."
       }
     },
     "errors": {
-      "invalidCredentials": "No se ha podido iniciar sesi�n. Revisa el email y la contrase�a.",
-      "demoUnavailable": "No se ha podido abrir la demo ahora mismo. Int�ntalo de nuevo en unos minutos."
+      "invalidCredentials": "No se ha podido iniciar sesión. Revisa el email y la contraseña.",
+      "demoUnavailable": "No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos."
     },
     "readiness": {
       "warmingUp": {
@@ -81,24 +81,24 @@
       },
       "down": {
         "title": "Ahora mismo los servicios no responden",
-        "description": "La aplicaci�n sigue intentando recuperar la conexi�n. Si persiste, revisa el estado de la base de datos y vuelve a intentarlo."
+        "description": "La aplicación sigue intentando recuperar la conexión. Si persiste, revisa el estado de la base de datos y vuelve a intentarlo."
       }
     },
     "seed": {
-      "label": "Cargar datos de demostraci�n",
+      "label": "Cargar datos de demostración",
       "loading": "Cargando datos...",
-      "done": "Datos de demostraci�n cargados correctamente.",
-      "error": "No se han podido cargar los datos. Int�ntalo de nuevo."
+      "done": "Datos de demostración cargados correctamente.",
+      "error": "No se han podido cargar los datos. Inténtalo de nuevo."
     }
   },
   "developer": {
-    "eyebrow": "Espacio t�cnico",
+    "eyebrow": "Espacio técnico",
     "title": "Recursos para Developer",
-    "description": "Documentaci�n t�cnica disponible �nicamente para cuentas con rol Developer.",
+    "description": "Documentación técnica disponible únicamente para cuentas con rol Developer.",
     "platformStatus": {
       "eyebrow": "Plataforma",
       "action": "Ver logs",
-      "duration": "�ltima comprobaci�n: {{ durationMs }} ms",
+      "duration": "Última comprobación: {{ durationMs }} ms",
       "ready": {
         "title": "Servicios operativos",
         "description": "Base de datos lista para responder."
@@ -109,7 +109,7 @@
       },
       "down": {
         "title": "Servicios con incidencia",
-        "description": "La plataforma sigue intentando recuperar la conexi�n con la base de datos."
+        "description": "La plataforma sigue intentando recuperar la conexión con la base de datos."
       }
     },
     "loading": "Cargando recursos...",
@@ -118,11 +118,11 @@
     "architectureTitle": "Arquitectura",
     "architecture": "Revisa las decisiones y flujos principales del frontend.",
     "logs": {
-      "cardTitle": "Logs y auditor�a",
+      "cardTitle": "Logs y auditoría",
       "cardDescription": "Revisa salud operativa, errores recientes y actividad auditada.",
       "eyebrow": "Observabilidad",
       "title": "Logs operativos",
-      "description": "Supervisa peticiones, errores y actividad de auditor�a desde una vista t�cnica simple.",
+      "description": "Supervisa peticiones, errores y actividad de auditoría desde una vista técnica simple.",
       "back": "Volver a recursos",
       "filters": {
         "title": "Filtros",
@@ -131,8 +131,7 @@
         "from": "Desde",
         "to": "Hasta",
         "level": "Nivel",
-        "category": "Categor�a",
-        "clientOrigin": "Origen",
+        "category": "Categoría",
         "path": "Ruta",
         "actorUserId": "Usuario actor",
         "actorUserIdHint": "Solo aparecen usuarios con actividad auditada.",
@@ -145,12 +144,13 @@
         "search": "Buscar",
         "all": "Todos",
         "apply": "Aplicar filtros",
-        "reset": "Restablecer"
+        "reset": "Restablecer",
+        "clientOrigin": "Origen"
       },
       "views": {
         "all": "Todo",
-        "operations": "Operaci�n",
-        "audit": "Auditor�a"
+        "operations": "Operación",
+        "audit": "Auditoría"
       },
       "ranges": {
         "1h": "1h",
@@ -158,13 +158,6 @@
         "24h": "24h",
         "3d": "3d",
         "7d": "7d"
-      },
-      "shortcuts": {
-        "apkCustomer": "APK cliente",
-        "webDemo": "Web demo",
-        "webPos": "Web POS",
-        "auth": "Login y auth",
-        "payments": "Pagos"
       },
       "metrics": {
         "requests": "Peticiones",
@@ -175,46 +168,39 @@
         "loginSucceeded": "Login correcto",
         "loginFailed": "Login fallido"
       },
-      "sections": {
-        "topSlowPaths": "Top rutas lentas",
-        "topErrors": "Top errores por canal",
-        "requests": "peticiones",
-        "occurrences": "ocurrencias"
-      },
       "charts": {
         "activity": "Actividad",
         "levels": "Niveles",
-        "categories": "Categor�as",
-        "origins": "Canales",
+        "categories": "Categorías",
         "series": {
           "events": "Eventos",
           "errors": "Errores",
-          "audit": "Auditor�a",
+          "audit": "Auditoría",
           "levels": "Niveles",
-          "categories": "Categor�as",
+          "categories": "Categorías",
           "origins": "Canales"
-        }
+        },
+        "origins": "Canales"
       },
       "table": {
         "timestamp": "Hora",
         "level": "Nivel",
         "category": "Tipo",
-        "clientOrigin": "Origen",
         "event": "Evento",
         "message": "Detalle",
         "emptyTitle": "Sin eventos",
-        "emptyDescription": "Todav�a no hay eventos para este rango."
+        "emptyDescription": "Todavía no hay eventos para este rango.",
+        "clientOrigin": "Origen"
       },
       "detail": {
         "title": "Detalle del evento",
         "timestamp": "Fecha",
         "source": "Origen",
-        "clientOrigin": "Canal",
-        "category": "Categor�a",
+        "category": "Categoría",
         "path": "Ruta",
-        "method": "M�todo",
+        "method": "Método",
         "status": "Estado",
-        "duration": "Duraci�n (ms)",
+        "duration": "Duración (ms)",
         "requestId": "Request ID",
         "actorUserId": "Usuario actor",
         "actorRoles": "Roles actor",
@@ -222,10 +208,24 @@
         "entityType": "Entidad",
         "entityId": "ID entidad",
         "entityLabel": "Etiqueta entidad",
-        "changedFields": "Campos modificados"
+        "changedFields": "Campos modificados",
+        "clientOrigin": "Canal"
       },
       "events": {
         "title": "Eventos recientes"
+      },
+      "shortcuts": {
+        "apkCustomer": "APK cliente",
+        "webDemo": "Web demo",
+        "webPos": "Web POS",
+        "auth": "Login y auth",
+        "payments": "Pagos"
+      },
+      "sections": {
+        "topSlowPaths": "Top rutas lentas",
+        "topErrors": "Top errores por canal",
+        "requests": "peticiones",
+        "occurrences": "ocurrencias"
       },
       "origins": {
         "web-admin": "Web admin",
@@ -236,13 +236,13 @@
       }
     },
     "open": "Abrir recurso",
-    "logout": "Cerrar sesi�n"
+    "logout": "Cerrar sesión"
   },
   "userAdmin": {
     "navigation": "Usuarios",
-    "eyebrow": "Administraci�n",
+    "eyebrow": "Administración",
     "title": "Cuentas de usuario",
-    "description": "Consulta el tipo de cuenta y controla qu� usuarios pueden iniciar sesi�n.",
+    "description": "Consulta el tipo de cuenta y controla qué usuarios pueden iniciar sesión.",
     "user": "Usuario",
     "status": "Estado",
     "accountType": "Tipo de cuenta",
@@ -261,15 +261,15 @@
     },
     "demoRestriction": {
       "title": "Cambio de tipo de cuenta deshabilitado",
-      "description": "Las cuentas de demostraci�n no pueden cambiar el tipo de cuenta de otros usuarios."
+      "description": "Las cuentas de demostración no pueden cambiar el tipo de cuenta de otros usuarios."
     },
     "scope": "Acceso",
-    "scopeOrganization": "Organizaci�n",
-    "scopeOrganizationFor": "Organizaci�n de {{name}}",
-    "scopeSelectOrganization": "Selecciona una organizaci�n",
+    "scopeOrganization": "Organización",
+    "scopeOrganizationFor": "Organización de {{name}}",
+    "scopeSelectOrganization": "Selecciona una organización",
     "scopeRestaurant": "Restaurante",
     "scopeRestaurantFor": "Restaurante de {{name}}",
-    "scopeSelectRestaurant": "Todos los restaurantes de la organizaci�n",
+    "scopeSelectRestaurant": "Todos los restaurantes de la organización",
     "scopeSave": "Guardar acceso",
     "scopeSaveFor": "Guardar acceso de {{name}}",
     "scopeSaved": "El acceso se ha actualizado correctamente."
@@ -281,8 +281,8 @@
     "closeAriaLabel": "Cerrar selector de idioma",
     "listboxAriaLabel": "Idioma",
     "languages": {
-      "es": "Espa�ol",
-      "ca": "Catal�",
+      "es": "Español",
+      "ca": "Català",
       "en": "English"
     }
   },
@@ -311,13 +311,13 @@
     "common": {
       "layout": "Plano",
       "service": "Servicio",
-      "menu": "Men�",
+      "menu": "Menú",
       "kitchen": "Cocina",
       "reservations": "Reservas",
-      "dashboard": "Anal�ticas",
+      "dashboard": "Analíticas",
       "pos": "TPV restaurante",
-      "navigation": "Navegaci�n principal",
-      "logout": "Cerrar sesi�n",
+      "navigation": "Navegación principal",
+      "logout": "Cerrar sesión",
       "cancel": "Cancelar",
       "saveChanges": "Guardar cambios",
       "columnsRows": "{{columns}} columnas x {{rows}} filas",
@@ -326,22 +326,22 @@
     },
     "access": {
       "eyebrow": "Acceso al TPV",
-      "title": "Sin m�dulos disponibles",
+      "title": "Sin módulos disponibles",
       "description": "Tu usuario no tiene permisos para acceder a las secciones operativas del TPV."
     },
     "errors": {
       "selectTableFirst": "Selecciona una mesa primero.",
-      "productUnavailable": "El producto no est� disponible.",
-      "cannotPlaceElement": "No se puede colocar el elemento aqu�.",
-      "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedar�an fuera de la matriz.",
-      "addLineFailed": "No se pudo a�adir el producto. Revisa el estado de la mesa."
+      "productUnavailable": "El producto no está disponible.",
+      "cannotPlaceElement": "No se puede colocar el elemento aquí.",
+      "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz.",
+      "addLineFailed": "No se pudo añadir el producto. Revisa el estado de la mesa."
     },
     "layout": {
       "title": "Plano del restaurante",
-      "description": "Dise�a el comedor, la barra, la cocina y las zonas de servicio.",
-      "editingActions": "Acciones de edici�n del plano",
+      "description": "Diseña el comedor, la barra, la cocina y las zonas de servicio.",
+      "editingActions": "Acciones de edición del plano",
       "resizeLayout": "Redimensionar plano",
-      "addElement": "A�adir elemento",
+      "addElement": "Añadir elemento",
       "saveChanges": "Guardar cambios",
       "backToService": "Volver al modo servicio",
       "floorPlan": "Plano de sala",
@@ -349,62 +349,62 @@
       "layoutMode": "Modo plano",
       "elementCount": "{{count}} elementos",
       "selectedElement": "Seleccionado: {{label}}",
-      "noElementSelected": "Ning�n elemento seleccionado",
+      "noElementSelected": "Ningún elemento seleccionado",
       "resizeDialog": {
         "title": "Redimensionar plano",
-        "description": "Elige el tama�o de la matriz antes de aplicarlo.",
+        "description": "Elige el tamaño de la matriz antes de aplicarlo.",
         "close": "Cerrar redimensionar plano",
-        "controls": "Controles de tama�o del plano",
+        "controls": "Controles de tamaño del plano",
         "rows": "Filas",
         "columns": "Columnas",
-        "preview": "Vista previa de redimensi�n",
-        "matrix": "Matriz de redimensi�n",
+        "preview": "Vista previa de redimensión",
+        "matrix": "Matriz de redimensión",
         "selectSize": "Seleccionar {{columns}} columnas x {{rows}} filas",
-        "apply": "Aplicar tama�o del plano"
+        "apply": "Aplicar tamaño del plano"
       },
       "resizeElementDialog": {
         "title": "Redimensionar elemento",
-        "description": "Cambia cu�ntas celdas de la matriz ocupa este elemento.",
+        "description": "Cambia cuántas celdas de la matriz ocupa este elemento.",
         "width": "Ancho del elemento",
         "height": "Alto del elemento",
-        "apply": "Aplicar tama�o"
+        "apply": "Aplicar tamaño"
       },
       "elementDialog": {
-        "addTitle": "A�adir elemento",
+        "addTitle": "Añadir elemento",
         "editTitle": "Editar elemento",
-        "description": "Elige un preset y col�calo dentro de la matriz actual.",
+        "description": "Elige un preset y colócalo dentro de la matriz actual.",
         "close": "Cerrar formulario de elemento",
-        "configuration": "Configuraci�n del elemento",
+        "configuration": "Configuración del elemento",
         "type": "Tipo de elemento",
-        "presetSize": "Tama�o predefinido",
+        "presetSize": "Tamaño predefinido",
         "label": "Etiqueta del elemento",
         "width": "Ancho",
         "height": "Alto",
         "tableCapacity": "Capacidad de mesa",
         "preview": "Vista previa del elemento seleccionado",
         "previewTitle": "Vista previa",
-        "positionTitle": "Selecciona una posici�n",
+        "positionTitle": "Selecciona una posición",
         "positionDescription": "Selecciona la esquina superior izquierda del elemento.",
-        "positionSelector": "Selector de posici�n",
+        "positionSelector": "Selector de posición",
         "placeAt": "Colocar en columna {{column}} fila {{row}}",
-        "invalidPosition": "La posici�n seleccionada no est� disponible. Elige otra celda libre dentro de la matriz.",
-        "selectedPosition": "Posici�n: columna {{column}}, fila {{row}}",
-        "unselectedPosition": "Posici�n: sin seleccionar",
-        "unselectedPositionBadge": "Posici�n sin seleccionar",
+        "invalidPosition": "La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.",
+        "selectedPosition": "Posición: columna {{column}}, fila {{row}}",
+        "unselectedPosition": "Posición: sin seleccionar",
+        "unselectedPositionBadge": "Posición sin seleccionar",
         "singleCellBadge": "Columna {{column}}, fila {{row}}",
         "rangeBadge": "Columnas {{startColumn}}-{{endColumn}}, filas {{startRow}}-{{endRow}}",
-        "size": "Tama�o: {{width}} x {{height}}",
-        "addNamed": "A�adir {{label}}",
-        "addElement": "A�adir elemento",
+        "size": "Tamaño: {{width}} x {{height}}",
+        "addNamed": "Añadir {{label}}",
+        "addElement": "Añadir elemento",
         "editAction": "Editar",
         "saveChanges": "Guardar cambios"
       }
     },
     "service": {
-      "eyebrow": "Operaci�n de servicio",
+      "eyebrow": "Operación de servicio",
       "title": "Servicio de sala",
       "sections": "Secciones del TPV restaurante",
-      "description": "Esta ruta gestionar� el estado de las mesas, los pedidos, el flujo de cocina y los pagos en pr�ximas iteraciones.",
+      "description": "Esta ruta gestionará el estado de las mesas, los pedidos, el flujo de cocina y los pagos en próximas iteraciones.",
       "shiftSummary": "Resumen del turno",
       "occupiedTables": "Ocupadas",
       "kitchenQueue": "Cocina",
@@ -425,75 +425,75 @@
       "noOrderPhase": "Sin pedido",
       "coursePending": "{{course}} pendiente",
       "readyToChargePhase": "Listo para cobrar",
-      "serviceSummary": "{{status}} � {{duration}} � {{phase}} � {{total}}",
-      "nextAction": "Siguiente acci�n",
+      "serviceSummary": "{{status}} · {{duration}} · {{phase}} · {{total}}",
+      "nextAction": "Siguiente acción",
       "nextActionSendKitchen": "Siguiente: enviar {{count}} a cocina",
       "nextActionMarkServed": "Siguiente: marcar servido",
       "nextActionCharge": "Siguiente: cobrar",
       "nextActionCleaning": "Siguiente: pasar a limpieza",
       "nextActionFreeTable": "Siguiente: liberar mesa",
-      "nextActionNone": "Sin acci�n pendiente",
+      "nextActionNone": "Sin acción pendiente",
       "pendingKitchenCount": "Pendiente cocina: {{count}}",
-      "courseSummary": "{{count}} uds � {{total}}",
+      "courseSummary": "{{count}} uds · {{total}}",
       "startService": "Iniciar servicio",
       "searchServicePoint": "Buscar mesa/taburete",
-      "searchServicePointDescription": "Busca una mesa o taburete y selecci�nalo en el plano de servicio.",
+      "searchServicePointDescription": "Busca una mesa o taburete y selecciónalo en el plano de servicio.",
       "searchServicePointPlaceholder": "Buscar mesa, taburete, estado o capacidad",
       "servicePointStatusFilter": "Estado",
       "allServicePointStatuses": "Todos los estados",
       "returnToLastServicePoint": "Volver a {{label}}",
       "closeServicePointSearch": "Cerrar buscador de mesas y taburetes",
-      "clearServicePointSearch": "Limpiar b�squeda de mesas y taburetes",
-      "addProductsTitle": "A�adir productos",
-      "addProductsDescription": "Busca, filtra y a�ade productos al pedido.",
+      "clearServicePointSearch": "Limpiar búsqueda de mesas y taburetes",
+      "addProductsTitle": "Añadir productos",
+      "addProductsDescription": "Busca, filtra y añade productos al pedido.",
       "searchProduct": "Buscar producto",
-      "searchProductDescription": "Busca por nombre, categor�a o al�rgenos y a�ade productos al pedido.",
-      "searchProductPlaceholder": "Buscar plato, bebida o al�rgeno",
+      "searchProductDescription": "Busca por nombre, categoría o alérgenos y añade productos al pedido.",
+      "searchProductPlaceholder": "Buscar plato, bebida o alérgeno",
       "productView": "Vista de productos",
       "allProducts": "Todos",
       "favoriteProducts": "Favoritos",
-      "bestSellerProducts": "M�s vendidos",
+      "bestSellerProducts": "Más vendidos",
       "drinkProducts": "Bebidas",
       "foodProducts": "Comida",
-      "comboProducts": "Men�s",
+      "comboProducts": "Menús",
       "platterProducts": "Platos combinados",
       "dessertProducts": "Postres",
       "productSearchResults": "Resultados",
       "productSearchResultsFor": "Resultados para \"{{query}}\"",
-      "productCategoryFilter": "Categor�a",
+      "productCategoryFilter": "Categoría",
       "allProductCategories": "Todas",
-      "productAdded": "A�adido",
+      "productAdded": "Añadido",
       "finishProductSearch": "Cerrar",
-      "productPickerSummary": "{{count}} productos a�adidos � {{total}}",
-      "addProductAction": "A�adir",
+      "productPickerSummary": "{{count}} productos añadidos · {{total}}",
+      "addProductAction": "Añadir",
       "configureProductAction": "Configurar",
-      "configureComboAction": "Configurar men�",
+      "configureComboAction": "Configurar menú",
       "configurePlatterAction": "Configurar plato",
-      "comboComingSoonAction": "Pr�ximamente",
+      "comboComingSoonAction": "Próximamente",
       "configureProductActionLabel": "Configurar {{name}}",
-      "configureComboActionLabel": "Configurar men� {{name}}",
+      "configureComboActionLabel": "Configurar menú {{name}}",
       "configurePlatterActionLabel": "Configurar plato {{name}}",
-      "comboComingSoonActionLabel": "Configuraci�n de men� pr�ximamente para {{name}}",
-      "addComboToOrder": "A�adir men�",
+      "comboComingSoonActionLabel": "Configuración de menú próximamente para {{name}}",
+      "addComboToOrder": "Añadir menú",
       "comboBasePrice": "Precio base",
-      "comboTotal": "Total men�",
+      "comboTotal": "Total menú",
       "productQuantityLabel": "Cantidad de {{name}}: {{count}}",
-      "addFavoriteProduct": "A�adir {{name}} a favoritos",
+      "addFavoriteProduct": "Añadir {{name}} a favoritos",
       "removeFavoriteProduct": "Quitar {{name}} de favoritos",
       "closeProductSearch": "Cerrar buscador de productos",
-      "clearProductSearch": "Limpiar b�squeda de productos",
-      "quickProducts": "A�adir r�pido",
+      "clearProductSearch": "Limpiar búsqueda de productos",
+      "quickProducts": "Añadir rápido",
       "order": "Pedido",
-      "emptyOrder": "Todav�a no hay productos a�adidos.",
-      "noProductResults": "No hay productos que coincidan con la b�squeda.",
-      "noServicePointResults": "No hay mesas ni taburetes que coincidan con la b�squeda.",
-      "noAllergens": "Sin al�rgenos indicados",
+      "emptyOrder": "Todavía no hay productos añadidos.",
+      "noProductResults": "No hay productos que coincidan con la búsqueda.",
+      "noServicePointResults": "No hay mesas ni taburetes que coincidan con la búsqueda.",
+      "noAllergens": "Sin alérgenos indicados",
       "customizable": "Personalizable",
       "platter": "Plato combinado",
-      "combo": "Men�",
+      "combo": "Menú",
       "soldOut": "Agotado",
       "favoriteBadge": "Favorito",
-      "bestSellerBadge": "M�s vendido",
+      "bestSellerBadge": "Más vendido",
       "sendKitchen": "Cocina",
       "markServed": "Servido",
       "charge": "Cobrar",
@@ -504,17 +504,17 @@
       "closingActions": "Acciones de cierre de mesa",
       "sendKitchenActionLabel": "Enviar el pedido de la mesa seleccionada a cocina",
       "markServedActionLabel": "Marcar el pedido de la mesa seleccionada como servido",
-      "increaseProductQuantityActionLabel": "A�adir una unidad de {{name}}",
+      "increaseProductQuantityActionLabel": "Añadir una unidad de {{name}}",
       "decreaseProductQuantityActionLabel": "Quitar una unidad de {{name}}",
-      "newProductOptionAction": "Nueva opci�n",
-      "newProductOptionActionLabel": "Crear otra opci�n de {{name}}",
+      "newProductOptionAction": "Nueva opción",
+      "newProductOptionActionLabel": "Crear otra opción de {{name}}",
       "viewProductOptionsAction": "Ver opciones",
       "hideProductOptionsAction": "Ocultar",
-      "productOptionsSummary": "{{count}} en pedido � {{options}} opciones",
-      "defaultProductOption": "Opci�n est�ndar",
+      "productOptionsSummary": "{{count}} en pedido · {{options}} opciones",
+      "defaultProductOption": "Opción estándar",
       "noteSummary": "Nota: {{note}}",
       "productLineQuantityLabel": "Cantidad de {{name}} ({{summary}}): {{count}}",
-      "increaseProductLineQuantityActionLabel": "A�adir una unidad de {{name}} con {{summary}}",
+      "increaseProductLineQuantityActionLabel": "Añadir una unidad de {{name}} con {{summary}}",
       "decreaseProductLineQuantityActionLabel": "Quitar una unidad de {{name}} con {{summary}}",
       "lineNote": "Nota",
       "lineNoteActionLabel": "Nota para {{name}}",
@@ -533,14 +533,14 @@
       "cleaningActionLabel": "Marcar la mesa seleccionada para limpieza",
       "freeTableActionLabel": "Liberar la mesa seleccionada",
       "freeTableConfirmTitle": "Liberar mesa",
-      "freeTableConfirmDescription": "Esta acci�n vaciar� el pedido y dejar� la mesa libre.",
+      "freeTableConfirmDescription": "Esta acción vaciará el pedido y dejará la mesa libre.",
       "confirmFreeTable": "Liberar mesa",
       "cancelFreeTable": "Mantener mesa"
     },
     "reservations": {
       "eyebrow": "Libro de sala",
       "title": "Agenda de reservas",
-      "description": "Consulta las reservas del d�a y organ�zalas por servicio antes de abrir sala.",
+      "description": "Consulta las reservas del día y organízalas por servicio antes de abrir sala.",
       "selectedDate": "Fecha activa",
       "dateLabel": "Selecciona una fecha",
       "summaryReservations": "Reservas",
@@ -548,7 +548,7 @@
       "summaryUnassigned": "Sin mesa",
       "summaryOverdue": "Pendientes",
       "searchLabel": "Buscar reserva",
-      "searchPlaceholder": "Buscar por nombre de cliente o tel�fono",
+      "searchPlaceholder": "Buscar por nombre de cliente o teléfono",
       "statusFilter": "Estado",
       "statusAll": "Todos",
       "serviceFilter": "Servicio",
@@ -556,29 +556,29 @@
       "serviceLunch": "Comidas",
       "serviceDinner": "Cenas",
       "lunch": "Comidas",
-      "lunchDescription": "Reservas previstas para el servicio de mediod�a.",
+      "lunchDescription": "Reservas previstas para el servicio de mediodía.",
       "dinner": "Cenas",
       "dinnerDescription": "Reservas previstas para el servicio de noche.",
       "partySize": "{{count}} comensales",
       "empty": "No hay reservas para este servicio.",
       "unassignedTable": "Sin mesa asignada",
       "unassignedBadge": "Sin mesa",
-      "upcoming": "Pr�xima",
+      "upcoming": "Próxima",
       "overdue": "Pendiente",
       "loading": "Cargando reservas",
-      "loadError": "No se han podido cargar las reservas. Comprueba la conexi�n e int�ntalo de nuevo.",
+      "loadError": "No se han podido cargar las reservas. Comprueba la conexión e inténtalo de nuevo.",
       "retry": "Reintentar",
-      "confirmCancelTitle": "�Cancelar reserva?",
-      "confirmCancelDescription": "La reserva quedar� cancelada y no se puede deshacer.",
-      "confirmNoShowTitle": "�No presentado?",
-      "confirmNoShowDescription": "Se registrar� que el cliente no se present�.",
-      "confirmDestructiveLabel": "S�, continuar",
-      "previousDay": "D�a anterior",
-      "nextDay": "D�a siguiente",
+      "confirmCancelTitle": "¿Cancelar reserva?",
+      "confirmCancelDescription": "La reserva quedará cancelada y no se puede deshacer.",
+      "confirmNoShowTitle": "¿No presentado?",
+      "confirmNoShowDescription": "Se registrará que el cliente no se presentó.",
+      "confirmDestructiveLabel": "Sí, continuar",
+      "previousDay": "Día anterior",
+      "nextDay": "Día siguiente",
       "today": "Hoy",
       "countdownNow": "Ahora",
       "countdownMinutes": "En {{count}} min",
-      "emptyDayTitle": "Sin reservas para este d�a",
+      "emptyDayTitle": "Sin reservas para este día",
       "emptyDayDescription": "No hay reservas registradas para la fecha seleccionada.",
       "actionError": "No se ha podido actualizar la reserva.",
       "actionSuccess": {
@@ -618,7 +618,7 @@
         "timeSlots": "Hora de llegada",
         "editServiceWindows": "Editar franjas",
         "customer": "Cliente",
-        "customerSearchPlaceholder": "Buscar por nombre o tel�fono...",
+        "customerSearchPlaceholder": "Buscar por nombre o teléfono...",
         "customerChange": "Cambiar",
         "customerNoShows": "{{ count }} no-show",
         "submit": "Guardar reserva",
@@ -640,7 +640,7 @@
       "serviceWindowsDialog": {
         "title": "Franjas de servicio",
         "save": "Guardar franjas",
-        "addWindow": "A�adir franja",
+        "addWindow": "Añadir franja",
         "removeWindow": "Eliminar franja",
         "windowName": "Nombre",
         "windowStart": "Inicio",
@@ -659,16 +659,16 @@
       }
     },
     "kitchen": {
-      "eyebrow": "Producci�n",
+      "eyebrow": "Producción",
       "title": "Cocina",
-      "queueTitle": "Comandas en preparaci�n",
-      "queueDescription": "Revisa los platos enviados desde sala y marca cada l�nea cuando est� preparada.",
+      "queueTitle": "Comandas en preparación",
+      "queueDescription": "Revisa los platos enviados desde sala y marca cada línea cuando esté preparada.",
       "pending": "Pendientes",
-      "preparing": "Prepar�ndose",
+      "preparing": "Preparándose",
       "ready": "Preparados",
       "orders": "Comandas de cocina",
       "emptyTitle": "Sin comandas en cocina",
-      "emptyDescription": "Cuando sala env�e un pedido a cocina, aparecer� aqu� para prepararlo.",
+      "emptyDescription": "Cuando sala envíe un pedido a cocina, aparecerá aquí para prepararlo.",
       "openTable": "Ver mesa",
       "startPreparing": "Empezar",
       "startPreparingActionLabel": "Empezar {{name}}",
@@ -679,7 +679,7 @@
       "archive": "Archivar",
       "archiveActionLabel": "Archivar {{name}} de cocina",
       "moveBackActionLabel": "Volver {{name}} a la fase anterior",
-      "ticketElapsed": "Tiempo m�ximo: {{time}}",
+      "ticketElapsed": "Tiempo máximo: {{time}}",
       "lineElapsed": "Espera: {{time}}",
       "elapsedPending": "sin enviar",
       "elapsedLessThanMinute": "menos de 1 min",
@@ -693,9 +693,9 @@
           "empty": "No hay platos en cola."
         },
         "preparing": {
-          "title": "Prepar�ndose",
-          "description": "Platos que cocina est� preparando.",
-          "empty": "No hay platos prepar�ndose."
+          "title": "Preparándose",
+          "description": "Platos que cocina está preparando.",
+          "empty": "No hay platos preparándose."
         },
         "ready": {
           "title": "Preparado para coger",
@@ -705,23 +705,23 @@
       }
     },
     "preparationBoard": {
-      "title": "Preparaci�n",
-      "description": "Mueve las l�neas entre pendiente, prepar�ndose y preparado.",
+      "title": "Preparación",
+      "description": "Mueve las líneas entre pendiente, preparándose y preparado.",
       "pending": "Pendiente",
-      "preparing": "Prepar�ndose",
+      "preparing": "Preparándose",
       "ready": "Preparado",
-      "emptyColumn": "No hay l�neas en esta fase.",
+      "emptyColumn": "No hay líneas en esta fase.",
       "tableLabel": "Mesa {{number}}",
-      "markPreparing": "Prepar�ndose",
+      "markPreparing": "Preparándose",
       "markReady": "Preparado",
       "directStation": "Barra",
-      "genericMoveError": "No se ha podido mover la l�nea.",
+      "genericMoveError": "No se ha podido mover la línea.",
       "servedCount": "{{count}} servido(s)",
-      "servedModalTitle": "L�neas servidas",
-      "servedModalDescription": "Revisa las l�neas ya servidas. Puedes cancelar una si se ha servido por error.",
-      "cancelLine": "Cancelar l�nea",
-      "cancelLineConfirm": "�Cancelar esta l�nea? Esta acci�n no se puede deshacer.",
-      "cancelLineConfirmAction": "S�, cancelar",
+      "servedModalTitle": "Líneas servidas",
+      "servedModalDescription": "Revisa las líneas ya servidas. Puedes cancelar una si se ha servido por error.",
+      "cancelLine": "Cancelar línea",
+      "cancelLineConfirm": "¿Cancelar esta línea? Esta acción no se puede deshacer.",
+      "cancelLineConfirmAction": "Sí, cancelar",
       "cancelLineAbort": "Volver",
       "elapsedMinutes": "{{count}} min"
     },
@@ -738,7 +738,7 @@
     "lineStatus": {
       "pending": "Pendiente",
       "sent_to_kitchen": "En cocina",
-      "preparing": "Prepar�ndose",
+      "preparing": "Preparándose",
       "ready": "Preparado",
       "picked_up": "Recogido",
       "served": "Servido",
@@ -759,9 +759,9 @@
     },
     "paymentGateway": {
       "title": "Pasarela bancaria",
-      "description": "Simulaci�n de cobro con tarjeta para el terminal.",
+      "description": "Simulación de cobro con tarjeta para el terminal.",
       "connecting": "Conectando con terminal...",
-      "rejected": "Pago rechazado. Revisa el terminal o prueba otro m�todo.",
+      "rejected": "Pago rechazado. Revisa el terminal o prueba otro método.",
       "accept": "Aceptar pago",
       "error": "Error",
       "cancel": "Cancelar"
@@ -769,7 +769,7 @@
     "floorPlan": {
       "legend": "Leyenda del plano",
       "canvas": "Lienzo del plano",
-      "scrollHint": "Indicaci�n de plano desplazable",
+      "scrollHint": "Indicación de plano desplazable",
       "matrix": "Matriz del plano",
       "cell": "Celda {{x}}, {{y}}",
       "floorElement": "{{label}} elemento del plano",
@@ -781,18 +781,18 @@
       "resize": "Redimensionar {{label}}",
       "edit": "Editar {{label}}",
       "delete": "Eliminar {{label}}",
-      "deleteConfirm": "�Eliminar este elemento del plano?",
+      "deleteConfirm": "¿Eliminar este elemento del plano?",
       "table": "Mesa",
       "bar": "Barra",
       "kitchen": "Cocina",
       "entrance": "Entrada",
-      "bathroom": "Ba�o",
+      "bathroom": "Baño",
       "stool": "Taburete",
       "selectedServicePoint": "Seleccionada",
       "blocked": "Zona bloqueada"
     },
     "presets": {
-      "smallTable": "Mesa peque�a 2 pax",
+      "smallTable": "Mesa pequeña 2 pax",
       "squareTable": "Mesa cuadrada 4 pax",
       "rectangularTable": "Mesa rectangular 6 pax",
       "largeTable": "Mesa grande 8 pax",
@@ -800,7 +800,7 @@
       "barHorizontal": "Barra horizontal",
       "barVertical": "Barra vertical",
       "kitchen": "Cocina",
-      "bathroom": "Ba�o",
+      "bathroom": "Baño",
       "entrance": "Entrada",
       "blockedArea": "Zona bloqueada",
       "stool": "Taburete"
@@ -810,30 +810,30 @@
       "description": "Elige el restaurante en el que quieres trabajar."
     },
     "dashboard": {
-      "title": "Anal\u00edticas del restaurante",
-      "description": "Consulta el rendimiento hist\u00f3rico del restaurante: ventas, productos y ocupaci\u00f3n.",
+      "title": "Analíticas del restaurante",
+      "description": "Consulta el rendimiento histórico del restaurante: ventas, productos y ocupación.",
       "ranges": {
         "today": "Hoy",
-        "7d": "7 d\u00edas",
-        "30d": "30 d\u00edas"
+        "7d": "7 días",
+        "30d": "30 días"
       },
       "filters": {
-        "title": "Filtros",
-        "active": "Filtros activos",
         "from": "Desde",
         "to": "Hasta",
         "rangeLabel": "Rango de fechas",
-        "rangeClamped": "El rango m\u00e1ximo es de 1 a\u00f1o; se ha ajustado la fecha.",
+        "rangeClamped": "El rango máximo es de 1 año; se ha ajustado la fecha.",
+        "viewAsTable": "Ver como tabla",
+        "viewAsChart": "Ver como gráfico",
+        "title": "Filtros",
+        "active": "Filtros activos",
         "show": "Mostrar filtros",
         "hide": "Ocultar filtros",
-        "reset": "Limpiar filtros",
-        "viewAsTable": "Ver como tabla",
-        "viewAsChart": "Ver como gr\u00e1fico"
+        "reset": "Limpiar filtros"
       },
       "tableHeaders": {
         "date": "Fecha",
         "product": "Producto",
-        "method": "M\u00e9todo",
+        "method": "Método",
         "hour": "Hora",
         "share": "Mix",
         "operations": "Operaciones",
@@ -843,26 +843,26 @@
         "revenue": "Ingresos",
         "orders": "Pedidos",
         "averageTicket": "Ticket medio",
-        "dominantPayment": "Metodo dominante",
-        "bestDayValue": "Mejor dia: {{date}}",
-        "tableTurnover": "Rotaci\u00f3n media de mesa",
+        "tableTurnover": "Rotación media de mesa",
         "tableTurnoverValue": "{{minutes}} min",
-        "loading": "Cargando m\u00e9trica",
-        "vsIncrease": "{{pct}}% m\u00e1s que el periodo anterior",
+        "loading": "Cargando métrica",
+        "vsIncrease": "{{pct}}% más que el periodo anterior",
         "vsDecrease": "{{pct}}% menos que el periodo anterior",
-        "vsFlat": "Igual que el periodo anterior"
+        "vsFlat": "Igual que el periodo anterior",
+        "dominantPayment": "Método dominante",
+        "bestDayValue": "Mejor día: {{date}}"
       },
       "charts": {
-        "salesByDay": "Ventas por d\u00eda",
-        "topProducts": "Productos m\u00e1s vendidos",
-        "paymentBreakdown": "Ingresos por m\u00e9todo de pago",
-        "paymentShare": "Mix de pagos",
-        "averageTicketByDay": "Ticket medio por d\u00eda",
+        "salesByDay": "Ventas por día",
+        "topProducts": "Productos más vendidos",
+        "paymentBreakdown": "Ingresos por método de pago",
         "peakHours": "Horas punta",
         "revenue": "Ingresos",
         "quantity": "Cantidad",
         "amount": "Importe",
-        "orders": "Pedidos"
+        "orders": "Pedidos",
+        "paymentShare": "Mix de pagos",
+        "averageTicketByDay": "Ticket medio por día"
       },
       "paymentMethods": {
         "cash": "Efectivo",
@@ -870,8 +870,14 @@
         "bizum": "Bizum",
         "other": "Otro"
       },
+      "errors": {
+        "title": "No se han podido cargar las analíticas",
+        "invalidRange": "Revisa el rango de fechas seleccionado."
+      },
+      "emptyTitle": "Sin datos de ventas",
+      "empty": "No hay datos de ventas para el periodo seleccionado.",
       "payments": {
-        "dominant": "M\u00e9todo dominante: {{method}}"
+        "dominant": "Método dominante: {{method}}"
       },
       "sections": {
         "summary": "Resumen",
@@ -891,11 +897,32 @@
         "peakHoursTitle": "Sin horas punta",
         "peakHoursDescription": "No hay horas punta registradas para este periodo."
       },
-      "errors": {
-        "title": "No se han podido cargar las anal\u00edticas"
-      },
-      "emptyTitle": "Sin datos de ventas",
-      "empty": "No hay datos de ventas para el periodo seleccionado."
+      "export": {
+        "button": "Exportar a Excel",
+        "sheets": {
+          "summary": "Resumen",
+          "salesByDay": "Ventas por día",
+          "payments": "Pagos",
+          "averageTicketByDay": "Ticket medio diario",
+          "topProducts": "Top productos",
+          "peakHours": "Horas punta"
+        },
+        "metadata": {
+          "restaurant": "Restaurante",
+          "period": "Periodo",
+          "generatedAt": "Fecha de exportación"
+        },
+        "summaryMetrics": {
+          "revenue": "Ingresos",
+          "orders": "Pedidos",
+          "averageTicket": "Ticket medio",
+          "tableTurnover": "Rotación media de mesa (min)"
+        },
+        "columns": {
+          "metric": "Métrica",
+          "value": "Valor"
+        }
+      }
     }
   },
   "menu": {
@@ -907,90 +934,90 @@
       "other": "Otro"
     },
     "page": {
-      "eyebrow": "Cat�logo operativo",
-      "title": "Men�",
-      "description": "Revisa productos, disponibilidad, categor�as y modificadores antes del servicio.",
+      "eyebrow": "Catálogo operativo",
+      "title": "Menú",
+      "description": "Revisa productos, disponibilidad, categorías y modificadores antes del servicio.",
       "available": "Disponibles",
       "customizable": "Personalizables",
-      "categories": "Categor�as",
+      "categories": "Categorías",
       "soldOut": "Agotado",
       "customizableBadge": "Personalizable",
-      "comboBadge": "Men�",
+      "comboBadge": "Menú",
       "platterBadge": "Plato combinado",
-      "tabsLabel": "Secciones del men�",
+      "tabsLabel": "Secciones del menú",
       "tabs": {
         "products": "Productos",
-        "categories": "Categor�as",
+        "categories": "Categorías",
         "modifiers": "Modificadores",
-        "combos": "Men�s",
+        "combos": "Menús",
         "platters": "Platos combinados",
         "availability": "Disponibilidad"
       },
       "productTypes": {
         "simple": "Simple",
         "customizable": "Personalizable",
-        "combo": "Men�",
+        "combo": "Menú",
         "platter": "Plato combinado"
       },
       "preparationRoutes": {
         "direct": "Directo",
         "bar": "Barra",
         "kitchen": "Cocina",
-        "cold": "Fr�o",
+        "cold": "Frío",
         "dessert": "Postres"
       },
-      "searchLabel": "Buscar en el cat�logo",
-      "searchPlaceholder": "Buscar producto, categor�a, al�rgeno o modificador",
-      "clearSearch": "Limpiar b�squeda de cat�logo",
-      "categorySearch": "Buscar categor�a",
-      "categoryFilter": "Categor�a",
-      "allCategories": "Todas las categor�as",
+      "searchLabel": "Buscar en el catálogo",
+      "searchPlaceholder": "Buscar producto, categoría, alérgeno o modificador",
+      "clearSearch": "Limpiar búsqueda de catálogo",
+      "categorySearch": "Buscar categoría",
+      "categoryFilter": "Categoría",
+      "allCategories": "Todas las categorías",
       "availabilityFilter": "Disponibilidad",
       "availabilityAll": "Todos",
       "availabilityAvailable": "Disponibles",
       "availabilitySoldOut": "Agotados",
-      "customizationFilter": "Personalizaci�n",
+      "customizationFilter": "Personalización",
       "customizationAll": "Todos",
       "customizationCustomizable": "Personalizables",
       "customizationSimple": "Simples",
       "imageFilterWithImage": "Con imagen",
       "imageFilterWithoutImage": "Sin imagen",
       "mobileFilters": "Filtros",
-      "reviewButton": "Revisar men�",
+      "reviewButton": "Revisar menú",
       "reviewFilters": {
-        "title": "Atajos de revisi�n",
-        "comboOnly": "Solo men�s",
+        "title": "Atajos de revisión",
+        "comboOnly": "Solo menús",
         "customizableOnly": "Solo personalizables",
         "withImage": "Con imagen",
         "withoutImage": "Sin imagen",
-        "noSection": "Sin secci�n",
-        "missingDescription": "Sin descripci�n"
+        "noSection": "Sin sección",
+        "missingDescription": "Sin descripción"
       },
       "viewModeLabel": "Vista",
       "viewModes": {
         "cards": "Tarjetas",
         "compact": "Compacta"
       },
-      "allergens": "Al�rgenos",
+      "allergens": "Alérgenos",
       "noImage": "Sin imagen",
       "compactMetaLabel": "Ruta:",
       "modifiers": "Modificadores",
       "previewPrice": "Precio de vista previa",
-      "parentCategory": "Categor�a padre",
-      "childCategories": "Subcategor�as",
-      "noChildCategories": "Sin subcategor�as",
+      "parentCategory": "Categoría padre",
+      "childCategories": "Subcategorías",
+      "noChildCategories": "Sin subcategorías",
       "options": "opciones",
       "modifierType": "Tipo",
       "newModifierGroup": "Nuevo grupo",
       "deleteModifierGroupAriaLabel": "Eliminar grupo de modificadores",
       "deleteModifierGroupTitle": "Eliminar grupo de modificadores",
-      "deleteModifierGroupDescription": "Se eliminar� el grupo \"{{ name }}\" y todas sus opciones. Esta acci�n no se puede deshacer.",
+      "deleteModifierGroupDescription": "Se eliminará el grupo \"{{ name }}\" y todas sus opciones. Esta acción no se puede deshacer.",
       "confirmDeleteModifierGroup": "Eliminar grupo",
       "slots": "slots",
       "comboReady": "Listo para vender",
-      "comboGuideTitle": "Qu� revisar en los combos",
-      "comboGuideDescription": "Comprueba de un vistazo qu� men�s tienen imagen, cu�ntos slots requieren y cu�les siguen siendo personalizables.",
-      "comboConfigurationSummary": "{{slotCount}} slots � {{customizationLabel}}",
+      "comboGuideTitle": "Qué revisar en los combos",
+      "comboGuideDescription": "Comprueba de un vistazo qué menús tienen imagen, cuántos slots requieren y cuáles siguen siendo personalizables.",
+      "comboConfigurationSummary": "{{slotCount}} slots · {{customizationLabel}}",
       "comboInclusionSummary": "Incluye {{items}}",
       "summaryConjunction": "o",
       "summaryHeadings": {
@@ -999,7 +1026,7 @@
         "priceImpact": "Suplemento"
       },
       "modifierActions": {
-        "add": "A�adir",
+        "add": "Añadir",
         "remove": "Quitar",
         "choose": "Elegir"
       },
@@ -1015,7 +1042,7 @@
       "components": "componentes",
       "availableProducts": "Productos disponibles",
       "soldOutProducts": "Productos agotados",
-      "noCombos": "No hay men�s configurados.",
+      "noCombos": "No hay menús configurados.",
       "noPlatters": "No hay platos combinados configurados.",
       "noSoldOutProducts": "No hay productos agotados.",
       "noModifiers": "Este producto no tiene modificadores.",
@@ -1025,60 +1052,60 @@
       "productDetail": "Detalle del producto",
       "toggleAvailability": "Disponible",
       "availabilityManagementDescription": "Activa o desactiva productos para el servicio de hoy.",
-      "newSection": "Nueva secci�n",
+      "newSection": "Nueva sección",
       "sectionNameLabel": "Nombre",
-      "sectionNamePlaceholder": "Nombre de la secci�n",
+      "sectionNamePlaceholder": "Nombre de la sección",
       "saveSection": "Guardar",
       "cancelSection": "Cancelar",
       "sectionVisibilityLabel": "Visible en la carta",
-      "deleteSectionLabel": "Eliminar secci�n",
-      "deleteSectionTitle": "Eliminar secci�n",
-      "deleteSectionConfirm": "�Eliminar la secci�n \"{{name}}\"? Se eliminar�n tambi�n los �tems que contiene.",
-      "confirmDelete": "Confirmar eliminaci�n",
+      "deleteSectionLabel": "Eliminar sección",
+      "deleteSectionTitle": "Eliminar sección",
+      "deleteSectionConfirm": "¿Eliminar la sección \"{{name}}\"? Se eliminarán también los ítems que contiene.",
+      "confirmDelete": "Confirmar eliminación",
       "cancelDelete": "Cancelar",
       "newProduct": "Nuevo producto",
       "editProduct": "Editar producto",
       "deleteProductTitle": "Eliminar producto",
-      "deleteProductDescription": "�Eliminar �{{name}}�? Esta acci�n no se puede deshacer.",
+      "deleteProductDescription": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
       "confirmDeleteProduct": "Eliminar",
       "cancelDeleteProduct": "Cancelar",
-      "noSection": "Sin secci�n",
-      "addToSection": "A�adir a secci�n",
-      "addToSectionTitle": "A�adir a secci�n",
+      "noSection": "Sin sección",
+      "addToSection": "Añadir a sección",
+      "addToSectionTitle": "Añadir a sección",
       "audit": {
-        "title": "Revisi�n r�pida del men�",
-        "description": "Usa estas alertas para detectar r�pido qu� productos necesitan imagen, descripci�n o revisi�n operativa.",
+        "title": "Revisión rápida del menú",
+        "description": "Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.",
         "clearFilter": "Ver todo",
-        "nextSteps": "Qu� revisar a continuaci�n",
-        "empty": "No hay alertas abiertas en el cat�logo.",
+        "nextSteps": "Qué revisar a continuación",
+        "empty": "No hay alertas abiertas en el catálogo.",
         "example": "Ejemplo: {{name}}",
         "warningLabels": {
           "missing-image": "Sin imagen",
-          "missing-description": "Sin descripci�n",
-          "missing-section": "Sin secci�n",
+          "missing-description": "Sin descripción",
+          "missing-section": "Sin sección",
           "unavailable": "No disponibles",
-          "weak-combo-summary": "Resumen de men� d�bil",
+          "weak-combo-summary": "Resumen de menú débil",
           "weak-customization-summary": "Extras poco claros"
         }
       }
     },
     "customizer": {
       "title": "Personalizar producto",
-      "description": "Selecciona modificadores y a�ade una nota para cocina si hace falta.",
-      "close": "Cerrar personalizaci�n",
+      "description": "Selecciona modificadores y añade una nota para cocina si hace falta.",
+      "close": "Cerrar personalización",
       "basePrice": "Precio base",
       "required": "obligatorio",
       "without": "SIN {{name}}",
       "kitchenNote": "Nota de cocina",
       "kitchenNotePlaceholder": "Ejemplo: sin sal, poco hecho, salsa aparte...",
-      "addFor": "A�adir por {{price}}"
+      "addFor": "Añadir por {{price}}"
     },
     "comboCustomizer": {
-      "title": "Configurar men�",
-      "description": "Elige hamburguesa, acompa�amiento y bebida.",
-      "close": "Cerrar configuraci�n de men�",
+      "title": "Configurar menú",
+      "description": "Elige hamburguesa, acompañamiento y bebida.",
+      "close": "Cerrar configuración de menú",
       "noValidProducts": "No hay productos disponibles para este slot.",
-      "invalidSelection": "Completa los slots obligatorios para a�adir el men�."
+      "invalidSelection": "Completa los slots obligatorios para añadir el menú."
     },
     "product": {
       "form": {
@@ -1086,41 +1113,41 @@
         "editTitle": "Editar producto",
         "name": "Nombre",
         "namePlaceholder": "Nombre del producto",
-        "description": "Descripci�n",
-        "descriptionPlaceholder": "Descripci�n opcional",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Descripción opcional",
         "image": "Imagen",
         "noImage": "Sin imagen",
-        "dropImageHint": "Arrastra una imagen aqu� o abre el selector",
+        "dropImageHint": "Arrastra una imagen aquí o abre el selector",
         "uploadImage": "Subir imagen",
         "uploadingImage": "Subiendo imagen...",
         "replaceImage": "Reemplazar imagen",
         "removeImage": "Quitar imagen",
         "retryUpload": "Reintentar subida",
         "invalidImageType": "Usa una imagen JPG, PNG o WEBP.",
-        "imageTooLarge": "La imagen es demasiado pesada. Prueba con un archivo m�s ligero.",
-        "imageTooSmall": "La imagen es demasiado peque�a. Usa una resoluci�n mayor.",
-        "uploadFailed": "No se pudo subir la imagen. Int�ntalo de nuevo.",
-        "price": "Precio (�)",
+        "imageTooLarge": "La imagen es demasiado pesada. Prueba con un archivo más ligero.",
+        "imageTooSmall": "La imagen es demasiado pequeña. Usa una resolución mayor.",
+        "uploadFailed": "No se pudo subir la imagen. Inténtalo de nuevo.",
+        "price": "Precio (€)",
         "modifierGroupsHint": "Selecciona los grupos de modificadores que puede usar este producto.",
         "course": "Servicio",
-        "route": "Ruta de preparaci�n",
+        "route": "Ruta de preparación",
         "available": "Disponible",
         "create": "Crear producto",
         "save": "Guardar cambios",
         "cancel": "Cancelar"
       },
       "success": {
-        "created": "Art�culo creado correctamente.",
-        "updated": "Art�culo actualizado correctamente.",
-        "deleted": "Art�culo eliminado correctamente.",
-        "addedToSection": "Art�culo a�adido a la secci�n correctamente."
+        "created": "Artículo creado correctamente.",
+        "updated": "Artículo actualizado correctamente.",
+        "deleted": "Artículo eliminado correctamente.",
+        "addedToSection": "Artículo añadido a la sección correctamente."
       },
       "errors": {
-        "nameTaken": "Ya existe un art�culo con ese nombre.",
-        "saveFailed": "No se pudo guardar el art�culo.",
-        "deleteFailed": "No se pudo eliminar el art�culo.",
-        "alreadyInSection": "El art�culo ya est� en esa secci�n.",
-        "addToSectionFailed": "No se pudo a�adir el art�culo a la secci�n."
+        "nameTaken": "Ya existe un artículo con ese nombre.",
+        "saveFailed": "No se pudo guardar el artículo.",
+        "deleteFailed": "No se pudo eliminar el artículo.",
+        "alreadyInSection": "El artículo ya está en esa sección.",
+        "addToSectionFailed": "No se pudo añadir el artículo a la sección."
       }
     },
     "modifierGroup": {
@@ -1128,15 +1155,15 @@
         "createTitle": "Nuevo grupo de modificadores",
         "nameLabel": "Nombre del grupo",
         "namePlaceholder": "Nombre del grupo",
-        "typeLabel": "Tipo de selecci�n",
-        "typeSingle": "Una opci�n",
+        "typeLabel": "Tipo de selección",
+        "typeSingle": "Una opción",
         "typeMultiple": "Varias opciones",
         "requiredLabel": "Obligatorio",
         "optionsLabel": "Opciones",
-        "addOption": "A�adir opci�n",
-        "removeOption": "Eliminar opci�n",
-        "optionName": "Nombre de la opci�n",
-        "optionPrice": "Precio adicional (�)",
+        "addOption": "Añadir opción",
+        "removeOption": "Eliminar opción",
+        "optionName": "Nombre de la opción",
+        "optionPrice": "Precio adicional (€)",
         "create": "Crear grupo"
       },
       "success": {
@@ -1144,9 +1171,9 @@
         "deleted": "Grupo de modificadores eliminado."
       },
       "errors": {
-        "saveFailed": "No se pudo guardar el grupo. Int�ntalo de nuevo.",
+        "saveFailed": "No se pudo guardar el grupo. Inténtalo de nuevo.",
         "deleteFailed": "No se pudo eliminar el grupo.",
-        "inUse": "El grupo est� asignado a productos y no puede eliminarse."
+        "inUse": "El grupo está asignado a productos y no puede eliminarse."
       }
     }
   }
