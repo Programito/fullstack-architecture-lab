@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { CLIENT_ORIGINS } from '../../../application/client-origin';
 
 export class DeveloperLogsQueryDto {
   @ApiPropertyOptional()
@@ -22,6 +23,11 @@ export class DeveloperLogsQueryDto {
   @IsOptional()
   @IsIn(['request', 'error', 'audit', 'client'])
   category?: 'request' | 'error' | 'audit' | 'client';
+
+  @ApiPropertyOptional({ enum: CLIENT_ORIGINS })
+  @IsOptional()
+  @IsIn(CLIENT_ORIGINS)
+  clientOrigin?: (typeof CLIENT_ORIGINS)[number];
 
   @ApiPropertyOptional()
   @IsOptional()

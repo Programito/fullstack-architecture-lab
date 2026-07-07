@@ -6,6 +6,7 @@ import { catchError, filter, throwError } from 'rxjs';
 
 import { API_BASE_URL } from '../api/api.config';
 import { IdentitySessionStore } from '../../features/identity/identity-session.store';
+import { CLIENT_ORIGIN_HEADER, resolveClientOrigin } from './client-origin';
 
 type ClientLogPayload = {
   level: 'info' | 'warn' | 'error';
@@ -57,7 +58,14 @@ export class ClientLogsService {
     if (!this.identity.session().accessToken) {
       return;
     }
-    void this.http.post<{ accepted: true }>(`${this.apiBaseUrl}/observability/client-events`, payload).subscribe({
+    const body: ClientLogPayload = {
+      ...payload,
+      metadata: {
+        ...(payload.metadata ?? {}),
+        clientOrigin: resolveClientOrigin(payload.path ?? this.router.url),
+      },
+    };
+    void this.http.post<{ accepted: true }>(`${this.apiBaseUrl}/observability/client-events`, body).subscribe({
       next: () => undefined,
       error: () => undefined,
     });
@@ -101,8 +109,12 @@ export class ClientLogErrorHandler implements ErrorHandler {
 
 export const clientLogHttpInterceptor: HttpInterceptorFn = (request, next) => {
   const logs = inject(ClientLogsService);
+  const router = inject(Router);
+  const requestWithOrigin = request.headers.has(CLIENT_ORIGIN_HEADER)
+    ? request
+    : request.clone({ setHeaders: { [CLIENT_ORIGIN_HEADER]: resolveClientOrigin(router.url, request.url) } });
 
-  return next(request).pipe(
+  return next(requestWithOrigin).pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && !request.url.includes('/observability/client-events')) {
         logs.logHttpError(error);

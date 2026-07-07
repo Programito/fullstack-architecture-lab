@@ -7,6 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
+import { resolveClientOrigin } from '../../application/client-origin';
 import { ObservabilityService } from '../../application/observability.service';
 import type { ObservabilityRequest } from './observability-request';
 
@@ -38,6 +39,7 @@ export class RequestLoggingInterceptor implements NestInterceptor {
             path: pathOf(request),
             statusCode: response.statusCode ?? 200,
             durationMs: Date.now() - startedAt,
+            metadata: { clientOrigin: resolveClientOrigin(request) },
           });
         },
       }),

@@ -60,6 +60,7 @@ export class DeveloperLogsApiService {
 
     if (filters.level) params = params.set('level', filters.level);
     if (filters.category) params = params.set('category', filters.category);
+    if (filters.clientOrigin) params = params.set('clientOrigin', filters.clientOrigin);
     if (filters.path.trim()) params = params.set('path', filters.path.trim());
     if (filters.actorUserId.trim()) params = params.set('actorUserId', filters.actorUserId.trim());
     if (filters.restaurantId.trim()) params = params.set('restaurantId', filters.restaurantId.trim());

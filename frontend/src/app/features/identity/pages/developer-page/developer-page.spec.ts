@@ -108,7 +108,16 @@ describe('DeveloperPage', () => {
     expect(screen.getByRole('heading', { name: /Recursos para Developer/i })).toBeTruthy();
     expect(screen.getAllByRole('link')).toHaveLength(4);
     expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('href')).toBe('/developer/api-docs/');
+    expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('target')).toBe('_blank');
+    expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('rel')).toBe('noreferrer');
     expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('href')).toBe('/developer/storybook/');
+    expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('target')).toBe('_blank');
+    expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('rel')).toBe('noreferrer');
+    expect(screen.getByRole('link', { name: /Arquitectura/i }).getAttribute('target')).toBe('_blank');
+    expect(screen.getByRole('link', { name: /Arquitectura/i }).getAttribute('rel')).toBe('noreferrer');
+    const logsLink = screen.getAllByRole('link').find((link) => link.getAttribute('href') === '/developer/logs');
+    expect(logsLink).toBeTruthy();
+    expect(logsLink?.hasAttribute('target')).toBe(false);
     expect(screen.getByText('Base de datos lista para responder.')).toBeTruthy();
 
     const logoutButton = screen.getByRole('button', { name: /Cerrar sesi.n/i });

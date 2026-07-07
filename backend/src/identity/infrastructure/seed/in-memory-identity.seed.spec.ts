@@ -10,6 +10,7 @@ import { ListPermissionsUseCase } from '../../application/use-cases/list-permiss
 import { ListRolesUseCase } from '../../application/use-cases/list-roles.use-case';
 import { ListUsersUseCase } from '../../application/use-cases/list-users.use-case';
 import { AssignRolePermissionsUseCase } from '../../application/use-cases/assign-role-permissions.use-case';
+import { DEMO_ACCOUNT_CATALOG } from '../../domain/demo-account-catalog';
 import { PERMISSION_CATALOG } from '../../domain/permission-catalog';
 import { ROLE_CATALOG } from '../../domain/role-catalog';
 import { InMemoryRoleRepository } from '../persistence/in-memory-role.repository';
@@ -106,16 +107,12 @@ describe('InMemoryIdentitySeed', () => {
     expect(roleResult.value.map((role) => role.name).sort()).toEqual(ROLE_CATALOG.map((role) => role.name).sort());
     expect(roleResult.value.find((role) => role.name === 'waiter')?.permissionIds).toHaveLength(3);
     expect(userResult.value.map((user) => user.email)).toEqual([
-      'admin@mesaflow.demo',
-      'manager@mesaflow.demo',
-      'waiter@mesaflow.demo',
-      'kitchen@mesaflow.demo',
-      'developer@mesaflow.demo',
+      ...DEMO_ACCOUNT_CATALOG.map((account) => account.email),
       'admin@example.com',
       'demo1@example.com',
       'demo2@example.com',
     ]);
-    expect(userResult.value.filter((user) => user.accountType === 'demo')).toHaveLength(5);
+    expect(userResult.value.filter((user) => user.accountType === 'demo')).toHaveLength(DEMO_ACCOUNT_CATALOG.length);
     expect(userResult.value[0]?.roleIds).toHaveLength(1);
   });
 
@@ -139,7 +136,7 @@ describe('InMemoryIdentitySeed', () => {
     }
     expect(permissionResult.value).toHaveLength(PERMISSION_CATALOG.length);
     expect(roleResult.value).toHaveLength(ROLE_CATALOG.length);
-    expect(userResult.value).toHaveLength(5);
+    expect(userResult.value).toHaveLength(DEMO_ACCOUNT_CATALOG.length);
     expect(userResult.value.every((user) => user.accountType === 'demo')).toBe(true);
   });
 });

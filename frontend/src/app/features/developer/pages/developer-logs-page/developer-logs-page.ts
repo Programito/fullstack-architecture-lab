@@ -14,7 +14,7 @@ import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/co
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
-import { AUDIT_ENTITY_TYPES, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
+import { AUDIT_ENTITY_TYPES, CLIENT_ORIGIN_OPTIONS, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
 import type {
   DeveloperLogBreakdownDto,
   DeveloperLogEventDto,
@@ -41,6 +41,7 @@ export class DeveloperLogsPage {
   });
 
   protected readonly entityTypeOptions = AUDIT_ENTITY_TYPES;
+  protected readonly clientOriginOptions = CLIENT_ORIGIN_OPTIONS;
   protected readonly pathGroupOptions = KNOWN_LOG_PATH_GROUPS;
   protected readonly restaurantOptions = signal<ComboboxOption[]>([]);
   protected readonly actorOptions = signal<ComboboxOption[]>([]);
@@ -48,7 +49,7 @@ export class DeveloperLogsPage {
   protected readonly loading = signal(true);
   protected readonly summary = signal<DeveloperLogSummaryDto | null>(null);
   protected readonly timeline = signal<DeveloperLogTimelinePointDto[]>([]);
-  protected readonly breakdown = signal<DeveloperLogBreakdownDto>({ levels: [], categories: [] });
+  protected readonly breakdown = signal<DeveloperLogBreakdownDto>({ levels: [], categories: [], origins: [] });
   protected readonly rows = signal<TableRow[]>([]);
   protected readonly totalItems = signal(0);
   protected readonly page = signal(1);
@@ -82,12 +83,23 @@ export class DeveloperLogsPage {
       { name: this.transloco.translate('developer.logs.charts.series.categories'), values: this.breakdown().categories.map((entry) => entry.count) },
     ];
   });
+  protected readonly originCategories = computed(() => this.breakdown().origins.map((entry) => this.clientOriginLabel(entry.key)));
+  protected readonly authByOrigin = computed(() => this.summary()?.authByOrigin ?? []);
+  protected readonly topSlowPaths = computed(() => this.summary()?.topSlowPaths ?? []);
+  protected readonly topErrorEvents = computed(() => this.summary()?.topErrorEvents ?? []);
+  protected readonly originSeries = computed<ChartSeries[]>(() => {
+    this.activeLang();
+    return [
+      { name: this.transloco.translate('developer.logs.charts.series.origins'), values: this.breakdown().origins.map((entry) => entry.count) },
+    ];
+  });
   protected readonly columns = computed<TableColumn[]>(() => {
     this.activeLang();
     return [
       { key: 'timestamp', header: this.transloco.translate('developer.logs.table.timestamp') },
       { key: 'level', header: this.transloco.translate('developer.logs.table.level') },
       { key: 'category', header: this.transloco.translate('developer.logs.table.category') },
+      { key: 'clientOrigin', header: this.transloco.translate('developer.logs.table.clientOrigin') },
       { key: 'event', header: this.transloco.translate('developer.logs.table.event') },
       { key: 'message', header: this.transloco.translate('developer.logs.table.message') },
     ];
@@ -191,6 +203,90 @@ export class DeveloperLogsPage {
     this.filters.update((current) => ({ ...current, [key]: value }));
   }
 
+  protected applyShortcut(shortcut: 'apk-customer' | 'web-demo' | 'web-pos' | 'auth' | 'payments'): void {
+    if (shortcut === 'apk-customer' || shortcut === 'web-demo' || shortcut === 'web-pos') {
+      this.applyFilterState({ clientOrigin: shortcut }, this.view());
+      return;
+    }
+
+    if (shortcut === 'auth') {
+      this.applyFilterState({ category: 'request', path: '/auth' }, 'operations');
+      return;
+    }
+
+    this.applyFilterState({ category: 'request', path: '/payments' }, 'operations');
+  }
+
+  protected focusMetric(metric: 'requests' | 'errors' | 'audit' | 'latency'): void {
+    if (metric === 'audit') {
+      this.applyFilterState({ category: 'audit', level: '' }, 'audit');
+      return;
+    }
+
+    if (metric === 'errors') {
+      this.applyFilterState({ category: 'request', level: 'error' }, 'operations');
+      return;
+    }
+
+    this.applyFilterState({ category: 'request', level: '' }, 'operations');
+  }
+
+  protected focusSlowPath(path: string, clientOrigin: DeveloperLogFilters['clientOrigin']): void {
+    this.applyFilterState(
+      {
+        category: 'request',
+        level: '',
+        path,
+        clientOrigin,
+        search: '',
+      },
+      'operations',
+    );
+  }
+
+  protected focusTopError(event: string, path: string | null, clientOrigin: DeveloperLogFilters['clientOrigin']): void {
+    this.applyFilterState(
+      {
+        category: 'request',
+        level: 'error',
+        path: path ?? '',
+        clientOrigin,
+        search: event,
+      },
+      'operations',
+    );
+  }
+
+  protected focusOrigin(clientOrigin: DeveloperLogFilters['clientOrigin']): void {
+    this.applyFilterState(
+      {
+        clientOrigin,
+      },
+      this.view(),
+    );
+  }
+
+  protected focusBreakdownOrigin(originKey: string): void {
+    const clientOrigin = parseClientOrigin(originKey);
+    if (!clientOrigin) return;
+    this.focusOrigin(clientOrigin);
+  }
+
+  protected focusAuthOrigin(clientOrigin: DeveloperLogFilters['clientOrigin']): void {
+    this.applyFilterState(
+      {
+        clientOrigin,
+        category: 'audit',
+        entityType: 'auth',
+        entityId: '',
+        actorUserId: '',
+        result: '',
+        search: '',
+      },
+      'audit',
+    );
+  }
+
   protected selectEvent(row: TableRow): void {
     const id = String(row['id'] ?? '');
     const event = this.timelineEvents().find((item) => item.id === id) ?? null;
@@ -215,7 +311,7 @@ export class DeveloperLogsPage {
       error: () => {
         this.summary.set(null);
         this.timeline.set([]);
-        this.breakdown.set({ levels: [], categories: [] });
+        this.breakdown.set({ levels: [], categories: [], origins: [] });
         this.rows.set([]);
         this.totalItems.set(0);
         this.loading.set(false);
@@ -248,6 +344,7 @@ export class DeveloperLogsPage {
       timestamp: formatDate(item.timestamp),
       level: item.level,
       category: item.category,
+      clientOrigin: this.clientOriginLabel(item.clientOrigin),
       event: item.event,
       message: item.message,
     })));
@@ -255,6 +352,21 @@ export class DeveloperLogsPage {
     if (current) {
       this.selectedEvent.set(items.find((item) => item.id === current.id) ?? null);
     }
+  }
+
+  private applyFilterState(patch: Partial<DeveloperLogFilters>, view: DeveloperLogsView): void {
+    const nextFilters: DeveloperLogFilters = {
+      ...this.filters(),
+      ...patch,
+    };
+    this.filters.set(nextFilters);
+    this.view.set(view);
+    this.selectedEvent.set(null);
+    void this.updateUrl({
+      ...nextFilters,
+      view,
+      page: 1,
+    });
   }
 
   private updateUrl(patch: Partial<DeveloperLogsQueryState>): Promise<boolean> {
@@ -272,6 +384,10 @@ export class DeveloperLogsPage {
       replaceUrl: false,
     });
   }
+
+  protected clientOriginLabel(value: string): string {
+    return this.transloco.translate(`developer.logs.origins.${value}`);
+  }
 }
 
 type DeveloperLogsQueryState = DeveloperLogFilters & {
@@ -286,6 +402,7 @@ function filtersFromQueryParams(params: { get(name: string): string | null }): D
     to: normalizeDateInput(params.get('to')) ?? defaults.to,
     level: parseLevel(params.get('level')),
     category: parseCategory(params.get('category')),
+    clientOrigin: parseClientOrigin(params.get('clientOrigin')),
     path: params.get('path') ?? '',
     actorUserId: params.get('actorUserId') ?? '',
     restaurantId: params.get('restaurantId') ?? '',
@@ -302,6 +419,12 @@ function parseLevel(value: string | null): DeveloperLogFilters['level'] {
 
 function parseCategory(value: string | null): DeveloperLogFilters['category'] {
   return value === 'request' || value === 'error' || value === 'audit' || value === 'client' ? value : '';
+}
+
+function parseClientOrigin(value: string | null): DeveloperLogFilters['clientOrigin'] {
+  return value === 'web-admin' || value === 'web-demo' || value === 'web-pos' || value === 'apk-customer' || value === 'backend'
+    ? value
+    : '';
 }
 
 function parseResult(value: string | null): DeveloperLogFilters['result'] {
@@ -353,6 +476,7 @@ function buildQueryParams(state: DeveloperLogsQueryState): Record<string, string
     to: state.to !== defaults.to ? state.to : null,
     level: state.level || null,
     category: state.category || null,
+    clientOrigin: state.clientOrigin || null,
     path: state.path.trim() || null,
     actorUserId: state.actorUserId.trim() || null,
     restaurantId: state.restaurantId.trim() || null,
@@ -370,6 +494,7 @@ function defaultFilters(): DeveloperLogFilters {
     ...buildQuickRange('24h'),
     level: '',
     category: '',
+    clientOrigin: '',
     path: '',
     actorUserId: '',
     restaurantId: '',

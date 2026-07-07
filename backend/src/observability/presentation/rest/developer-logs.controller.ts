@@ -57,6 +57,7 @@ export class DeveloperLogsController {
       to,
       level: query.level,
       category: query.category,
+      clientOrigin: query.clientOrigin,
       path: query.path,
       userId: query.userId,
       actorUserId: query.actorUserId,

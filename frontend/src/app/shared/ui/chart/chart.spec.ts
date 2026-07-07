@@ -104,6 +104,17 @@ describe('Chart', () => {
     expect(options.series[0].data[0].name).toBe('Ene');
   });
 
+  it('keeps tooltip support for minimal donut charts', async () => {
+    const view = await render('<app-chart type="donut" appearance="minimal" [data]="data" [categories]="categories" />', {
+      imports: [Chart],
+      componentProperties: { data, categories },
+    });
+
+    const options = chartOptions<{ tooltip?: { trigger: string } }>(view.fixture);
+
+    expect(options.tooltip).toEqual({ trigger: 'item' });
+  });
+
   it('builds pie options', async () => {
     const view = await render('<app-chart type="pie" [data]="data" [categories]="categories" />', {
       imports: [Chart],

@@ -42,7 +42,7 @@
       </div>
     } @else if (resources(); as links) {
       <div class="developer-page__grid">
-        <a class="developer-page__resource" [href]="links.apiDocsUrl">
+        <a class="developer-page__resource" [href]="links.apiDocsUrl" target="_blank" rel="noreferrer">
           <app-card variant="outlined">
             <app-icon name="api" size="lg" />
             <h2>API Docs</h2>
@@ -50,7 +50,7 @@
             <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
           </app-card>
         </a>
-        <a class="developer-page__resource" [href]="links.storybookUrl">
+        <a class="developer-page__resource" [href]="links.storybookUrl" target="_blank" rel="noreferrer">
           <app-card variant="outlined">
             <app-icon name="widgets" size="lg" />
             <h2>Storybook</h2>
@@ -58,7 +58,7 @@
             <span class="developer-page__resource-action">{{ 'developer.open' | transloco }}</span>
           </app-card>
         </a>
-        <a class="developer-page__resource" [href]="links.architectureUrl">
+        <a class="developer-page__resource" [href]="links.architectureUrl" target="_blank" rel="noreferrer">
           <app-card variant="outlined">
             <app-icon name="account_tree" size="lg" />
             <h2>{{ 'developer.architectureTitle' | transloco }}</h2>

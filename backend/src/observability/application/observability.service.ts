@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LogCategory, type LogLevel, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { extractClientOrigin } from './client-origin';
 import { OBSERVABILITY_EVENT_CATALOG } from './observability-event-catalog';
 import { sanitizeMetadata } from './observability-metadata.policy';
 import type { AppLogInput, LogQuery, LogSummary } from './observability.types';
@@ -47,7 +48,7 @@ export class ObservabilityService {
   async getSummary(
     from: Date,
     to: Date,
-    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<LogSummary> {
     try {
       const where = buildWhere({ ...filters, from, to });
@@ -57,18 +58,65 @@ export class ObservabilityService {
         this.prisma.appLog.count({ where: { ...where, category: LogCategory.audit } }),
         this.prisma.appLog.findMany({
           where: { ...where, category: LogCategory.request, durationMs: { not: null } },
-          select: { durationMs: true },
+          select: { durationMs: true, path: true, metadata: true },
           orderBy: { durationMs: 'asc' },
         }),
       ]);
+      const authByOriginRows = await this.prisma.$queryRaw<Array<{ key: string | null; succeeded: bigint; failed: bigint }>>(Prisma.sql`
+        SELECT
+          "metadata"->>'clientOrigin' AS key,
+          COUNT(*) FILTER (WHERE "event" IN ('auth.login.succeeded', 'auth.demo-login.succeeded'))::bigint AS succeeded,
+          COUNT(*) FILTER (WHERE "event" = 'auth.login.failed')::bigint AS failed
+        FROM "app_logs"
+        WHERE ${buildWhereSql({ ...filters, from, to })}
+          AND "category" = 'audit'
+          AND "metadata"->>'entityType' = 'auth'
+          AND "event" IN ('auth.login.succeeded', 'auth.demo-login.succeeded', 'auth.login.failed')
+        GROUP BY "metadata"->>'clientOrigin'
+        ORDER BY succeeded DESC, failed DESC
+      `);
+
+      const topErrorRows = await this.prisma.$queryRaw<Array<{
+        event: string;
+        path: string | null;
+        clientOrigin: string | null;
+        count: bigint;
+      }>>(Prisma.sql`
+        SELECT
+          "event",
+          "path",
+          "metadata"->>'clientOrigin' AS "clientOrigin",
+          COUNT(*)::bigint AS count
+        FROM "app_logs"
+        WHERE ${buildWhereSql({ ...filters, from, to })}
+          AND "level" = 'error'
+        GROUP BY "event", "path", "metadata"->>'clientOrigin'
+        ORDER BY count DESC
+        LIMIT 5
+      `);
 
       const durations = requestDurations.flatMap((entry) => entry.durationMs ?? []);
+      const topSlowPaths = summarizeTopSlowPaths(requestDurations);
       return {
         totalRequests: requestCount,
         errorCount,
         errorRate: requestCount > 0 ? Number(((errorCount / requestCount) * 100).toFixed(1)) : 0,
         auditEvents,
         p95DurationMs: percentile(durations, 0.95),
+        authByOrigin: authByOriginRows
+          .filter((row) => typeof row.key === 'string' && row.key.length > 0)
+          .map((row) => ({
+            key: row.key as string,
+            succeeded: Number(row.succeeded),
+            failed: Number(row.failed),
+          })),
+        topSlowPaths,
+        topErrorEvents: topErrorRows.map((row) => ({
+          event: row.event,
+          path: row.path ? normalizeObservedPath(row.path) : null,
+          clientOrigin: row.clientOrigin ?? 'backend',
+          count: Number(row.count),
+        })),
       };
     } catch (error) {
       this.logger.error('Failed to compute log summary.', error instanceof Error ? error.stack : error);
@@ -78,6 +126,9 @@ export class ObservabilityService {
         errorRate: 0,
         auditEvents: 0,
         p95DurationMs: 0,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
       };
     }
   }
@@ -85,7 +136,7 @@ export class ObservabilityService {
   async getTimeline(
     from: Date,
     to: Date,
-    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<Array<{ bucket: string; total: number; errors: number; audit: number }>> {
     try {
       const whereSql = buildWhereSql({ ...filters, from, to });
@@ -116,25 +167,39 @@ export class ObservabilityService {
   async getBreakdown(
     from: Date,
     to: Date,
-    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<{
     levels: Array<{ key: LogLevel; count: number }>;
     categories: Array<{ key: string; count: number }>;
+    origins: Array<{ key: string; count: number }>;
   }> {
     try {
       const where = buildWhere({ ...filters, from, to });
-      const [levelGroups, categoryGroups] = await Promise.all([
+      const whereSql = buildWhereSql({ ...filters, from, to });
+      const [levelGroups, categoryGroups, originGroups] = await Promise.all([
         this.prisma.appLog.groupBy({ by: ['level'], where, _count: { _all: true } }),
         this.prisma.appLog.groupBy({ by: ['category'], where, _count: { _all: true } }),
+        this.prisma.$queryRaw<Array<{ key: string | null; count: bigint }>>(Prisma.sql`
+          SELECT
+            "metadata"->>'clientOrigin' AS key,
+            COUNT(*)::bigint AS count
+          FROM "app_logs"
+          WHERE ${whereSql}
+          GROUP BY "metadata"->>'clientOrigin'
+          ORDER BY count DESC
+        `),
       ]);
 
       return {
         levels: levelGroups.map((group) => ({ key: group.level, count: group._count._all })),
         categories: categoryGroups.map((group) => ({ key: group.category, count: group._count._all })),
+        origins: originGroups
+          .filter((group) => typeof group.key === 'string' && group.key.length > 0)
+          .map((group) => ({ key: group.key as string, count: Number(group.count) })),
       };
     } catch (error) {
       this.logger.error('Failed to compute log breakdown.', error instanceof Error ? error.stack : error);
-      return { levels: [], categories: [] };
+      return { levels: [], categories: [], origins: [] };
     }
   }
 
@@ -218,6 +283,7 @@ export class ObservabilityService {
       requestId: string | null;
       actorRoles: string[];
       result: 'attempted' | 'succeeded' | 'failed' | null;
+      clientOrigin: string;
       entityType: string | null;
       entityId: string | null;
       entityLabel: string | null;
@@ -251,6 +317,7 @@ export class ObservabilityService {
         id: item.id,
         timestamp: item.timestamp.toISOString(),
         source: item.source,
+        clientOrigin: extractClientOrigin(item.metadata, item.source === 'frontend' ? 'web-admin' : 'backend'),
         category: item.category,
         level: item.level,
         event: item.event,
@@ -312,6 +379,50 @@ function percentile(values: number[], ratio: number): number {
   return values[index] ?? 0;
 }
 
+function summarizeTopSlowPaths(rows: Array<{ durationMs: number | null; path: string | null; metadata: Prisma.JsonValue | null }>): Array<{
+  path: string;
+  clientOrigin: string;
+  p95DurationMs: number;
+  total: number;
+}> {
+  const groups = new Map<string, { path: string; clientOrigin: string; durations: number[] }>();
+
+  for (const row of rows) {
+    if (!row.path || row.durationMs == null) continue;
+    const path = normalizeObservedPath(row.path);
+    const clientOrigin = extractClientOrigin(row.metadata, 'backend');
+    const key = `${path}::${clientOrigin}`;
+    const current = groups.get(key) ?? { path, clientOrigin, durations: [] };
+    current.durations.push(row.durationMs);
+    groups.set(key, current);
+  }
+
+  return [...groups.values()]
+    .map((group) => ({
+      path: group.path,
+      clientOrigin: group.clientOrigin,
+      p95DurationMs: percentile(group.durations.sort((left, right) => left - right), 0.95),
+      total: group.durations.length,
+    }))
+    .sort((left, right) => right.p95DurationMs - left.p95DurationMs || right.total - left.total)
+    .slice(0, 5);
+}
+
+function normalizeObservedPath(path: string): string {
+  return path
+    .replace(/\/restaurants\/[^/]+/gi, '/restaurants/:id')
+    .replace(/\/orders\/[^/]+/gi, '/orders/:id')
+    .replace(/\/products\/[^/]+/gi, '/products/:id')
+    .replace(/\/reservations\/[^/]+/gi, '/reservations/:id')
+    .replace(/\/customers\/[^/]+/gi, '/customers/:id')
+    .replace(/\/sessions\/[^/]+/gi, '/sessions/:id')
+    .replace(/\/users\/[^/]+/gi, '/users/:id')
+    .replace(/\/roles\/[^/]+/gi, '/roles/:id')
+    .replace(/\/permissions\/[^/]+/gi, '/permissions/:id')
+    .replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '/:id')
+    .replace(/\/\d+(?=\/|$)/g, '/:id');
+}
+
 function extractAuditMetadata(metadata: Prisma.JsonValue | null): {
   actorRoles: string[];
   result: 'attempted' | 'succeeded' | 'failed' | null;
@@ -347,9 +458,12 @@ function isAuditResult(value: unknown): value is 'attempted' | 'succeeded' | 'fa
 }
 
 function buildWhere(
-  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>>,
+  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>>,
 ): Prisma.AppLogWhereInput {
   const andFilters: Prisma.AppLogWhereInput[] = [];
+  if (query.clientOrigin) {
+    andFilters.push({ metadata: { path: ['clientOrigin'], equals: query.clientOrigin } });
+  }
   if (query.entityType) {
     andFilters.push({ metadata: { path: ['entityType'], equals: query.entityType } });
   }
@@ -381,7 +495,7 @@ function buildWhere(
 }
 
 function buildWhereSql(
-  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>>,
+  query: Pick<LogQuery, 'from' | 'to'> & Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>>,
 ): Prisma.Sql {
   const conditions: Prisma.Sql[] = [
     Prisma.sql`"timestamp" >= ${query.from}`,
@@ -390,6 +504,7 @@ function buildWhereSql(
 
   if (query.level) conditions.push(Prisma.sql`"level" = ${query.level}::"LogLevel"`);
   if (query.category) conditions.push(Prisma.sql`"category" = ${query.category}::"LogCategory"`);
+  if (query.clientOrigin) conditions.push(Prisma.sql`"metadata"->>'clientOrigin' = ${query.clientOrigin}`);
   if (query.path) conditions.push(Prisma.sql`"path" ILIKE ${`%${query.path}%`}`);
 
   const userId = query.actorUserId ?? query.userId;

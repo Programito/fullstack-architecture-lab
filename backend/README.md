@@ -29,7 +29,7 @@ Local in-memory identity data is seeded by default:
 
 - `admin@example.com` / `admin1234` with role `admin`
 - additional demo users generated through the fake-data adapter
-- five portfolio accounts marked with `accountType=demo`
+- six portfolio accounts marked with `accountType=demo`
 
 The shared role catalog is used by both the in-memory adapter and Prisma:
 
@@ -37,7 +37,13 @@ The shared role catalog is used by both the in-memory adapter and Prisma:
 - `manager`: shifts, discounts and cash register
 - `waiter`: tables, orders and reservations
 - `kitchen`: order preparation
+- `customer`: table-side ordering and payment from the customer app
 - `developer`: documentation, Storybook, architecture and technical demos
+
+The fixed demo accounts come from `src/identity/domain/demo-account-catalog.ts`.
+That catalog currently includes the mobile customer account
+`customer@mesaflow.demo`, so tests and docs should derive expectations from the
+catalog instead of hardcoding the old five-account count.
 
 Set `IDENTITY_MEMORY_SEED=false` to skip the fixed regular admin and generated users.
 Portfolio demo accounts remain seeded so environments can toggle access without
@@ -191,7 +197,7 @@ Los datos de identidad en memoria se siembran por defecto:
 
 - `admin@example.com` / `admin1234` con rol `admin`
 - usuarios demo adicionales generados con el adaptador de datos falsos
-- cinco cuentas de portfolio marcadas con `accountType=demo`
+- seis cuentas de portfolio marcadas con `accountType=demo`
 
 El catálogo de roles compartido lo usan tanto el adaptador en memoria como Prisma:
 
@@ -200,6 +206,11 @@ El catálogo de roles compartido lo usan tanto el adaptador en memoria como Pris
 - `waiter`: mesas, pedidos y reservas
 - `kitchen`: preparación de pedidos
 - `developer`: documentación, Storybook, arquitectura y demos técnicas
+
+La cuenta demo mÃ³vil `customer@mesaflow.demo` tambiÃ©n forma parte del catÃ¡logo
+fijo en `src/identity/domain/demo-account-catalog.ts`, asÃ­ que tests y
+documentaciÃ³n deberÃ­an derivar sus expectativas de ese catÃ¡logo en lugar de
+fijar el recuento antiguo de cinco cuentas.
 
 Fija `IDENTITY_MEMORY_SEED=false` para omitir el admin regular fijo y los usuarios generados.
 Las cuentas demo de portfolio se siguen sembrando para poder alternar el acceso sin

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { AuditService } from '../../../observability/application/audit.service';
 import { auditContext } from '../../../observability/application/audit-context';
+import { resolveClientOrigin } from '../../../observability/application/client-origin';
 import { AuthService } from '../../application/use-cases/auth.service';
 import { AuthTokenService } from '../../infrastructure/security/auth-token.service';
 import { USER_REPOSITORY, type UserRepository } from '../../application/ports/user-repository.port';
@@ -49,6 +50,7 @@ export class AuthController {
         result: 'failed',
         entityType: 'auth',
         entityLabel: body.email,
+        metadata: { clientOrigin: resolveClientOrigin(request, 'web-admin') },
       });
       throw error;
     }
@@ -63,7 +65,7 @@ export class AuthController {
       entityId: result.user.id,
       entityLabel: result.user.email,
       changedFields: ['session'],
-      metadata: { roles: result.roles },
+      metadata: { roles: result.roles, clientOrigin: resolveClientOrigin(request, 'web-admin') },
     });
     return AuthResponseDto.fromResult(result);
   }
@@ -89,7 +91,7 @@ export class AuthController {
       entityId: result.user.id,
       entityLabel: result.user.email,
       changedFields: ['session'],
-      metadata: { role: body.role, email: result.user.email },
+      metadata: { role: body.role, email: result.user.email, clientOrigin: resolveClientOrigin(request, 'web-demo') },
     });
     return AuthResponseDto.fromResult(result);
   }
@@ -138,6 +140,7 @@ export class AuthController {
           message: 'Refresh token reuse detected; session revoked.',
           result: 'failed',
           entityType: 'auth',
+          metadata: { clientOrigin: resolveClientOrigin(request, 'web-admin') },
         });
       }
       throw error;
@@ -164,7 +167,7 @@ export class AuthController {
       entityId: request.auth.userId,
       entityLabel: label,
       changedFields: ['session'],
-      metadata: { sessionId: request.auth.sessionId },
+      metadata: { sessionId: request.auth.sessionId, clientOrigin: resolveClientOrigin(request, 'backend') },
     });
     response.clearCookie(REFRESH_COOKIE, this.cookieOptions());
     response.clearCookie(DEVELOPER_COOKIE, this.developerCookieOptions());

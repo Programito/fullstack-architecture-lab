@@ -23,6 +23,7 @@ export type LogQuery = {
   to: Date;
   level?: LogLevel;
   category?: LogCategory;
+  clientOrigin?: string;
   path?: string;
   userId?: string;
   actorUserId?: string;
@@ -42,4 +43,21 @@ export type LogSummary = {
   errorRate: number;
   auditEvents: number;
   p95DurationMs: number;
+  authByOrigin: Array<{
+    key: string;
+    succeeded: number;
+    failed: number;
+  }>;
+  topSlowPaths: Array<{
+    path: string;
+    clientOrigin: string;
+    p95DurationMs: number;
+    total: number;
+  }>;
+  topErrorEvents: Array<{
+    event: string;
+    path: string | null;
+    clientOrigin: string;
+    count: number;
+  }>;
 };

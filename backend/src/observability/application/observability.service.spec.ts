@@ -48,11 +48,18 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(4);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { key: 'web-admin', succeeded: 3n, failed: 1n },
+      { key: 'apk-customer', succeeded: 2n, failed: 0n },
+    ] as never).mockResolvedValueOnce([
+      { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 3n },
+      { event: 'frontend.http.error', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 2n },
+    ] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
-      { durationMs: 50 },
-      { durationMs: 100 },
-      { durationMs: 150 },
-      { durationMs: 200 },
+      { durationMs: 50, path: '/api/v1/auth/login', metadata: { clientOrigin: 'web-admin' } },
+      { durationMs: 100, path: '/api/v1/auth/login', metadata: { clientOrigin: 'web-admin' } },
+      { durationMs: 150, path: '/api/v1/restaurants/demo/orders/order-1/payments', metadata: { clientOrigin: 'web-pos' } },
+      { durationMs: 200, path: '/api/v1/restaurants/demo/orders/order-2/payments', metadata: { clientOrigin: 'web-pos' } },
     ] as never);
 
     const summary = await service.getSummary(new Date('2026-07-01T00:00:00.000Z'), new Date('2026-07-02T00:00:00.000Z'));
@@ -63,6 +70,18 @@ describe('ObservabilityService', () => {
       errorRate: 20,
       auditEvents: 4,
       p95DurationMs: 200,
+      authByOrigin: [
+        { key: 'web-admin', succeeded: 3, failed: 1 },
+        { key: 'apk-customer', succeeded: 2, failed: 0 },
+      ],
+      topSlowPaths: [
+        { path: '/api/v1/restaurants/:id/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 200, total: 2 },
+        { path: '/api/v1/auth/login', clientOrigin: 'web-admin', p95DurationMs: 100, total: 2 },
+      ],
+      topErrorEvents: [
+        { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 3 },
+        { event: 'frontend.http.error', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 2 },
+      ],
     });
   });
 
@@ -72,6 +91,7 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 90 },
     ] as never);
@@ -94,6 +114,7 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 90 },
     ] as never);
@@ -126,6 +147,7 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([] as never);
 
     await service.getSummary(
@@ -147,6 +169,7 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([] as never);
 
     await service.getSummary(
@@ -169,6 +192,7 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 90 },
     ] as never);
@@ -198,6 +222,7 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 90 },
     ] as never);
@@ -317,6 +342,11 @@ describe('ObservabilityService', () => {
         { category: 'audit', _count: { _all: 3 } },
       ] as never);
 
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { key: 'web-admin', count: 5n },
+      { key: 'apk-customer', count: 4n },
+    ] as never);
+
     const breakdown = await service.getBreakdown(
       new Date('2026-07-01T00:00:00.000Z'),
       new Date('2026-07-02T00:00:00.000Z'),
@@ -339,7 +369,70 @@ describe('ObservabilityService', () => {
         { key: 'request', count: 6 },
         { key: 'audit', count: 3 },
       ],
+      origins: [
+        { key: 'web-admin', count: 5 },
+        { key: 'apk-customer', count: 4 },
+      ],
     });
+  });
+
+  it('filters developer dashboard queries by clientOrigin and exposes it in listed events', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.appLog.count)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { key: 'web-admin', succeeded: 1n, failed: 0n },
+    ] as never).mockResolvedValueOnce([
+      { event: 'auth.login.failed', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 1n },
+    ] as never);
+    vi.mocked(prisma.appLog.findMany)
+      .mockResolvedValueOnce([{ durationMs: 80, path: '/api/v1/auth/login', metadata: { clientOrigin: 'web-admin' } }] as never)
+      .mockResolvedValueOnce([
+        {
+          id: 'log-1',
+          timestamp: new Date('2026-07-01T10:00:00.000Z'),
+          source: 'frontend',
+          category: 'client',
+          level: 'info',
+          event: 'frontend.navigation',
+          message: 'Navigation to /login',
+          path: '/login',
+          method: null,
+          statusCode: null,
+          durationMs: null,
+          userId: 'user-1',
+          restaurantId: null,
+          requestId: 'req-1',
+          metadata: {
+            clientOrigin: 'web-admin',
+          },
+        },
+      ] as never);
+
+    await service.getSummary(
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-07-02T00:00:00.000Z'),
+      { clientOrigin: 'web-admin' },
+    );
+
+    const events = await service.listEvents({
+      from: new Date('2026-07-01T00:00:00.000Z'),
+      to: new Date('2026-07-02T00:00:00.000Z'),
+      page: 1,
+      pageSize: 20,
+      clientOrigin: 'web-admin',
+    });
+
+    expect(prisma.appLog.count).toHaveBeenNthCalledWith(1, {
+      where: expect.objectContaining({
+        AND: [{ metadata: { path: ['clientOrigin'], equals: 'web-admin' } }],
+      }),
+    });
+    expect(events.items[0]).toEqual(expect.objectContaining({
+      clientOrigin: 'web-admin',
+    }));
   });
 
   it('applies audit result and entity filters to developer dashboard queries', async () => {
@@ -349,8 +442,13 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(1);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { key: 'web-admin', succeeded: 1n, failed: 0n },
+    ] as never).mockResolvedValueOnce([
+      { event: 'restaurant.product.updated', path: '/api/v1/restaurants/demo/products/prod-1', clientOrigin: 'web-admin', count: 1n },
+    ] as never);
     vi.mocked(prisma.appLog.findMany)
-      .mockResolvedValueOnce([{ durationMs: 80 }] as never)
+      .mockResolvedValueOnce([{ durationMs: 80, path: '/api/v1/restaurants/demo/products/prod-1', metadata: { clientOrigin: 'web-admin' } }] as never)
       .mockResolvedValueOnce([
         {
           id: 'log-1',
@@ -496,6 +594,34 @@ describe('ObservabilityService', () => {
         },
       }),
     });
+  });
+
+  it('returns auth login success and failure counters grouped by client origin', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.appLog.count)
+      .mockResolvedValueOnce(6)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(4);
+    vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
+      { durationMs: 40 },
+      { durationMs: 80 },
+    ] as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { key: 'web-admin', succeeded: 2n, failed: 1n },
+      { key: 'web-demo', succeeded: 3n, failed: 0n },
+      { key: null, succeeded: 1n, failed: 1n },
+    ] as never).mockResolvedValueOnce([] as never);
+
+    const summary = await service.getSummary(
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-07-02T00:00:00.000Z'),
+      { clientOrigin: 'web-admin' },
+    );
+
+    expect(summary.authByOrigin).toEqual([
+      { key: 'web-admin', succeeded: 2, failed: 1 },
+      { key: 'web-demo', succeeded: 3, failed: 0 },
+    ]);
   });
 
   it('normalizes the category of a failed request but keeps its computed severity level', async () => {

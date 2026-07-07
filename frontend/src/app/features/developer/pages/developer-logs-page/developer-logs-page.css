@@ -93,13 +93,32 @@
   justify-content: flex-end;
 }
 
-.developer-logs-page__kpis {
+.developer-logs-page__shortcuts {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.developer-logs-page__cards {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
 }
 
-.developer-logs-page__kpis strong {
+.developer-logs-page__metric-button {
+  all: unset;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+
+.developer-logs-page__metric-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 55%, white);
+  outline-offset: 4px;
+  border-radius: 0.5rem;
+}
+
+.developer-logs-page__cards strong {
   display: block;
   margin-top: 0.5rem;
   font-size: 1.75rem;
@@ -109,6 +128,66 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: 2fr 1fr 1fr;
+}
+
+.developer-logs-page__insights {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.developer-logs-page__insight-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.developer-logs-page__insight-item {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: start;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--ui-border, #d4d4d8);
+}
+
+.developer-logs-page__insight-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.developer-logs-page__insight-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 55%, white);
+  outline-offset: 4px;
+  border-radius: 0.5rem;
+}
+
+.developer-logs-page__insight-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.developer-logs-page__insight-item p {
+  margin: 0.2rem 0 0;
+  word-break: break-word;
+}
+
+.developer-logs-page__insight-metrics {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.developer-logs-page__insight-metrics span {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.developer-logs-page__insight-metrics small {
+  color: var(--ui-text-muted, #71717a);
 }
 
 .developer-logs-page__table {
@@ -153,6 +232,10 @@
   .developer-logs-page__charts {
     grid-template-columns: 1fr;
   }
+
+  .developer-logs-page__insights {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -172,6 +255,14 @@
 
   .developer-logs-page__actions {
     flex-direction: column;
+  }
+
+  .developer-logs-page__shortcuts {
+    flex-direction: column;
+  }
+
+  .developer-logs-page__shortcuts app-button {
+    width: 100%;
   }
 
   .developer-logs-page__actions app-button {

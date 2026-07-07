@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.mesaflow.client.BuildConfig
 import com.mesaflow.client.core.network.AuthApi
 import com.mesaflow.client.core.network.AuthInterceptor
+import com.mesaflow.client.core.network.ClientOriginInterceptor
 import com.mesaflow.client.core.network.MenuApi
 import com.mesaflow.client.core.network.OrdersApi
 import com.mesaflow.client.core.network.RefreshApi
@@ -58,9 +59,13 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("refreshClient")
-    fun provideRefreshOkHttpClient(cookieJar: SessionCookieJar): OkHttpClient =
+    fun provideRefreshOkHttpClient(
+        cookieJar: SessionCookieJar,
+        clientOriginInterceptor: ClientOriginInterceptor,
+    ): OkHttpClient =
         OkHttpClient.Builder()
             .cookieJar(cookieJar)
+            .addInterceptor(clientOriginInterceptor)
             .apply { if (BuildConfig.DEBUG) addInterceptor(basicLogging()) }
             .build()
 
@@ -76,11 +81,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         cookieJar: SessionCookieJar,
+        clientOriginInterceptor: ClientOriginInterceptor,
         authInterceptor: AuthInterceptor,
         tokenAuthenticator: TokenAuthenticator,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .cookieJar(cookieJar)
+            .addInterceptor(clientOriginInterceptor)
             .addInterceptor(authInterceptor)
             .authenticator(tokenAuthenticator)
             .apply { if (BuildConfig.DEBUG) addInterceptor(basicLogging()) }

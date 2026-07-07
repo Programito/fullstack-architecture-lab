@@ -1,8 +1,9 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, type Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../../../core/api/api.config';
+import { CLIENT_ORIGIN_HEADER } from '../../../core/observability/client-origin';
 import { RoleMapper } from '../mappers/role.mapper';
 import { UserMapper } from '../mappers/user.mapper';
 import type { Permission } from '../models/permission.model';
@@ -119,7 +120,7 @@ export class IdentityApiService {
     return this.http.post<AuthResponseDto>(
       `${this.authUrl}/demo-login`,
       { role },
-      { withCredentials: true },
+      { withCredentials: true, headers: new HttpHeaders().set(CLIENT_ORIGIN_HEADER, 'web-demo') },
     );
   }
 

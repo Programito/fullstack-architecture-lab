@@ -110,7 +110,7 @@ export class Chart {
     return {
       color: this.seriesColors(),
       animationDuration: minimal ? 280 : 420,
-      tooltip: minimal ? undefined : { trigger: 'item' },
+      tooltip: { trigger: 'item' },
       legend: minimal ? undefined : { bottom: 0, type: 'scroll' },
       series: [
         {

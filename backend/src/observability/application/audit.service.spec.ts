@@ -57,4 +57,21 @@ describe('AuditService', () => {
       }),
     }));
   });
+
+  it('preserves client origin inside audit metadata', async () => {
+    const record = vi.fn().mockResolvedValue(undefined);
+    const service = new AuditService({ record } as unknown as ObservabilityService);
+
+    await service.record({
+      event: 'auth.login.succeeded',
+      message: 'User signed in.',
+      metadata: { clientOrigin: 'web-admin' },
+    });
+
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        clientOrigin: 'web-admin',
+      }),
+    }));
+  });
 });

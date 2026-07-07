@@ -25,7 +25,26 @@ Campos principales:
 - `message`: descripcion corta
 - `path`, `method`, `statusCode`, `durationMs`
 - `organizationId`, `restaurantId`, `userId`, `requestId`
+- `clientOrigin`: origen/canal derivado desde `metadata.clientOrigin`
 - `metadata`: JSON saneado
+
+### Client origin / canal
+
+Para distinguir rapido entre superficies despues de los cambios de la APK, los
+logs y eventos de auditoria guardan `metadata.clientOrigin` y el dashboard lo
+expone tambien como campo derivado `clientOrigin`.
+
+Valores canonicos actuales:
+
+- `web-admin`: login y uso general del backoffice web
+- `web-demo`: accesos via `POST /auth/demo-login` desde la experiencia web
+- `web-pos`: navegacion y errores generados desde la shell POS web
+- `apk-customer`: trafico originado en la app Android cliente
+- `backend`: eventos internos sin cliente directo
+
+En Android, la deteccion se hace con el header `X-Client-Origin: apk-customer`.
+En web, el frontend anade el origen tanto a client logs como a errores HTTP y
+peticiones relevantes de autenticacion.
 
 ## Auditoria estructurada
 
@@ -37,6 +56,7 @@ La auditoria usa `AuditService` y anade contexto de negocio dentro de `metadata`
 - `entityId: string | null`
 - `entityLabel: string | null`
 - `changedFields: string[]`
+- `clientOrigin: web-admin | web-demo | web-pos | apk-customer | backend`
 
 Actualmente se registra auditoria estructurada en:
 
@@ -80,7 +100,7 @@ Incluye:
 
 - KPIs de peticiones, errores, tasa de error, auditoria y latencia p95
 - serie temporal de actividad
-- breakdown por nivel y categoria
+- breakdown por nivel, categoria y origen/canal
 - tabla paginada de eventos
 - detalle del evento seleccionado
 
@@ -96,7 +116,19 @@ Filtros disponibles:
 - `entityType`
 - `entityId` — picker contra `/developer/logs/entity-options`, se recarga al cambiar `entityType` o `restaurantId`
 - `result`
+- `clientOrigin`
 - `search`
+
+Lectura rapida recomendada para diagnostico por canal:
+
+- login web normal: `category=audit`, `entityType=auth`, `clientOrigin=web-admin`
+- demo login web: `category=audit`, `entityType=auth`, `clientOrigin=web-demo`
+- trafico APK cliente: `clientOrigin=apk-customer`
+- errores POS web: `level=error`, `clientOrigin=web-pos`
+
+Los KPIs, timeline, breakdown y tabla usan el mismo filtro de `clientOrigin`, de
+modo que una vez seleccionado el canal no hace falta reinterpretar cada widget
+por separado.
 
 ### Aislamiento de cuentas demo
 
@@ -243,6 +275,8 @@ Casos comunes:
 - Revisar actividad de un usuario: `actorUserId=<id>`
 - Acotar por endpoint: `path=/api/v1/...`
 - Ver si una accion negocio acabo bien: `category=audit` + `result=succeeded|failed`
+- Separar web y APK: `clientOrigin=web-admin|web-demo|web-pos|apk-customer`
+- Revisar solo accesos desde la app cliente: `entityType=auth` + `clientOrigin=apk-customer`
 
 ## Notas de implementacion
 

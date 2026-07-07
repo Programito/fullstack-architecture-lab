@@ -29,6 +29,7 @@ describe('ClientLogsService', () => {
     expect(post).toHaveBeenCalledWith('/api/v1/observability/client-events', expect.objectContaining({
       event: 'frontend.navigation',
       path: '/developer/logs',
+      metadata: expect.objectContaining({ clientOrigin: 'web-admin' }),
     }));
   });
 
@@ -54,5 +55,26 @@ describe('ClientLogsService', () => {
     });
 
     expect(post).not.toHaveBeenCalled();
+  });
+
+  it('annotates API errors with the current client origin', () => {
+    const post = vi.fn(() => ({ subscribe: ({ next }: { next?: () => void }) => next?.() }));
+
+    TestBed.configureTestingModule({
+      providers: [
+        ClientLogsService,
+        { provide: API_BASE_URL, useValue: '/api/v1' },
+        { provide: HttpClient, useValue: { post } },
+        { provide: Router, useValue: { events: new Subject<unknown>(), url: '/restaurant-pos/service' } },
+        { provide: IdentitySessionStore, useValue: { session: () => ({ accessToken: 'token' }) } },
+      ],
+    });
+
+    const service = TestBed.inject(ClientLogsService);
+    service.logHttpError({ status: 500, url: '/api/v1/restaurants/r1/orders' } as never);
+
+    expect(post).toHaveBeenCalledWith('/api/v1/observability/client-events', expect.objectContaining({
+      metadata: expect.objectContaining({ clientOrigin: 'web-pos' }),
+    }));
   });
 });

@@ -1,5 +1,7 @@
 export type LogLevel = 'info' | 'warn' | 'error';
 export type LogCategory = 'request' | 'error' | 'audit' | 'client';
+export const CLIENT_ORIGIN_OPTIONS = ['web-admin', 'web-demo', 'web-pos', 'apk-customer', 'backend'] as const;
+export type ClientOrigin = (typeof CLIENT_ORIGIN_OPTIONS)[number];
 
 // Must stay in sync by hand with `AuditEntityType` in
 // backend/src/observability/application/audit-event.types.ts.
@@ -26,6 +28,9 @@ export const KNOWN_LOG_PATH_GROUPS = [
   { value: '/developer/logs', label: '/developer/logs' },
   { value: '/observability/client-events', label: '/observability/client-events' },
   { value: '/health', label: '/health' },
+  { value: '/auth/login', label: '/auth/login' },
+  { value: '/auth/demo-login', label: '/auth/demo-login' },
+  { value: '/payments', label: '/restaurants/:id/orders/:orderId/payments' },
 ] as const;
 
 export type DeveloperLogSummaryDto = {
@@ -34,6 +39,23 @@ export type DeveloperLogSummaryDto = {
   errorRate: number;
   auditEvents: number;
   p95DurationMs: number;
+  authByOrigin: Array<{
+    key: ClientOrigin;
+    succeeded: number;
+    failed: number;
+  }>;
+  topSlowPaths: Array<{
+    path: string;
+    clientOrigin: ClientOrigin;
+    p95DurationMs: number;
+    total: number;
+  }>;
+  topErrorEvents: Array<{
+    event: string;
+    path: string | null;
+    clientOrigin: ClientOrigin;
+    count: number;
+  }>;
 };
 
 export type DeveloperLogTimelinePointDto = {
@@ -46,6 +68,7 @@ export type DeveloperLogTimelinePointDto = {
 export type DeveloperLogBreakdownDto = {
   levels: Array<{ key: LogLevel; count: number }>;
   categories: Array<{ key: LogCategory; count: number }>;
+  origins: Array<{ key: string; count: number }>;
 };
 
 export type DeveloperLogEventDto = {
@@ -65,6 +88,7 @@ export type DeveloperLogEventDto = {
   requestId: string | null;
   actorRoles: string[];
   result: 'attempted' | 'succeeded' | 'failed' | null;
+  clientOrigin: ClientOrigin;
   entityType: string | null;
   entityId: string | null;
   entityLabel: string | null;
@@ -82,6 +106,7 @@ export type DeveloperLogFilters = {
   to: string;
   level: '' | LogLevel;
   category: '' | LogCategory;
+  clientOrigin: '' | ClientOrigin;
   path: string;
   actorUserId: string;
   restaurantId: string;
