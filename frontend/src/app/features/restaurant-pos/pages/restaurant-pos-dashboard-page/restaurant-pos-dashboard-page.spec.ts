@@ -15,13 +15,6 @@ import type { RestaurantAnalyticsReportDto } from '../../api/restaurant-analytic
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosDashboardPage } from './restaurant-pos-dashboard-page';
 
-const exportMocks = vi.hoisted(() => ({
-  exportRestaurantAnalyticsWorkbook: vi.fn(async () => new Blob(['xlsx'])),
-  triggerRestaurantAnalyticsWorkbookDownload: vi.fn(),
-}));
-
-vi.mock('./restaurant-pos-dashboard-export', () => exportMocks);
-
 const TIMEZONE = 'Europe/Madrid';
 
 class TestResizeObserver {
@@ -1034,13 +1027,16 @@ describe('RestaurantPosDashboardPage', () => {
   });
 
   it('exports the loaded report as an Excel workbook when the export action is pressed', async () => {
-    exportMocks.exportRestaurantAnalyticsWorkbook.mockClear();
-    exportMocks.triggerRestaurantAnalyticsWorkbookDownload.mockClear();
-
     const i18n = provideI18nTesting();
     const restaurantContext = createRestaurantContextMock();
     const routeHarness = createRouteHarness();
     const api = { getReport: vi.fn(() => of(createReport())) };
+
+    // jsdom has no real Blob URL / download support, so only the browser
+    // integration points are stubbed; the real `exceljs` writer still runs.
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
+    const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     TestBed.overrideComponent(RestaurantPosDashboardPage, {
       remove: { imports: [Chart, DatePicker] },
@@ -1058,20 +1054,18 @@ describe('RestaurantPosDashboardPage', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
-    await Promise.resolve();
-    await Promise.resolve();
 
-    expect(exportMocks.exportRestaurantAnalyticsWorkbook).toHaveBeenCalledTimes(1);
-    const [input] = exportMocks.exportRestaurantAnalyticsWorkbook.mock.calls[0] as [{ restaurantName: string; period: { from: string; to: string }; report: RestaurantAnalyticsReportDto }];
-    expect(input.restaurantName).toBe('MesaFlow Centro');
-    expect(input.report).toEqual(createReport());
-    expect(input.period.from).toBeTruthy();
-    expect(input.period.to).toBeTruthy();
+    await vi.waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1), { timeout: 5000 });
 
-    expect(exportMocks.triggerRestaurantAnalyticsWorkbookDownload).toHaveBeenCalledTimes(1);
-    const [filename] = exportMocks.triggerRestaurantAnalyticsWorkbookDownload.mock.calls[0] as [string];
-    expect(filename).toContain('restaurant-mesaflow-centro');
-    expect(filename.endsWith('.xlsx')).toBe(true);
+    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+    const [blob] = createObjectURLSpy.mock.calls[0] as [Blob];
+    expect(blob.size).toBeGreaterThan(0);
+    expect(blob.type).toContain('spreadsheetml');
+
+    const anchor = clickSpy.mock.instances[0] as HTMLAnchorElement;
+    expect(anchor.download).toContain('restaurant-mesaflow-centro');
+    expect(anchor.download.endsWith('.xlsx')).toBe(true);
+    expect(revokeObjectURLSpy).toHaveBeenCalledTimes(1);
   });
 });
 
