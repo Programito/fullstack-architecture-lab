@@ -177,16 +177,14 @@
     } @else {
       <div class="restaurant-pos-dashboard-page__page-actions mx-auto flex w-full max-w-7xl justify-end gap-2 px-4 lg:px-6">
         @if (hasData()) {
-          <app-button
+          <app-dropdown-menu
             variant="neutral"
-            fill="outline"
             size="sm"
+            [items]="exportMenuItems()"
+            [label]="'restaurantPos.dashboard.export.button' | transloco"
             [disabled]="exportingExcel()"
-            (pressed)="exportExcel()"
-          >
-            <app-icon name="download" size="sm" />
-            {{ 'restaurantPos.dashboard.export.button' | transloco }}
-          </app-button>
+            (selected)="onExportOptionSelected($event)"
+          />
         }
         <app-button variant="neutral" fill="outline" size="sm" (pressed)="toggleDataView()">
           {{ (showDataTables() ? 'restaurantPos.dashboard.filters.viewAsChart' : 'restaurantPos.dashboard.filters.viewAsTable') | transloco }}

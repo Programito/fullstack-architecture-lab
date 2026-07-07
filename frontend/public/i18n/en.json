@@ -862,7 +862,8 @@
         "revenue": "Revenue",
         "quantity": "Quantity",
         "amount": "Amount",
-        "orders": "Orders"
+        "orders": "Orders",
+        "previousPeriod": "Previous period"
       },
       "paymentMethods": {
         "cash": "Cash",
@@ -898,7 +899,7 @@
       "emptyTitle": "No sales data",
       "empty": "There is no sales data for the selected period.",
       "export": {
-        "button": "Export to Excel",
+        "button": "Export",
         "sheets": {
           "summary": "Summary",
           "salesByDay": "Sales by day",
@@ -921,7 +922,9 @@
         "columns": {
           "metric": "Metric",
           "value": "Value"
-        }
+        },
+        "excelOption": "Excel (.xlsx)",
+        "csvOption": "CSV (.zip)"
       }
     }
   },

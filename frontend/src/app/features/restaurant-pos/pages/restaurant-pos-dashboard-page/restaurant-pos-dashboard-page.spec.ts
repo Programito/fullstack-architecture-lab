@@ -14,6 +14,19 @@ import { RestaurantAnalyticsApiService } from '../../api/restaurant-analytics-ap
 import type { RestaurantAnalyticsReportDto } from '../../api/restaurant-analytics.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosDashboardPage } from './restaurant-pos-dashboard-page';
+import { RestaurantAnalyticsExportService } from './restaurant-pos-dashboard-export.service';
+
+// The Angular CLI's vitest builder rejects `vi.mock()` for relative imports
+// ("Please use Angular TestBed for mocking dependencies"), so the export
+// helper is faked here as a plain object and provided via TestBed instead.
+function createExportServiceMock() {
+  return {
+    fileExtensions: { xlsx: 'xlsx', csv: 'zip' },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- keeps the mock's inferred arity at 1, matching the real method, so `mock.calls[0]` destructures as a 1-tuple below.
+    export: vi.fn(async (_input: unknown) => new Blob(['xlsx'])),
+    triggerDownload: vi.fn(),
+  };
+}
 
 const TIMEZONE = 'Europe/Madrid';
 
@@ -123,6 +136,10 @@ function createReport(): RestaurantAnalyticsReportDto {
       { date: '2026-06-23', revenueCents: 60000, ordersCount: 20 },
       { date: '2026-06-24', revenueCents: 60000, ordersCount: 20 },
     ],
+    previousSalesByDay: [
+      { date: '2026-06-16', revenueCents: 50000, ordersCount: 18 },
+      { date: '2026-06-17', revenueCents: 50000, ordersCount: 18 },
+    ],
     topProducts: [{ productName: 'Paella', quantity: 20, revenueCents: 40000 }],
     paymentBreakdown: [
       { method: 'cash', amountCents: 30000, count: 10 },
@@ -137,6 +154,7 @@ function emptyReport(): RestaurantAnalyticsReportDto {
     summary: { revenueCents: 0, ordersCount: 0, averageTicketCents: 0, averageTableTurnoverMinutes: 0 },
     previousSummary: { revenueCents: 0, ordersCount: 0, averageTicketCents: 0, averageTableTurnoverMinutes: 0 },
     salesByDay: [],
+    previousSalesByDay: [],
     topProducts: [],
     paymentBreakdown: [],
     peakHours: [],
@@ -148,6 +166,7 @@ function reportWithPartialSections(): RestaurantAnalyticsReportDto {
     summary: { revenueCents: 45000, ordersCount: 15, averageTicketCents: 3000, averageTableTurnoverMinutes: 48 },
     previousSummary: { revenueCents: 40000, ordersCount: 14, averageTicketCents: 2857, averageTableTurnoverMinutes: 50 },
     salesByDay: [{ date: '2026-06-24', revenueCents: 45000, ordersCount: 15 }],
+    previousSalesByDay: [],
     topProducts: [],
     paymentBreakdown: [],
     peakHours: [],
@@ -278,6 +297,63 @@ describe('RestaurantPosDashboardPage', () => {
 
     expect(view.container.querySelectorAll('.restaurant-pos-dashboard-page__payment-mix-list app-skeleton').length).toBe(0);
     expect(view.container.querySelector('.restaurant-pos-dashboard-page__payment-mix-track')).not.toBeNull();
+  });
+
+  it('overlays the previous period as a second series on the sales trend chart', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart, DatePicker] },
+      add: { imports: [ChartStub, DatePickerStub] },
+    });
+
+    const view = await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    const salesByDayChart = view.fixture.debugElement.queryAll(By.directive(ChartStub))[0].componentInstance as ChartStub;
+    const series = salesByDayChart.data() as Array<{ name: string; values: number[] }>;
+
+    expect(series).toHaveLength(2);
+    expect(series[0]).toEqual({ name: 'Ingresos', values: [600, 600] });
+    expect(series[1]).toEqual({ name: 'Periodo anterior', values: [500, 500] });
+  });
+
+  it('shows only the current-period series when there is no previous-period data', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(reportWithPartialSections())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart, DatePicker] },
+      add: { imports: [ChartStub, DatePickerStub] },
+    });
+
+    const view = await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    const salesByDayChart = view.fixture.debugElement.queryAll(By.directive(ChartStub))[0].componentInstance as ChartStub;
+    const series = salesByDayChart.data() as Array<{ name: string; values: number[] }>;
+
+    expect(series).toHaveLength(1);
+    expect(series[0].name).toBe('Ingresos');
   });
 
   it('uses the shared period picker for custom ranges and reloads analytics when a full range is selected', async () => {
@@ -1023,20 +1099,56 @@ describe('RestaurantPosDashboardPage', () => {
       ],
     });
 
-    expect(screen.queryByRole('button', { name: 'Exportar a Excel' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Exportar' })).toBeNull();
   });
 
   it('exports the loaded report as an Excel workbook when the export action is pressed', async () => {
+    const exportService = createExportServiceMock();
+
     const i18n = provideI18nTesting();
     const restaurantContext = createRestaurantContextMock();
     const routeHarness = createRouteHarness();
     const api = { getReport: vi.fn(() => of(createReport())) };
 
-    // jsdom has no real Blob URL / download support, so only the browser
-    // integration points are stubbed; the real `exceljs` writer still runs.
-    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
-    const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart, DatePicker] },
+      add: { imports: [ChartStub, DatePickerStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+        { provide: RestaurantAnalyticsExportService, useValue: exportService },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Excel (.xlsx)' }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(exportService.export).toHaveBeenCalledTimes(1);
+    const [input] = exportService.export.mock.calls[0] as [{ restaurantName: string; period: { from: string; to: string }; report: RestaurantAnalyticsReportDto }];
+    expect(input.restaurantName).toBe('MesaFlow Centro');
+    expect(input.report).toEqual(createReport());
+    expect(input.period.from).toBeTruthy();
+    expect(input.period.to).toBeTruthy();
+
+    expect(exportService.triggerDownload).toHaveBeenCalledTimes(1);
+    const [filename] = exportService.triggerDownload.mock.calls[0] as [string];
+    expect(filename).toContain('restaurant-mesaflow-centro');
+    expect(filename.endsWith('.xlsx')).toBe(true);
+  });
+
+  it('persists the view mode when toggled and restores it on the next visit', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
 
     TestBed.overrideComponent(RestaurantPosDashboardPage, {
       remove: { imports: [Chart, DatePicker] },
@@ -1053,19 +1165,59 @@ describe('RestaurantPosDashboardPage', () => {
       ],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver como tabla' }));
 
-    await vi.waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1), { timeout: 5000 });
+    expect(i18n.storage.getItem('restaurantPos.dashboard.viewMode')).toBe('table');
+  });
 
-    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
-    const [blob] = createObjectURLSpy.mock.calls[0] as [Blob];
-    expect(blob.size).toBeGreaterThan(0);
-    expect(blob.type).toContain('spreadsheetml');
+  it('restores the last persisted view mode on mount when the URL has no explicit view', async () => {
+    const i18n = provideI18nTesting();
+    i18n.storage.setItem('restaurantPos.dashboard.viewMode', 'table');
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
 
-    const anchor = clickSpy.mock.instances[0] as HTMLAnchorElement;
-    expect(anchor.download).toContain('restaurant-mesaflow-centro');
-    expect(anchor.download.endsWith('.xlsx')).toBe(true);
-    expect(revokeObjectURLSpy).toHaveBeenCalledTimes(1);
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart, DatePicker] },
+      add: { imports: [ChartStub, DatePickerStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByRole('button', { name: 'Ver como gráfico' })).toBeTruthy();
+  });
+
+  it('lets an explicit URL view param override the persisted preference', async () => {
+    const i18n = provideI18nTesting();
+    i18n.storage.setItem('restaurantPos.dashboard.viewMode', 'table');
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness({ view: 'chart' });
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    TestBed.overrideComponent(RestaurantPosDashboardPage, {
+      remove: { imports: [Chart, DatePicker] },
+      add: { imports: [ChartStub, DatePickerStub] },
+    });
+
+    await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByRole('button', { name: 'Ver como tabla' })).toBeTruthy();
   });
 });
 

@@ -110,9 +110,11 @@ describe('Chart', () => {
       componentProperties: { data, categories },
     });
 
-    const options = chartOptions<{ tooltip?: { trigger: string } }>(view.fixture);
+    const options = chartOptions<{ tooltip?: { trigger: string; confine?: boolean } }>(view.fixture);
 
-    expect(options.tooltip).toEqual({ trigger: 'item' });
+    // `confine: true` keeps the tooltip within the chart's own bounds so it
+    // repositions instead of being clipped by `.chart__body`'s `overflow: hidden`.
+    expect(options.tooltip).toEqual({ trigger: 'item', confine: true });
   });
 
   it('builds pie options', async () => {

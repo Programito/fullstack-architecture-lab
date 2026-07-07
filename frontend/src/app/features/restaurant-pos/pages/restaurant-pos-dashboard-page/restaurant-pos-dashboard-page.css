@@ -130,7 +130,8 @@
   margin-bottom: 1rem;
 }
 
-.restaurant-pos-dashboard-page__page-actions app-button {
+.restaurant-pos-dashboard-page__page-actions app-button,
+.restaurant-pos-dashboard-page__page-actions app-dropdown-menu {
   width: 100%;
   flex: 1 1 auto;
 }
@@ -222,8 +223,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .restaurant-pos-dashboard-page__page-actions app-button {
+  .restaurant-pos-dashboard-page__page-actions app-button,
+  .restaurant-pos-dashboard-page__page-actions app-dropdown-menu {
     width: auto;
+    flex: 0 0 auto;
   }
 }
 

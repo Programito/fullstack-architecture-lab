@@ -84,7 +84,7 @@ export class Chart {
       color: this.seriesColors(),
       animationDuration: minimal ? 280 : 420,
       grid: this.gridOptions(minimal),
-      tooltip: minimal ? undefined : { trigger: 'axis' },
+      tooltip: minimal ? undefined : { trigger: 'axis', confine: true },
       legend: minimal || this.data().length < 2 ? undefined : { bottom: 0, type: 'scroll' },
       xAxis: horizontal ? this.valueAxis(minimal) : this.categoryAxis(minimal, bar),
       yAxis: horizontal ? this.categoryAxis(minimal, true) : this.valueAxis(minimal),
@@ -110,7 +110,7 @@ export class Chart {
     return {
       color: this.seriesColors(),
       animationDuration: minimal ? 280 : 420,
-      tooltip: { trigger: 'item' },
+      tooltip: { trigger: 'item', confine: true },
       legend: minimal ? undefined : { bottom: 0, type: 'scroll' },
       series: [
         {
@@ -147,7 +147,7 @@ export class Chart {
       color: this.seriesColors(),
       animationDuration: minimal ? 280 : 420,
       grid: this.gridOptions(minimal),
-      tooltip: minimal ? undefined : { trigger: 'axis' },
+      tooltip: minimal ? undefined : { trigger: 'axis', confine: true },
       legend: minimal ? undefined : { bottom: 0 },
       xAxis: this.categoryAxis(minimal, true, sorted.map((item) => item.name)),
       yAxis: [
@@ -185,7 +185,7 @@ export class Chart {
     return {
       color: this.seriesColors(),
       animationDuration: minimal ? 280 : 420,
-      tooltip: minimal ? undefined : {},
+      tooltip: minimal ? undefined : { confine: true },
       legend: minimal || this.data().length < 2 ? undefined : { bottom: 0, type: 'scroll' },
       radar: {
         radius: minimal ? '72%' : '62%',

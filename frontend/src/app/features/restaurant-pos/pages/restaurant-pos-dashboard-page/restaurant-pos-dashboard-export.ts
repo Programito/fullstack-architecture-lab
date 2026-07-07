@@ -1,10 +1,23 @@
 import type { WorkbookDocument, WorkbookWriter } from '../../../../shared/spreadsheet/workbook-writer.port';
 import { createExcelJsWorkbookWriter } from '../../../../shared/spreadsheet/exceljs-workbook-writer';
+import { createCsvZipWorkbookWriter } from '../../../../shared/spreadsheet/csv-zip-workbook-writer';
 import type { RestaurantAnalyticsReportDto } from '../../api/restaurant-analytics.models';
 
 export type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
-export type ExportRestaurantAnalyticsWorkbookInput = {
+export type WorkbookExportFormat = 'xlsx' | 'csv';
+
+const WRITER_FACTORIES: Record<WorkbookExportFormat, () => WorkbookWriter> = {
+  xlsx: createExcelJsWorkbookWriter,
+  csv: createCsvZipWorkbookWriter,
+};
+
+export const WORKBOOK_EXPORT_FILE_EXTENSIONS: Record<WorkbookExportFormat, string> = {
+  xlsx: 'xlsx',
+  csv: 'zip',
+};
+
+export type BuildRestaurantAnalyticsWorkbookDocumentInput = {
   /** Reserved for future locale-aware formatting; cell values stay numeric today so Excel can format/sort them natively. */
   locale: string;
   restaurantName: string;
@@ -13,7 +26,11 @@ export type ExportRestaurantAnalyticsWorkbookInput = {
   translate: TranslateFn;
   /** Overridable for tests; defaults to `new Date()`. */
   generatedAt?: Date;
-  /** Overridable so tests do not depend on the real `exceljs` adapter. */
+};
+
+export type ExportRestaurantAnalyticsWorkbookInput = BuildRestaurantAnalyticsWorkbookDocumentInput & {
+  format: WorkbookExportFormat;
+  /** Overridable so tests do not depend on the real `exceljs`/`jszip` adapters. */
   writer?: WorkbookWriter;
 };
 
@@ -27,7 +44,7 @@ function averageTicketCents(revenueCents: number, ordersCount: number): number {
  * as plain data in/data out, independent of how the file actually gets
  * written to disk.
  */
-export function buildRestaurantAnalyticsWorkbookDocument(input: ExportRestaurantAnalyticsWorkbookInput): WorkbookDocument {
+export function buildRestaurantAnalyticsWorkbookDocument(input: BuildRestaurantAnalyticsWorkbookDocumentInput): WorkbookDocument {
   const { report, restaurantName, period, translate, generatedAt = new Date() } = input;
 
   const paymentMethodLabel = (method: string) => translate(`restaurantPos.dashboard.paymentMethods.${method}`);
@@ -115,7 +132,7 @@ export function buildRestaurantAnalyticsWorkbookDocument(input: ExportRestaurant
 
 export async function exportRestaurantAnalyticsWorkbook(input: ExportRestaurantAnalyticsWorkbookInput): Promise<Blob> {
   const workbookDocument = buildRestaurantAnalyticsWorkbookDocument(input);
-  const writer = input.writer ?? createExcelJsWorkbookWriter();
+  const writer = input.writer ?? WRITER_FACTORIES[input.format]();
   return writer.write(workbookDocument);
 }
 

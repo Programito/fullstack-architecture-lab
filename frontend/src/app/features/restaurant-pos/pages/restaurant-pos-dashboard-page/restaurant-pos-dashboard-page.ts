@@ -10,6 +10,7 @@ import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
 import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { DatePicker, type DateRangeValue } from '../../../../shared/ui/date-picker/date-picker';
+import { DropdownMenu, type DropdownMenuItem } from '../../../../shared/ui/dropdown-menu/dropdown-menu';
 import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
@@ -19,7 +20,8 @@ import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/ta
 import { RestaurantAnalyticsApiService } from '../../api/restaurant-analytics-api.service';
 import type { RestaurantAnalyticsReportDto } from '../../api/restaurant-analytics.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
-import { exportRestaurantAnalyticsWorkbook, triggerRestaurantAnalyticsWorkbookDownload } from './restaurant-pos-dashboard-export';
+import { KEY_VALUE_STORAGE, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
+import { RestaurantAnalyticsExportService, type WorkbookExportFormat } from './restaurant-pos-dashboard-export.service';
 
 type QuickRange = 'today' | '7d' | '30d' | 'custom';
 type DateInputs = { from: string; to: string };
@@ -39,9 +41,15 @@ const MAX_RANGE_DAYS = 366;
 const QUICK_RANGES = ['today', '7d', '30d'] as const;
 type ConcreteQuickRange = (typeof QUICK_RANGES)[number];
 
+// Only the chart/table view preference is persisted across sessions. The
+// date range is intentionally excluded: quick ranges like "today" resolve
+// relative to the current date, and a stale cached range (or a custom range
+// pinned to a "today" that has since moved on) would show misleading data.
+const VIEW_MODE_STORAGE_KEY = 'restaurantPos.dashboard.viewMode';
+
 @Component({
   selector: 'app-restaurant-pos-dashboard-page',
-  imports: [TranslocoPipe, Alert, Badge, Button, Chart, DatePicker, EmptyState, Icon, SegmentedControl, Skeleton, Spinner, Table],
+  imports: [TranslocoPipe, Alert, Badge, Button, Chart, DatePicker, DropdownMenu, EmptyState, Icon, SegmentedControl, Skeleton, Spinner, Table],
   templateUrl: './restaurant-pos-dashboard-page.html',
   styleUrl: './restaurant-pos-dashboard-page.css',
 })
@@ -51,6 +59,8 @@ export class RestaurantPosDashboardPage {
   private readonly transloco = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly storage = inject(KEY_VALUE_STORAGE);
+  private readonly exportService = inject(RestaurantAnalyticsExportService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
 
   protected readonly loading = signal(true);
@@ -83,6 +93,14 @@ export class RestaurantPosDashboardPage {
     computeDelta(this.report()?.summary.averageTableTurnoverMinutes, this.report()?.previousSummary.averageTableTurnoverMinutes, false),
   );
 
+  protected readonly exportMenuItems = computed<DropdownMenuItem[]>(() => {
+    this.activeLang();
+    return [
+      { label: this.transloco.translate('restaurantPos.dashboard.export.excelOption'), value: 'xlsx' },
+      { label: this.transloco.translate('restaurantPos.dashboard.export.csvOption'), value: 'csv' },
+    ];
+  });
+
   protected readonly quickRangeOptions = computed<SegmentedControlOption[]>(() => {
     this.activeLang();
     return QUICK_RANGES.map((value) => ({
@@ -94,12 +112,21 @@ export class RestaurantPosDashboardPage {
   protected readonly salesByDayCategories = computed(() => (this.report()?.salesByDay ?? []).map((point) => point.date));
   protected readonly salesByDaySeries = computed<ChartSeries[]>(() => {
     this.activeLang();
-    return [
-      {
-        name: this.transloco.translate('restaurantPos.dashboard.charts.revenue'),
-        values: (this.report()?.salesByDay ?? []).map((point) => point.revenueCents / 100),
-      },
-    ];
+    const current: ChartSeries = {
+      name: this.transloco.translate('restaurantPos.dashboard.charts.revenue'),
+      values: (this.report()?.salesByDay ?? []).map((point) => point.revenueCents / 100),
+    };
+
+    const previousPoints = this.report()?.previousSalesByDay ?? [];
+    if (previousPoints.length === 0) return [current];
+
+    // Aligned by day offset, not calendar date: the previous period rarely
+    // shares dates with the current one.
+    const previous: ChartSeries = {
+      name: this.transloco.translate('restaurantPos.dashboard.charts.previousPeriod'),
+      values: previousPoints.map((point) => point.revenueCents / 100),
+    };
+    return [current, previous];
   });
 
   protected readonly topProductsCategories = computed(() => (this.report()?.topProducts ?? []).map((entry) => entry.productName));
@@ -303,7 +330,7 @@ export class RestaurantPosDashboardPage {
   constructor() {
     this.restaurantContext.load();
 
-    const initial = parseInitialState(this.route.snapshot.queryParamMap);
+    const initial = parseInitialState(this.route.snapshot.queryParamMap, readStoredViewMode(this.storage));
     this.quickRange = signal<QuickRange>(initial.quickRange);
     this.dateInputs = signal<DateInputs>(initial.dateInputs);
     this.showDataTables = signal(initial.viewMode === 'table');
@@ -409,6 +436,7 @@ export class RestaurantPosDashboardPage {
   protected toggleDataView(): void {
     const next = !this.showDataTables();
     this.showDataTables.set(next);
+    this.storage.setItem(VIEW_MODE_STORAGE_KEY, next ? 'table' : 'chart');
     this.updateUrl({ view: next ? 'table' : 'chart' });
   }
 
@@ -442,7 +470,7 @@ export class RestaurantPosDashboardPage {
     });
   }
 
-  protected async exportExcel(): Promise<void> {
+  protected async exportReport(format: WorkbookExportFormat): Promise<void> {
     const restaurant = this.restaurantContext.activeRestaurant();
     const report = this.report();
     const { from, to } = this.dateInputs();
@@ -450,16 +478,24 @@ export class RestaurantPosDashboardPage {
 
     this.exportingExcel.set(true);
     try {
-      const blob = await exportRestaurantAnalyticsWorkbook({
+      const blob = await this.exportService.export({
         locale: this.activeLang(),
         restaurantName: restaurant.displayName || restaurant.name,
         period: { from, to },
         report,
         translate: (key, params) => this.transloco.translate(key, params),
+        format,
       });
-      triggerRestaurantAnalyticsWorkbookDownload(`analytics-${restaurant.id}-${from}-${to}.xlsx`, blob);
+      const extension = this.exportService.fileExtensions[format];
+      this.exportService.triggerDownload(`analytics-${restaurant.id}-${from}-${to}.${extension}`, blob);
     } finally {
       this.exportingExcel.set(false);
+    }
+  }
+
+  protected onExportOptionSelected(value: string): void {
+    if (value === 'xlsx' || value === 'csv') {
+      void this.exportReport(value);
     }
   }
 
@@ -557,11 +593,22 @@ function quickRangeDates(range: ConcreteQuickRange, timeZone: string): DateInput
   return { from: addDaysToIsoDate(today, -daysBack), to: today };
 }
 
-function parseInitialState(params: { get(name: string): string | null }): DashboardUiState {
+function readStoredViewMode(storage: KeyValueStorage): DashboardViewMode | null {
+  const value = storage.getItem(VIEW_MODE_STORAGE_KEY);
+  return value === 'table' || value === 'chart' ? value : null;
+}
+
+function parseInitialState(
+  params: { get(name: string): string | null },
+  storedViewMode: DashboardViewMode | null,
+): DashboardUiState {
   const rawRange = params.get('range');
   const isValidRange = rawRange === 'today' || rawRange === '7d' || rawRange === '30d' || rawRange === 'custom';
   let quickRange: QuickRange = isValidRange ? (rawRange as QuickRange) : '7d';
-  const viewMode: DashboardViewMode = params.get('view') === 'table' ? 'table' : 'chart';
+  const rawView = params.get('view');
+  // The URL wins when it explicitly specifies a view (e.g. a shared link);
+  // otherwise fall back to the user's last persisted preference.
+  const viewMode: DashboardViewMode = rawView !== null ? (rawView === 'table' ? 'table' : 'chart') : (storedViewMode ?? 'chart');
   const filtersExpanded = params.get('filters') !== 'closed';
 
   if (quickRange === 'custom') {

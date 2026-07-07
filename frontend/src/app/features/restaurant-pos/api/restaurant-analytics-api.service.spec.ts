@@ -15,6 +15,7 @@ function makeReport(): RestaurantAnalyticsReportDto {
     summary: { revenueCents: 1000, ordersCount: 1, averageTicketCents: 1000, averageTableTurnoverMinutes: 10 },
     previousSummary: { revenueCents: 0, ordersCount: 0, averageTicketCents: 0, averageTableTurnoverMinutes: 0 },
     salesByDay: [],
+    previousSalesByDay: [],
     topProducts: [],
     paymentBreakdown: [],
     peakHours: [],

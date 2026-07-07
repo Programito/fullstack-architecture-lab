@@ -862,7 +862,8 @@
         "amount": "Import",
         "orders": "Comandes",
         "paymentShare": "Mix de pagaments",
-        "averageTicketByDay": "Tiquet mitjà per dia"
+        "averageTicketByDay": "Tiquet mitjà per dia",
+        "previousPeriod": "Període anterior"
       },
       "paymentMethods": {
         "cash": "Efectiu",
@@ -898,7 +899,7 @@
         "peakHoursDescription": "No hi ha hores punta registrades per a aquest període."
       },
       "export": {
-        "button": "Exportar a Excel",
+        "button": "Exportar",
         "sheets": {
           "summary": "Resum",
           "salesByDay": "Vendes per dia",
@@ -921,7 +922,9 @@
         "columns": {
           "metric": "Mètrica",
           "value": "Valor"
-        }
+        },
+        "excelOption": "Excel (.xlsx)",
+        "csvOption": "CSV (.zip)"
       }
     }
   },

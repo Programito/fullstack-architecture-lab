@@ -862,7 +862,8 @@
         "amount": "Importe",
         "orders": "Pedidos",
         "paymentShare": "Mix de pagos",
-        "averageTicketByDay": "Ticket medio por día"
+        "averageTicketByDay": "Ticket medio por día",
+        "previousPeriod": "Periodo anterior"
       },
       "paymentMethods": {
         "cash": "Efectivo",
@@ -898,7 +899,7 @@
         "peakHoursDescription": "No hay horas punta registradas para este periodo."
       },
       "export": {
-        "button": "Exportar a Excel",
+        "button": "Exportar",
         "sheets": {
           "summary": "Resumen",
           "salesByDay": "Ventas por día",
@@ -921,7 +922,9 @@
         "columns": {
           "metric": "Métrica",
           "value": "Valor"
-        }
+        },
+        "excelOption": "Excel (.xlsx)",
+        "csvOption": "CSV (.zip)"
       }
     }
   },

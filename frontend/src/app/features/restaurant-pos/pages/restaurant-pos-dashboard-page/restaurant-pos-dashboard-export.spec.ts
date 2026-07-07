@@ -51,6 +51,7 @@ function createReport(): RestaurantAnalyticsReportDto {
       { date: '2026-06-23', revenueCents: 60000, ordersCount: 20 },
       { date: '2026-06-24', revenueCents: 60000, ordersCount: 15 },
     ],
+    previousSalesByDay: [],
     topProducts: [{ productName: 'Paella', quantity: 20, revenueCents: 40000 }],
     paymentBreakdown: [
       { method: 'cash', amountCents: 30000, count: 10 },
@@ -143,6 +144,7 @@ describe('exportRestaurantAnalyticsWorkbook', () => {
       period: { from: '2026-06-23', to: '2026-06-24' },
       report: createReport(),
       translate,
+      format: 'xlsx',
       writer,
     });
 
@@ -150,5 +152,27 @@ describe('exportRestaurantAnalyticsWorkbook', () => {
     expect(writer.write).toHaveBeenCalledTimes(1);
     const [document] = (writer.write as ReturnType<typeof vi.fn>).mock.calls[0] as [WorkbookDocument];
     expect(document.sheets).toHaveLength(6);
+  });
+
+  it('picks the writer that matches the requested format when none is provided explicitly', async () => {
+    const xlsxBlob = await exportRestaurantAnalyticsWorkbook({
+      locale: 'es',
+      restaurantName: 'MesaFlow Centro',
+      period: { from: '2026-06-23', to: '2026-06-24' },
+      report: createReport(),
+      translate,
+      format: 'xlsx',
+    });
+    const csvBlob = await exportRestaurantAnalyticsWorkbook({
+      locale: 'es',
+      restaurantName: 'MesaFlow Centro',
+      period: { from: '2026-06-23', to: '2026-06-24' },
+      report: createReport(),
+      translate,
+      format: 'csv',
+    });
+
+    expect(xlsxBlob.type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(csvBlob.type).toBe('application/zip');
   });
 });

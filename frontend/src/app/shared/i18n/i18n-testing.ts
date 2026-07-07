@@ -1773,7 +1773,9 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
   },
 });
 
-export const provideI18nTesting = (locale = DEFAULT_LOCALE): { imports: Array<Type<unknown> | ModuleWithProviders<unknown>>; providers: Provider[] } => {
+export const provideI18nTesting = (
+  locale = DEFAULT_LOCALE,
+): { imports: Array<Type<unknown> | ModuleWithProviders<unknown>>; providers: Provider[]; storage: MemoryKeyValueStorage } => {
   const storage = new MemoryKeyValueStorage();
   storage.setItem('locale', locale);
 
@@ -1791,6 +1793,7 @@ export const provideI18nTesting = (locale = DEFAULT_LOCALE): { imports: Array<Ty
       }),
     ],
     providers: [{ provide: KEY_VALUE_STORAGE, useValue: storage }],
+    storage,
   };
 };
 
@@ -1930,6 +1933,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
       quantity: 'Cantidad',
       amount: 'Importe',
       orders: 'Pedidos',
+      previousPeriod: 'Periodo anterior',
     },
     paymentMethods: { cash: 'Efectivo', card: 'Tarjeta', bizum: 'Bizum', other: 'Otro' },
     payments: { dominant: 'Método dominante: {{method}}' },
@@ -1953,7 +1957,9 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     emptyTitle: 'Sin datos de ventas',
     empty: 'No hay datos de ventas para el periodo seleccionado.',
     export: {
-      button: 'Exportar a Excel',
+      button: 'Exportar',
+      excelOption: 'Excel (.xlsx)',
+      csvOption: 'CSV (.zip)',
       sheets: {
         summary: 'Resumen',
         salesByDay: 'Ventas por día',
@@ -2105,6 +2111,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
       quantity: 'Quantity',
       amount: 'Amount',
       orders: 'Orders',
+      previousPeriod: 'Previous period',
     },
     paymentMethods: { cash: 'Cash', card: 'Card', bizum: 'Bizum', other: 'Other' },
     payments: { dominant: 'Top method: {{method}}' },
@@ -2128,7 +2135,9 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     emptyTitle: 'No sales data',
     empty: 'There is no sales data for the selected period.',
     export: {
-      button: 'Export to Excel',
+      button: 'Export',
+      excelOption: 'Excel (.xlsx)',
+      csvOption: 'CSV (.zip)',
       sheets: {
         summary: 'Summary',
         salesByDay: 'Sales by day',
@@ -2281,6 +2290,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
       quantity: 'Quantitat',
       amount: 'Import',
       orders: 'Comandes',
+      previousPeriod: 'Periode anterior',
     },
     paymentMethods: { cash: 'Efectiu', card: 'Targeta', bizum: 'Bizum', other: 'Altre' },
     payments: { dominant: 'Metode dominant: {{method}}' },
@@ -2304,7 +2314,9 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     emptyTitle: 'Sense dades de vendes',
     empty: 'No hi ha dades de vendes per al periode seleccionat.',
     export: {
-      button: 'Exportar a Excel',
+      button: 'Exportar',
+      excelOption: 'Excel (.xlsx)',
+      csvOption: 'CSV (.zip)',
       sheets: {
         summary: 'Resum',
         salesByDay: 'Vendes per dia',
