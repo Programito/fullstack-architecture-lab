@@ -140,6 +140,9 @@ describe('RestaurantPosDashboardPage', () => {
       from: zonedDayRangeUtc(from, TIMEZONE).from,
       to: zonedDayRangeUtc(today, TIMEZONE).to,
     });
+    expect(screen.getByText('Metodo dominante')).toBeTruthy();
+    expect(screen.getByText('Tarjeta')).toBeTruthy();
+    expect(screen.getByText('Mejor dia: 2026-06-23')).toBeTruthy();
   });
 
   it('shows a variation badge comparing each KPI to the previous period', async () => {
@@ -160,8 +163,8 @@ describe('RestaurantPosDashboardPage', () => {
 
     // Revenue (120000 vs 100000) and average ticket (3000 vs 2500) both grew 20%.
     expect(screen.getAllByText('20% mas que el periodo anterior').length).toBe(2);
-    // Orders count (40 vs 40) and table turnover (52 vs 52) are unchanged.
-    expect(screen.getAllByText('Igual que el periodo anterior').length).toBe(2);
+    // Orders count (40 vs 40) is unchanged.
+    expect(screen.getAllByText('Igual que el periodo anterior').length).toBe(1);
   });
 
   it('does not show a variation badge when there is no previous-period baseline', async () => {

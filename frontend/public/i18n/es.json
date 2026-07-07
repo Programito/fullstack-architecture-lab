@@ -843,6 +843,8 @@
         "revenue": "Ingresos",
         "orders": "Pedidos",
         "averageTicket": "Ticket medio",
+        "dominantPayment": "Metodo dominante",
+        "bestDayValue": "Mejor dia: {{date}}",
         "tableTurnover": "Rotaci\u00f3n media de mesa",
         "tableTurnoverValue": "{{minutes}} min",
         "loading": "Cargando m\u00e9trica",

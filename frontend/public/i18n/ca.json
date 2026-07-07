@@ -843,6 +843,8 @@
         "revenue": "Ingressos",
         "orders": "Comandes",
         "averageTicket": "Tiquet mitj\u00e0",
+        "dominantPayment": "Metode dominant",
+        "bestDayValue": "Millor dia: {{date}}",
         "tableTurnover": "Rotaci\u00f3 mitjana de taula",
         "tableTurnoverValue": "{{minutes}} min",
         "loading": "Carregant m\u00e8trica",

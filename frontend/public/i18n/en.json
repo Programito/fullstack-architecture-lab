@@ -843,6 +843,8 @@
         "revenue": "Revenue",
         "orders": "Orders",
         "averageTicket": "Average ticket",
+        "dominantPayment": "Top payment method",
+        "bestDayValue": "Best day: {{date}}",
         "tableTurnover": "Average table turnover",
         "tableTurnoverValue": "{{minutes}} min",
         "loading": "Loading metric",

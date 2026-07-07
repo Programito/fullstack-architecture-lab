@@ -273,6 +273,12 @@ export class RestaurantPosDashboardPage {
     if (points.length === 0) return null;
     return points.reduce((best, point) => point.revenueCents > best.revenueCents ? point : best);
   });
+  protected readonly bestRevenueDayLabel = computed(() => {
+    this.activeLang();
+    const bestDay = this.bestRevenueDay();
+    if (!bestDay) return null;
+    return this.transloco.translate('restaurantPos.dashboard.metrics.bestDayValue', { date: bestDay.date });
+  });
 
   constructor() {
     this.restaurantContext.load();

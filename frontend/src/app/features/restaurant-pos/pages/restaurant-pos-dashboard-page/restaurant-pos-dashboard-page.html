@@ -130,15 +130,15 @@
           }
         </div>
         <div class="theme-panel rounded-2xl border p-4 shadow-sm">
-          <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.tableTurnover' | transloco }}</p>
+          <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.dashboard.metrics.dominantPayment' | transloco }}</p>
           @if (loading()) {
             <app-skeleton shape="text" width="5rem" height="1.75rem" class="mt-2 block" [ariaLabel]="'restaurantPos.dashboard.metrics.loading' | transloco" />
           } @else {
             <p class="theme-title mt-2 text-2xl font-semibold">
-              {{ 'restaurantPos.dashboard.metrics.tableTurnoverValue' | transloco: { minutes: report()?.summary?.averageTableTurnoverMinutes ?? 0 } }}
+              {{ paymentMethodLabel(dominantPaymentMethod()?.method ?? 'other') }}
             </p>
-            @if (turnoverDelta(); as delta) {
-              <app-badge [variant]="delta.variant" class="mt-1 inline-block">{{ deltaLabel(delta) }}</app-badge>
+            @if (bestRevenueDayLabel(); as bestDayLabel) {
+              <p class="theme-muted mt-1 text-sm">{{ bestDayLabel }}</p>
             }
           }
         </div>
