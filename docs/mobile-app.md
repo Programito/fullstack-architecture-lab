@@ -2,8 +2,31 @@
 
 Documento técnico de la app cliente Android (`mobile/`). Complementa el plan de
 fases (`docs/plan-mobile-app-cliente.md`) y el `mobile/README.md` (setup,
-conexión al backend, flujo de pedido). Aquí el foco es *cómo* está construida:
-capas, paquetes y los dos flujos críticos de extremo a extremo.
+flujo de pedido). Aquí el foco es *cómo* está construida: capas, paquetes,
+conexión al backend y los dos flujos críticos de extremo a extremo.
+
+## Conexión al backend en desarrollo
+
+- La URL base en debug es `http://127.0.0.1:3000/api/v1/`, alcanzada mediante un túnel de ADB
+  (funciona igual en emulador y en dispositivo físico). Con el emulador/dispositivo ya arrancado
+  y el backend levantado en local, ejecuta:
+  ```
+  adb reverse tcp:3000 tcp:3000
+  ```
+  Hay que repetir este comando cada vez que se reinicia el emulador o se reconecta el dispositivo
+  (el túnel no persiste).
+- El backend necesita `DEMO_LOGIN_ENABLED=true` para el modo demo (rol `waiter`).
+- Solo el build de debug permite HTTP en claro (manifest de debug); release exige HTTPS.
+
+> **Nota — por qué `adb reverse` y no `10.0.2.2`:** el alias `10.0.2.2` (NAT interno del
+> emulador hacia el host) debería funcionar igual de bien y es más simple, pero en algunos
+> entornos Windows falla con `SocketTimeoutException` de forma silenciosa (paquetes
+> descartados) sin relación con firewall, antivirus, VPN ni con cómo escucha el backend —
+> causa no confirmada, posiblemente un problema puntual del backend de red SLIRP del
+> emulador en esa máquina. `adb reverse` evita esa capa de red virtual por completo (usa el
+> canal de depuración de ADB), así que es la alternativa recomendada si `10.0.2.2` deja de
+> responder. Si en tu máquina `10.0.2.2` funciona sin problemas, puedes usarlo en su lugar
+> cambiando `BASE_URL` y sin necesitar el paso de `adb reverse`.
 
 ## Capas y paquetes
 

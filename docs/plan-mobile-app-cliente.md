@@ -100,6 +100,18 @@ flowchart LR
 
 Cada fase termina con la app compilando, sus tests en verde y algo demostrable. Orden pensado para tener demo visual pronto.
 
+### Estado actual
+
+- [x] Fase 0 — Bootstrap: proyecto compila, tema base, Hilt cableado, i18n es/en/ca inicial
+- [x] Fase 1 — Design system y tema Expressive (paleta teal/terracota, componentes base con previews)
+- [x] Fase 2 — Core de red y sesión (Retrofit + kotlinx.serialization, refresh por cookie httpOnly, DataStore, tests MockWebServer)
+- [x] Fase 3 — Entry: escáner QR (Google code scanner) + modo demo real + Navigation 3
+- [x] Fase 4 — Carta real: buscador sin tildes, categorías, imágenes Coil, estados carga/vacío/error
+- [x] Fase 5 — Configurador de producto (extras, combos, "sin X") + carrito Room con merge de líneas idénticas
+- [x] Fase 6 — Resumen del pedido (editar/borrar líneas) y envío real a cocina (abre pedido + líneas + disparo a cocina; el carrito se conserva si algo falla)
+- [x] Fase 7 — Cobro (pasarela mock: tarjeta/Bizum/efectivo, sin cargo real) + registro real del pago en backend + pantalla de pago aceptado
+- [~] Fase 8 — Pulido, i18n completa, APK release: i18n, accesibilidad, animaciones (Nav3 + rebote del carrito) y `docs/mobile-app.md` ya hechos; quedan tests de UI y el APK release firmado.
+
 ### Fase 0 — Bootstrap del proyecto (≈ ½ día)
 
 1. Crear proyecto en `mobile/` (Empty Compose Activity, Kotlin DSL, minSdk 26, targetSdk actual).

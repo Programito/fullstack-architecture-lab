@@ -10,6 +10,7 @@ Full-stack restaurant POS. Signal-first Angular frontend and NestJS backend with
 
 - **Frontend:** Angular 21 (standalone, signals), Tailwind CSS, Transloco (es/en/ca), Storybook, Vitest, Testing Library and Playwright.
 - **Backend:** NestJS 11, Prisma, PostgreSQL, Swagger, Vitest, Supertest and Testcontainers.
+- **Mobile:** Kotlin, Jetpack Compose, Material 3 Expressive, MVVM/UDF, Hilt.
 - **Tooling:** pnpm, TypeScript and Docker.
 
 ### Structure
@@ -17,10 +18,11 @@ Full-stack restaurant POS. Signal-first Angular frontend and NestJS backend with
 ```txt
 .
 +-- frontend/   # Angular, shared UI, Storybook and e2e
-`-- backend/    # NestJS, clean architecture, Prisma and tests
++-- backend/    # NestJS, clean architecture, Prisma and tests
+`-- mobile/     # Android native client app (Kotlin, Jetpack Compose)
 ```
 
-See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/README.md) for app-specific setup and commands.
+See [frontend/README.md](frontend/README.md), [backend/README.md](backend/README.md) and [mobile/README.md](mobile/README.md) for app-specific setup and commands.
 
 ### Implemented features
 
@@ -70,6 +72,10 @@ pnpm dev
 # http://localhost:3000
 # Docs (requires developer role): http://localhost:3000/developer/api-docs/
 ```
+
+#### Mobile
+
+Open the `mobile/` folder in Android Studio and run on an emulator or device (API 26+). See [mobile/README.md](mobile/README.md) for setup details.
 
 ### Backend environment variables
 
@@ -138,6 +144,7 @@ TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y 
 
 - **Frontend:** Angular 21 (standalone, signals), Tailwind CSS, Transloco (es/en/ca), Storybook, Vitest, Testing Library y Playwright.
 - **Backend:** NestJS 11, Prisma, PostgreSQL, Swagger, Vitest, Supertest y Testcontainers.
+- **Mobile:** Kotlin, Jetpack Compose, Material 3 Expressive, MVVM/UDF, Hilt.
 - **Herramientas:** pnpm, TypeScript y Docker.
 
 ### Estructura
@@ -145,10 +152,11 @@ TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y 
 ```txt
 .
 +-- frontend/   # Angular, UI compartida, Storybook y e2e
-`-- backend/    # NestJS, arquitectura limpia, Prisma y tests
++-- backend/    # NestJS, arquitectura limpia, Prisma y tests
+`-- mobile/     # App cliente Android nativa (Kotlin, Jetpack Compose)
 ```
 
-Consulta [frontend/README.md](frontend/README.md) y [backend/README.md](backend/README.md) para la configuración y comandos específicos de cada app.
+Consulta [frontend/README.md](frontend/README.md), [backend/README.md](backend/README.md) y [mobile/README.md](mobile/README.md) para la configuración y comandos específicos de cada app.
 
 ### Funcionalidades implementadas
 
@@ -198,6 +206,10 @@ pnpm dev
 # http://localhost:3000
 # Docs (requiere rol developer): http://localhost:3000/developer/api-docs/
 ```
+
+#### Mobile
+
+Abre la carpeta `mobile/` en Android Studio y ejecuta en un emulador o dispositivo (API 26+). Consulta [mobile/README.md](mobile/README.md) para el detalle de la configuración.
 
 ### Variables de entorno del backend
 
