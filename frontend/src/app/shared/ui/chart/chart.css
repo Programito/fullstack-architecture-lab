@@ -66,6 +66,10 @@
   height: var(--chart-height);
 }
 
+.chart--interactive .chart__canvas {
+  cursor: pointer;
+}
+
 .chart app-empty-state {
   display: grid;
   min-height: var(--chart-height);

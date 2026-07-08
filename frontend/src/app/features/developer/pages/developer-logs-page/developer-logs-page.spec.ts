@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/angular';
 import { ActivatedRoute, Router, convertToParamMap, type Params } from '@angular/router';
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import { Chart } from '../../../../shared/ui/chart/chart';
+import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { DeveloperLogsPage } from './developer-logs-page';
 
@@ -15,13 +15,13 @@ class TestResizeObserver {
   disconnect(): void {}
 }
 
-@Component({ selector: 'app-chart', template: '{{ title() }}' })
+@Component({ selector: 'app-chart', template: '<button type="button" (click)="pointSelected.emit({ seriesName: firstSeriesName(), category: firstCategory(), value: firstValue() })">{{ title() }}</button>' })
 class ChartStub {
   readonly type = input('line');
   readonly appearance = input('default');
   readonly size = input('md');
   readonly variant = input('primary');
-  readonly data = input<unknown[]>([]);
+  readonly data = input<ChartSeries[]>([]);
   readonly categories = input<string[]>([]);
   readonly title = input('');
   readonly description = input('');
@@ -29,6 +29,20 @@ class ChartStub {
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
   readonly max = input(100);
+  readonly interactive = input(false);
+  readonly pointSelected = output<{ seriesName: string; category: string; value: number }>();
+
+  protected firstCategory(): string {
+    return this.categories()[0] ?? '';
+  }
+
+  protected firstSeriesName(): string {
+    return this.data()[0]?.name ?? this.title();
+  }
+
+  protected firstValue(): number {
+    return this.data()[0]?.values.at(0) ?? 0;
+  }
 }
 
 function pickerApiMocks() {
@@ -1024,6 +1038,99 @@ describe('DeveloperLogsPage', () => {
     });
 
     expect(container.textContent).toContain('developer.logs.sections.errorTrends');
+  });
+
+  it('applies request path filters from the slow-path chart', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 20,
+        errorCount: 2,
+        errorRate: 10,
+        auditEvents: 1,
+        p95DurationMs: 260,
+        authByOrigin: [],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.sections.slowPaths' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      path: '/api/v1/orders/:id/payments',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      path: '/api/v1/orders/:id/payments',
+    }), 1, 20);
+  });
+
+  it('applies request error filters from the error-trends chart', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 10,
+        errorCount: 4,
+        errorRate: 40,
+        auditEvents: 2,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([
+        { bucket: '2026-07-02T10:00', path: '/api/v1/auth/login', count: 2 },
+        { bucket: '2026-07-02T11:00', path: '/api/v1/restaurants/:id/orders/:id/payments', count: 1 },
+      ])),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.sections.errorTrends' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+      path: '/api/v1/auth/login',
+      search: '',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+      path: '/api/v1/auth/login',
+      search: '',
+    }), 1, 20);
   });
 
   it('renders the events table with a compact table variant', async () => {

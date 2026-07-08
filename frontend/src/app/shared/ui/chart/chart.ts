@@ -1,4 +1,4 @@
-import { booleanAttribute, Component, computed, input, numberAttribute } from '@angular/core';
+import { booleanAttribute, Component, computed, input, numberAttribute, output } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts/core';
 import * as echarts from 'echarts/core';
 import { BarChart, GaugeChart, LineChart, PieChart, RadarChart } from 'echarts/charts';
@@ -32,6 +32,12 @@ export type ChartSeries = {
   color?: string;
 };
 
+export type ChartPointSelection = {
+  seriesName: string;
+  category: string;
+  value: number;
+};
+
 @Component({
   selector: 'app-chart',
   imports: [NgxEchartsDirective, EmptyState, Skeleton],
@@ -49,12 +55,21 @@ export class Chart {
   readonly title = input('');
   readonly description = input('');
   readonly loading = input(false, { transform: booleanAttribute });
+  readonly interactive = input(false, { transform: booleanAttribute });
   readonly emptyTitle = input('Sin datos');
   readonly emptyDescription = input('No hay datos para mostrar en esta grafica.');
   readonly max = input(100, { transform: normalizeMax });
+  readonly pointSelected = output<ChartPointSelection>();
 
   protected readonly classes = computed(() =>
-    ['chart', `chart--${this.size()}`, `chart--${this.variant()}`, `chart--${this.appearance()}`, this.loading() ? 'chart--loading' : ''].join(' '),
+    [
+      'chart',
+      `chart--${this.size()}`,
+      `chart--${this.variant()}`,
+      `chart--${this.appearance()}`,
+      this.loading() ? 'chart--loading' : '',
+      this.interactive() ? 'chart--interactive' : '',
+    ].join(' '),
   );
 
   protected readonly hasData = computed(() => this.data().some((series) => series.values.some((value) => Number.isFinite(value))));
@@ -276,6 +291,19 @@ export class Chart {
   private seriesColors(): string[] {
     const explicit = this.data().map((series) => series.color).filter((color): color is string => Boolean(color));
     return explicit.length > 0 ? explicit : palettes[this.variant()];
+  }
+
+  protected handleChartClick(event: { componentType?: string; seriesName?: string; name?: string; value?: unknown }): void {
+    const numericValue = typeof event.value === 'number' ? event.value : Number.NaN;
+    if (!this.interactive() || event.componentType !== 'series' || !event.seriesName || !event.name || !Number.isFinite(numericValue)) {
+      return;
+    }
+
+    this.pointSelected.emit({
+      seriesName: event.seriesName,
+      category: event.name,
+      value: numericValue,
+    });
   }
 }
 

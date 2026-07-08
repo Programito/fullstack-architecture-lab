@@ -195,7 +195,16 @@
 .developer-logs-page__charts {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-auto-flow: dense;
+}
+
+.developer-logs-page__chart-card {
+  min-width: 0;
+}
+
+.developer-logs-page__chart-card--wide {
+  grid-column: span 2;
 }
 
 .developer-logs-page__insights {
@@ -297,8 +306,8 @@
 }
 
 @media (max-width: 960px) {
-  .developer-logs-page__charts {
-    grid-template-columns: 1fr;
+  .developer-logs-page__chart-card--wide {
+    grid-column: auto;
   }
 
   .developer-logs-page__insights {

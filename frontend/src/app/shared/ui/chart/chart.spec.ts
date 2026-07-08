@@ -58,6 +58,26 @@ describe('Chart', () => {
     expect(screen.getByText('Todavia no hay registros.')).toBeTruthy();
   });
 
+  it('emits the selected point when interactive charts are clicked', async () => {
+    const pointSelected = vi.fn();
+    const view = await render('<app-chart interactive [data]="data" [categories]="categories" (pointSelected)="pointSelected($event)" />', {
+      imports: [Chart],
+      componentProperties: { data, categories, pointSelected },
+    });
+
+    const chart = view.fixture.debugElement.query(By.directive(Chart)).componentInstance as unknown as {
+      handleChartClick: (event: { componentType?: string; seriesName?: string; name?: string; value?: number }) => void;
+    };
+
+    chart.handleChartClick({ componentType: 'series', seriesName: 'Ingresos', name: 'Feb', value: 18 });
+
+    expect(pointSelected).toHaveBeenCalledWith({
+      seriesName: 'Ingresos',
+      category: 'Feb',
+      value: 18,
+    });
+  });
+
   it('builds line options', async () => {
     const view = await render('<app-chart type="line" [data]="data" [categories]="categories" />', {
       imports: [Chart],

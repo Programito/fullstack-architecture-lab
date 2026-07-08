@@ -9,7 +9,7 @@ import { forkJoin, of } from 'rxjs';
 import { Badge } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
 import { Card } from '../../../../shared/ui/card/card';
-import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
+import { Chart, type ChartPointSelection, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/combobox';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
@@ -339,6 +339,23 @@ export class DeveloperLogsPage {
         search: '',
       },
       'audit',
+    );
+  }
+
+  protected focusSlowPathChart(selection: ChartPointSelection): void {
+    const match = this.topSlowPaths().find((entry) => entry.path === selection.category);
+    this.focusSlowPath(selection.category, match?.clientOrigin ?? '');
+  }
+
+  protected focusErrorTrendChart(selection: ChartPointSelection): void {
+    this.applyFilterState(
+      {
+        category: 'request',
+        level: 'error',
+        path: selection.seriesName,
+        search: '',
+      },
+      'operations',
     );
   }
 

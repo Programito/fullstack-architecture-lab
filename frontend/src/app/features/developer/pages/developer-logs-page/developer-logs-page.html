@@ -340,7 +340,7 @@
   }
 
   <section class="developer-logs-page__charts">
-    <app-card variant="outlined">
+    <app-card variant="outlined" class="developer-logs-page__chart-card developer-logs-page__chart-card--wide">
       <app-chart
         type="line"
         [loading]="loading()"
@@ -349,7 +349,7 @@
         [data]="timelineSeries()"
       />
     </app-card>
-    <app-card variant="outlined">
+    <app-card variant="outlined" class="developer-logs-page__chart-card">
       <app-chart
         type="bar"
         [loading]="loading()"
@@ -358,7 +358,7 @@
         [data]="levelSeries()"
       />
     </app-card>
-    <app-card variant="outlined">
+    <app-card variant="outlined" class="developer-logs-page__chart-card">
       <app-chart
         type="donut"
         [loading]="loading()"
@@ -367,7 +367,7 @@
         [data]="categorySeries()"
       />
     </app-card>
-    <app-card variant="outlined">
+    <app-card variant="outlined" class="developer-logs-page__chart-card">
       <app-chart
         type="donut"
         [loading]="loading()"
@@ -377,7 +377,7 @@
       />
     </app-card>
     @if (authByOrigin().length) {
-      <app-card variant="outlined">
+      <app-card variant="outlined" class="developer-logs-page__chart-card">
         <app-chart
           type="bar"
           [loading]="loading()"
@@ -388,24 +388,28 @@
       </app-card>
     }
     @if (topSlowPaths().length) {
-      <app-card variant="outlined">
+      <app-card variant="outlined" class="developer-logs-page__chart-card">
         <app-chart
           type="bar"
+          interactive
           [loading]="loading()"
           [title]="'developer.logs.sections.slowPaths' | transloco"
           [categories]="slowPathCategories()"
           [data]="slowPathSeries()"
+          (pointSelected)="focusSlowPathChart($event)"
         />
       </app-card>
     }
     @if (errorTrendSeries().length) {
-      <app-card variant="outlined">
+      <app-card variant="outlined" class="developer-logs-page__chart-card developer-logs-page__chart-card--wide">
         <app-chart
           type="stackedBar"
+          interactive
           [loading]="loading()"
           [title]="'developer.logs.sections.errorTrends' | transloco"
           [categories]="errorTrendCategories()"
           [data]="errorTrendSeries()"
+          (pointSelected)="focusErrorTrendChart($event)"
         />
       </app-card>
     }
