@@ -61,3 +61,9 @@ export type LogSummary = {
     count: number;
   }>;
 };
+
+export type LogErrorTrendPoint = {
+  bucket: string;
+  path: string;
+  count: number;
+};

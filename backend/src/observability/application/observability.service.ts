@@ -5,7 +5,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 import { extractClientOrigin } from './client-origin';
 import { OBSERVABILITY_EVENT_CATALOG } from './observability-event-catalog';
 import { sanitizeMetadata } from './observability-metadata.policy';
-import type { AppLogInput, LogQuery, LogSummary } from './observability.types';
+import type { AppLogInput, LogErrorTrendPoint, LogQuery, LogSummary } from './observability.types';
 import { ObservabilityRetentionService } from './observability-retention.service';
 
 @Injectable()
@@ -200,6 +200,32 @@ export class ObservabilityService {
     } catch (error) {
       this.logger.error('Failed to compute log breakdown.', error instanceof Error ? error.stack : error);
       return { levels: [], categories: [], origins: [] };
+    }
+  }
+
+  async getErrorTrendsByPath(
+    from: Date,
+    to: Date,
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
+  ): Promise<LogErrorTrendPoint[]> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{ bucket: Date; path: string | null; count: bigint }>>(Prisma.sql`
+        SELECT
+          date_trunc('hour', "timestamp") AS bucket,
+          "path",
+          COUNT(*)::bigint AS count
+        FROM "app_logs"
+        WHERE ${buildWhereSql({ ...filters, from, to })}
+          AND "level" = 'error'
+          AND "path" IS NOT NULL
+        GROUP BY bucket, "path"
+        ORDER BY bucket ASC, count DESC
+      `);
+
+      return mergeErrorTrendRows(rows);
+    } catch (error) {
+      this.logger.error('Failed to compute error trends by path.', error instanceof Error ? error.stack : error);
+      return [];
     }
   }
 
@@ -406,6 +432,22 @@ function summarizeTopSlowPaths(rows: Array<{ durationMs: number | null; path: st
     }))
     .sort((left, right) => right.p95DurationMs - left.p95DurationMs || right.total - left.total)
     .slice(0, 5);
+}
+
+function mergeErrorTrendRows(rows: Array<{ bucket: Date; path: string | null; count: bigint }>): LogErrorTrendPoint[] {
+  const merged = new Map<string, LogErrorTrendPoint>();
+
+  for (const row of rows) {
+    if (!row.path) continue;
+    const bucket = `${row.bucket.toISOString().slice(0, 13)}:00`;
+    const path = normalizeObservedPath(row.path);
+    const key = `${bucket}::${path}`;
+    const current = merged.get(key) ?? { bucket, path, count: 0 };
+    current.count += Number(row.count);
+    merged.set(key, current);
+  }
+
+  return [...merged.values()].sort((left, right) => left.bucket.localeCompare(right.bucket) || right.count - left.count || left.path.localeCompare(right.path));
 }
 
 function normalizeObservedPath(path: string): string {

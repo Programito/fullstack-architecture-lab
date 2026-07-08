@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/api/api.config';
 import type {
   DeveloperLogBreakdownDto,
+  DeveloperLogErrorTrendPointDto,
   DeveloperLogEventsResponseDto,
   DeveloperLogFilters,
   DeveloperLogSummaryDto,
@@ -43,6 +44,10 @@ export class DeveloperLogsApiService {
 
   getBreakdown(filters: DeveloperLogFilters): Observable<DeveloperLogBreakdownDto> {
     return this.http.get<DeveloperLogBreakdownDto>(`${this.baseUrl}/breakdown`, { params: this.buildParams(filters) });
+  }
+
+  getErrorTrendsByPath(filters: DeveloperLogFilters): Observable<DeveloperLogErrorTrendPointDto[]> {
+    return this.http.get<DeveloperLogErrorTrendPointDto[]>(`${this.baseUrl}/error-trends`, { params: this.buildParams(filters) });
   }
 
   getEvents(filters: DeveloperLogFilters, page: number, pageSize: number): Observable<DeveloperLogEventsResponseDto> {

@@ -990,6 +990,42 @@ describe('DeveloperLogsPage', () => {
     expect(container.textContent).toContain('developer.logs.sections.slowPaths');
   });
 
+  it('renders an error-trends chart when backend trend data exists', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 10,
+        errorCount: 4,
+        errorRate: 40,
+        auditEvents: 2,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([
+        { bucket: '2026-07-02T10:00', path: '/api/v1/auth/login', count: 2 },
+        { bucket: '2026-07-02T11:00', path: '/api/v1/restaurants/:id/orders/:id/payments', count: 1 },
+      ])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.textContent).toContain('developer.logs.sections.errorTrends');
+  });
+
   it('renders the events table with a compact table variant', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();

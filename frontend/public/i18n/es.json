@@ -228,6 +228,7 @@
         "topErrors": "Top errores por canal",
         "authByOrigin": "Logins por origen",
         "slowPaths": "Latencia por rutas lentas",
+        "errorTrends": "Tendencia de errores por ruta",
         "requests": "peticiones",
         "occurrences": "ocurrencias"
       },

@@ -398,6 +398,17 @@
         />
       </app-card>
     }
+    @if (errorTrendSeries().length) {
+      <app-card variant="outlined">
+        <app-chart
+          type="stackedBar"
+          [loading]="loading()"
+          [title]="'developer.logs.sections.errorTrends' | transloco"
+          [categories]="errorTrendCategories()"
+          [data]="errorTrendSeries()"
+        />
+      </app-card>
+    }
   </section>
 
   <section class="developer-logs-page__table">

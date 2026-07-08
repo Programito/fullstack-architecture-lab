@@ -135,6 +135,50 @@ describe('ObservabilityService (integration)', () => {
     ]));
   });
 
+  it('returns hourly error trends grouped by normalized path', async () => {
+    await prisma.appLog.createMany({
+      data: [
+        {
+          timestamp: new Date('2026-01-10T10:05:00.000Z'),
+          source: 'backend',
+          category: 'request',
+          level: 'error',
+          event: 'http.request.failed',
+          message: 'payment failed',
+          path: '/api/v1/restaurants/demo/orders/order-1/payments',
+        },
+        {
+          timestamp: new Date('2026-01-10T10:35:00.000Z'),
+          source: 'backend',
+          category: 'request',
+          level: 'error',
+          event: 'http.request.failed',
+          message: 'payment failed again',
+          path: '/api/v1/restaurants/demo/orders/order-2/payments',
+        },
+        {
+          timestamp: new Date('2026-01-10T11:10:00.000Z'),
+          source: 'backend',
+          category: 'request',
+          level: 'error',
+          event: 'http.request.failed',
+          message: 'login failed',
+          path: '/api/v1/auth/login',
+        },
+      ],
+    });
+
+    const trends = await service.getErrorTrendsByPath(
+      new Date('2026-01-10T00:00:00.000Z'),
+      new Date('2026-01-11T00:00:00.000Z'),
+    );
+
+    expect(trends).toEqual([
+      { bucket: '2026-01-10T10:00', path: '/api/v1/restaurants/:id/orders/:id/payments', count: 2 },
+      { bucket: '2026-01-10T11:00', path: '/api/v1/auth/login', count: 1 },
+    ]);
+  });
+
   it('filters events by entity metadata and free-text search using Postgres JSON operators', async () => {
     await prisma.appLog.createMany({
       data: [

@@ -46,6 +46,15 @@ export class DeveloperLogsController {
     return this.observability.getBreakdown(from, to, { ...query, restrictToUserIds });
   }
 
+  @Get('error-trends')
+  @Version('1')
+  @ApiOkResponse()
+  async errorTrends(@Query() query: DeveloperLogsQueryDto, @Req() request: AuthenticatedRequest) {
+    const { from, to } = resolveRange(query);
+    const restrictToUserIds = await this.resolveRestrictToUserIds(request);
+    return this.observability.getErrorTrendsByPath(from, to, { ...query, restrictToUserIds });
+  }
+
   @Get('events')
   @Version('1')
   @ApiOkResponse()

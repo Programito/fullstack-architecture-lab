@@ -4,7 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 
 import { Badge } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
@@ -17,6 +17,7 @@ import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { AUDIT_ENTITY_TYPES, CLIENT_ORIGIN_OPTIONS, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
 import type {
   DeveloperLogBreakdownDto,
+  DeveloperLogErrorTrendPointDto,
   DeveloperLogEventDto,
   DeveloperLogFilters,
   DeveloperLogsQuickRange,
@@ -49,6 +50,7 @@ export class DeveloperLogsPage {
   protected readonly loading = signal(true);
   protected readonly summary = signal<DeveloperLogSummaryDto | null>(null);
   protected readonly timeline = signal<DeveloperLogTimelinePointDto[]>([]);
+  protected readonly errorTrends = signal<DeveloperLogErrorTrendPointDto[]>([]);
   protected readonly breakdown = signal<DeveloperLogBreakdownDto>({ levels: [], categories: [], origins: [] });
   protected readonly rows = signal<TableRow[]>([]);
   protected readonly totalItems = signal(0);
@@ -124,6 +126,18 @@ export class DeveloperLogsPage {
     return [
       { name: this.transloco.translate('developer.logs.metrics.latency'), values: this.topSlowPaths().map((entry) => entry.p95DurationMs) },
     ];
+  });
+  protected readonly errorTrendCategories = computed(() => [...new Set(this.errorTrends().map((entry) => shortBucket(entry.bucket)))]);
+  protected readonly errorTrendSeries = computed<ChartSeries[]>(() => {
+    this.activeLang();
+    const entries = this.errorTrends();
+    const categories = [...new Set(entries.map((entry) => shortBucket(entry.bucket)))];
+    const topPaths = [...new Set(entries.map((entry) => entry.path))].slice(0, 4);
+
+    return topPaths.map((path) => ({
+      name: path,
+      values: categories.map((bucket) => entries.find((entry) => shortBucket(entry.bucket) === bucket && entry.path === path)?.count ?? 0),
+    }));
   });
   protected readonly originSeries = computed<ChartSeries[]>(() => {
     this.activeLang();
@@ -340,18 +354,21 @@ export class DeveloperLogsPage {
       summary: this.api.getSummary(this.filters()),
       timeline: this.api.getTimeline(this.filters()),
       breakdown: this.api.getBreakdown(this.filters()),
+      errorTrends: this.api.getErrorTrendsByPath?.(this.filters()) ?? of([]),
       events: this.api.getEvents(this.filters(), this.page(), this.pageSize()),
     }).subscribe({
-      next: ({ summary, timeline, breakdown, events }) => {
+      next: ({ summary, timeline, breakdown, errorTrends, events }) => {
         this.summary.set(summary);
         this.timeline.set(timeline);
         this.breakdown.set(breakdown);
+        this.errorTrends.set(errorTrends);
         this.applyEvents(events.items, events.total);
         this.loading.set(false);
       },
       error: () => {
         this.summary.set(null);
         this.timeline.set([]);
+        this.errorTrends.set([]);
         this.breakdown.set({ levels: [], categories: [], origins: [] });
         this.rows.set([]);
         this.totalItems.set(0);

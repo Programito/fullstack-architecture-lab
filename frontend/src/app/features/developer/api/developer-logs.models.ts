@@ -65,6 +65,12 @@ export type DeveloperLogTimelinePointDto = {
   audit: number;
 };
 
+export type DeveloperLogErrorTrendPointDto = {
+  bucket: string;
+  path: string;
+  count: number;
+};
+
 export type DeveloperLogBreakdownDto = {
   levels: Array<{ key: LogLevel; count: number }>;
   categories: Array<{ key: LogCategory; count: number }>;

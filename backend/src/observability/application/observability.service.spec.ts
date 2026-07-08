@@ -624,6 +624,34 @@ describe('ObservabilityService', () => {
     ]);
   });
 
+  it('returns hourly error trends grouped by normalized path', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      {
+        bucket: new Date('2026-07-01T10:00:00.000Z'),
+        path: '/api/v1/restaurants/:id/orders/:id/payments',
+        count: 3n,
+      },
+      {
+        bucket: new Date('2026-07-01T11:00:00.000Z'),
+        path: '/api/v1/auth/login',
+        count: 1n,
+      },
+    ] as never);
+
+    const trends = await service.getErrorTrendsByPath(
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-07-02T00:00:00.000Z'),
+      { clientOrigin: 'web-pos' },
+    );
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(trends).toEqual([
+      { bucket: '2026-07-01T10:00', path: '/api/v1/restaurants/:id/orders/:id/payments', count: 3 },
+      { bucket: '2026-07-01T11:00', path: '/api/v1/auth/login', count: 1 },
+    ]);
+  });
+
   it('normalizes the category of a failed request but keeps its computed severity level', async () => {
     const { prisma, service } = buildService();
     vi.mocked(prisma.appLog.create).mockResolvedValue({} as never);
