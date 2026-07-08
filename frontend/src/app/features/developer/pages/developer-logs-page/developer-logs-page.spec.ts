@@ -168,6 +168,103 @@ describe('DeveloperLogsPage', () => {
     expect(api.getEvents).toHaveBeenCalled();
   });
 
+  it('renders comparison text beneath the main kpi values', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 20,
+        errorCount: 4,
+        errorRate: 20,
+        auditEvents: 8,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+        comparison: {
+          previous: {
+            totalRequests: 10,
+            errorCount: 1,
+            errorRate: 10,
+            auditEvents: 5,
+            p95DurationMs: 150,
+          },
+          delta: {
+            totalRequests: { absolute: 10, percent: 100, direction: 'up' },
+            errorCount: { absolute: 3, percent: 300, direction: 'up' },
+            errorRate: { absolute: 10, percent: 100, direction: 'up' },
+            auditEvents: { absolute: 3, percent: 60, direction: 'up' },
+            p95DurationMs: { absolute: 150, percent: 100, direction: 'up' },
+          },
+        },
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.textContent).toContain('+100% developer.logs.metrics.vsPrevious');
+    expect(container.textContent).toContain('+150 developer.logs.metrics.vsPrevious');
+  });
+
+  it('renders a no-comparison fallback when percent is null', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 3,
+        errorCount: 1,
+        errorRate: 33.3,
+        auditEvents: 0,
+        p95DurationMs: 120,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+        comparison: {
+          previous: {
+            totalRequests: 0,
+            errorCount: 0,
+            errorRate: 0,
+            auditEvents: 0,
+            p95DurationMs: 0,
+          },
+          delta: {
+            totalRequests: { absolute: 3, percent: null, direction: 'up' },
+            errorCount: { absolute: 1, percent: null, direction: 'up' },
+            errorRate: { absolute: 33.3, percent: null, direction: 'up' },
+            auditEvents: { absolute: 0, percent: 0, direction: 'flat' },
+            p95DurationMs: { absolute: 120, percent: null, direction: 'up' },
+          },
+        },
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.textContent).toContain('developer.logs.metrics.noComparison');
+  });
+
   it('switches to audit view and loads filtered events from a quick range preset', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();

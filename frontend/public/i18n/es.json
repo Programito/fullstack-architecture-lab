@@ -168,7 +168,9 @@
         "audit": "Eventos auditados",
         "latency": "Latencia p95",
         "loginSucceeded": "Login correcto",
-        "loginFailed": "Login fallido"
+        "loginFailed": "Login fallido",
+        "vsPrevious": "vs anterior",
+        "noComparison": "Sin comparativa"
       },
       "charts": {
         "activity": "Actividad",

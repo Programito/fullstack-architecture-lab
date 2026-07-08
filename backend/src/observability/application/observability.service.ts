@@ -5,7 +5,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 import { extractClientOrigin } from './client-origin';
 import { OBSERVABILITY_EVENT_CATALOG } from './observability-event-catalog';
 import { sanitizeMetadata } from './observability-metadata.policy';
-import type { AppLogInput, LogErrorTrendPoint, LogQuery, LogSummary } from './observability.types';
+import type { AppLogInput, LogComparisonMetric, LogErrorTrendPoint, LogQuery, LogSummary } from './observability.types';
 import { ObservabilityRetentionService } from './observability-retention.service';
 
 @Injectable()
@@ -51,72 +51,27 @@ export class ObservabilityService {
     filters: Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
   ): Promise<LogSummary> {
     try {
-      const where = buildWhere({ ...filters, from, to });
-      const [requestCount, errorCount, auditEvents, requestDurations] = await Promise.all([
-        this.prisma.appLog.count({ where: { ...where, category: LogCategory.request } }),
-        this.prisma.appLog.count({ where: { ...where, category: LogCategory.request, level: 'error' } }),
-        this.prisma.appLog.count({ where: { ...where, category: LogCategory.audit } }),
-        this.prisma.appLog.findMany({
-          where: { ...where, category: LogCategory.request, durationMs: { not: null } },
-          select: { durationMs: true, path: true, metadata: true },
-          orderBy: { durationMs: 'asc' },
-        }),
-      ]);
-      const authByOriginRows = await this.prisma.$queryRaw<Array<{ key: string | null; succeeded: bigint; failed: bigint }>>(Prisma.sql`
-        SELECT
-          "metadata"->>'clientOrigin' AS key,
-          COUNT(*) FILTER (WHERE "event" IN ('auth.login.succeeded', 'auth.demo-login.succeeded'))::bigint AS succeeded,
-          COUNT(*) FILTER (WHERE "event" = 'auth.login.failed')::bigint AS failed
-        FROM "app_logs"
-        WHERE ${buildWhereSql({ ...filters, from, to })}
-          AND "category" = 'audit'
-          AND "metadata"->>'entityType' = 'auth'
-          AND "event" IN ('auth.login.succeeded', 'auth.demo-login.succeeded', 'auth.login.failed')
-        GROUP BY "metadata"->>'clientOrigin'
-        ORDER BY succeeded DESC, failed DESC
-      `);
-
-      const topErrorRows = await this.prisma.$queryRaw<Array<{
-        event: string;
-        path: string | null;
-        clientOrigin: string | null;
-        count: bigint;
-      }>>(Prisma.sql`
-        SELECT
-          "event",
-          "path",
-          "metadata"->>'clientOrigin' AS "clientOrigin",
-          COUNT(*)::bigint AS count
-        FROM "app_logs"
-        WHERE ${buildWhereSql({ ...filters, from, to })}
-          AND "level" = 'error'
-        GROUP BY "event", "path", "metadata"->>'clientOrigin'
-        ORDER BY count DESC
-        LIMIT 5
-      `);
-
-      const durations = requestDurations.flatMap((entry) => entry.durationMs ?? []);
-      const topSlowPaths = summarizeTopSlowPaths(requestDurations);
+      const current = await this.computeSummaryWindow(from, to, filters);
+      const previousRange = previousWindow(from, to);
+      const previous = await this.computeSummaryWindow(previousRange.from, previousRange.to, filters);
       return {
-        totalRequests: requestCount,
-        errorCount,
-        errorRate: requestCount > 0 ? Number(((errorCount / requestCount) * 100).toFixed(1)) : 0,
-        auditEvents,
-        p95DurationMs: percentile(durations, 0.95),
-        authByOrigin: authByOriginRows
-          .filter((row) => typeof row.key === 'string' && row.key.length > 0)
-          .map((row) => ({
-            key: row.key as string,
-            succeeded: Number(row.succeeded),
-            failed: Number(row.failed),
-          })),
-        topSlowPaths,
-        topErrorEvents: topErrorRows.map((row) => ({
-          event: row.event,
-          path: row.path ? normalizeObservedPath(row.path) : null,
-          clientOrigin: row.clientOrigin ?? 'backend',
-          count: Number(row.count),
-        })),
+        ...current,
+        comparison: {
+          previous: {
+            totalRequests: previous.totalRequests,
+            errorCount: previous.errorCount,
+            errorRate: previous.errorRate,
+            auditEvents: previous.auditEvents,
+            p95DurationMs: previous.p95DurationMs,
+          },
+          delta: {
+            totalRequests: buildComparisonMetric(current.totalRequests, previous.totalRequests),
+            errorCount: buildComparisonMetric(current.errorCount, previous.errorCount),
+            errorRate: buildComparisonMetric(current.errorRate, previous.errorRate),
+            auditEvents: buildComparisonMetric(current.auditEvents, previous.auditEvents),
+            p95DurationMs: buildComparisonMetric(current.p95DurationMs, previous.p95DurationMs),
+          },
+        },
       };
     } catch (error) {
       this.logger.error('Failed to compute log summary.', error instanceof Error ? error.stack : error);
@@ -129,8 +84,83 @@ export class ObservabilityService {
         authByOrigin: [],
         topSlowPaths: [],
         topErrorEvents: [],
+        comparison: emptyComparison(),
       };
     }
+  }
+
+  private async computeSummaryWindow(
+    from: Date,
+    to: Date,
+    filters: Partial<Pick<LogQuery, 'level' | 'category' | 'clientOrigin' | 'path' | 'userId' | 'actorUserId' | 'restaurantId' | 'entityType' | 'entityId' | 'result' | 'search' | 'restrictToUserIds'>> = {},
+  ): Promise<Omit<LogSummary, 'comparison'>> {
+    const where = buildWhere({ ...filters, from, to });
+    const [requestCount, errorCount, auditEvents, requestDurations] = await Promise.all([
+      this.prisma.appLog.count({ where: { ...where, category: LogCategory.request } }),
+      this.prisma.appLog.count({ where: { ...where, category: LogCategory.request, level: 'error' } }),
+      this.prisma.appLog.count({ where: { ...where, category: LogCategory.audit } }),
+      this.prisma.appLog.findMany({
+        where: { ...where, category: LogCategory.request, durationMs: { not: null } },
+        select: { durationMs: true, path: true, metadata: true },
+        orderBy: { durationMs: 'asc' },
+      }),
+    ]);
+    const authByOriginRows = await this.prisma.$queryRaw<Array<{ key: string | null; succeeded: bigint; failed: bigint }>>(Prisma.sql`
+      SELECT
+        "metadata"->>'clientOrigin' AS key,
+        COUNT(*) FILTER (WHERE "event" IN ('auth.login.succeeded', 'auth.demo-login.succeeded'))::bigint AS succeeded,
+        COUNT(*) FILTER (WHERE "event" = 'auth.login.failed')::bigint AS failed
+      FROM "app_logs"
+      WHERE ${buildWhereSql({ ...filters, from, to })}
+        AND "category" = 'audit'
+        AND "metadata"->>'entityType' = 'auth'
+        AND "event" IN ('auth.login.succeeded', 'auth.demo-login.succeeded', 'auth.login.failed')
+      GROUP BY "metadata"->>'clientOrigin'
+      ORDER BY succeeded DESC, failed DESC
+    `);
+
+    const topErrorRows = await this.prisma.$queryRaw<Array<{
+      event: string;
+      path: string | null;
+      clientOrigin: string | null;
+      count: bigint;
+    }>>(Prisma.sql`
+      SELECT
+        "event",
+        "path",
+        "metadata"->>'clientOrigin' AS "clientOrigin",
+        COUNT(*)::bigint AS count
+      FROM "app_logs"
+      WHERE ${buildWhereSql({ ...filters, from, to })}
+        AND "level" = 'error'
+      GROUP BY "event", "path", "metadata"->>'clientOrigin'
+      ORDER BY count DESC
+      LIMIT 5
+    `);
+
+    const durations = requestDurations.flatMap((entry) => entry.durationMs ?? []);
+    const topSlowPaths = summarizeTopSlowPaths(requestDurations);
+    return {
+      totalRequests: requestCount,
+      errorCount,
+      errorRate: requestCount > 0 ? Number(((errorCount / requestCount) * 100).toFixed(1)) : 0,
+      auditEvents,
+      p95DurationMs: percentile(durations, 0.95),
+      authByOrigin: authByOriginRows
+        .filter((row) => typeof row.key === 'string' && row.key.length > 0)
+        .map((row) => ({
+          key: row.key as string,
+          succeeded: Number(row.succeeded),
+          failed: Number(row.failed),
+        })),
+      topSlowPaths,
+      topErrorEvents: topErrorRows.map((row) => ({
+        event: row.event,
+        path: row.path ? normalizeObservedPath(row.path) : null,
+        clientOrigin: row.clientOrigin ?? 'backend',
+        count: Number(row.count),
+      })),
+    };
   }
 
   async getTimeline(
@@ -432,6 +462,43 @@ function summarizeTopSlowPaths(rows: Array<{ durationMs: number | null; path: st
     }))
     .sort((left, right) => right.p95DurationMs - left.p95DurationMs || right.total - left.total)
     .slice(0, 5);
+}
+
+function previousWindow(from: Date, to: Date): { from: Date; to: Date } {
+  const durationMs = to.getTime() - from.getTime();
+  return {
+    from: new Date(from.getTime() - durationMs),
+    to: new Date(from.getTime()),
+  };
+}
+
+function buildComparisonMetric(current: number, previous: number): LogComparisonMetric {
+  const absolute = Number((current - previous).toFixed(1));
+  const percent = previous === 0 ? (current === 0 ? 0 : null) : Number((((current - previous) / previous) * 100).toFixed(1));
+  return {
+    absolute,
+    percent,
+    direction: absolute > 0 ? 'up' : absolute < 0 ? 'down' : 'flat',
+  };
+}
+
+function emptyComparison(): LogSummary['comparison'] {
+  return {
+    previous: {
+      totalRequests: 0,
+      errorCount: 0,
+      errorRate: 0,
+      auditEvents: 0,
+      p95DurationMs: 0,
+    },
+    delta: {
+      totalRequests: { absolute: 0, percent: 0, direction: 'flat' },
+      errorCount: { absolute: 0, percent: 0, direction: 'flat' },
+      errorRate: { absolute: 0, percent: 0, direction: 'flat' },
+      auditEvents: { absolute: 0, percent: 0, direction: 'flat' },
+      p95DurationMs: { absolute: 0, percent: 0, direction: 'flat' },
+    },
+  };
 }
 
 function mergeErrorTrendRows(rows: Array<{ bucket: Date; path: string | null; count: bigint }>): LogErrorTrendPoint[] {

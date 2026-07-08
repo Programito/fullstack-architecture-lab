@@ -47,20 +47,27 @@ describe('ObservabilityService', () => {
     vi.mocked(prisma.appLog.count)
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(4);
-    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
-      { key: 'web-admin', succeeded: 3n, failed: 1n },
-      { key: 'apk-customer', succeeded: 2n, failed: 0n },
-    ] as never).mockResolvedValueOnce([
-      { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 3n },
-      { event: 'frontend.http.error', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 2n },
-    ] as never);
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        { key: 'web-admin', succeeded: 3n, failed: 1n },
+        { key: 'apk-customer', succeeded: 2n, failed: 0n },
+      ] as never)
+      .mockResolvedValueOnce([
+        { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 3n },
+        { event: 'frontend.http.error', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 2n },
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 50, path: '/api/v1/auth/login', metadata: { clientOrigin: 'web-admin' } },
       { durationMs: 100, path: '/api/v1/auth/login', metadata: { clientOrigin: 'web-admin' } },
       { durationMs: 150, path: '/api/v1/restaurants/demo/orders/order-1/payments', metadata: { clientOrigin: 'web-pos' } },
       { durationMs: 200, path: '/api/v1/restaurants/demo/orders/order-2/payments', metadata: { clientOrigin: 'web-pos' } },
-    ] as never);
+    ] as never).mockResolvedValueOnce([] as never);
 
     const summary = await service.getSummary(new Date('2026-07-01T00:00:00.000Z'), new Date('2026-07-02T00:00:00.000Z'));
 
@@ -82,6 +89,22 @@ describe('ObservabilityService', () => {
         { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 3 },
         { event: 'frontend.http.error', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 2 },
       ],
+      comparison: {
+        previous: {
+          totalRequests: 0,
+          errorCount: 0,
+          errorRate: 0,
+          auditEvents: 0,
+          p95DurationMs: 0,
+        },
+        delta: {
+          totalRequests: { absolute: 10, percent: null, direction: 'up' },
+          errorCount: { absolute: 2, percent: null, direction: 'up' },
+          errorRate: { absolute: 20, percent: null, direction: 'up' },
+          auditEvents: { absolute: 4, percent: null, direction: 'up' },
+          p95DurationMs: { absolute: 200, percent: null, direction: 'up' },
+        },
+      },
     });
   });
 
@@ -90,11 +113,18 @@ describe('ObservabilityService', () => {
     vi.mocked(prisma.appLog.count)
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0);
-    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([] as never).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 90 },
-    ] as never);
+    ] as never).mockResolvedValueOnce([] as never);
 
     const summary = await service.getSummary(new Date('2026-07-01T00:00:00.000Z'), new Date('2026-07-02T00:00:00.000Z'));
 
@@ -381,14 +411,22 @@ describe('ObservabilityService', () => {
     vi.mocked(prisma.appLog.count)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0)
-      .mockResolvedValueOnce(1);
-    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
-      { key: 'web-admin', succeeded: 1n, failed: 0n },
-    ] as never).mockResolvedValueOnce([
-      { event: 'auth.login.failed', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 1n },
-    ] as never);
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        { key: 'web-admin', succeeded: 1n, failed: 0n },
+      ] as never)
+      .mockResolvedValueOnce([
+        { event: 'auth.login.failed', path: '/api/v1/auth/login', clientOrigin: 'web-admin', count: 1n },
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany)
       .mockResolvedValueOnce([{ durationMs: 80, path: '/api/v1/auth/login', metadata: { clientOrigin: 'web-admin' } }] as never)
+      .mockResolvedValueOnce([] as never)
       .mockResolvedValueOnce([
         {
           id: 'log-1',
@@ -441,14 +479,22 @@ describe('ObservabilityService', () => {
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(1);
-    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
-      { key: 'web-admin', succeeded: 1n, failed: 0n },
-    ] as never).mockResolvedValueOnce([
-      { event: 'restaurant.product.updated', path: '/api/v1/restaurants/demo/products/prod-1', clientOrigin: 'web-admin', count: 1n },
-    ] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        { key: 'web-admin', succeeded: 1n, failed: 0n },
+      ] as never)
+      .mockResolvedValueOnce([
+        { event: 'restaurant.product.updated', path: '/api/v1/restaurants/demo/products/prod-1', clientOrigin: 'web-admin', count: 1n },
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
     vi.mocked(prisma.appLog.findMany)
       .mockResolvedValueOnce([{ durationMs: 80, path: '/api/v1/restaurants/demo/products/prod-1', metadata: { clientOrigin: 'web-admin' } }] as never)
+      .mockResolvedValueOnce([] as never)
       .mockResolvedValueOnce([
         {
           id: 'log-1',
@@ -535,7 +581,7 @@ describe('ObservabilityService', () => {
         ],
       },
     });
-    expect(prisma.appLog.count).toHaveBeenNthCalledWith(4, {
+    expect(prisma.appLog.count).toHaveBeenNthCalledWith(7, {
       where: {
         timestamp: { gte: new Date('2026-07-01T00:00:00.000Z'), lte: new Date('2026-07-02T00:00:00.000Z') },
         category: LogCategory.audit,
@@ -601,16 +647,23 @@ describe('ObservabilityService', () => {
     vi.mocked(prisma.appLog.count)
       .mockResolvedValueOnce(6)
       .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(4);
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
     vi.mocked(prisma.appLog.findMany).mockResolvedValueOnce([
       { durationMs: 40 },
       { durationMs: 80 },
-    ] as never);
-    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
-      { key: 'web-admin', succeeded: 2n, failed: 1n },
-      { key: 'web-demo', succeeded: 3n, failed: 0n },
-      { key: null, succeeded: 1n, failed: 1n },
     ] as never).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        { key: 'web-admin', succeeded: 2n, failed: 1n },
+        { key: 'web-demo', succeeded: 3n, failed: 0n },
+        { key: null, succeeded: 1n, failed: 1n },
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
 
     const summary = await service.getSummary(
       new Date('2026-07-01T00:00:00.000Z'),
@@ -650,6 +703,85 @@ describe('ObservabilityService', () => {
       { bucket: '2026-07-01T10:00', path: '/api/v1/restaurants/:id/orders/:id/payments', count: 3 },
       { bucket: '2026-07-01T11:00', path: '/api/v1/auth/login', count: 1 },
     ]);
+  });
+
+  it('returns comparison metrics using the immediately previous time window', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.appLog.count)
+      .mockResolvedValueOnce(20)
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(8)
+      .mockResolvedValueOnce(10)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(5);
+    vi.mocked(prisma.appLog.findMany)
+      .mockResolvedValueOnce([
+        { durationMs: 100, path: '/api/v1/orders/1', metadata: null },
+        { durationMs: 300, path: '/api/v1/orders/2', metadata: null },
+      ] as never)
+      .mockResolvedValueOnce([
+        { durationMs: 50, path: '/api/v1/orders/1', metadata: null },
+        { durationMs: 150, path: '/api/v1/orders/2', metadata: null },
+      ] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const summary = await service.getSummary(
+      new Date('2026-07-08T10:00:00.000Z'),
+      new Date('2026-07-08T12:00:00.000Z'),
+      { clientOrigin: 'web-pos' },
+    );
+
+    expect(summary.comparison.previous).toEqual({
+      totalRequests: 10,
+      errorCount: 1,
+      errorRate: 10,
+      auditEvents: 5,
+      p95DurationMs: 150,
+    });
+    expect(summary.comparison.delta.totalRequests).toEqual({
+      absolute: 10,
+      percent: 100,
+      direction: 'up',
+    });
+    expect(summary.comparison.delta.errorRate).toEqual({
+      absolute: 10,
+      percent: 100,
+      direction: 'up',
+    });
+  });
+
+  it('returns a null percent when the previous value is zero and the current value is non-zero', async () => {
+    const { prisma, service } = buildService();
+    vi.mocked(prisma.appLog.count)
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    vi.mocked(prisma.appLog.findMany)
+      .mockResolvedValueOnce([{ durationMs: 120, path: '/api/v1/auth/login', metadata: null }] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const summary = await service.getSummary(
+      new Date('2026-07-08T10:00:00.000Z'),
+      new Date('2026-07-08T11:00:00.000Z'),
+    );
+
+    expect(summary.comparison.delta.totalRequests).toEqual({
+      absolute: 3,
+      percent: null,
+      direction: 'up',
+    });
   });
 
   it('normalizes the category of a failed request but keeps its computed severity level', async () => {

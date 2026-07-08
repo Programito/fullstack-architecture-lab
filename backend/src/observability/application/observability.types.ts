@@ -60,10 +60,34 @@ export type LogSummary = {
     clientOrigin: string;
     count: number;
   }>;
+  comparison: LogSummaryComparison;
 };
 
 export type LogErrorTrendPoint = {
   bucket: string;
   path: string;
   count: number;
+};
+
+export type LogComparisonMetric = {
+  absolute: number;
+  percent: number | null;
+  direction: 'up' | 'down' | 'flat';
+};
+
+export type LogSummaryComparison = {
+  previous: {
+    totalRequests: number;
+    errorCount: number;
+    errorRate: number;
+    auditEvents: number;
+    p95DurationMs: number;
+  };
+  delta: {
+    totalRequests: LogComparisonMetric;
+    errorCount: LogComparisonMetric;
+    errorRate: LogComparisonMetric;
+    auditEvents: LogComparisonMetric;
+    p95DurationMs: LogComparisonMetric;
+  };
 };

@@ -175,7 +175,9 @@
         "audit": "Audit events",
         "latency": "p95 latency",
         "loginSucceeded": "Successful login",
-        "loginFailed": "Failed login"
+        "loginFailed": "Failed login",
+        "vsPrevious": "vs previous",
+        "noComparison": "No comparison"
       },
       "sections": {
         "topSlowPaths": "Top slow routes",

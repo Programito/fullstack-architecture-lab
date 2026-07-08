@@ -157,6 +157,34 @@ export class DeveloperLogsPage {
     ];
   });
 
+  protected comparisonLabel(
+    metric: 'totalRequests' | 'errorCount' | 'errorRate' | 'auditEvents' | 'p95DurationMs',
+    format: 'number' | 'percent',
+  ): string {
+    const delta = this.summary()?.comparison?.delta[metric];
+    if (!delta) return this.transloco.translate('developer.logs.metrics.noComparison');
+
+    if (format === 'percent') {
+      return delta.percent == null
+        ? this.transloco.translate('developer.logs.metrics.noComparison')
+        : `${signedValue(delta.percent)}% ${this.transloco.translate('developer.logs.metrics.vsPrevious')}`;
+    }
+
+    return `${signedValue(delta.absolute)} ${this.transloco.translate('developer.logs.metrics.vsPrevious')}`;
+  }
+
+  protected comparisonTone(metric: 'totalRequests' | 'errorCount' | 'errorRate' | 'auditEvents' | 'p95DurationMs'): 'good' | 'bad' | 'neutral' {
+    const delta = this.summary()?.comparison?.delta[metric];
+    if (!delta || delta.direction === 'flat') return 'neutral';
+
+    const higherIsWorse = metric === 'errorCount' || metric === 'errorRate' || metric === 'p95DurationMs';
+    if (higherIsWorse) {
+      return delta.direction === 'up' ? 'bad' : 'good';
+    }
+
+    return delta.direction === 'up' ? 'good' : 'bad';
+  }
+
   constructor() {
     this.route.queryParamMap.subscribe((params) => {
       const filters = filtersFromQueryParams(params);
@@ -463,6 +491,10 @@ export class DeveloperLogsPage {
   protected clientOriginLabel(value: string): string {
     return this.transloco.translate(`developer.logs.origins.${value}`);
   }
+}
+
+function signedValue(value: number): string {
+  return `${value > 0 ? '+' : ''}${value}`;
 }
 
 type DeveloperLogsQueryState = DeveloperLogFilters & {

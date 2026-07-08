@@ -205,6 +205,9 @@
       >
         <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.requests' | transloco }}</p>
         <strong>{{ summary()?.totalRequests ?? 0 }}</strong>
+        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('totalRequests') === 'good'" [class.bad]="comparisonTone('totalRequests') === 'bad'">
+          {{ comparisonLabel('totalRequests', 'percent') }}
+        </p>
       </button>
     </app-card>
     <app-card variant="outlined">
@@ -216,11 +219,17 @@
       >
         <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errors' | transloco }}</p>
         <strong>{{ summary()?.errorCount ?? 0 }}</strong>
+        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorCount') === 'good'" [class.bad]="comparisonTone('errorCount') === 'bad'">
+          {{ comparisonLabel('errorCount', 'percent') }}
+        </p>
       </button>
     </app-card>
     <app-card variant="outlined">
       <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errorRate' | transloco }}</p>
       <strong>{{ summary()?.errorRate ?? 0 }}%</strong>
+      <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorRate') === 'good'" [class.bad]="comparisonTone('errorRate') === 'bad'">
+        {{ comparisonLabel('errorRate', 'percent') }}
+      </p>
     </app-card>
     <app-card variant="outlined">
       <button
@@ -231,6 +240,9 @@
       >
         <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.audit' | transloco }}</p>
         <strong>{{ summary()?.auditEvents ?? 0 }}</strong>
+        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('auditEvents') === 'good'" [class.bad]="comparisonTone('auditEvents') === 'bad'">
+          {{ comparisonLabel('auditEvents', 'percent') }}
+        </p>
       </button>
     </app-card>
     <app-card variant="outlined">
@@ -242,6 +254,9 @@
       >
         <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.latency' | transloco }}</p>
         <strong>{{ summary()?.p95DurationMs ?? 0 }} ms</strong>
+        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('p95DurationMs') === 'good'" [class.bad]="comparisonTone('p95DurationMs') === 'bad'">
+          {{ comparisonLabel('p95DurationMs', 'number') }}
+        </p>
       </button>
     </app-card>
   </section>

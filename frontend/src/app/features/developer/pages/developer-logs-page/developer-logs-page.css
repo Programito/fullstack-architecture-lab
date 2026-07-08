@@ -192,6 +192,21 @@
   font-size: 1.75rem;
 }
 
+.developer-logs-page__metric-comparison {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: var(--ui-text-muted, #71717a);
+}
+
+.developer-logs-page__metric-comparison.good {
+  color: color-mix(in srgb, var(--ui-success, #15803d) 78%, black);
+}
+
+.developer-logs-page__metric-comparison.bad {
+  color: color-mix(in srgb, var(--ui-danger, #b91c1c) 82%, black);
+}
+
 .developer-logs-page__charts {
   display: grid;
   gap: 1rem;

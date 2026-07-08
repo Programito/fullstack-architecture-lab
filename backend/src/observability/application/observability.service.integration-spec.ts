@@ -179,6 +179,58 @@ describe('ObservabilityService (integration)', () => {
     ]);
   });
 
+  it('computes summary comparison from the previous adjacent time window', async () => {
+    await prisma.appLog.createMany({
+      data: [
+        {
+          timestamp: new Date('2026-01-10T08:15:00.000Z'),
+          source: 'backend',
+          category: 'request',
+          level: 'info',
+          event: 'http.request.completed',
+          message: 'previous request',
+          path: '/api/v1/health',
+          durationMs: 100,
+        },
+        {
+          timestamp: new Date('2026-01-10T10:15:00.000Z'),
+          source: 'backend',
+          category: 'request',
+          level: 'error',
+          event: 'http.request.failed',
+          message: 'current request',
+          path: '/api/v1/health',
+          durationMs: 300,
+        },
+      ],
+    });
+
+    const summary = await service.getSummary(
+      new Date('2026-01-10T10:00:00.000Z'),
+      new Date('2026-01-10T12:00:00.000Z'),
+    );
+
+    expect(summary.totalRequests).toBe(1);
+    expect(summary.errorCount).toBe(1);
+    expect(summary.comparison.previous).toEqual({
+      totalRequests: 1,
+      errorCount: 0,
+      errorRate: 0,
+      auditEvents: 0,
+      p95DurationMs: 100,
+    });
+    expect(summary.comparison.delta.errorCount).toEqual({
+      absolute: 1,
+      percent: null,
+      direction: 'up',
+    });
+    expect(summary.comparison.delta.p95DurationMs).toEqual({
+      absolute: 200,
+      percent: 200,
+      direction: 'up',
+    });
+  });
+
   it('filters events by entity metadata and free-text search using Postgres JSON operators', async () => {
     await prisma.appLog.createMany({
       data: [

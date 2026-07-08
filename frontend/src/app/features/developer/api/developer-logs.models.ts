@@ -56,6 +56,30 @@ export type DeveloperLogSummaryDto = {
     clientOrigin: ClientOrigin;
     count: number;
   }>;
+  comparison?: DeveloperLogSummaryComparisonDto;
+};
+
+export type DeveloperLogComparisonMetricDto = {
+  absolute: number;
+  percent: number | null;
+  direction: 'up' | 'down' | 'flat';
+};
+
+export type DeveloperLogSummaryComparisonDto = {
+  previous: {
+    totalRequests: number;
+    errorCount: number;
+    errorRate: number;
+    auditEvents: number;
+    p95DurationMs: number;
+  };
+  delta: {
+    totalRequests: DeveloperLogComparisonMetricDto;
+    errorCount: DeveloperLogComparisonMetricDto;
+    errorRate: DeveloperLogComparisonMetricDto;
+    auditEvents: DeveloperLogComparisonMetricDto;
+    p95DurationMs: DeveloperLogComparisonMetricDto;
+  };
 };
 
 export type DeveloperLogTimelinePointDto = {
