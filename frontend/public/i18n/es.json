@@ -856,7 +856,8 @@
       },
       "team": {
         "title": "Fichajes del equipo",
-        "description": "Revisa los sellajes del restaurante activo y filtra por estado o trabajador.",
+        "description": "Revisa los sellajes del restaurante activo y filtra por periodo, estado o trabajador.",
+        "empty": "No hay fichajes para los filtros seleccionados.",
         "filters": {
           "from": "Desde",
           "to": "Hasta",
@@ -864,13 +865,34 @@
           "worker": "Trabajador",
           "allStatuses": "Todos los estados",
           "allWorkers": "Toda la plantilla",
-          "apply": "Aplicar filtros"
+          "apply": "Aplicar filtros",
+          "reset": "Restablecer"
+        },
+        "periods": {
+          "label": "Periodos de consulta",
+          "today": "Hoy",
+          "yesterday": "Ayer",
+          "thisWeek": "Esta semana",
+          "lastWeek": "Semana pasada",
+          "thisMonth": "Este mes",
+          "lastMonth": "Mes pasado"
+        },
+        "summary": {
+          "totalHours": "Horas registradas",
+          "totalEntriesValue": "{{count}} fichajes en el periodo",
+          "recordedWorkers": "Trabajadores con registros",
+          "recordedWorkersValue": "{{count}} personas con actividad",
+          "openEntries": "Fichajes abiertos",
+          "openEntriesValue": "{{count}} turnos pendientes de salida",
+          "pendingRequests": "Correcciones pendientes",
+          "pendingRequestsValue": "{{count}} solicitudes por revisar"
         },
         "columns": {
           "worker": "Trabajador",
           "clockIn": "Entrada",
           "clockOut": "Salida",
           "duration": "Duracion",
+          "notes": "Observaciones",
           "status": "Estado"
         }
       },
@@ -879,7 +901,13 @@
         "description": "Aprueba o rechaza cambios de hora enviados por el equipo.",
         "empty": "No hay solicitudes pendientes.",
         "approve": "Aprobar",
-        "reject": "Rechazar"
+        "reject": "Rechazar",
+        "requestedAt": "Enviada el {{ value }}",
+        "requestedBy": "Solicitada por",
+        "reason": "Motivo",
+        "originalClockIn": "Entrada original",
+        "originalClockOut": "Salida original",
+        "reviewNote": "Nota de revision para rechazo"
       },
       "status": {
         "open": "Abierto",

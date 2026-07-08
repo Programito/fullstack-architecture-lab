@@ -163,6 +163,19 @@
             <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.time.team.description' | transloco }}</p>
           </div>
 
+          <div class="time-periods" role="group" [attr.aria-label]="'restaurantPos.time.team.periods.label' | transloco">
+            @for (preset of ['today', 'yesterday', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth']; track preset) {
+              <button
+                type="button"
+                class="time-period-button"
+                [class.time-period-button--active]="isSelectedTeamPeriod($any(preset))"
+                (click)="selectTeamPeriod($any(preset))"
+              >
+                {{ ('restaurantPos.time.team.periods.' + preset) | transloco }}
+              </button>
+            }
+          </div>
+
           <div class="time-filters">
             <label>
               <span>{{ 'restaurantPos.time.team.filters.from' | transloco }}</span>
@@ -193,11 +206,39 @@
             <app-button variant="neutral" fill="outline" (pressed)="applyTeamFilters()">
               {{ 'restaurantPos.time.team.filters.apply' | transloco }}
             </app-button>
+            <app-button variant="neutral" fill="outline" (pressed)="resetTeamFilters()">
+              {{ 'restaurantPos.time.team.filters.reset' | transloco }}
+            </app-button>
           </div>
+        </div>
+
+        <div class="time-summary-grid">
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.totalHours' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().totalWorkedLabel }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.totalEntriesValue' | transloco:{ count: teamSummary().totalEntries } }}</span>
+          </article>
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.recordedWorkers' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().recordedWorkers }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.recordedWorkersValue' | transloco:{ count: teamSummary().recordedWorkers } }}</span>
+          </article>
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.openEntries' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().openEntries }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.openEntriesValue' | transloco:{ count: teamSummary().openEntries } }}</span>
+          </article>
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.pendingRequests' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().pendingRequests }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.pendingRequestsValue' | transloco:{ count: teamSummary().pendingRequests } }}</span>
+          </article>
         </div>
 
         @if (loadingTeam()) {
           <p class="theme-muted text-sm">{{ 'restaurantPos.time.loading' | transloco }}</p>
+        } @else if (teamEntries().length === 0) {
+          <p class="theme-muted text-sm">{{ 'restaurantPos.time.team.empty' | transloco }}</p>
         } @else {
           <div class="time-table-wrap">
             <table class="time-table">
@@ -207,6 +248,7 @@
                   <th>{{ 'restaurantPos.time.team.columns.clockIn' | transloco }}</th>
                   <th>{{ 'restaurantPos.time.team.columns.clockOut' | transloco }}</th>
                   <th>{{ 'restaurantPos.time.team.columns.duration' | transloco }}</th>
+                  <th>{{ 'restaurantPos.time.team.columns.notes' | transloco }}</th>
                   <th>{{ 'restaurantPos.time.team.columns.status' | transloco }}</th>
                 </tr>
               </thead>
@@ -217,7 +259,8 @@
                     <td>{{ formatDateTime(entry.clockInAt) }}</td>
                     <td>{{ formatDateTime(entry.clockOutAt) }}</td>
                     <td>{{ formatDuration(entry) }}</td>
-                    <td>{{ ('restaurantPos.time.status.' + entry.status) | transloco }}</td>
+                    <td>{{ teamNotes(entry) }}</td>
+                    <td><span class="time-entry-card__status">{{ ('restaurantPos.time.status.' + entry.status) | transloco }}</span></td>
                   </tr>
                 }
               </tbody>
@@ -241,12 +284,28 @@
                 <div class="time-request-card__header">
                   <div>
                     <h3 class="font-medium">{{ request.timeEntry.user.firstName }} {{ request.timeEntry.user.lastName }}</h3>
-                    <p class="theme-muted text-sm">{{ request.reason }}</p>
+                    <p class="theme-muted text-sm">{{ 'restaurantPos.time.requests.requestedAt' | transloco:{ value: formatDateTime(request.createdAt) } }}</p>
                   </div>
                   <span class="time-entry-card__status">{{ ('restaurantPos.time.status.' + request.status) | transloco }}</span>
                 </div>
 
                 <dl class="time-entry-card__grid">
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.reason' | transloco }}</dt>
+                    <dd>{{ request.reason }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.requestedBy' | transloco }}</dt>
+                    <dd>{{ request.requestedByUser.firstName }} {{ request.requestedByUser.lastName }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.originalClockIn' | transloco }}</dt>
+                    <dd>{{ formatDateTime(request.timeEntry.clockInAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.originalClockOut' | transloco }}</dt>
+                    <dd>{{ formatDateTime(request.timeEntry.clockOutAt) }}</dd>
+                  </div>
                   <div>
                     <dt>{{ 'restaurantPos.time.changeRequest.requestedClockInAt' | transloco }}</dt>
                     <dd>{{ formatDateTime(request.requestedClockInAt) }}</dd>
@@ -265,8 +324,22 @@
                   </div>
                 </dl>
 
+                <div class="time-request-card__review">
+                  <app-textarea
+                    [label]="'restaurantPos.time.requests.reviewNote' | transloco"
+                    [value]="reviewNote(request.id)"
+                    [rows]="2"
+                    (valueChange)="updateReviewNote(request.id, $event)"
+                  />
+                </div>
+
                 <div class="time-actions">
-                  <app-button variant="danger" fill="outline" (pressed)="reviewRequest(request.id, 'rejected')">
+                  <app-button
+                    variant="danger"
+                    fill="outline"
+                    [disabled]="!canRejectRequest(request.id)"
+                    (pressed)="reviewRequest(request.id, 'rejected')"
+                  >
                     {{ 'restaurantPos.time.requests.reject' | transloco }}
                   </app-button>
                   <app-button (pressed)="reviewRequest(request.id, 'approved')">

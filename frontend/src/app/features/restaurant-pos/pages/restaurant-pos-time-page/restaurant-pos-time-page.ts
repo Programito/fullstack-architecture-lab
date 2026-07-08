@@ -10,6 +10,11 @@ import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 
 type TimePageTab = 'mine' | 'team';
+type TeamPeriodPreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'custom';
+type TeamQuickPeriodPreset = Exclude<TeamPeriodPreset, 'custom'>;
+
+const DEFAULT_TEAM_PERIOD: TeamQuickPeriodPreset = 'thisWeek';
+const DEFAULT_TEAM_RANGE = resolveDateRangeForPreset(DEFAULT_TEAM_PERIOD, new Date());
 
 @Component({
   selector: 'app-restaurant-pos-time-page',
@@ -31,6 +36,7 @@ export class RestaurantPosTimePage {
   protected readonly submittingClock = signal(false);
   protected readonly submittingChangeRequest = signal(false);
   protected readonly activeTab = signal<TimePageTab>('mine');
+  protected readonly teamPeriodPreset = signal<TeamPeriodPreset>(DEFAULT_TEAM_PERIOD);
   protected readonly clockNote = signal('');
   protected readonly editingEntryId = signal<string | null>(null);
   protected readonly changeReason = signal('');
@@ -38,10 +44,11 @@ export class RestaurantPosTimePage {
   protected readonly requestedClockOutAt = signal('');
   protected readonly requestedClockInNote = signal('');
   protected readonly requestedClockOutNote = signal('');
-  protected readonly teamDateFrom = signal('');
-  protected readonly teamDateTo = signal('');
+  protected readonly teamDateFrom = signal(DEFAULT_TEAM_RANGE.dateFrom);
+  protected readonly teamDateTo = signal(DEFAULT_TEAM_RANGE.dateTo);
   protected readonly teamStatus = signal('');
   protected readonly teamWorkerUserId = signal('');
+  protected readonly teamReviewNotes = signal<Record<string, string>>({});
 
   protected readonly canReviewTeam = computed(() => this.session.hasRole('admin') || this.session.hasRole('manager'));
   protected readonly canSubmitChangeRequest = computed(() => this.changeReason().trim().length > 0);
@@ -49,6 +56,20 @@ export class RestaurantPosTimePage {
   protected readonly pendingRequests = computed(() =>
     this.changeRequests().filter((request) => request.status === 'pending'),
   );
+  protected readonly teamSummary = computed(() => {
+    const entries = this.teamEntries();
+    const recordedWorkers = new Set(entries.map((entry) => entry.user.id)).size;
+    const openEntries = entries.filter((entry) => entry.status === 'open').length;
+    const totalWorkedMinutes = entries.reduce((total, entry) => total + entryDurationMinutes(entry), 0);
+
+    return {
+      recordedWorkers,
+      openEntries,
+      totalWorkedLabel: formatMinutes(totalWorkedMinutes),
+      pendingRequests: this.pendingRequests().length,
+      totalEntries: entries.length,
+    };
+  });
   protected readonly workerOptions = computed(() => {
     const map = new Map<string, { id: string; label: string }>();
     for (const entry of this.teamEntries()) {
@@ -200,10 +221,12 @@ export class RestaurantPosTimePage {
   }
 
   protected updateTeamDateFrom(value: string): void {
+    this.teamPeriodPreset.set('custom');
     this.teamDateFrom.set(value);
   }
 
   protected updateTeamDateTo(value: string): void {
+    this.teamPeriodPreset.set('custom');
     this.teamDateTo.set(value);
   }
 
@@ -215,16 +238,68 @@ export class RestaurantPosTimePage {
     this.teamWorkerUserId.set(value);
   }
 
+  protected selectTeamPeriod(preset: TeamQuickPeriodPreset): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const range = resolveDateRangeForPreset(preset, new Date());
+
+    this.teamPeriodPreset.set(preset);
+    this.teamDateFrom.set(range.dateFrom);
+    this.teamDateTo.set(range.dateTo);
+    this.error.set(null);
+
+    if (restaurant) {
+      this.loadTeamData(restaurant.id);
+    }
+  }
+
+  protected resetTeamFilters(): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const range = resolveDateRangeForPreset(DEFAULT_TEAM_PERIOD, new Date());
+
+    this.teamPeriodPreset.set(DEFAULT_TEAM_PERIOD);
+    this.teamDateFrom.set(range.dateFrom);
+    this.teamDateTo.set(range.dateTo);
+    this.teamStatus.set('');
+    this.teamWorkerUserId.set('');
+    this.error.set(null);
+
+    if (restaurant) {
+      this.loadTeamData(restaurant.id);
+    }
+  }
+
+  protected isSelectedTeamPeriod(preset: TeamPeriodPreset): boolean {
+    return this.teamPeriodPreset() === preset;
+  }
+
+  protected updateReviewNote(requestId: string, value: string): void {
+    this.teamReviewNotes.update((notes) => ({ ...notes, [requestId]: value }));
+  }
+
+  protected reviewNote(requestId: string): string {
+    return this.teamReviewNotes()[requestId] ?? '';
+  }
+
+  protected canRejectRequest(requestId: string): boolean {
+    return this.reviewNote(requestId).trim().length > 0;
+  }
+
   protected reviewRequest(requestId: string, status: 'approved' | 'rejected'): void {
     const restaurant = this.restaurantContext.activeRestaurant();
+    const reviewNote = this.reviewNote(requestId).trim();
     if (!restaurant) return;
+    if (status === 'rejected' && reviewNote.length === 0) return;
 
     this.error.set(null);
     this.api.reviewRestaurantTimeEntryChangeRequest(restaurant.id, requestId, {
       status,
-      reviewNote: null,
+      reviewNote: status === 'rejected' ? reviewNote : null,
     }).subscribe({
       next: () => {
+        this.teamReviewNotes.update((notes) => {
+          const { [requestId]: _removed, ...rest } = notes;
+          return rest;
+        });
         this.loadOwnEntries(restaurant.id);
         this.loadTeamData(restaurant.id);
       },
@@ -243,16 +318,21 @@ export class RestaurantPosTimePage {
   }
 
   protected formatDuration(entry: TimeEntryDto): string {
-    if (!entry.clockOutAt) return '-';
-    const diffMs = new Date(entry.clockOutAt).getTime() - new Date(entry.clockInAt).getTime();
-    const totalMinutes = Math.max(0, Math.round(diffMs / 60000));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    const totalMinutes = entryDurationMinutes(entry);
+    return totalMinutes === 0 ? '-' : formatMinutes(totalMinutes);
   }
 
   protected isEditingEntry(entryId: string): boolean {
     return this.editingEntryId() === entryId;
+  }
+
+  protected trackByRequestId(_index: number, request: TimeEntryChangeRequestDto): string {
+    return request.id;
+  }
+
+  protected teamNotes(entry: TimeEntryDto): string {
+    const notes = [entry.clockInNote, entry.clockOutNote].filter((note) => Boolean(note && note.trim().length > 0));
+    return notes.length > 0 ? notes.join(' / ') : '-';
   }
 
   private loadOwnEntries(restaurantId: string): void {
@@ -292,6 +372,70 @@ export class RestaurantPosTimePage {
       error: () => this.error.set('restaurantPos.time.errors.load'),
     });
   }
+}
+
+function entryDurationMinutes(entry: TimeEntryDto): number {
+  if (!entry.clockOutAt) return 0;
+  const diffMs = new Date(entry.clockOutAt).getTime() - new Date(entry.clockInAt).getTime();
+  return Math.max(0, Math.round(diffMs / 60000));
+}
+
+function formatMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+function resolveDateRangeForPreset(preset: TeamQuickPeriodPreset, now: Date): { dateFrom: string; dateTo: string } {
+  const current = new Date(now);
+  current.setHours(12, 0, 0, 0);
+
+  let start = new Date(current);
+  let end = new Date(current);
+
+  switch (preset) {
+    case 'today':
+      break;
+    case 'yesterday':
+      start.setDate(start.getDate() - 1);
+      end.setDate(end.getDate() - 1);
+      break;
+    case 'thisWeek': {
+      const day = getMondayBasedDay(current);
+      start.setDate(current.getDate() - day);
+      break;
+    }
+    case 'lastWeek': {
+      const day = getMondayBasedDay(current);
+      start.setDate(current.getDate() - day - 7);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case 'thisMonth':
+      start = new Date(current.getFullYear(), current.getMonth(), 1, 12, 0, 0, 0);
+      break;
+    case 'lastMonth':
+      start = new Date(current.getFullYear(), current.getMonth() - 1, 1, 12, 0, 0, 0);
+      end = new Date(current.getFullYear(), current.getMonth(), 0, 12, 0, 0, 0);
+      break;
+  }
+
+  return {
+    dateFrom: toDateInputValue(start),
+    dateTo: toDateInputValue(end),
+  };
+}
+
+function getMondayBasedDay(date: Date): number {
+  return (date.getDay() + 6) % 7;
+}
+
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function normalizeEntryStatus(value: string): 'open' | 'closed' | 'corrected' | undefined {

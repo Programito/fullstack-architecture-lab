@@ -856,7 +856,8 @@
       },
       "team": {
         "title": "Team time entries",
-        "description": "Review the active restaurant entries and filter by worker or status.",
+        "description": "Review the active restaurant entries and filter by period, worker, or status.",
+        "empty": "There are no time entries for the selected filters.",
         "filters": {
           "from": "From",
           "to": "To",
@@ -864,13 +865,34 @@
           "worker": "Worker",
           "allStatuses": "All statuses",
           "allWorkers": "Full team",
-          "apply": "Apply filters"
+          "apply": "Apply filters",
+          "reset": "Reset"
+        },
+        "periods": {
+          "label": "Period ranges",
+          "today": "Today",
+          "yesterday": "Yesterday",
+          "thisWeek": "This week",
+          "lastWeek": "Last week",
+          "thisMonth": "This month",
+          "lastMonth": "Last month"
+        },
+        "summary": {
+          "totalHours": "Recorded hours",
+          "totalEntriesValue": "{{count}} entries in the period",
+          "recordedWorkers": "Workers with records",
+          "recordedWorkersValue": "{{count}} people with activity",
+          "openEntries": "Open entries",
+          "openEntriesValue": "{{count}} shifts still open",
+          "pendingRequests": "Pending corrections",
+          "pendingRequestsValue": "{{count}} requests to review"
         },
         "columns": {
           "worker": "Worker",
           "clockIn": "Clock in",
           "clockOut": "Clock out",
           "duration": "Duration",
+          "notes": "Notes",
           "status": "Status"
         }
       },
@@ -879,7 +901,13 @@
         "description": "Approve or reject time changes sent by the team.",
         "empty": "There are no pending requests.",
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "requestedAt": "Sent on {{ value }}",
+        "requestedBy": "Requested by",
+        "reason": "Reason",
+        "originalClockIn": "Original clock in",
+        "originalClockOut": "Original clock out",
+        "reviewNote": "Rejection review note"
       },
       "status": {
         "open": "Open",

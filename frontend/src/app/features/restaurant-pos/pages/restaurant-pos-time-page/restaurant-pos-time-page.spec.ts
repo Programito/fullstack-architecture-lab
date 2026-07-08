@@ -166,6 +166,7 @@ describe('RestaurantPosTimePage', () => {
 
     expect(screen.getAllByText('Mario Soler').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'restaurantPos.time.requests.approve' })).toBeTruthy();
+    expect(screen.getAllByText('restaurantPos.time.team.summary.pendingRequestsValue', { exact: false }).length).toBeGreaterThan(0);
   });
 
   it('approves a pending change request and refreshes the team data', async () => {
@@ -189,6 +190,84 @@ describe('RestaurantPosTimePage', () => {
     expect(api.reviewRestaurantTimeEntryChangeRequest).toHaveBeenCalledWith('restaurant-1', 'change-pending', {
       status: 'approved',
       reviewNote: null,
+    });
+  });
+
+  it('applies a quick period filter and forwards the expected date range', async () => {
+    const i18n = provideI18nTesting();
+    const api = createApiMock();
+
+    await render(RestaurantPosTimePage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantPosApiService, useValue: api },
+        { provide: IdentitySessionStore, useValue: createIdentityStore(['admin']) },
+        { provide: RestaurantContextStore, useValue: createRestaurantContextStore() },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'restaurantPos.time.tabs.team' }));
+    fireEvent.click(screen.getByRole('button', { name: 'restaurantPos.time.team.periods.today' }));
+
+    expect(api.getTeamRestaurantTimeEntries).toHaveBeenLastCalledWith(
+      'restaurant-1',
+      expect.objectContaining({
+        dateFrom: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        dateTo: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      }),
+    );
+  });
+
+  it('shows team notes and computed summary metrics', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(RestaurantPosTimePage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantPosApiService, useValue: createApiMock() },
+        { provide: IdentitySessionStore, useValue: createIdentityStore(['manager']) },
+        { provide: RestaurantContextStore, useValue: createRestaurantContextStore() },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'restaurantPos.time.tabs.team' }));
+
+    expect(screen.getByText('restaurantPos.time.team.summary.totalHours')).toBeTruthy();
+    expect(screen.getByText('restaurantPos.time.team.summary.recordedWorkers')).toBeTruthy();
+    expect(screen.getAllByText('Mario Soler').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+  });
+
+  it('requires a note before rejecting a pending request', async () => {
+    const i18n = provideI18nTesting();
+    const api = createApiMock();
+
+    await render(RestaurantPosTimePage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantPosApiService, useValue: api },
+        { provide: IdentitySessionStore, useValue: createIdentityStore(['admin']) },
+        { provide: RestaurantContextStore, useValue: createRestaurantContextStore() },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'restaurantPos.time.tabs.team' }));
+    const requestCard = screen.getByText('Entre antes').closest('article');
+    const rejectButton = within(requestCard!).getByRole('button', { name: 'restaurantPos.time.requests.reject' });
+
+    expect(rejectButton.hasAttribute('disabled')).toBe(true);
+
+    fireEvent.input(within(requestCard!).getByLabelText('restaurantPos.time.requests.reviewNote'), {
+      target: { value: 'No coincide con el cierre real.' },
+    });
+    fireEvent.click(rejectButton);
+
+    expect(api.reviewRestaurantTimeEntryChangeRequest).toHaveBeenCalledWith('restaurant-1', 'change-pending', {
+      status: 'rejected',
+      reviewNote: 'No coincide con el cierre real.',
     });
   });
 });

@@ -856,7 +856,8 @@
       },
       "team": {
         "title": "Fitxatges de l'equip",
-        "description": "Revisa els segellats del restaurant actiu i filtra per estat o treballador.",
+        "description": "Revisa els segellats del restaurant actiu i filtra per periode, estat o treballador.",
+        "empty": "No hi ha fitxatges per als filtres seleccionats.",
         "filters": {
           "from": "Des de",
           "to": "Fins a",
@@ -864,13 +865,34 @@
           "worker": "Treballador",
           "allStatuses": "Tots els estats",
           "allWorkers": "Tota la plantilla",
-          "apply": "Aplicar filtres"
+          "apply": "Aplicar filtres",
+          "reset": "Restablir"
+        },
+        "periods": {
+          "label": "Periodes de consulta",
+          "today": "Avui",
+          "yesterday": "Ahir",
+          "thisWeek": "Aquesta setmana",
+          "lastWeek": "Setmana passada",
+          "thisMonth": "Aquest mes",
+          "lastMonth": "Mes passat"
+        },
+        "summary": {
+          "totalHours": "Hores registrades",
+          "totalEntriesValue": "{{count}} fitxatges en el periode",
+          "recordedWorkers": "Treballadors amb registres",
+          "recordedWorkersValue": "{{count}} persones amb activitat",
+          "openEntries": "Fitxatges oberts",
+          "openEntriesValue": "{{count}} torns pendents de sortida",
+          "pendingRequests": "Correccions pendents",
+          "pendingRequestsValue": "{{count}} sollicituds per revisar"
         },
         "columns": {
           "worker": "Treballador",
           "clockIn": "Entrada",
           "clockOut": "Sortida",
           "duration": "Durada",
+          "notes": "Observacions",
           "status": "Estat"
         }
       },
@@ -879,7 +901,13 @@
         "description": "Aprova o rebutja canvis d'hora enviats per l'equip.",
         "empty": "No hi ha sollicituds pendents.",
         "approve": "Aprovar",
-        "reject": "Rebutjar"
+        "reject": "Rebutjar",
+        "requestedAt": "Enviada el {{ value }}",
+        "requestedBy": "Sollicitada per",
+        "reason": "Motiu",
+        "originalClockIn": "Entrada original",
+        "originalClockOut": "Sortida original",
+        "reviewNote": "Nota de revisio per al rebuig"
       },
       "status": {
         "open": "Obert",
