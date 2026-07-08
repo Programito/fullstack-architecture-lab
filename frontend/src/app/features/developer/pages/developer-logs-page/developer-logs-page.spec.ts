@@ -15,7 +15,7 @@ class TestResizeObserver {
   disconnect(): void {}
 }
 
-@Component({ selector: 'app-chart', template: '' })
+@Component({ selector: 'app-chart', template: '{{ title() }}' })
 class ChartStub {
   readonly type = input('line');
   readonly appearance = input('default');
@@ -504,7 +504,72 @@ describe('DeveloperLogsPage', () => {
     expect(screen.getByLabelText('developer.logs.filters.from')).toBeTruthy();
   });
 
-  it('applies a client-origin filter and shows it in the event detail', async () => {
+  it('does not render a separate category select because the view chips own that state', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({ totalRequests: 0, errorCount: 0, errorRate: 0, auditEvents: 0, p95DurationMs: 0, authByOrigin: [], topSlowPaths: [], topErrorEvents: [] })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.queryByLabelText('developer.logs.filters.category')).toBeNull();
+    expect(screen.getByRole('button', { name: 'developer.logs.views.operations' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'developer.logs.views.audit' })).toBeTruthy();
+  });
+
+  it('shows a compact active-filter summary after selecting origin and path', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 12,
+        errorCount: 2,
+        errorRate: 16.7,
+        auditEvents: 3,
+        p95DurationMs: 280,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.clientOrigin developer.logs.origins.web-pos' }));
+    const pathSelect = screen.getByLabelText('developer.logs.filters.path') as HTMLSelectElement;
+    pathSelect.value = '/payments';
+    pathSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
+
+    expect(screen.getByText('developer.logs.filters.activeTitle')).toBeTruthy();
+    expect(screen.getAllByText('developer.logs.origins.web-pos').length).toBeGreaterThan(0);
+    expect(screen.getByText('/restaurants/:id/orders/:orderId/payments')).toBeTruthy();
+  });
+
+  it('applies a client-origin chip filter and shows it in the event detail', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
@@ -563,9 +628,7 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const clientOriginSelect = screen.getByLabelText('developer.logs.filters.clientOrigin') as HTMLSelectElement;
-    clientOriginSelect.value = 'apk-customer';
-    clientOriginSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.clientOrigin developer.logs.origins.apk-customer' }));
     screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
 
     expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({ clientOrigin: 'apk-customer' }), 1, 20);
@@ -574,7 +637,7 @@ describe('DeveloperLogsPage', () => {
     expect(screen.getAllByText('developer.logs.origins.apk-customer').length).toBeGreaterThan(0);
   });
 
-  it('applies quick shortcut filters for apk and payments', async () => {
+  it('keeps origin filters inside the filter bar and leaves only business shortcuts below', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
@@ -603,7 +666,13 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.shortcuts.apkCustomer' }));
+    expect(screen.queryByRole('button', { name: 'developer.logs.shortcuts.apkCustomer' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'developer.logs.shortcuts.webDemo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'developer.logs.shortcuts.webPos' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.clientOrigin developer.logs.origins.apk-customer' }));
+    screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
+
     expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
       clientOrigin: 'apk-customer',
     }));
@@ -835,7 +904,7 @@ describe('DeveloperLogsPage', () => {
     }), 1, 20);
   });
 
-  it('keeps all log cards inside a single ordered cards grid', async () => {
+  it('renders summary kpis separately from per-origin channel cards', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
     const api = {
@@ -874,17 +943,51 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const cardsGrid = container.querySelector('.developer-logs-page__cards');
-    expect(cardsGrid).toBeTruthy();
+    const summaryCards = container.querySelector('.developer-logs-page__summary-cards');
+    const channelCards = container.querySelector('.developer-logs-page__channel-cards');
+    expect(summaryCards).toBeTruthy();
+    expect(channelCards).toBeTruthy();
+    expect(summaryCards?.querySelectorAll('app-card').length).toBe(5);
+    expect(channelCards?.textContent).toContain('web-admin');
+    expect(channelCards?.textContent).toContain('apk-customer');
+  });
 
-    const legacyKpiSections = container.querySelectorAll('.developer-logs-page__kpis');
-    expect(legacyKpiSections.length).toBe(0);
+  it('renders auth-by-origin and slow-path trend dashboards when summary data exists', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [
+          { key: 'web-admin', succeeded: 3, failed: 1 },
+          { key: 'apk-customer', succeeded: 2, failed: 0 },
+        ],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
 
-    const cards = cardsGrid?.querySelectorAll('app-card') ?? [];
-    expect(cards.length).toBe(9);
-    expect(cardsGrid?.textContent).toContain('120');
-    expect(cardsGrid?.textContent).toContain('web-admin');
-    expect(cardsGrid?.textContent).toContain('apk-customer');
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.textContent).toContain('developer.logs.sections.authByOrigin');
+    expect(container.textContent).toContain('developer.logs.sections.slowPaths');
   });
 
   it('renders the events table with a compact table variant', async () => {

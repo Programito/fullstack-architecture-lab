@@ -26,142 +26,167 @@
       </div>
 
       @if (filtersExpanded()) {
-        <div class="developer-logs-page__segmented">
-          <app-button [variant]="view() === 'all' ? 'primary' : 'neutral'" [fill]="view() === 'all' ? 'solid' : 'outline'" (pressed)="setView('all')">
-            {{ 'developer.logs.views.all' | transloco }}
-          </app-button>
-          <app-button [variant]="view() === 'operations' ? 'primary' : 'neutral'" [fill]="view() === 'operations' ? 'solid' : 'outline'" (pressed)="setView('operations')">
-            {{ 'developer.logs.views.operations' | transloco }}
-          </app-button>
-          <app-button [variant]="view() === 'audit' ? 'primary' : 'neutral'" [fill]="view() === 'audit' ? 'solid' : 'outline'" (pressed)="setView('audit')">
-            {{ 'developer.logs.views.audit' | transloco }}
-          </app-button>
-        </div>
-        <div class="developer-logs-page__quick-range">
-          <app-button [variant]="quickRange() === '1h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '1h' ? 'solid' : 'outline'" (pressed)="setQuickRange('1h')">
-            {{ 'developer.logs.ranges.1h' | transloco }}
-          </app-button>
-          <app-button [variant]="quickRange() === '6h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '6h' ? 'solid' : 'outline'" (pressed)="setQuickRange('6h')">
-            {{ 'developer.logs.ranges.6h' | transloco }}
-          </app-button>
-          <app-button [variant]="quickRange() === '24h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '24h' ? 'solid' : 'outline'" (pressed)="setQuickRange('24h')">
-            {{ 'developer.logs.ranges.24h' | transloco }}
-          </app-button>
-          <app-button [variant]="quickRange() === '3d' ? 'secondary' : 'neutral'" [fill]="quickRange() === '3d' ? 'solid' : 'outline'" (pressed)="setQuickRange('3d')">
-            {{ 'developer.logs.ranges.3d' | transloco }}
-          </app-button>
-          <app-button [variant]="quickRange() === '7d' ? 'secondary' : 'neutral'" [fill]="quickRange() === '7d' ? 'solid' : 'outline'" (pressed)="setQuickRange('7d')">
-            {{ 'developer.logs.ranges.7d' | transloco }}
-          </app-button>
-        </div>
-        <div class="developer-logs-page__fields">
-          <label>
-            <span>{{ 'developer.logs.filters.from' | transloco }}</span>
-            <input type="datetime-local" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)" />
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.to' | transloco }}</span>
-            <input type="datetime-local" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.level' | transloco }}</span>
-            <select [ngModel]="filters().level" (ngModelChange)="setFilter('level', $event)">
-              <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-              <option value="info">info</option>
-              <option value="warn">warn</option>
-              <option value="error">error</option>
-            </select>
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.category' | transloco }}</span>
-            <select [ngModel]="filters().category" (ngModelChange)="setFilter('category', $event)">
-              <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-              <option value="request">request</option>
-              <option value="error">error</option>
-              <option value="audit">audit</option>
-              <option value="client">client</option>
-            </select>
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.clientOrigin' | transloco }}</span>
-            <select [ngModel]="filters().clientOrigin" (ngModelChange)="setFilter('clientOrigin', $event)">
-              <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+        <div class="developer-logs-page__filter-groups">
+          <div class="developer-logs-page__filter-group">
+            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.view' | transloco }}</p>
+            <div class="developer-logs-page__segmented">
+              <app-button [variant]="view() === 'all' ? 'primary' : 'neutral'" [fill]="view() === 'all' ? 'solid' : 'outline'" (pressed)="setView('all')">
+                {{ 'developer.logs.views.all' | transloco }}
+              </app-button>
+              <app-button [variant]="view() === 'operations' ? 'primary' : 'neutral'" [fill]="view() === 'operations' ? 'solid' : 'outline'" (pressed)="setView('operations')">
+                {{ 'developer.logs.views.operations' | transloco }}
+              </app-button>
+              <app-button [variant]="view() === 'audit' ? 'primary' : 'neutral'" [fill]="view() === 'audit' ? 'solid' : 'outline'" (pressed)="setView('audit')">
+                {{ 'developer.logs.views.audit' | transloco }}
+              </app-button>
+            </div>
+          </div>
+
+          <div class="developer-logs-page__filter-group">
+            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.from' | transloco }} / {{ 'developer.logs.filters.to' | transloco }}</p>
+            <div class="developer-logs-page__quick-range">
+              <app-button [variant]="quickRange() === '1h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '1h' ? 'solid' : 'outline'" (pressed)="setQuickRange('1h')">
+                {{ 'developer.logs.ranges.1h' | transloco }}
+              </app-button>
+              <app-button [variant]="quickRange() === '6h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '6h' ? 'solid' : 'outline'" (pressed)="setQuickRange('6h')">
+                {{ 'developer.logs.ranges.6h' | transloco }}
+              </app-button>
+              <app-button [variant]="quickRange() === '24h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '24h' ? 'solid' : 'outline'" (pressed)="setQuickRange('24h')">
+                {{ 'developer.logs.ranges.24h' | transloco }}
+              </app-button>
+              <app-button [variant]="quickRange() === '3d' ? 'secondary' : 'neutral'" [fill]="quickRange() === '3d' ? 'solid' : 'outline'" (pressed)="setQuickRange('3d')">
+                {{ 'developer.logs.ranges.3d' | transloco }}
+              </app-button>
+              <app-button [variant]="quickRange() === '7d' ? 'secondary' : 'neutral'" [fill]="quickRange() === '7d' ? 'solid' : 'outline'" (pressed)="setQuickRange('7d')">
+                {{ 'developer.logs.ranges.7d' | transloco }}
+              </app-button>
+            </div>
+          </div>
+
+          <div class="developer-logs-page__filter-group">
+            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.clientOrigin' | transloco }}</p>
+            <div class="developer-logs-page__origin-chips">
               @for (origin of clientOriginOptions; track origin) {
-                <option [value]="origin">{{ clientOriginLabel(origin) }}</option>
+                <app-button
+                  [variant]="isClientOriginSelected(origin) ? 'secondary' : 'neutral'"
+                  [fill]="isClientOriginSelected(origin) ? 'solid' : 'outline'"
+                  [ariaLabel]="('developer.logs.filters.clientOrigin' | transloco) + ' ' + clientOriginLabel(origin)"
+                  (pressed)="setClientOriginFilter(origin)"
+                >
+                  {{ clientOriginLabel(origin) }}
+                </app-button>
               }
-            </select>
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.path' | transloco }}</span>
-            <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
-              <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-              @for (group of pathGroupOptions; track group.value) {
-                <option [value]="group.value">{{ group.label }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.result' | transloco }}</span>
-            <select [ngModel]="filters().result" (ngModelChange)="setFilter('result', $event)">
-              <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-              <option value="attempted">attempted</option>
-              <option value="succeeded">succeeded</option>
-              <option value="failed">failed</option>
-            </select>
-          </label>
-          <label>
-            <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
-            <select [ngModel]="filters().entityType" (ngModelChange)="setFilter('entityType', $event)">
-              <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-              @for (entityType of entityTypeOptions; track entityType) {
-                <option [value]="entityType">{{ entityType }}</option>
-              }
-            </select>
-          </label>
-          <app-combobox
-            [label]="'developer.logs.filters.entityId' | transloco"
-            [hint]="'developer.logs.filters.entityIdHint' | transloco"
-            [options]="entityOptions()"
-            [value]="filters().entityId"
-            (valueChange)="setFilter('entityId', $event)"
-          />
-          <app-combobox
-            [label]="'developer.logs.filters.actorUserId' | transloco"
-            [hint]="'developer.logs.filters.actorUserIdHint' | transloco"
-            [options]="actorOptions()"
-            [value]="filters().actorUserId"
-            (valueChange)="setFilter('actorUserId', $event)"
-          />
-          <app-combobox
-            [label]="'developer.logs.filters.restaurantId' | transloco"
-            [hint]="'developer.logs.filters.restaurantIdHint' | transloco"
-            [options]="restaurantOptions()"
-            [value]="filters().restaurantId"
-            (valueChange)="setFilter('restaurantId', $event)"
-          />
-          <label>
-            <span>{{ 'developer.logs.filters.search' | transloco }}</span>
-            <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />
-          </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="developer-logs-page__fields">
+          <section class="developer-logs-page__field-section">
+            <div class="developer-logs-page__field-section-header">
+              <h3>{{ 'developer.logs.views.operations' | transloco }}</h3>
+              <p>{{ 'developer.logs.filters.title' | transloco }}</p>
+            </div>
+            <div class="developer-logs-page__field-grid developer-logs-page__field-grid--primary">
+              <label>
+                <span>{{ 'developer.logs.filters.from' | transloco }}</span>
+                <input type="datetime-local" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)" />
+              </label>
+              <label>
+                <span>{{ 'developer.logs.filters.to' | transloco }}</span>
+                <input type="datetime-local" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
+              </label>
+              <label>
+                <span>{{ 'developer.logs.filters.level' | transloco }}</span>
+                <select [ngModel]="filters().level" (ngModelChange)="setFilter('level', $event)">
+                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                  <option value="info">info</option>
+                  <option value="warn">warn</option>
+                  <option value="error">error</option>
+                </select>
+              </label>
+              <label class="developer-logs-page__field-span-2">
+                <span>{{ 'developer.logs.filters.path' | transloco }}</span>
+                <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
+                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                  @for (group of pathGroupOptions; track group.value) {
+                    <option [value]="group.value">{{ group.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="developer-logs-page__field-span-2">
+                <span>{{ 'developer.logs.filters.search' | transloco }}</span>
+                <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />
+              </label>
+            </div>
+          </section>
+
+          <section class="developer-logs-page__field-section">
+            <div class="developer-logs-page__field-section-header">
+              <h3>{{ 'developer.logs.views.audit' | transloco }}</h3>
+              <p>{{ 'developer.logs.detail.title' | transloco }}</p>
+            </div>
+            <div class="developer-logs-page__field-grid developer-logs-page__field-grid--audit">
+              <app-combobox
+                [label]="'developer.logs.filters.restaurantId' | transloco"
+                [hint]="'developer.logs.filters.restaurantIdHint' | transloco"
+                [options]="restaurantOptions()"
+                [value]="filters().restaurantId"
+                (valueChange)="setFilter('restaurantId', $event)"
+              />
+              <app-combobox
+                [label]="'developer.logs.filters.actorUserId' | transloco"
+                [hint]="'developer.logs.filters.actorUserIdHint' | transloco"
+                [options]="actorOptions()"
+                [value]="filters().actorUserId"
+                (valueChange)="setFilter('actorUserId', $event)"
+              />
+              <label>
+                <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
+                <select [ngModel]="filters().entityType" (ngModelChange)="setFilter('entityType', $event)">
+                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                  @for (entityType of entityTypeOptions; track entityType) {
+                    <option [value]="entityType">{{ entityType }}</option>
+                  }
+                </select>
+              </label>
+              <app-combobox
+                [label]="'developer.logs.filters.entityId' | transloco"
+                [hint]="'developer.logs.filters.entityIdHint' | transloco"
+                [options]="entityOptions()"
+                [value]="filters().entityId"
+                (valueChange)="setFilter('entityId', $event)"
+              />
+              <label>
+                <span>{{ 'developer.logs.filters.result' | transloco }}</span>
+                <select [ngModel]="filters().result" (ngModelChange)="setFilter('result', $event)">
+                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                  <option value="attempted">attempted</option>
+                  <option value="succeeded">succeeded</option>
+                  <option value="failed">failed</option>
+                </select>
+              </label>
+            </div>
+          </section>
         </div>
         <div class="developer-logs-page__actions">
           <app-button variant="primary" (pressed)="applyFilters()">{{ 'developer.logs.filters.apply' | transloco }}</app-button>
           <app-button variant="neutral" fill="outline" (pressed)="resetFilters()">{{ 'developer.logs.filters.reset' | transloco }}</app-button>
         </div>
+        @if (activeFilterEntries().length) {
+          <section class="developer-logs-page__active-filters" aria-label="Filtros activos">
+            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.activeTitle' | transloco }}</p>
+            <div class="developer-logs-page__origin-chips">
+              @for (entry of activeFilterEntries(); track entry.key + entry.value) {
+                <app-badge variant="neutral" fill="soft">{{ entry.value }}</app-badge>
+              }
+            </div>
+          </section>
+        }
       }
     </section>
   </app-card>
 
   <section class="developer-logs-page__shortcuts">
-    <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('apk-customer')">
-      {{ 'developer.logs.shortcuts.apkCustomer' | transloco }}
-    </app-button>
-    <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('web-demo')">
-      {{ 'developer.logs.shortcuts.webDemo' | transloco }}
-    </app-button>
-    <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('web-pos')">
-      {{ 'developer.logs.shortcuts.webPos' | transloco }}
-    </app-button>
     <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('auth')">
       {{ 'developer.logs.shortcuts.auth' | transloco }}
     </app-button>
@@ -170,7 +195,7 @@
     </app-button>
   </section>
 
-  <section class="developer-logs-page__cards">
+  <section class="developer-logs-page__summary-cards">
     <app-card variant="outlined">
       <button
         type="button"
@@ -219,6 +244,9 @@
         <strong>{{ summary()?.p95DurationMs ?? 0 }} ms</strong>
       </button>
     </app-card>
+  </section>
+
+  <section class="developer-logs-page__channel-cards">
     @if (breakdown().origins.length) {
       @for (origin of breakdown().origins; track origin.key) {
         <app-card variant="outlined">
@@ -348,6 +376,28 @@
         [data]="originSeries()"
       />
     </app-card>
+    @if (authByOrigin().length) {
+      <app-card variant="outlined">
+        <app-chart
+          type="bar"
+          [loading]="loading()"
+          [title]="'developer.logs.sections.authByOrigin' | transloco"
+          [categories]="authOriginCategories()"
+          [data]="authOriginSeries()"
+        />
+      </app-card>
+    }
+    @if (topSlowPaths().length) {
+      <app-card variant="outlined">
+        <app-chart
+          type="bar"
+          [loading]="loading()"
+          [title]="'developer.logs.sections.slowPaths' | transloco"
+          [categories]="slowPathCategories()"
+          [data]="slowPathSeries()"
+        />
+      </app-card>
+    }
   </section>
 
   <section class="developer-logs-page__table">

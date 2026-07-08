@@ -128,6 +128,8 @@
         "title": "Filtros",
         "show": "Mostrar filtros",
         "hide": "Ocultar filtros",
+        "view": "Vista",
+        "activeTitle": "Filtros activos",
         "from": "Desde",
         "to": "Hasta",
         "level": "Nivel",
@@ -224,6 +226,8 @@
       "sections": {
         "topSlowPaths": "Top rutas lentas",
         "topErrors": "Top errores por canal",
+        "authByOrigin": "Logins por origen",
+        "slowPaths": "Latencia por rutas lentas",
         "requests": "peticiones",
         "occurrences": "ocurrencias"
       },

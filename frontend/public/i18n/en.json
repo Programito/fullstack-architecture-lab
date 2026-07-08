@@ -128,6 +128,8 @@
         "title": "Filters",
         "show": "Show filters",
         "hide": "Hide filters",
+        "view": "View",
+        "activeTitle": "Active filters",
         "from": "From",
         "to": "To",
         "level": "Level",
@@ -178,6 +180,8 @@
       "sections": {
         "topSlowPaths": "Top slow routes",
         "topErrors": "Top errors by channel",
+        "authByOrigin": "Logins by origin",
+        "slowPaths": "Latency across slow routes",
         "requests": "requests",
         "occurrences": "occurrences"
       },

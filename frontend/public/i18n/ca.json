@@ -128,6 +128,8 @@
         "title": "Filtres",
         "show": "Mostrar filtres",
         "hide": "Amagar filtres",
+        "view": "Vista",
+        "activeTitle": "Filtres actius",
         "from": "Des de",
         "to": "Fins a",
         "level": "Nivell",
@@ -224,6 +226,8 @@
       "sections": {
         "topSlowPaths": "Top rutes lentes",
         "topErrors": "Top errors per canal",
+        "authByOrigin": "Logins per origen",
+        "slowPaths": "Latencia a les rutes lentes",
         "requests": "peticions",
         "occurrences": "ocurrències"
       },

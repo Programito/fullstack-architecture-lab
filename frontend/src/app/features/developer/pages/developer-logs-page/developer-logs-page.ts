@@ -87,6 +87,44 @@ export class DeveloperLogsPage {
   protected readonly authByOrigin = computed(() => this.summary()?.authByOrigin ?? []);
   protected readonly topSlowPaths = computed(() => this.summary()?.topSlowPaths ?? []);
   protected readonly topErrorEvents = computed(() => this.summary()?.topErrorEvents ?? []);
+  protected readonly activeFilterEntries = computed(() => {
+    const filters = this.filters();
+    const entries: Array<{ key: string; label: string; value: string }> = [];
+
+    if (filters.clientOrigin) {
+      entries.push({
+        key: 'clientOrigin',
+        label: this.transloco.translate('developer.logs.filters.clientOrigin'),
+        value: this.clientOriginLabel(filters.clientOrigin),
+      });
+    }
+
+    if (filters.path) {
+      const match = this.pathGroupOptions.find((group) => group.value === filters.path);
+      entries.push({
+        key: 'path',
+        label: this.transloco.translate('developer.logs.filters.path'),
+        value: match?.label ?? filters.path,
+      });
+    }
+
+    return entries;
+  });
+  protected readonly authOriginCategories = computed(() => this.authByOrigin().map((entry) => this.clientOriginLabel(entry.key)));
+  protected readonly authOriginSeries = computed<ChartSeries[]>(() => {
+    this.activeLang();
+    return [
+      { name: this.transloco.translate('developer.logs.metrics.loginSucceeded'), values: this.authByOrigin().map((entry) => entry.succeeded) },
+      { name: this.transloco.translate('developer.logs.metrics.loginFailed'), values: this.authByOrigin().map((entry) => entry.failed) },
+    ];
+  });
+  protected readonly slowPathCategories = computed(() => this.topSlowPaths().map((entry) => entry.path));
+  protected readonly slowPathSeries = computed<ChartSeries[]>(() => {
+    this.activeLang();
+    return [
+      { name: this.transloco.translate('developer.logs.metrics.latency'), values: this.topSlowPaths().map((entry) => entry.p95DurationMs) },
+    ];
+  });
   protected readonly originSeries = computed<ChartSeries[]>(() => {
     this.activeLang();
     return [
@@ -147,6 +185,14 @@ export class DeveloperLogsPage {
     this.filtersExpanded.update((expanded) => !expanded);
   }
 
+  protected isClientOriginSelected(origin: DeveloperLogFilters['clientOrigin']): boolean {
+    return this.filters().clientOrigin === origin;
+  }
+
+  protected setClientOriginFilter(origin: DeveloperLogFilters['clientOrigin']): void {
+    this.setFilter('clientOrigin', this.isClientOriginSelected(origin) ? '' : origin);
+  }
+
   protected applyFilters(): void {
     void this.updateUrl({ page: 1 });
   }
@@ -204,11 +250,6 @@ export class DeveloperLogsPage {
   }
 
   protected applyShortcut(shortcut: 'apk-customer' | 'web-demo' | 'web-pos' | 'auth' | 'payments'): void {
-    if (shortcut === 'apk-customer' || shortcut === 'web-demo' || shortcut === 'web-pos') {
-      this.applyFilterState({ clientOrigin: shortcut }, this.view());
-      return;
-    }
-
     if (shortcut === 'auth') {
       this.applyFilterState({ category: 'request', path: '/auth' }, 'operations');
       return;
