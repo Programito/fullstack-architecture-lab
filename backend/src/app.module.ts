@@ -8,6 +8,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
+import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
     OrganizationsModule,
     RealtimeModule.register({ enabled: process.env.REALTIME_ENABLED === 'true' }),
     RestaurantsModule,
+    TimeTrackingModule,
   ],
 })
 export class AppModule {}

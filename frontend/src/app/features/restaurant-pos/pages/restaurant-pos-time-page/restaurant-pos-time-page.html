@@ -1,0 +1,356 @@
+<main class="min-h-dvh">
+  <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.time.eyebrow' | transloco }}</p>
+        <h1 class="theme-title text-2xl font-semibold">{{ 'restaurantPos.time.title' | transloco }}</h1>
+        <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.time.description' | transloco }}</p>
+      </div>
+
+      @if (canReviewTeam()) {
+        <div class="time-tabs" role="tablist" [attr.aria-label]="'restaurantPos.time.tabsLabel' | transloco">
+          <button type="button" class="time-tab" [class.time-tab--active]="activeTab() === 'mine'" (click)="setTab('mine')">
+            {{ 'restaurantPos.time.tabs.mine' | transloco }}
+          </button>
+          <button type="button" class="time-tab" [class.time-tab--active]="activeTab() === 'team'" (click)="setTab('team')">
+            {{ 'restaurantPos.time.tabs.team' | transloco }}
+          </button>
+        </div>
+      }
+    </div>
+  </header>
+
+  <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 lg:p-6">
+    @if (error(); as errorKey) {
+      <app-alert variant="danger" [title]="'restaurantPos.time.errorTitle' | transloco" [description]="errorKey | transloco" />
+    }
+
+    @if (activeTab() === 'mine') {
+      <section class="theme-panel rounded-lg border p-4 shadow-sm">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div>
+            <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.time.clockCard.title' | transloco }}</h2>
+            <p class="theme-muted mt-1 text-sm">
+              @if (openEntry()) {
+                {{ 'restaurantPos.time.clockCard.openState' | transloco:{ clockInAt: formatDateTime(openEntry()!.clockInAt) } }}
+              } @else {
+                {{ 'restaurantPos.time.clockCard.closedState' | transloco }}
+              }
+            </p>
+          </div>
+
+          <div class="grid gap-3">
+            <app-textarea
+              [label]="'restaurantPos.time.clockCard.noteLabel' | transloco"
+              [value]="clockNote()"
+              [rows]="3"
+              (valueChange)="updateClockNote($event)"
+            />
+
+            @if (openEntry()) {
+              <app-button [loading]="submittingClock()" (pressed)="clockOut()">
+                {{ 'restaurantPos.time.clockCard.clockOut' | transloco }}
+              </app-button>
+            } @else {
+              <app-button [loading]="submittingClock()" (pressed)="clockIn()">
+                {{ 'restaurantPos.time.clockCard.clockIn' | transloco }}
+              </app-button>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="theme-panel rounded-lg border p-4 shadow-sm">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.time.history.title' | transloco }}</h2>
+            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.time.history.description' | transloco }}</p>
+          </div>
+        </div>
+
+        @if (loadingMine()) {
+          <p class="theme-muted text-sm">{{ 'restaurantPos.time.loading' | transloco }}</p>
+        } @else if (myEntries().length === 0) {
+          <p class="theme-muted text-sm">{{ 'restaurantPos.time.history.empty' | transloco }}</p>
+        } @else {
+          <div class="time-entry-list">
+            @for (entry of myEntries(); track entry.id) {
+              <article class="time-entry-card">
+                <div class="time-entry-card__header">
+                  <div>
+                    <h3 class="font-medium">{{ formatDateTime(entry.clockInAt) }}</h3>
+                    <p class="theme-muted text-sm">{{ 'restaurantPos.time.history.duration' | transloco:{ duration: formatDuration(entry) } }}</p>
+                  </div>
+                  <span class="time-entry-card__status">{{ ('restaurantPos.time.status.' + entry.status) | transloco }}</span>
+                </div>
+
+                <dl class="time-entry-card__grid">
+                  <div>
+                    <dt>{{ 'restaurantPos.time.history.clockIn' | transloco }}</dt>
+                    <dd>{{ formatDateTime(entry.clockInAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.history.clockOut' | transloco }}</dt>
+                    <dd>{{ formatDateTime(entry.clockOutAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.history.clockInNote' | transloco }}</dt>
+                    <dd>{{ entry.clockInNote || '-' }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.history.clockOutNote' | transloco }}</dt>
+                    <dd>{{ entry.clockOutNote || '-' }}</dd>
+                  </div>
+                </dl>
+
+                <div class="mt-3">
+                  <button type="button" class="time-link-button" (click)="startChangeRequest(entry)">
+                    {{ 'restaurantPos.time.history.requestChange' | transloco }}
+                  </button>
+                </div>
+
+                @if (isEditingEntry(entry.id)) {
+                  <div class="time-change-form">
+                    <label>
+                      <span>{{ 'restaurantPos.time.changeRequest.requestedClockInAt' | transloco }}</span>
+                      <input type="datetime-local" [value]="requestedClockInAt()" (input)="updateRequestedClockInAt($any($event.target).value)" />
+                    </label>
+                    <label>
+                      <span>{{ 'restaurantPos.time.changeRequest.requestedClockOutAt' | transloco }}</span>
+                      <input type="datetime-local" [value]="requestedClockOutAt()" (input)="updateRequestedClockOutAt($any($event.target).value)" />
+                    </label>
+                    <app-textarea
+                      [label]="'restaurantPos.time.changeRequest.requestedClockInNote' | transloco"
+                      [value]="requestedClockInNote()"
+                      [rows]="2"
+                      (valueChange)="updateRequestedClockInNote($event)"
+                    />
+                    <app-textarea
+                      [label]="'restaurantPos.time.changeRequest.requestedClockOutNote' | transloco"
+                      [value]="requestedClockOutNote()"
+                      [rows]="2"
+                      (valueChange)="updateRequestedClockOutNote($event)"
+                    />
+                    <app-textarea
+                      [label]="'restaurantPos.time.changeRequest.reason' | transloco"
+                      [value]="changeReason()"
+                      [rows]="3"
+                      (valueChange)="updateChangeReason($event)"
+                    />
+
+                    <div class="time-actions">
+                      <app-button variant="neutral" fill="outline" (pressed)="cancelChangeRequest()">
+                        {{ 'restaurantPos.common.cancel' | transloco }}
+                      </app-button>
+                      <app-button [loading]="submittingChangeRequest()" [disabled]="!canSubmitChangeRequest()" (pressed)="submitChangeRequest()">
+                        {{ 'restaurantPos.time.changeRequest.submit' | transloco }}
+                      </app-button>
+                    </div>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    @if (activeTab() === 'team' && canReviewTeam()) {
+      <section class="theme-panel rounded-lg border p-4 shadow-sm">
+        <div class="mb-4 flex flex-col gap-3">
+          <div>
+            <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.time.team.title' | transloco }}</h2>
+            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.time.team.description' | transloco }}</p>
+          </div>
+
+          <div class="time-periods" role="group" [attr.aria-label]="'restaurantPos.time.team.periods.label' | transloco">
+            @for (preset of ['today', 'yesterday', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth']; track preset) {
+              <button
+                type="button"
+                class="time-period-button"
+                [class.time-period-button--active]="isSelectedTeamPeriod($any(preset))"
+                (click)="selectTeamPeriod($any(preset))"
+              >
+                {{ ('restaurantPos.time.team.periods.' + preset) | transloco }}
+              </button>
+            }
+          </div>
+
+          <div class="time-filters">
+            <label>
+              <span>{{ 'restaurantPos.time.team.filters.from' | transloco }}</span>
+              <input type="date" [value]="teamDateFrom()" (input)="updateTeamDateFrom($any($event.target).value)" />
+            </label>
+            <label>
+              <span>{{ 'restaurantPos.time.team.filters.to' | transloco }}</span>
+              <input type="date" [value]="teamDateTo()" (input)="updateTeamDateTo($any($event.target).value)" />
+            </label>
+            <label>
+              <span>{{ 'restaurantPos.time.team.filters.status' | transloco }}</span>
+              <select [value]="teamStatus()" (change)="updateTeamStatus($any($event.target).value)">
+                <option value="">{{ 'restaurantPos.time.team.filters.allStatuses' | transloco }}</option>
+                <option value="open">{{ 'restaurantPos.time.status.open' | transloco }}</option>
+                <option value="closed">{{ 'restaurantPos.time.status.closed' | transloco }}</option>
+                <option value="corrected">{{ 'restaurantPos.time.status.corrected' | transloco }}</option>
+              </select>
+            </label>
+            <label>
+              <span>{{ 'restaurantPos.time.team.filters.worker' | transloco }}</span>
+              <select [value]="teamWorkerUserId()" (change)="updateTeamWorkerUserId($any($event.target).value)">
+                <option value="">{{ 'restaurantPos.time.team.filters.allWorkers' | transloco }}</option>
+                @for (worker of workerOptions(); track worker.id) {
+                  <option [value]="worker.id">{{ worker.label }}</option>
+                }
+              </select>
+            </label>
+            <app-button variant="neutral" fill="outline" (pressed)="applyTeamFilters()">
+              {{ 'restaurantPos.time.team.filters.apply' | transloco }}
+            </app-button>
+            <app-button variant="neutral" fill="outline" (pressed)="resetTeamFilters()">
+              {{ 'restaurantPos.time.team.filters.reset' | transloco }}
+            </app-button>
+          </div>
+        </div>
+
+        <div class="time-summary-grid">
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.totalHours' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().totalWorkedLabel }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.totalEntriesValue' | transloco:{ count: teamSummary().totalEntries } }}</span>
+          </article>
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.recordedWorkers' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().recordedWorkers }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.recordedWorkersValue' | transloco:{ count: teamSummary().recordedWorkers } }}</span>
+          </article>
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.openEntries' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().openEntries }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.openEntriesValue' | transloco:{ count: teamSummary().openEntries } }}</span>
+          </article>
+          <article class="time-summary-card">
+            <p class="time-summary-card__label">{{ 'restaurantPos.time.team.summary.pendingRequests' | transloco }}</p>
+            <strong class="time-summary-card__value">{{ teamSummary().pendingRequests }}</strong>
+            <span class="theme-muted text-sm">{{ 'restaurantPos.time.team.summary.pendingRequestsValue' | transloco:{ count: teamSummary().pendingRequests } }}</span>
+          </article>
+        </div>
+
+        @if (loadingTeam()) {
+          <p class="theme-muted text-sm">{{ 'restaurantPos.time.loading' | transloco }}</p>
+        } @else if (teamEntries().length === 0) {
+          <p class="theme-muted text-sm">{{ 'restaurantPos.time.team.empty' | transloco }}</p>
+        } @else {
+          <div class="time-table-wrap">
+            <table class="time-table">
+              <thead>
+                <tr>
+                  <th>{{ 'restaurantPos.time.team.columns.worker' | transloco }}</th>
+                  <th>{{ 'restaurantPos.time.team.columns.clockIn' | transloco }}</th>
+                  <th>{{ 'restaurantPos.time.team.columns.clockOut' | transloco }}</th>
+                  <th>{{ 'restaurantPos.time.team.columns.duration' | transloco }}</th>
+                  <th>{{ 'restaurantPos.time.team.columns.notes' | transloco }}</th>
+                  <th>{{ 'restaurantPos.time.team.columns.status' | transloco }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of teamEntries(); track entry.id) {
+                  <tr>
+                    <td>{{ entry.user.firstName }} {{ entry.user.lastName }}</td>
+                    <td>{{ formatDateTime(entry.clockInAt) }}</td>
+                    <td>{{ formatDateTime(entry.clockOutAt) }}</td>
+                    <td>{{ formatDuration(entry) }}</td>
+                    <td>{{ teamNotes(entry) }}</td>
+                    <td><span class="time-entry-card__status">{{ ('restaurantPos.time.status.' + entry.status) | transloco }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="theme-panel rounded-lg border p-4 shadow-sm">
+        <div class="mb-4">
+          <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.time.requests.title' | transloco }}</h2>
+          <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.time.requests.description' | transloco }}</p>
+        </div>
+
+        @if (pendingRequests().length === 0) {
+          <p class="theme-muted text-sm">{{ 'restaurantPos.time.requests.empty' | transloco }}</p>
+        } @else {
+          <div class="time-request-list">
+            @for (request of pendingRequests(); track request.id) {
+              <article class="time-request-card">
+                <div class="time-request-card__header">
+                  <div>
+                    <h3 class="font-medium">{{ request.timeEntry.user.firstName }} {{ request.timeEntry.user.lastName }}</h3>
+                    <p class="theme-muted text-sm">{{ 'restaurantPos.time.requests.requestedAt' | transloco:{ value: formatDateTime(request.createdAt) } }}</p>
+                  </div>
+                  <span class="time-entry-card__status">{{ ('restaurantPos.time.status.' + request.status) | transloco }}</span>
+                </div>
+
+                <dl class="time-entry-card__grid">
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.reason' | transloco }}</dt>
+                    <dd>{{ request.reason }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.requestedBy' | transloco }}</dt>
+                    <dd>{{ request.requestedByUser.firstName }} {{ request.requestedByUser.lastName }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.originalClockIn' | transloco }}</dt>
+                    <dd>{{ formatDateTime(request.timeEntry.clockInAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.requests.originalClockOut' | transloco }}</dt>
+                    <dd>{{ formatDateTime(request.timeEntry.clockOutAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.changeRequest.requestedClockInAt' | transloco }}</dt>
+                    <dd>{{ formatDateTime(request.requestedClockInAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.changeRequest.requestedClockOutAt' | transloco }}</dt>
+                    <dd>{{ formatDateTime(request.requestedClockOutAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.changeRequest.requestedClockInNote' | transloco }}</dt>
+                    <dd>{{ request.requestedClockInNote || '-' }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'restaurantPos.time.changeRequest.requestedClockOutNote' | transloco }}</dt>
+                    <dd>{{ request.requestedClockOutNote || '-' }}</dd>
+                  </div>
+                </dl>
+
+                <div class="time-request-card__review">
+                  <app-textarea
+                    [label]="'restaurantPos.time.requests.reviewNote' | transloco"
+                    [value]="reviewNote(request.id)"
+                    [rows]="2"
+                    (valueChange)="updateReviewNote(request.id, $event)"
+                  />
+                </div>
+
+                <div class="time-actions">
+                  <app-button
+                    variant="danger"
+                    fill="outline"
+                    [disabled]="!canRejectRequest(request.id)"
+                    (pressed)="reviewRequest(request.id, 'rejected')"
+                  >
+                    {{ 'restaurantPos.time.requests.reject' | transloco }}
+                  </app-button>
+                  <app-button (pressed)="reviewRequest(request.id, 'approved')">
+                    {{ 'restaurantPos.time.requests.approve' | transloco }}
+                  </app-button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+</main>

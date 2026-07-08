@@ -120,6 +120,7 @@ function isString(value: unknown): value is string {
 function isPermissionName(value: unknown): value is PermissionName {
   return (
     value === 'service' ||
+    value === 'time_tracking' ||
     value === 'menu' ||
     value === 'kitchen' ||
     value === 'layout' ||

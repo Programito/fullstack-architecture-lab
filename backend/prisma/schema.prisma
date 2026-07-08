@@ -18,6 +18,9 @@ model User {
   roles        UserRole[]
   roleAssignments UserRoleAssignment[]
   sessions     AuthSession[]
+  timeEntries  TimeEntry[] @relation("TimeEntryUser")
+  requestedTimeEntryChangeRequests TimeEntryChangeRequest[] @relation("RequestedTimeEntryChangeRequests")
+  reviewedTimeEntryChangeRequests TimeEntryChangeRequest[] @relation("ReviewedTimeEntryChangeRequests")
   openedOrders  Order[]        @relation("OpenedOrders")
   createdDiscounts OrderDiscount[]
   createdAt    DateTime   @default(now())
@@ -189,6 +192,8 @@ model Restaurant {
   orders          Order[]
   reservations    Reservation[]
   serviceWindows  RestaurantServiceWindow[]
+  timeEntries     TimeEntry[]
+  timeEntryChangeRequests TimeEntryChangeRequest[]
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
@@ -678,6 +683,52 @@ model ReservationTable {
   @@map("reservation_tables")
 }
 
+model TimeEntry {
+  id           String          @id @default(uuid())
+  userId       String
+  restaurantId String
+  clockInAt    DateTime
+  clockOutAt   DateTime?
+  clockInNote  String?
+  clockOutNote String?
+  status       TimeEntryStatus @default(open)
+  user         User            @relation("TimeEntryUser", fields: [userId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  changeRequests TimeEntryChangeRequest[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([restaurantId, userId, clockInAt])
+  @@index([restaurantId, status, createdAt])
+  @@map("time_entries")
+}
+
+model TimeEntryChangeRequest {
+  id                  String                       @id @default(uuid())
+  timeEntryId         String
+  restaurantId        String
+  requestedByUserId   String
+  requestedClockInAt  DateTime?
+  requestedClockOutAt DateTime?
+  requestedClockInNote String?
+  requestedClockOutNote String?
+  reason              String
+  status              TimeEntryChangeRequestStatus @default(pending)
+  reviewedByUserId    String?
+  reviewedAt          DateTime?
+  reviewNote          String?
+  timeEntry           TimeEntry                    @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  restaurant          Restaurant                   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  requestedByUser     User                         @relation("RequestedTimeEntryChangeRequests", fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  reviewedByUser      User?                        @relation("ReviewedTimeEntryChangeRequests", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+
+  @@index([restaurantId, status, createdAt])
+  @@index([timeEntryId, createdAt])
+  @@map("time_entry_change_requests")
+}
+
 enum AccountType {
   regular
   demo
@@ -785,6 +836,18 @@ enum ReservationStatus {
   seated
   cancelled
   no_show
+}
+
+enum TimeEntryStatus {
+  open
+  closed
+  corrected
+}
+
+enum TimeEntryChangeRequestStatus {
+  pending
+  approved
+  rejected
 }
 
 enum LogSource {

@@ -311,6 +311,7 @@
     "common": {
       "layout": "Layout",
       "service": "Service",
+      "time": "Time",
       "menu": "Menu",
       "kitchen": "Kitchen",
       "reservations": "Reservations",
@@ -808,6 +809,114 @@
     "selector": {
       "title": "Select a restaurant",
       "description": "Choose the restaurant you want to work in."
+    },
+    "time": {
+      "eyebrow": "Time tracking",
+      "title": "Work time log",
+      "description": "Clock in and out, review your history, and manage correction requests.",
+      "tabsLabel": "Time tracking views",
+      "tabs": {
+        "mine": "My time",
+        "team": "Team"
+      },
+      "loading": "Loading time entries...",
+      "errorTitle": "The action could not be completed",
+      "errors": {
+        "load": "The time entries could not be loaded right now.",
+        "clockAction": "The time entry could not be recorded.",
+        "changeRequest": "The correction request could not be sent.",
+        "review": "The request could not be reviewed."
+      },
+      "clockCard": {
+        "title": "Current shift",
+        "openState": "Open shift since {{ clockInAt }}.",
+        "closedState": "There is no open shift right now.",
+        "noteLabel": "Notes",
+        "clockIn": "Clock in",
+        "clockOut": "Clock out"
+      },
+      "history": {
+        "title": "Personal history",
+        "description": "Review recorded hours and request corrections when needed.",
+        "empty": "There are no time entries yet.",
+        "duration": "Duration: {{ duration }}",
+        "clockIn": "Clock in",
+        "clockOut": "Clock out",
+        "clockInNote": "Clock-in note",
+        "clockOutNote": "Clock-out note",
+        "requestChange": "Request correction"
+      },
+      "changeRequest": {
+        "requestedClockInAt": "New clock-in time",
+        "requestedClockOutAt": "New clock-out time",
+        "requestedClockInNote": "New clock-in note",
+        "requestedClockOutNote": "New clock-out note",
+        "reason": "Reason for the correction",
+        "submit": "Send request"
+      },
+      "team": {
+        "title": "Team time entries",
+        "description": "Review the active restaurant entries and filter by period, worker, or status.",
+        "empty": "There are no time entries for the selected filters.",
+        "filters": {
+          "from": "From",
+          "to": "To",
+          "status": "Status",
+          "worker": "Worker",
+          "allStatuses": "All statuses",
+          "allWorkers": "Full team",
+          "apply": "Apply filters",
+          "reset": "Reset"
+        },
+        "periods": {
+          "label": "Period ranges",
+          "today": "Today",
+          "yesterday": "Yesterday",
+          "thisWeek": "This week",
+          "lastWeek": "Last week",
+          "thisMonth": "This month",
+          "lastMonth": "Last month"
+        },
+        "summary": {
+          "totalHours": "Recorded hours",
+          "totalEntriesValue": "{{count}} entries in the period",
+          "recordedWorkers": "Workers with records",
+          "recordedWorkersValue": "{{count}} people with activity",
+          "openEntries": "Open entries",
+          "openEntriesValue": "{{count}} shifts still open",
+          "pendingRequests": "Pending corrections",
+          "pendingRequestsValue": "{{count}} requests to review"
+        },
+        "columns": {
+          "worker": "Worker",
+          "clockIn": "Clock in",
+          "clockOut": "Clock out",
+          "duration": "Duration",
+          "notes": "Notes",
+          "status": "Status"
+        }
+      },
+      "requests": {
+        "title": "Pending requests",
+        "description": "Approve or reject time changes sent by the team.",
+        "empty": "There are no pending requests.",
+        "approve": "Approve",
+        "reject": "Reject",
+        "requestedAt": "Sent on {{ value }}",
+        "requestedBy": "Requested by",
+        "reason": "Reason",
+        "originalClockIn": "Original clock in",
+        "originalClockOut": "Original clock out",
+        "reviewNote": "Rejection review note"
+      },
+      "status": {
+        "open": "Open",
+        "closed": "Closed",
+        "corrected": "Corrected",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
     },
     "dashboard": {
       "title": "Restaurant analytics",

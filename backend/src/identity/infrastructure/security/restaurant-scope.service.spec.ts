@@ -1,22 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RestaurantScopeService } from './restaurant-scope.service';
-import type { PrismaService } from '../../../shared/prisma/prisma.service';
+import type { RestaurantReadRepository } from '../../../restaurants/application/ports/restaurant-read-repository.port';
 
 describe('RestaurantScopeService', () => {
   let service: RestaurantScopeService;
-  let findUnique: ReturnType<typeof vi.fn>;
-  let prisma: PrismaService;
+  let listRestaurants: ReturnType<typeof vi.fn>;
+  let restaurants: RestaurantReadRepository;
 
   beforeEach(() => {
-    findUnique = vi.fn();
-    prisma = { restaurant: { findUnique } } as unknown as PrismaService;
-    service = new RestaurantScopeService(prisma);
+    listRestaurants = vi.fn();
+    restaurants = { listRestaurants } as unknown as RestaurantReadRepository;
+    service = new RestaurantScopeService(restaurants);
   });
 
   it('grants access when the user has a direct restaurant scope for the requested restaurant', async () => {
     const auth = { scopes: { organizations: [], restaurants: ['rest-1'] } };
     await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(true);
-    expect(findUnique).not.toHaveBeenCalled();
+    expect(listRestaurants).not.toHaveBeenCalled();
   });
 
   it('denies access when the user has a direct scope for a different restaurant and no organization scope', async () => {
@@ -25,27 +25,27 @@ describe('RestaurantScopeService', () => {
   });
 
   it('grants access when the restaurant belongs to an organization in scope', async () => {
-    findUnique.mockResolvedValue({ organizationId: 'org-1' });
+    listRestaurants.mockResolvedValue([{ id: 'rest-1', organizationId: 'org-1' }]);
     const auth = { scopes: { organizations: ['org-1'], restaurants: [] } };
     await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(true);
-    expect(findUnique).toHaveBeenCalledWith({ where: { id: 'rest-1' }, select: { organizationId: true } });
+    expect(listRestaurants).toHaveBeenCalledWith(['rest-1'], []);
   });
 
   it('denies access when the restaurant belongs to a different organization', async () => {
-    findUnique.mockResolvedValue({ organizationId: 'org-2' });
+    listRestaurants.mockResolvedValue([{ id: 'rest-1', organizationId: 'org-2' }]);
     const auth = { scopes: { organizations: ['org-1'], restaurants: [] } };
     await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(false);
   });
 
   it('denies access when the restaurant does not exist', async () => {
-    findUnique.mockResolvedValue(null);
+    listRestaurants.mockResolvedValue([]);
     const auth = { scopes: { organizations: ['org-1'], restaurants: [] } };
     await expect(service.canAccessRestaurant(auth, 'nonexistent')).resolves.toBe(false);
   });
 
-  it('denies access when the user has no scopes', async () => {
+  it('grants access when the user has no scopes configured', async () => {
     const auth = { scopes: { organizations: [], restaurants: [] } };
-    await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(false);
-    expect(findUnique).not.toHaveBeenCalled();
+    await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(true);
+    expect(listRestaurants).not.toHaveBeenCalled();
   });
 });

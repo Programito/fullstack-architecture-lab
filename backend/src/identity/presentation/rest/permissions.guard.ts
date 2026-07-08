@@ -1,7 +1,7 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, SetMetadata } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../../../restaurants/application/ports/restaurant-read-repository.port';
 import type { AuthenticatedRequest } from './auth.guard';
 
 const REQUIRED_PERMISSIONS = 'required_permissions';
@@ -11,7 +11,8 @@ export const RequirePermissions = (...permissions: string[]) => SetMetadata(REQU
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    @Inject(RESTAURANT_READ_REPOSITORY)
+    private readonly restaurants: RestaurantReadRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,10 +48,7 @@ export class PermissionsGuard implements CanActivate {
     if (auth.scopes.organizations.length === 0) return [];
     const allOrgPerms = Object.values(auth.organizationPermissions).flat();
     if (allOrgPerms.length === 0) return [];
-    const restaurant = await this.prisma.restaurant.findUnique({
-      where: { id: restaurantId },
-      select: { organizationId: true },
-    });
+    const [restaurant] = await this.restaurants.listRestaurants([restaurantId], []);
     if (!restaurant) return [];
     return auth.organizationPermissions[restaurant.organizationId] ?? [];
   }

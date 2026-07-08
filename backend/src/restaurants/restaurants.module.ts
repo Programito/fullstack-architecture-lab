@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
 
 import { ChargeRestaurantServicePointUseCase } from './application/use-cases/charge-restaurant-service-point.use-case';
@@ -79,7 +79,7 @@ import { RestaurantModifierGroupsController } from './presentation/rest/restaura
 import { RestaurantAnalyticsController } from './presentation/rest/restaurant-analytics.controller';
 
 @Module({
-  imports: [IdentityModule],
+  imports: [forwardRef(() => IdentityModule)],
   controllers: [
     RestaurantsController,
     RestaurantMenuController,
@@ -187,5 +187,6 @@ import { RestaurantAnalyticsController } from './presentation/rest/restaurant-an
       useExisting: CloudinaryProductImageSigner,
     },
   ],
+  exports: [RESTAURANT_READ_REPOSITORY],
 })
 export class RestaurantsModule {}

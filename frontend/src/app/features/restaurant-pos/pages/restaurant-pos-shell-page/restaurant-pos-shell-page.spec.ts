@@ -109,6 +109,14 @@ describe('RestaurantPosShellPage', () => {
     expect(screen.queryByRole('link', { name: /Cocina/i })).toBeNull();
   });
 
+  it('shows the time tracking section when the session includes the time_tracking permission', async () => {
+    await renderPage(['service', 'time_tracking']);
+
+    for (const link of screen.getAllByRole('link', { name: /Horario|restaurantPos\.common\.time/i })) {
+      expect(link.getAttribute('href')).toBe('/restaurant-pos/time');
+    }
+  });
+
   it('marks the active section as the current page', async () => {
     await renderPage(['service', 'layout'], '/restaurant-pos/layout');
 

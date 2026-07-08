@@ -2,31 +2,31 @@ export const ROLE_CATALOG = [
   {
     name: 'admin',
     description: 'Control completo del restaurante.',
-    permissionNames: ['service', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
+    permissionNames: ['service', 'time_tracking', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
   },
   {
     name: 'manager',
-    description: 'Gestión de turnos, descuentos y caja.',
-    permissionNames: ['service', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
+    description: 'Gestion de turnos, descuentos y caja.',
+    permissionNames: ['service', 'time_tracking', 'menu', 'kitchen', 'layout', 'reservations', 'dashboard'],
   },
   {
     name: 'waiter',
-    description: 'Gestión de mesas y pedidos.',
-    permissionNames: ['service', 'layout', 'reservations'],
+    description: 'Gestion de mesas y pedidos.',
+    permissionNames: ['service', 'time_tracking', 'layout', 'reservations'],
   },
   {
     name: 'kitchen',
-    description: 'Preparación de pedidos.',
-    permissionNames: ['kitchen'],
+    description: 'Preparacion de pedidos.',
+    permissionNames: ['kitchen', 'time_tracking'],
   },
   {
     name: 'customer',
-    description: 'Cliente en mesa: pide y paga desde la app móvil (sin acceso a plano ni reservas).',
+    description: 'Cliente en mesa: pide y paga desde la app movil (sin acceso a plano ni reservas).',
     permissionNames: ['service'],
   },
   {
     name: 'developer',
-    description: 'Documentación, Storybook, arquitectura y demo técnica.',
+    description: 'Documentacion, Storybook, arquitectura y demo tecnica.',
     permissionNames: [],
   },
 ] as const;

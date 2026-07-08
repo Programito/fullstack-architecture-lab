@@ -60,6 +60,10 @@ export class InMemoryUserRoleAssignmentRepository implements UserRoleAssignmentR
     });
   }
 
+  clear(): void {
+    this.explicitAssignmentsByUserId.clear();
+  }
+
   private createAssignments(userId: string, roleId: string, roleName: RoleName): UserRoleAssignmentRecord[] {
     if (roleName === 'admin' || roleName === 'manager') {
       return [

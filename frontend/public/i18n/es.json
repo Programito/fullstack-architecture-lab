@@ -311,6 +311,7 @@
     "common": {
       "layout": "Plano",
       "service": "Servicio",
+      "time": "Horario",
       "menu": "Menú",
       "kitchen": "Cocina",
       "reservations": "Reservas",
@@ -808,6 +809,114 @@
     "selector": {
       "title": "Selecciona un restaurante",
       "description": "Elige el restaurante en el que quieres trabajar."
+    },
+    "time": {
+      "eyebrow": "Control horario",
+      "title": "Registro de jornada",
+      "description": "Ficha entrada y salida, revisa tu historial y gestiona solicitudes de correccion.",
+      "tabsLabel": "Vistas de control horario",
+      "tabs": {
+        "mine": "Mi fichaje",
+        "team": "Equipo"
+      },
+      "loading": "Cargando fichajes...",
+      "errorTitle": "No se ha podido completar la accion",
+      "errors": {
+        "load": "No se han podido cargar los fichajes ahora mismo.",
+        "clockAction": "No se ha podido registrar el fichaje.",
+        "changeRequest": "No se ha podido enviar la solicitud de correccion.",
+        "review": "No se ha podido revisar la solicitud."
+      },
+      "clockCard": {
+        "title": "Fichaje actual",
+        "openState": "Turno abierto desde {{ clockInAt }}.",
+        "closedState": "No hay ningun turno abierto en este momento.",
+        "noteLabel": "Observaciones",
+        "clockIn": "Registrar entrada",
+        "clockOut": "Registrar salida"
+      },
+      "history": {
+        "title": "Historial personal",
+        "description": "Consulta las horas registradas y solicita correcciones cuando haga falta.",
+        "empty": "Todavia no hay fichajes registrados.",
+        "duration": "Duracion: {{ duration }}",
+        "clockIn": "Entrada",
+        "clockOut": "Salida",
+        "clockInNote": "Observacion de entrada",
+        "clockOutNote": "Observacion de salida",
+        "requestChange": "Solicitar correccion"
+      },
+      "changeRequest": {
+        "requestedClockInAt": "Nueva hora de entrada",
+        "requestedClockOutAt": "Nueva hora de salida",
+        "requestedClockInNote": "Nueva observacion de entrada",
+        "requestedClockOutNote": "Nueva observacion de salida",
+        "reason": "Motivo de la correccion",
+        "submit": "Enviar solicitud"
+      },
+      "team": {
+        "title": "Fichajes del equipo",
+        "description": "Revisa los sellajes del restaurante activo y filtra por periodo, estado o trabajador.",
+        "empty": "No hay fichajes para los filtros seleccionados.",
+        "filters": {
+          "from": "Desde",
+          "to": "Hasta",
+          "status": "Estado",
+          "worker": "Trabajador",
+          "allStatuses": "Todos los estados",
+          "allWorkers": "Toda la plantilla",
+          "apply": "Aplicar filtros",
+          "reset": "Restablecer"
+        },
+        "periods": {
+          "label": "Periodos de consulta",
+          "today": "Hoy",
+          "yesterday": "Ayer",
+          "thisWeek": "Esta semana",
+          "lastWeek": "Semana pasada",
+          "thisMonth": "Este mes",
+          "lastMonth": "Mes pasado"
+        },
+        "summary": {
+          "totalHours": "Horas registradas",
+          "totalEntriesValue": "{{count}} fichajes en el periodo",
+          "recordedWorkers": "Trabajadores con registros",
+          "recordedWorkersValue": "{{count}} personas con actividad",
+          "openEntries": "Fichajes abiertos",
+          "openEntriesValue": "{{count}} turnos pendientes de salida",
+          "pendingRequests": "Correcciones pendientes",
+          "pendingRequestsValue": "{{count}} solicitudes por revisar"
+        },
+        "columns": {
+          "worker": "Trabajador",
+          "clockIn": "Entrada",
+          "clockOut": "Salida",
+          "duration": "Duracion",
+          "notes": "Observaciones",
+          "status": "Estado"
+        }
+      },
+      "requests": {
+        "title": "Solicitudes pendientes",
+        "description": "Aprueba o rechaza cambios de hora enviados por el equipo.",
+        "empty": "No hay solicitudes pendientes.",
+        "approve": "Aprobar",
+        "reject": "Rechazar",
+        "requestedAt": "Enviada el {{ value }}",
+        "requestedBy": "Solicitada por",
+        "reason": "Motivo",
+        "originalClockIn": "Entrada original",
+        "originalClockOut": "Salida original",
+        "reviewNote": "Nota de revision para rechazo"
+      },
+      "status": {
+        "open": "Abierto",
+        "closed": "Cerrado",
+        "corrected": "Corregido",
+        "pending": "Pendiente",
+        "approved": "Aprobada",
+        "rejected": "Rechazada"
+      }
     },
     "dashboard": {
       "title": "Analíticas del restaurante",
