@@ -12,7 +12,7 @@ import { Card } from '../../../../shared/ui/card/card';
 import { Chart, type ChartPointSelection, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/combobox';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import { Table, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
+import { Table, type TableAction, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { AUDIT_ENTITY_TYPES, CLIENT_ORIGIN_OPTIONS, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
 import type {
@@ -63,6 +63,13 @@ export class DeveloperLogsPage {
   protected readonly filtersExpanded = signal(true);
   protected readonly showOperationsFilters = computed(() => this.view() !== 'audit');
   protected readonly showAuditFilters = computed(() => this.view() !== 'operations');
+  protected readonly insightCards = computed<DeveloperLogInsightCardVm[]>(() => buildInsightCards({
+    summary: this.summary(),
+    origins: this.breakdown().origins,
+    topErrorEvents: this.topErrorEvents(),
+    topSlowPaths: this.topSlowPaths(),
+    translate: (key: string) => this.transloco.translate(key),
+  }));
 
   protected readonly timelineCategories = computed(() => this.timeline().map((point) => shortBucket(point.bucket)));
   protected readonly timelineSeries = computed<ChartSeries[]>(() => {
@@ -156,6 +163,7 @@ export class DeveloperLogsPage {
       { key: 'clientOrigin', header: this.transloco.translate('developer.logs.table.clientOrigin') },
       { key: 'event', header: this.transloco.translate('developer.logs.table.event') },
       { key: 'message', header: this.transloco.translate('developer.logs.table.message') },
+      { key: 'actions', header: this.transloco.translate('developer.logs.table.actionsHeader'), align: 'right' },
     ];
   });
 
@@ -185,6 +193,74 @@ export class DeveloperLogsPage {
     }
 
     return delta.direction === 'up' ? 'good' : 'bad';
+  }
+
+  protected focusInsight(card: DeveloperLogInsightCardVm): void {
+    if (!card.action) return;
+
+    if (card.action.kind === 'error') {
+      this.applyFilterState({ category: 'request', level: 'error' }, 'operations');
+      return;
+    }
+
+    if (card.action.kind === 'latency') {
+      this.applyFilterState({ category: 'request', level: '' }, 'operations');
+      return;
+    }
+
+    if (card.action.kind === 'top-error') {
+      this.focusTopError(card.action.event, card.action.path, card.action.clientOrigin);
+      return;
+    }
+
+    if (card.action.kind === 'slow-path') {
+      this.focusSlowPath(card.action.path, card.action.clientOrigin);
+      return;
+    }
+
+    if (card.action.kind === 'origin') {
+      this.focusBreakdownOrigin(card.action.originKey);
+    }
+  }
+
+  protected handleRowAction(event: { action: string; row: TableRow }): void {
+    if (event.action === 'origin' && typeof event.row['clientOriginFilter'] === 'string') {
+      const clientOrigin = parseClientOrigin(String(event.row['clientOriginFilter']));
+      if (clientOrigin) {
+        this.focusOrigin(clientOrigin);
+      }
+      return;
+    }
+
+    if (event.action === 'path' && typeof event.row['pathFilter'] === 'string') {
+      this.applyFilterState(
+        {
+          path: String(event.row['pathFilter']),
+        },
+        this.view(),
+      );
+      return;
+    }
+
+    if (event.action === 'actor' && typeof event.row['actorUserIdFilter'] === 'string') {
+      this.applyFilterState(
+        {
+          actorUserId: String(event.row['actorUserIdFilter']),
+        },
+        'audit',
+      );
+      return;
+    }
+
+    if (event.action === 'result' && typeof event.row['resultFilter'] === 'string') {
+      const result = parseResult(String(event.row['resultFilter']));
+      this.applyFilterState(
+        {
+          result,
+        },
+        result ? 'audit' : this.view(),
+      );
+    }
   }
 
   constructor() {
@@ -461,6 +537,11 @@ export class DeveloperLogsPage {
       clientOrigin: this.clientOriginLabel(item.clientOrigin),
       event: item.event,
       message: item.message,
+      pathFilter: item.path ?? '',
+      clientOriginFilter: item.clientOrigin,
+      actorUserIdFilter: item.userId ?? '',
+      resultFilter: item.result ?? '',
+      actions: buildRowActions(item, this.transloco),
     })));
     const current = this.selectedEvent();
     if (current) {
@@ -503,6 +584,19 @@ export class DeveloperLogsPage {
     return this.transloco.translate(`developer.logs.origins.${value}`);
   }
 }
+
+type DeveloperLogInsightCardVm = {
+  titleKey: string;
+  summary: string;
+  detail: string;
+  tone: 'neutral' | 'good' | 'bad';
+  action:
+    | { kind: 'error' | 'latency' }
+    | { kind: 'top-error'; event: string; path: string | null; clientOrigin: DeveloperLogFilters['clientOrigin'] }
+    | { kind: 'slow-path'; path: string; clientOrigin: DeveloperLogFilters['clientOrigin'] }
+    | { kind: 'origin'; originKey: string }
+    | null;
+};
 
 function signedValue(value: number): string {
   return `${value > 0 ? '+' : ''}${value}`;
@@ -651,4 +745,139 @@ function shortBucket(bucket: string): string {
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleString();
+}
+
+function buildInsightCards(input: {
+  summary: DeveloperLogSummaryDto | null;
+  origins: Array<{ key: string; count: number }>;
+  topErrorEvents: DeveloperLogSummaryDto['topErrorEvents'];
+  topSlowPaths: DeveloperLogSummaryDto['topSlowPaths'];
+  translate: (key: string) => string;
+}): DeveloperLogInsightCardVm[] {
+  const summary = input.summary;
+  const comparison = summary?.comparison;
+  const totalRequests = summary?.totalRequests ?? 0;
+  const errorRate = summary?.errorRate ?? 0;
+  const topError = input.topErrorEvents[0] ?? null;
+  const topSlowPath = input.topSlowPaths[0] ?? null;
+  const busiestOrigin = input.origins[0] ?? null;
+  const errorRateDelta = comparison?.delta.errorRate ?? null;
+  const latencyDelta = comparison?.delta.p95DurationMs ?? null;
+  const errorCountDelta = comparison?.delta.errorCount ?? null;
+
+  const overview: DeveloperLogInsightCardVm = {
+    titleKey: 'developer.logs.insights.overview',
+    summary: `${totalRequests} ${input.translate('developer.logs.insights.requests')}`,
+    detail: `${errorRate}% ${input.translate('developer.logs.metrics.errorRate')}`,
+    tone: 'neutral',
+    action: null,
+  };
+
+  let mainAlert: DeveloperLogInsightCardVm = {
+    titleKey: 'developer.logs.insights.mainAlert',
+    summary: input.translate('developer.logs.insights.noAlert'),
+    detail: input.translate('developer.logs.insights.systemStable'),
+    tone: 'good',
+    action: null,
+  };
+
+  if ((errorRateDelta?.direction ?? 'flat') === 'up' && errorRateDelta) {
+    mainAlert = {
+      titleKey: 'developer.logs.insights.mainAlert',
+      summary: input.translate('developer.logs.insights.errorRateRising'),
+      detail: `${signedValue(errorRateDelta.absolute)} pp ${input.translate('developer.logs.metrics.vsPrevious')}`,
+      tone: 'bad',
+      action: { kind: 'error' },
+    };
+  } else if ((latencyDelta?.direction ?? 'flat') === 'up' && latencyDelta) {
+    mainAlert = {
+      titleKey: 'developer.logs.insights.mainAlert',
+      summary: input.translate('developer.logs.insights.latencyRising'),
+      detail: `${signedValue(latencyDelta.absolute)} ms ${input.translate('developer.logs.metrics.vsPrevious')}`,
+      tone: 'bad',
+      action: { kind: 'latency' },
+    };
+  } else if ((errorCountDelta?.direction ?? 'flat') === 'up' && errorCountDelta) {
+    mainAlert = {
+      titleKey: 'developer.logs.insights.mainAlert',
+      summary: input.translate('developer.logs.insights.errorsRising'),
+      detail: `${signedValue(errorCountDelta.absolute)} ${input.translate('developer.logs.metrics.vsPrevious')}`,
+      tone: 'bad',
+      action: { kind: 'error' },
+    };
+  }
+
+  let currentFocus: DeveloperLogInsightCardVm = {
+    titleKey: 'developer.logs.insights.currentFocus',
+    summary: input.translate('developer.logs.insights.noFocus'),
+    detail: input.translate('developer.logs.insights.awaitingSignals'),
+    tone: 'neutral',
+    action: null,
+  };
+
+  if (topError) {
+    currentFocus = {
+      titleKey: 'developer.logs.insights.currentFocus',
+      summary: topError.event,
+      detail: topError.path ?? topError.clientOrigin,
+      tone: 'bad',
+      action: { kind: 'top-error', event: topError.event, path: topError.path, clientOrigin: topError.clientOrigin },
+    };
+  } else if (topSlowPath) {
+    currentFocus = {
+      titleKey: 'developer.logs.insights.currentFocus',
+      summary: topSlowPath.path,
+      detail: `${topSlowPath.p95DurationMs} ms`,
+      tone: 'bad',
+      action: { kind: 'slow-path', path: topSlowPath.path, clientOrigin: topSlowPath.clientOrigin },
+    };
+  } else if (busiestOrigin) {
+    currentFocus = {
+      titleKey: 'developer.logs.insights.currentFocus',
+      summary: busiestOrigin.key,
+      detail: `${busiestOrigin.count} ${input.translate('developer.logs.insights.events')}`,
+      tone: 'neutral',
+      action: { kind: 'origin', originKey: busiestOrigin.key },
+    };
+  }
+
+  return [overview, mainAlert, currentFocus];
+}
+
+function buildRowActions(item: DeveloperLogEventDto, transloco: TranslocoService): TableAction[] {
+  const actions: TableAction[] = [];
+
+  if (item.clientOrigin) {
+    actions.push({
+      value: 'origin',
+      label: transloco.translate('developer.logs.table.actions.originShort'),
+      ariaLabel: `${transloco.translate('developer.logs.table.actions.origin')} ${transloco.translate(`developer.logs.origins.${item.clientOrigin}`)}`,
+    });
+  }
+
+  if (item.path) {
+    actions.push({
+      value: 'path',
+      label: transloco.translate('developer.logs.table.actions.pathShort'),
+      ariaLabel: `${transloco.translate('developer.logs.table.actions.path')} ${item.path}`,
+    });
+  }
+
+  if (item.userId) {
+    actions.push({
+      value: 'actor',
+      label: transloco.translate('developer.logs.table.actions.actorShort'),
+      ariaLabel: `${transloco.translate('developer.logs.table.actions.actor')} ${item.userId}`,
+    });
+  }
+
+  if (item.result) {
+    actions.push({
+      value: 'result',
+      label: transloco.translate('developer.logs.table.actions.resultShort'),
+      ariaLabel: `${transloco.translate('developer.logs.table.actions.result')} ${item.result}`,
+    });
+  }
+
+  return actions;
 }

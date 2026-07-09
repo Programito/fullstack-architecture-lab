@@ -173,6 +173,20 @@
         "vsPrevious": "vs anterior",
         "noComparison": "Sin comparativa"
       },
+      "insights": {
+        "overview": "Resumen",
+        "mainAlert": "Alerta principal",
+        "currentFocus": "Foco actual",
+        "requests": "peticiones",
+        "events": "eventos",
+        "errorRateRising": "Sube la tasa de error",
+        "latencyRising": "Sube la latencia",
+        "errorsRising": "Suben los errores",
+        "noAlert": "Sin alerta activa",
+        "systemStable": "Las señales principales se mantienen estables",
+        "noFocus": "Sin foco claro",
+        "awaitingSignals": "Esperando una señal más clara"
+      },
       "charts": {
         "activity": "Actividad",
         "levels": "Niveles",
@@ -191,6 +205,17 @@
         "timestamp": "Hora",
         "level": "Nivel",
         "category": "Tipo",
+        "actionsHeader": "Acciones",
+        "actions": {
+          "origin": "Filtrar por origen",
+          "originShort": "Origen",
+          "path": "Filtrar por ruta",
+          "pathShort": "Ruta",
+          "actor": "Filtrar por actor",
+          "actorShort": "Actor",
+          "result": "Filtrar por resultado",
+          "resultShort": "Resultado"
+        },
         "event": "Evento",
         "message": "Detalle",
         "emptyTitle": "Sin eventos",

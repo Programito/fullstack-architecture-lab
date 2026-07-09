@@ -207,6 +207,33 @@
     </app-button>
   </section>
 
+  <section class="developer-logs-page__insight-band">
+    @for (card of insightCards(); track card.titleKey) {
+      <app-card variant="outlined">
+        @if (card.action) {
+          <button
+            type="button"
+            class="developer-logs-page__insight-card"
+            [class.good]="card.tone === 'good'"
+            [class.bad]="card.tone === 'bad'"
+            [attr.aria-label]="card.titleKey | transloco"
+            (click)="focusInsight(card)"
+          >
+            <p class="developer-logs-page__metric-label">{{ card.titleKey | transloco }}</p>
+            <strong>{{ card.summary }}</strong>
+            <p class="developer-logs-page__insight-copy">{{ card.detail }}</p>
+          </button>
+        } @else {
+          <div class="developer-logs-page__insight-card" [class.good]="card.tone === 'good'" [class.bad]="card.tone === 'bad'">
+            <p class="developer-logs-page__metric-label">{{ card.titleKey | transloco }}</p>
+            <strong>{{ card.summary }}</strong>
+            <p class="developer-logs-page__insight-copy">{{ card.detail }}</p>
+          </div>
+        }
+      </app-card>
+    }
+  </section>
+
   <section class="developer-logs-page__summary-cards">
     <app-card variant="outlined">
       <button
@@ -460,6 +487,7 @@
       [emptyTitle]="'developer.logs.table.emptyTitle' | transloco"
       [emptyDescription]="'developer.logs.table.emptyDescription' | transloco"
       (pageChange)="onPageChange($event)"
+      (rowAction)="handleRowAction($event)"
       (rowSelected)="selectEvent($event)"
     />
     @if (selectedEvent(); as event) {

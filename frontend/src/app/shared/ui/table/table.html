@@ -74,7 +74,22 @@
 
               @for (column of columns(); track column.key) {
                 <td [class]="bodyCellClass(column)">
-                  {{ cellValue(row, column) }}
+                  @if (isActionColumn(column)) {
+                    <div class="table__actions">
+                      @for (action of rowActions(row); track action.value) {
+                        <button
+                          class="table__action"
+                          type="button"
+                          [attr.aria-label]="action.ariaLabel ?? action.label"
+                          (click)="triggerRowAction(action, row, $event)"
+                        >
+                          {{ action.label }}
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    {{ cellValue(row, column) }}
+                  }
                 </td>
               }
             </tr>

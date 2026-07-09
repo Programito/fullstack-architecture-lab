@@ -184,6 +184,43 @@
   flex-wrap: wrap;
 }
 
+.developer-logs-page__insight-band {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.developer-logs-page__insight-card {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+}
+
+button.developer-logs-page__insight-card {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.developer-logs-page__insight-card.good strong,
+.developer-logs-page__insight-card.good .developer-logs-page__insight-copy {
+  color: color-mix(in srgb, var(--ui-success, #15803d) 78%, black);
+}
+
+.developer-logs-page__insight-card.bad strong,
+.developer-logs-page__insight-card.bad .developer-logs-page__insight-copy {
+  color: color-mix(in srgb, var(--ui-danger, #b91c1c) 82%, black);
+}
+
+.developer-logs-page__insight-copy {
+  margin: 0;
+  color: var(--ui-text-muted, #71717a);
+  font-size: 0.875rem;
+}
+
 .developer-logs-page__summary-cards {
   display: grid;
   gap: 1rem;

@@ -133,3 +133,26 @@ tbody tr:last-child .table__state-cell {
   justify-content: center;
   color: var(--ui-muted-fg);
 }
+
+.table__actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.table__action {
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+}
+
+.table__action:focus-visible {
+  outline: 2px solid var(--table-ring);
+  outline-offset: 2px;
+}

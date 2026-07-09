@@ -17,6 +17,12 @@ export type TableColumn = {
   sortable?: boolean;
 };
 
+export type TableAction = {
+  label: string;
+  ariaLabel?: string;
+  value: string;
+};
+
 export type TableSort = {
   key: string;
   direction: 'asc' | 'desc';
@@ -51,6 +57,7 @@ export class Table {
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
   readonly rowSelected = output<TableRow>();
+  readonly rowAction = output<{ action: string; row: TableRow }>();
 
   protected readonly hasRows = computed(() => this.rows().length > 0);
   protected readonly visibleRowIds = computed(() => this.rows().map((row, index) => this.rowKey(row, index)));
@@ -94,6 +101,15 @@ export class Table {
     }
 
     return String(value);
+  }
+
+  protected isActionColumn(column: TableColumn): boolean {
+    return column.key === 'actions';
+  }
+
+  protected rowActions(row: TableRow): TableAction[] {
+    const actions = row['actions'];
+    return Array.isArray(actions) ? (actions as TableAction[]) : [];
   }
 
   protected alignClass(column: TableColumn): string {
@@ -154,6 +170,11 @@ export class Table {
 
   protected selectRow(row: TableRow): void {
     this.rowSelected.emit(row);
+  }
+
+  protected triggerRowAction(action: TableAction, row: TableRow, event: Event): void {
+    event.stopPropagation();
+    this.rowAction.emit({ action: action.value, row });
   }
 
   protected toggleSort(column: TableColumn): void {

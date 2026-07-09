@@ -163,7 +163,7 @@ describe('DeveloperLogsPage', () => {
     expect(screen.getByText('developer.logs.sections.topErrors')).toBeTruthy();
     expect(screen.getAllByText('/api/v1/orders/:id/payments').length).toBeGreaterThan(0);
     expect(screen.getByText('880 ms')).toBeTruthy();
-    expect(screen.getByText('http.request.failed')).toBeTruthy();
+    expect(screen.getAllByText('http.request.failed').length).toBeGreaterThan(0);
     expect(api.getSummary).toHaveBeenCalled();
     expect(api.getEvents).toHaveBeenCalled();
   });
@@ -215,6 +215,126 @@ describe('DeveloperLogsPage', () => {
 
     expect(container.textContent).toContain('+100% developer.logs.metrics.vsPrevious');
     expect(container.textContent).toContain('+150 developer.logs.metrics.vsPrevious');
+  });
+
+  it('renders a mixed insight band with overview, alert, and current focus', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 20,
+        errorCount: 4,
+        errorRate: 20,
+        auditEvents: 8,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [
+          { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 5 },
+        ],
+        comparison: {
+          previous: {
+            totalRequests: 10,
+            errorCount: 1,
+            errorRate: 10,
+            auditEvents: 5,
+            p95DurationMs: 150,
+          },
+          delta: {
+            totalRequests: { absolute: 10, percent: 100, direction: 'up' },
+            errorCount: { absolute: 3, percent: 300, direction: 'up' },
+            errorRate: { absolute: 10, percent: 100, direction: 'up' },
+            auditEvents: { absolute: 3, percent: 60, direction: 'up' },
+            p95DurationMs: { absolute: 150, percent: 100, direction: 'up' },
+          },
+        },
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({
+        levels: [],
+        categories: [],
+        origins: [{ key: 'web-pos', count: 12 }],
+      })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    const band = container.querySelector('.developer-logs-page__insight-band');
+    expect(band).toBeTruthy();
+    expect(band?.textContent).toContain('developer.logs.insights.overview');
+    expect(band?.textContent).toContain('developer.logs.insights.mainAlert');
+    expect(band?.textContent).toContain('developer.logs.insights.currentFocus');
+    expect(band?.textContent).toContain('http.request.failed');
+  });
+
+  it('applies error filters when the main alert insight is clicked', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 20,
+        errorCount: 4,
+        errorRate: 20,
+        auditEvents: 8,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+        comparison: {
+          previous: {
+            totalRequests: 10,
+            errorCount: 1,
+            errorRate: 10,
+            auditEvents: 5,
+            p95DurationMs: 150,
+          },
+          delta: {
+            totalRequests: { absolute: 10, percent: 100, direction: 'up' },
+            errorCount: { absolute: 3, percent: 300, direction: 'up' },
+            errorRate: { absolute: 10, percent: 100, direction: 'up' },
+            auditEvents: { absolute: 3, percent: 60, direction: 'up' },
+            p95DurationMs: { absolute: 150, percent: 100, direction: 'up' },
+          },
+        },
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.insights.mainAlert' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'request',
+      level: 'error',
+    }), 1, 20);
   });
 
   it('renders a no-comparison fallback when percent is null', async () => {
@@ -1227,6 +1347,73 @@ describe('DeveloperLogsPage', () => {
     });
 
     expect(container.textContent).toContain('developer.logs.sections.errorTrends');
+  });
+
+  it('applies inline row actions without opening the event detail', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({
+        total: 1,
+        items: [{
+          id: 'log-1',
+          timestamp: '2026-07-02T10:00:00.000Z',
+          source: 'backend',
+          category: 'request',
+          level: 'error',
+          event: 'http.request.failed',
+          message: 'GET /api/v1/orders completed with 500',
+          path: '/api/v1/orders',
+          method: 'GET',
+          statusCode: 500,
+          durationMs: 12,
+          userId: 'user-1',
+          restaurantId: null,
+          requestId: 'req-1',
+          actorRoles: ['developer'],
+          result: 'failed',
+          clientOrigin: 'web-admin',
+          entityType: null,
+          entityId: null,
+          entityLabel: null,
+          changedFields: [],
+          metadata: null,
+        }],
+      })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.table.actions.origin developer.logs.origins.web-admin' }));
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'web-admin',
+    }));
+    expect(api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'web-admin',
+    }), 1, 20);
+    expect(screen.queryByText('req-1')).toBeNull();
   });
 
   it('applies request path filters from the slow-path chart', async () => {

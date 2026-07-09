@@ -89,4 +89,58 @@ describe('Table', () => {
 
     expect(pageChange).toHaveBeenCalledWith(2);
   });
+
+  it('renders compact action buttons from an action column', async () => {
+    const rowAction = vi.fn();
+    const actionColumns: TableColumn[] = [
+      ...columns,
+      { key: 'actions', header: 'Acciones' },
+    ];
+    const actionRows: TableRow[] = [
+      {
+        ...rows[0],
+        actions: [
+          { label: 'Ruta', ariaLabel: 'Filtrar por ruta', value: 'path' },
+          { label: 'Origen', ariaLabel: 'Filtrar por origen', value: 'origin' },
+        ],
+      },
+    ];
+
+    await render('<app-table [columns]="columns" [rows]="rows" (rowAction)="rowAction($event)" />', {
+      imports: [Table],
+      componentProperties: { columns: actionColumns, rows: actionRows, rowAction },
+    });
+
+    expect(screen.getByRole('button', { name: 'Filtrar por ruta' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar por origen' }));
+
+    expect(rowAction).toHaveBeenCalledWith({ action: 'origin', row: actionRows[0] });
+  });
+
+  it('does not emit rowSelected when an inline action is clicked', async () => {
+    const rowSelected = vi.fn();
+    const rowAction = vi.fn();
+    const actionColumns: TableColumn[] = [
+      ...columns,
+      { key: 'actions', header: 'Acciones' },
+    ];
+    const actionRows: TableRow[] = [
+      {
+        ...rows[0],
+        actions: [
+          { label: 'Ruta', ariaLabel: 'Filtrar por ruta', value: 'path' },
+        ],
+      },
+    ];
+
+    await render('<app-table [columns]="columns" [rows]="rows" (rowSelected)="rowSelected($event)" (rowAction)="rowAction($event)" />', {
+      imports: [Table],
+      componentProperties: { columns: actionColumns, rows: actionRows, rowSelected, rowAction },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar por ruta' }));
+
+    expect(rowAction).toHaveBeenCalledWith({ action: 'path', row: actionRows[0] });
+    expect(rowSelected).not.toHaveBeenCalled();
+  });
 });

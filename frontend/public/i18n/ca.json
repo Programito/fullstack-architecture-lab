@@ -173,6 +173,20 @@
         "vsPrevious": "vs anterior",
         "noComparison": "Sense comparativa"
       },
+      "insights": {
+        "overview": "Resum",
+        "mainAlert": "Alerta principal",
+        "currentFocus": "Focus actual",
+        "requests": "peticions",
+        "events": "esdeveniments",
+        "errorRateRising": "Puja la taxa d'error",
+        "latencyRising": "Puja la latencia",
+        "errorsRising": "Pugen els errors",
+        "noAlert": "Sense alerta activa",
+        "systemStable": "Els senyals principals es mantenen estables",
+        "noFocus": "Sense focus clar",
+        "awaitingSignals": "Esperant un senyal mes clar"
+      },
       "charts": {
         "activity": "Activitat",
         "levels": "Nivells",
@@ -191,6 +205,17 @@
         "timestamp": "Hora",
         "level": "Nivell",
         "category": "Tipus",
+        "actionsHeader": "Accions",
+        "actions": {
+          "origin": "Filtrar per origen",
+          "originShort": "Origen",
+          "path": "Filtrar per ruta",
+          "pathShort": "Ruta",
+          "actor": "Filtrar per actor",
+          "actorShort": "Actor",
+          "result": "Filtrar per resultat",
+          "resultShort": "Resultat"
+        },
         "event": "Esdeveniment",
         "message": "Detall",
         "emptyTitle": "Sense esdeveniments",

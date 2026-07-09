@@ -180,6 +180,20 @@
         "vsPrevious": "vs previous",
         "noComparison": "No comparison"
       },
+      "insights": {
+        "overview": "Overview",
+        "mainAlert": "Main alert",
+        "currentFocus": "Current focus",
+        "requests": "requests",
+        "events": "events",
+        "errorRateRising": "Error rate rising",
+        "latencyRising": "Latency rising",
+        "errorsRising": "Errors rising",
+        "noAlert": "No active alert",
+        "systemStable": "Tracked signals look stable",
+        "noFocus": "No hotspot yet",
+        "awaitingSignals": "Waiting for stronger signals"
+      },
       "sections": {
         "topSlowPaths": "Top slow routes",
         "topErrors": "Top errors by channel",
@@ -208,6 +222,17 @@
         "level": "Level",
         "category": "Type",
         "clientOrigin": "Origin",
+        "actionsHeader": "Actions",
+        "actions": {
+          "origin": "Filter by origin",
+          "originShort": "Origin",
+          "path": "Filter by path",
+          "pathShort": "Path",
+          "actor": "Filter by actor",
+          "actorShort": "Actor",
+          "result": "Filter by result",
+          "resultShort": "Result"
+        },
         "event": "Event",
         "message": "Detail",
         "emptyTitle": "No events",
