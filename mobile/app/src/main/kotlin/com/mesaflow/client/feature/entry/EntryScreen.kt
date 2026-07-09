@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -19,7 +21,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,7 +38,10 @@ import com.mesaflow.client.R
 
 /**
  * Pantalla de entrada: escanear el QR de la mesa (Google code scanner,
- * sin permiso de camara) o entrar en modo demo contra el backend.
+ * sin permiso de camara), introducir el codigo a mano (alternativa
+ * accesible: escanear un QR exige camara y vision, asi que quien no puede
+ * usarla necesita una forma equivalente de identificar su mesa — ver
+ * [ManualEntryDialog]) o entrar en modo demo contra el backend.
  */
 @Composable
 fun EntryScreen(
@@ -45,6 +52,7 @@ fun EntryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    var showManualEntry by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.navigateToMenu.collect { onEnter() }
@@ -117,6 +125,22 @@ fun EntryScreen(
                     Text(stringResource(R.string.entry_scan_qr))
                 }
                 Spacer(Modifier.height(12.dp))
+                // Alternativa accesible al escaner: escanear un QR requiere
+                // camara y vision, asi que una persona ciega o con baja
+                // vision (o con una camara rota, o un QR danado/con mala
+                // luz) no puede usar el boton de arriba en absoluto. El modo
+                // demo de mas abajo no sirve como sustituto porque siempre
+                // entra a la mesa fija de demo, no a la mesa real del
+                // cliente — de ahi que el codigo manual sea su propio boton
+                // y reutilice el mismo QrPayloadParser/onQrScanned que el
+                // escaner, para no duplicar la validacion.
+                TextButton(
+                    onClick = { showManualEntry = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.entry_manual_entry_open))
+                }
+                Spacer(Modifier.height(12.dp))
                 TextButton(
                     onClick = viewModel::onDemoModeClick,
                     modifier = Modifier.fillMaxWidth(),
@@ -125,5 +149,56 @@ fun EntryScreen(
                 }
             }
         }
+
+        if (showManualEntry) {
+            ManualEntryDialog(
+                onDismiss = { showManualEntry = false },
+                onConfirm = { code ->
+                    showManualEntry = false
+                    viewModel.onQrScanned(code)
+                },
+            )
+        }
     }
+}
+
+/**
+ * Dialogo de codigo manual: mismo destino que el escaner
+ * ([EntryViewModel.onQrScanned]), asi que valida y muestra error igual que
+ * un QR mal formado — no hay una segunda ruta de validacion que mantener.
+ */
+@Composable
+private fun ManualEntryDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var code by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.entry_manual_entry_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.entry_manual_entry_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it },
+                    label = { Text(stringResource(R.string.entry_manual_entry_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(code) }, enabled = code.isNotBlank()) {
+                Text(stringResource(R.string.entry_manual_entry_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.entry_manual_entry_cancel))
+            }
+        },
+    )
 }

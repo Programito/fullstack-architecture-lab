@@ -17,6 +17,32 @@ data class MenuSection(
 
 enum class ProductType { SIMPLE, COMBO, PLATTER }
 
+/**
+ * Los 14 alergenos de declaracion obligatoria en la UE (Reglamento 1169/2011,
+ * anexo II), tal y como los declara el propio restaurante en el backend
+ * (`Product.allergens`). UNKNOWN cubre valores que el backend pueda enviar y
+ * esta version de la app no reconozca todavia: se mantiene visible en vez de
+ * descartarse en silencio, porque ocultar un alergeno no identificado es
+ * peor que mostrarlo como "otro".
+ */
+enum class Allergen {
+    GLUTEN,
+    CRUSTACEANS,
+    EGGS,
+    FISH,
+    PEANUTS,
+    SOYBEANS,
+    MILK,
+    NUTS,
+    CELERY,
+    MUSTARD,
+    SESAME,
+    SULPHITES,
+    LUPIN,
+    MOLLUSCS,
+    UNKNOWN,
+}
+
 data class MenuItem(
     val id: String,
     val restaurantProductId: String?,
@@ -30,6 +56,10 @@ data class MenuItem(
     val modifierGroups: List<ModifierGroup>,
     val comboDefinition: ComboDefinition?,
     val platterComponents: List<PlatterComponent>,
+    // Alergenos declarados por el restaurante para este producto. Lista
+    // vacia por defecto para no romper construcciones existentes (tests,
+    // fixtures) que no dependen de este campo.
+    val allergens: List<Allergen> = emptyList(),
 )
 
 data class ModifierGroup(

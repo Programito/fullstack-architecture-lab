@@ -25,6 +25,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -63,10 +64,16 @@ fun CheckoutScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val errorMessage = uiState.error?.let { stringResource(it.toMessageRes()) }
+    val retryLabel = stringResource(R.string.action_retry)
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
-            snackbarHostState.showSnackbar(errorMessage)
+            // El pago no se registra hasta que el backend confirma: reintentar
+            // es solo volver a llamar a onPay con el mismo importe/método.
+            val result = snackbarHostState.showSnackbar(errorMessage, actionLabel = retryLabel)
             viewModel.onErrorShown()
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.onPay(orderId, totalCents)
+            }
         }
     }
 
@@ -264,5 +271,6 @@ private fun AppError.toMessageRes(): Int = when (this) {
     AppError.Network -> R.string.entry_error_network
     AppError.Unauthorized -> R.string.entry_error_unauthorized
     AppError.Validation -> R.string.checkout_error_validation
+    AppError.Server -> R.string.checkout_error_server
     else -> R.string.checkout_error_generic
 }

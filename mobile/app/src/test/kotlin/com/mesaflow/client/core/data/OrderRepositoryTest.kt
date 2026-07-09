@@ -6,6 +6,7 @@ import com.mesaflow.client.core.database.CartDao
 import com.mesaflow.client.core.database.CartLineEntity
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.CartSelections
+import com.mesaflow.client.core.model.OrderLineKitchenStatus
 import com.mesaflow.client.core.network.OrdersApi
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.network.dto.AddOrderLineRequestDto
@@ -13,6 +14,9 @@ import com.mesaflow.client.core.network.dto.OpenOrderRequestDto
 import com.mesaflow.client.core.network.dto.OrderResponseDto
 import com.mesaflow.client.core.network.dto.OrderSummaryDto
 import com.mesaflow.client.core.network.dto.RegisterPaymentRequestDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderInfoDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderLineDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderResponseDto
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +25,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -110,6 +116,16 @@ private class FakeOrdersApi : OrdersApi {
         )
     }
 
+    var servicePointOrderCalls = mutableListOf<Pair<String, String>>()
+    var servicePointOrderResponse = ServicePointOrderResponseDto()
+    var failOnGetServicePointOrder = false
+
+    override suspend fun getServicePointOrder(restaurantId: String, tableId: String): ServicePointOrderResponseDto {
+        if (failOnGetServicePointOrder) throw IOException("network down")
+        servicePointOrderCalls += restaurantId to tableId
+        return servicePointOrderResponse
+    }
+
     private fun response(orderId: String, status: String) = OrderResponseDto(
         order = OrderSummaryDto(
             id = orderId,
@@ -154,6 +170,20 @@ class OrderRepositoryTest {
         assertEquals(2, api.addedLines.first().quantity)
         assertEquals(listOf("mesa-1"), api.kitchenCalls)
         assertTrue(cartRepository.cart("rest-1").first().isEmpty())
+        assertFalse(cartRepository.hasFailedSubmission("rest-1").first())
+    }
+
+    @Test
+    fun `un envio exitoso limpia el aviso de un fallo previo`() = runTest {
+        cartRepository.add("rest-1", cartLine("item-1"))
+        val lines = cartRepository.cart("rest-1").first()
+        // Simula que un intento anterior ya había marcado el aviso.
+        cartRepository.markSubmissionFailed("rest-1")
+
+        val result = repository.submitCart("rest-1", "mesa-1", lines)
+
+        assertTrue(result is AppResult.Success)
+        assertFalse(cartRepository.hasFailedSubmission("rest-1").first())
     }
 
     @Test
@@ -167,6 +197,7 @@ class OrderRepositoryTest {
         assertTrue(result is AppResult.Error)
         assertEquals(AppError.Network, (result as AppResult.Error).error)
         assertEquals(1, cartRepository.cart("rest-1").first().size)
+        assertTrue(cartRepository.hasFailedSubmission("rest-1").first())
     }
 
     @Test
@@ -181,6 +212,7 @@ class OrderRepositoryTest {
         assertTrue(result is AppResult.Error)
         assertEquals(AppError.Network, (result as AppResult.Error).error)
         assertEquals(2, cartRepository.cart("rest-1").first().size)
+        assertTrue(cartRepository.hasFailedSubmission("rest-1").first())
     }
 
     @Test
@@ -189,6 +221,7 @@ class OrderRepositoryTest {
         assertTrue(result is AppResult.Error)
         assertEquals(AppError.Validation, (result as AppResult.Error).error)
         assertEquals(0, api.openCalls)
+        assertFalse(cartRepository.hasFailedSubmission("rest-1").first())
     }
 
     @Test
@@ -213,11 +246,47 @@ class OrderRepositoryTest {
     }
 
     @Test
-    fun `linea sin restaurantProductId es error de validacion antes de enviar nada`() = runTest {
-        val invalid = cartLine("item-1").copy(restaurantProductId = null)
-        val result = repository.submitCart("rest-1", "mesa-1", listOf(invalid))
+    fun `el estado del punto de servicio mapea las lineas con su estado de cocina`() = runTest {
+        api.servicePointOrderResponse = ServicePointOrderResponseDto(
+            order = ServicePointOrderInfoDto(id = "order-1", tableId = "mesa-1", status = "sent_to_kitchen"),
+            lines = listOf(
+                ServicePointOrderLineDto(id = "line-1", productName = "Hamburguesa craft", quantity = 1, status = "preparing"),
+                ServicePointOrderLineDto(id = "line-2", productName = "Agua mineral", quantity = 2, status = "ready"),
+            ),
+        )
+
+        val result = repository.getServicePointOrder("rest-1", "mesa-1")
+
+        assertTrue(result is AppResult.Success)
+        val status = (result as AppResult.Success).data
+        assertEquals("order-1", status.orderId)
+        assertEquals("sent_to_kitchen", status.status)
+        assertEquals(2, status.lines.size)
+        assertEquals(OrderLineKitchenStatus.PREPARING, status.lines[0].status)
+        assertEquals(OrderLineKitchenStatus.READY, status.lines[1].status)
+        assertEquals(listOf("rest-1" to "mesa-1"), api.servicePointOrderCalls)
+    }
+
+    @Test
+    fun `sin pedido abierto el estado llega con order nulo`() = runTest {
+        api.servicePointOrderResponse = ServicePointOrderResponseDto(order = null, lines = emptyList())
+
+        val result = repository.getServicePointOrder("rest-1", "mesa-1")
+
+        assertTrue(result is AppResult.Success)
+        val status = (result as AppResult.Success).data
+        assertNull(status.orderId)
+        assertNull(status.status)
+        assertTrue(status.lines.isEmpty())
+    }
+
+    @Test
+    fun `un fallo de red al consultar el estado se propaga como error`() = runTest {
+        api.failOnGetServicePointOrder = true
+
+        val result = repository.getServicePointOrder("rest-1", "mesa-1")
+
         assertTrue(result is AppResult.Error)
-        assertEquals(AppError.Validation, (result as AppResult.Error).error)
-        assertEquals(0, api.openCalls)
+        assertEquals(AppError.Network, (result as AppResult.Error).error)
     }
 }

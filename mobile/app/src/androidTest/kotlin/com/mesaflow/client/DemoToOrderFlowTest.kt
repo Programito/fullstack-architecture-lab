@@ -1,8 +1,8 @@
 package com.mesaflow.client
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -104,5 +104,110 @@ class DemoToOrderFlowTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText(activity.getString(R.string.cart_go_to_checkout)).assertExists()
+    }
+
+    /**
+     * Repite los mismos pasos que el test anterior hasta llegar al Carrito
+     * (son hermanos, no una cadena — cada test es independiente) y cubre el
+     * camino de error + reintento desde el Snackbar: el primer envío falla
+     * en el servidor (openOrder devuelve 500), el carrito se conserva
+     * (OrderRepository.submitCart solo lo vacía si TODO se confirma) y el
+     * reintento con la acción del propio Snackbar sí completa el envío.
+     */
+    @Test
+    fun enviarPedidoFallaYReintentarLoEnviaConExito() {
+        val activity = composeRule.activity
+        FakeBackend.enqueueDemoLoginAndMenu(server)
+
+        composeRule.onNodeWithText(activity.getString(R.string.entry_demo_mode)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(FakeBackend.PRODUCT_NAME).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(FakeBackend.PRODUCT_NAME).performClick()
+
+        val addLabel = activity.getString(R.string.configurator_add_for).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(addLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(addLabel, substring = true)[0].performClick()
+
+        val cartFabLabel = activity.getString(R.string.cart_fab_label).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(cartFabLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(cartFabLabel, substring = true)[0].performClick()
+
+        FakeBackend.enqueueServerError(server)
+        composeRule.onNodeWithText(activity.getString(R.string.cart_submit)).performClick()
+
+        val serverErrorMessage = activity.getString(R.string.cart_error_server)
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(serverErrorMessage).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        FakeBackend.enqueueSubmitOrder(server)
+        composeRule.onNodeWithText(activity.getString(R.string.action_retry)).performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(activity.getString(R.string.cart_submitted_title))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(activity.getString(R.string.cart_go_to_checkout)).assertExists()
+    }
+
+    /**
+     * Cubre el aviso persistente (CartRepository.hasFailedSubmission): el
+     * envío falla, el cliente ignora el Snackbar y vuelve a la Carta con la
+     * flecha de "Volver" en vez de reintentar ahí mismo — el banner debe
+     * seguir visible, y reabrir el Carrito desde él debe permitir reintentar.
+     */
+    @Test
+    fun pedidoFallidoMuestraAvisoEnLaCartaTrasVolverSinReintentar() {
+        val activity = composeRule.activity
+        FakeBackend.enqueueDemoLoginAndMenu(server)
+
+        composeRule.onNodeWithText(activity.getString(R.string.entry_demo_mode)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(FakeBackend.PRODUCT_NAME).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(FakeBackend.PRODUCT_NAME).performClick()
+
+        val addLabel = activity.getString(R.string.configurator_add_for).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(addLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(addLabel, substring = true)[0].performClick()
+
+        val cartFabLabel = activity.getString(R.string.cart_fab_label).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(cartFabLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(cartFabLabel, substring = true)[0].performClick()
+
+        FakeBackend.enqueueServerError(server)
+        composeRule.onNodeWithText(activity.getString(R.string.cart_submit)).performClick()
+
+        val serverErrorMessage = activity.getString(R.string.cart_error_server)
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(serverErrorMessage).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Vuelve a la Carta sin tocar "Reintentar" en el Snackbar.
+        composeRule.onNodeWithContentDescription(activity.getString(R.string.cart_back)).performClick()
+
+        val pendingMessage = activity.getString(R.string.menu_pending_submission)
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(pendingMessage).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // El propio banner reabre el Carrito; esta vez el envío se completa.
+        composeRule.onNodeWithText(pendingMessage).performClick()
+        FakeBackend.enqueueSubmitOrder(server)
+        composeRule.onNodeWithText(activity.getString(R.string.cart_submit)).performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(activity.getString(R.string.cart_submitted_title))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
     }
 }

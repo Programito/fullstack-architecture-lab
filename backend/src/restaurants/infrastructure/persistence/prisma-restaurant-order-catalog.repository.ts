@@ -5,6 +5,7 @@ import type { RestaurantOrderCatalogRepository } from '../../application/ports/r
 import type {
   RestaurantMenu,
   RestaurantMenuComboDefinition,
+  RestaurantMenuItem,
   RestaurantMenuModifierGroup,
   RestaurantMenuPlatterComponent,
 } from '../../domain/restaurant-read.models';
@@ -57,6 +58,7 @@ type RawMenuItem = {
       productType: string;
       defaultCourse: string | null;
       defaultPreparationRoute: string | null;
+      allergens: string[];
       comboDefinition: RawComboDefinition | null;
       platterDefinition: { components: RawPlatterComponent[] } | null;
     };
@@ -161,6 +163,7 @@ function mapMenuItem(item: RawMenuItem) {
     isAvailable: rp.isAvailable && item.isVisible,
     defaultCourse: (product.defaultCourse ?? 'other') as 'drinks' | 'starter' | 'main' | 'dessert' | 'other',
     preparationRoute: (product.defaultPreparationRoute ?? 'direct') as 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station',
+    allergens: (product.allergens ?? []) as RestaurantMenuItem['allergens'],
     modifierGroups: rp.modifierGroups.map(mapModifierGroup),
     comboDefinition: product.comboDefinition ? mapComboDefinition(product.comboDefinition) : null,
     platterComponents: product.platterDefinition

@@ -112,7 +112,9 @@ class AuthRepositoryTest {
 
         val request = server.takeRequest()
         assertTrue(request.path!!.endsWith("/auth/demo-login"))
-        assertTrue(request.body.readUtf8().contains("waiter"))
+        // DEMO_CLIENT_ROLE es "customer" (rol dedicado a la app cliente, separado
+        // del "waiter" de personal — ver el comentario en AuthRepository.kt).
+        assertTrue(request.body.readUtf8().contains("customer"))
     }
 
     @Test

@@ -1087,6 +1087,22 @@
       "dessert": "Postres",
       "other": "Altres"
     },
+    "allergen": {
+      "gluten": "Gluten",
+      "crustaceans": "Crustacis",
+      "eggs": "Ous",
+      "fish": "Peix",
+      "peanuts": "Cacauets",
+      "soybeans": "Soja",
+      "milk": "Llet",
+      "nuts": "Fruits de closca",
+      "celery": "Api",
+      "mustard": "Mostassa",
+      "sesame": "Sèsam",
+      "sulphites": "Sulfits",
+      "lupin": "Tramussos",
+      "molluscs": "Mol·luscos"
+    },
     "page": {
       "eyebrow": "Catàleg operatiu",
       "title": "Menú",
@@ -1297,6 +1313,8 @@
         "uploadFailed": "No s'ha pogut pujar la imatge. Torna-ho a provar.",
         "price": "Preu (€)",
         "modifierGroupsHint": "Selecciona els grups de modificadors que pot fer servir aquest producte.",
+        "allergens": "Al·lergògens",
+        "allergensHint": "Selecciona els al·lergògens que declara aquest producte. Davant una al·lèrgia greu, el client també ho hauria de confirmar amb el personal.",
         "course": "Servei",
         "route": "Ruta de preparació",
         "available": "Disponible",

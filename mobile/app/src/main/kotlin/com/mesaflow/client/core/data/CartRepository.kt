@@ -7,7 +7,9 @@ import com.mesaflow.client.core.model.CartSelections
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
 
 /**
@@ -22,8 +24,26 @@ class CartRepository @Inject constructor(
     private val json: Json,
 ) {
 
+    /**
+     * Restaurantes cuyo último intento de envío (OrderRepository.submitCart)
+     * falló y no se ha vuelto a intentar con éxito. Vive solo en memoria (no
+     * necesita sobrevivir a la muerte del proceso): sirve para avisar en la
+     * Carta aunque el cliente haya salido del Carrito sin reintentar desde
+     * el Snackbar de error.
+     */
+    private val failedSubmission = MutableStateFlow<Set<String>>(emptySet())
+
     fun cart(restaurantId: String): Flow<List<CartLine>> =
         cartDao.observeByRestaurant(restaurantId).map { lines -> lines.map { it.toDomain() } }
+
+    /** true si el envío de este restaurante falló y sigue sin resolverse. */
+    fun hasFailedSubmission(restaurantId: String): Flow<Boolean> =
+        failedSubmission.map { it.contains(restaurantId) }
+
+    /** Marca el fallo; lo llama OrderRepository cuando submitCart no llega a completarse. */
+    fun markSubmissionFailed(restaurantId: String) {
+        failedSubmission.update { it + restaurantId }
+    }
 
     /** Añade una línea; si ya existe la misma configuración, acumula cantidad. */
     suspend fun add(restaurantId: String, line: CartLine) {
@@ -61,7 +81,10 @@ class CartRepository @Inject constructor(
 
     suspend fun remove(lineId: Long) = cartDao.delete(lineId)
 
-    suspend fun clear(restaurantId: String) = cartDao.clear(restaurantId)
+    suspend fun clear(restaurantId: String) {
+        cartDao.clear(restaurantId)
+        failedSubmission.update { it - restaurantId }
+    }
 
     private fun CartLineEntity.toDomain(): CartLine = CartLine(
         id = id,

@@ -1858,6 +1858,25 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.product.form.imageTooSmall = 'La imagen es demasiado pequena. Usa una resolucion mayor.';
   clones['es'].menu.product.form.uploadFailed = 'No se pudo subir la imagen. Inténtalo de nuevo.';
   clones['es'].menu.product.form.modifierGroupsHint = 'Selecciona los grupos de modificadores que puede usar este producto.';
+  clones['es'].menu.product.form.allergens = 'Alérgenos';
+  clones['es'].menu.product.form.allergensHint =
+    'Selecciona los alérgenos que declara este producto. Ante una alergia grave, el cliente deberá confirmarlo también con el personal.';
+  clones['es'].menu.allergen = {
+    gluten: 'Gluten',
+    crustaceans: 'Crustáceos',
+    eggs: 'Huevos',
+    fish: 'Pescado',
+    peanuts: 'Cacahuetes',
+    soybeans: 'Soja',
+    milk: 'Leche',
+    nuts: 'Frutos de cáscara',
+    celery: 'Apio',
+    mustard: 'Mostaza',
+    sesame: 'Sésamo',
+    sulphites: 'Sulfitos',
+    lupin: 'Altramuces',
+    molluscs: 'Moluscos',
+  };
 
   clones['es'].menu.modifierGroup = {
     form: {
@@ -2036,6 +2055,25 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.product.form.imageTooSmall = 'The image is too small. Use a higher resolution image.';
   clones['en'].menu.product.form.uploadFailed = 'The image could not be uploaded. Please try again.';
   clones['en'].menu.product.form.modifierGroupsHint = 'Select the modifier groups that this product can use.';
+  clones['en'].menu.product.form.allergens = 'Allergens';
+  clones['en'].menu.product.form.allergensHint =
+    'Select the allergens this product declares. For a severe allergy, the customer should also confirm with staff.';
+  clones['en'].menu.allergen = {
+    gluten: 'Gluten',
+    crustaceans: 'Crustaceans',
+    eggs: 'Eggs',
+    fish: 'Fish',
+    peanuts: 'Peanuts',
+    soybeans: 'Soybeans',
+    milk: 'Milk',
+    nuts: 'Tree nuts',
+    celery: 'Celery',
+    mustard: 'Mustard',
+    sesame: 'Sesame',
+    sulphites: 'Sulphites',
+    lupin: 'Lupin',
+    molluscs: 'Molluscs',
+  };
 
   clones['en'].menu.modifierGroup = {
     form: {
@@ -2215,6 +2253,25 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['ca'].menu.product.form.imageTooSmall = 'La imatge es massa petita. Fes servir una resolucio mes gran.';
   clones['ca'].menu.product.form.uploadFailed = "No s'ha pogut pujar la imatge. Torna-ho a provar.";
   clones['ca'].menu.product.form.modifierGroupsHint = 'Selecciona els grups de modificadors que pot fer servir aquest producte.';
+  clones['ca'].menu.product.form.allergens = 'Al·lergògens';
+  clones['ca'].menu.product.form.allergensHint =
+    "Selecciona els al·lergògens que declara aquest producte. Davant una al·lèrgia greu, el client també ho hauria de confirmar amb el personal.";
+  clones['ca'].menu.allergen = {
+    gluten: 'Gluten',
+    crustaceans: 'Crustacis',
+    eggs: 'Ous',
+    fish: 'Peix',
+    peanuts: 'Cacauets',
+    soybeans: 'Soja',
+    milk: 'Llet',
+    nuts: 'Fruits de closca',
+    celery: 'Api',
+    mustard: 'Mostassa',
+    sesame: 'Sèsam',
+    sulphites: 'Sulfits',
+    lupin: 'Tramussos',
+    molluscs: 'Mol·luscos',
+  };
 
   clones['ca'].menu.modifierGroup = {
     form: {

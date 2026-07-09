@@ -59,6 +59,16 @@ describe('PrismaRestaurantOrderCatalogRepository', () => {
     }
   });
 
+  it('exposes an allergens array (possibly empty) for every item', async () => {
+    const menu = await repository.findActiveMenu('restaurant-mesaflow-centro');
+    const items = menu?.sections.flatMap((s) => s.items) ?? [];
+
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(Array.isArray(item.allergens)).toBe(true);
+    }
+  });
+
   it('exposes modifier group IDs and option IDs for the burger', async () => {
     const menu = await repository.findActiveMenu('restaurant-mesaflow-centro');
     const burger = menu?.sections.flatMap((s) => s.items).find((i) => i.name === 'Hamburguesa craft');

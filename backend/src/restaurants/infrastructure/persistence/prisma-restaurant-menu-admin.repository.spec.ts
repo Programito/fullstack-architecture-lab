@@ -22,6 +22,7 @@ describe('PrismaRestaurantMenuAdminRepository', () => {
               productType: 'simple',
               defaultCourse: 'main',
               defaultPreparationRoute: 'kitchen',
+              allergens: ['gluten', 'milk'],
             },
           },
         ]),
@@ -34,6 +35,7 @@ describe('PrismaRestaurantMenuAdminRepository', () => {
         name: 'Hamburguesa craft',
         imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
         modifierGroupIds: ['burger-extras', 'burger-point'],
+        allergens: ['gluten', 'milk'],
       }),
     ]);
   });
@@ -60,6 +62,7 @@ describe('PrismaRestaurantMenuAdminRepository', () => {
             productType: 'simple',
             defaultCourse: 'main',
             defaultPreparationRoute: 'kitchen',
+            allergens: ['gluten'],
           },
         }),
       },
@@ -70,7 +73,41 @@ describe('PrismaRestaurantMenuAdminRepository', () => {
         id: 'rp-1',
         imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
         modifierGroupIds: ['burger-extras'],
+        allergens: ['gluten'],
       }),
+    );
+  });
+
+  it('defaults allergens to an empty array when the product has none set', async () => {
+    const repository = new PrismaRestaurantMenuAdminRepository({
+      restaurantProduct: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'rp-2',
+          productId: 'p-2',
+          displayName: null,
+          displayDescription: null,
+          priceCents: 990,
+          currency: 'EUR',
+          isAvailable: true,
+          isVisible: true,
+          imageUrl: null,
+          modifierGroups: [],
+          preparationRouteOverride: null,
+          product: {
+            organizationId: 'org-1',
+            name: 'Agua mineral',
+            description: null,
+            productType: 'simple',
+            defaultCourse: 'drinks',
+            defaultPreparationRoute: 'bar',
+            allergens: [],
+          },
+        }),
+      },
+    } as never);
+
+    await expect(repository.findRestaurantProductById('restaurant-1', 'rp-2')).resolves.toEqual(
+      expect.objectContaining({ id: 'rp-2', allergens: [] }),
     );
   });
 });

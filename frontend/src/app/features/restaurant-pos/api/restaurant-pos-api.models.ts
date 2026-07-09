@@ -448,6 +448,24 @@ export type RestaurantMenuPlatterComponentDto = {
   sortOrder: number;
 };
 
+// Los 14 alergenos de declaracion obligatoria en la UE (Reglamento 1169/2011),
+// espejo del enum Allergen de backend/prisma/schema.prisma.
+export type AllergenDto =
+  | 'gluten'
+  | 'crustaceans'
+  | 'eggs'
+  | 'fish'
+  | 'peanuts'
+  | 'soybeans'
+  | 'milk'
+  | 'nuts'
+  | 'celery'
+  | 'mustard'
+  | 'sesame'
+  | 'sulphites'
+  | 'lupin'
+  | 'molluscs';
+
 export type RestaurantMenuItemDto = {
   id: string;
   restaurantProductId?: string;
@@ -461,6 +479,7 @@ export type RestaurantMenuItemDto = {
   isAvailable: boolean;
   defaultCourse?: string;
   preparationRoute?: string;
+  allergens?: AllergenDto[];
   modifierGroups: RestaurantMenuModifierGroupDto[];
   comboDefinition: RestaurantMenuComboDefinitionDto | null;
   platterComponents: RestaurantMenuPlatterComponentDto[];
@@ -510,6 +529,7 @@ export type RestaurantProductSummaryDto = {
   productType: 'simple' | 'combo' | 'platter';
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  allergens: AllergenDto[];
   priceCents: number;
   currency: string;
   isAvailable: boolean;
@@ -530,6 +550,7 @@ export type RestaurantProductDetailDto = {
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   preparationRouteOverride: string | null;
+  allergens: AllergenDto[];
   priceCents: number;
   currency: string;
   isAvailable: boolean;
@@ -541,6 +562,7 @@ export type CreateRestaurantProductRequest = {
   description?: string;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
+  allergens?: AllergenDto[];
   priceCents: number;
   currency: string;
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
@@ -552,6 +574,7 @@ export type UpdateRestaurantProductRequest = {
   description?: string | null;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
+  allergens?: AllergenDto[];
   priceCents?: number;
   course?: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';

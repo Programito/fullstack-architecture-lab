@@ -2,9 +2,13 @@ package com.mesaflow.client.core.data
 
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.CartSelections
+import com.mesaflow.client.core.model.OrderLineKitchenStatus
 import com.mesaflow.client.core.model.RemovedComponent
 import com.mesaflow.client.core.model.SelectedComboOption
 import com.mesaflow.client.core.model.SelectedModifier
+import com.mesaflow.client.core.network.dto.ServicePointOrderInfoDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderLineDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderResponseDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -64,5 +68,48 @@ class OrderMappersTest {
 
         assertEquals("pc-onion", request.platterComponents.single().platterComponentId)
         assertEquals(false, request.platterComponents.single().included)
+    }
+
+    @Test
+    fun `mapea el estado del punto de servicio con lineas conocidas`() {
+        val dto = ServicePointOrderResponseDto(
+            order = ServicePointOrderInfoDto(id = "order-1", tableId = "mesa-1", status = "sent_to_kitchen"),
+            lines = listOf(
+                ServicePointOrderLineDto(id = "line-1", productName = "Hamburguesa craft", quantity = 1, status = "preparing"),
+                ServicePointOrderLineDto(id = "line-2", productName = "Agua mineral", quantity = 2, status = "ready"),
+            ),
+        )
+
+        val status = dto.toServicePointOrderStatus()
+
+        assertEquals("order-1", status.orderId)
+        assertEquals("sent_to_kitchen", status.status)
+        assertEquals(2, status.lines.size)
+        assertEquals("Hamburguesa craft", status.lines[0].productName)
+        assertEquals(OrderLineKitchenStatus.PREPARING, status.lines[0].status)
+        assertEquals(OrderLineKitchenStatus.READY, status.lines[1].status)
+    }
+
+    @Test
+    fun `un estado de linea no reconocido mapea a UNKNOWN en vez de descartarse`() {
+        val dto = ServicePointOrderResponseDto(
+            order = ServicePointOrderInfoDto(id = "order-1", tableId = "mesa-1", status = "sent_to_kitchen"),
+            lines = listOf(
+                ServicePointOrderLineDto(id = "line-1", productName = "Postre nuevo", quantity = 1, status = "algo-futuro"),
+            ),
+        )
+
+        val status = dto.toServicePointOrderStatus()
+
+        assertEquals(OrderLineKitchenStatus.UNKNOWN, status.lines.single().status)
+    }
+
+    @Test
+    fun `sin pedido abierto el estado mapea a null sin lineas`() {
+        val status = ServicePointOrderResponseDto(order = null, lines = emptyList()).toServicePointOrderStatus()
+
+        assertNull(status.orderId)
+        assertNull(status.status)
+        assertTrue(status.lines.isEmpty())
     }
 }

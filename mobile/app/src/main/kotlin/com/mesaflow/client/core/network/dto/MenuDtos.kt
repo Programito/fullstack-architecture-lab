@@ -36,6 +36,7 @@ data class MenuItemDto(
     val isAvailable: Boolean = true,
     val defaultCourse: String? = null,
     val preparationRoute: String? = null,
+    val allergens: List<String> = emptyList(),
     val modifierGroups: List<ModifierGroupDto> = emptyList(),
     val comboDefinition: ComboDefinitionDto? = null,
     val platterComponents: List<PlatterComponentDto> = emptyList(),

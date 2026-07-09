@@ -7,6 +7,7 @@ import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.data.CartRepository
 import com.mesaflow.client.core.data.MenuRepository
 import com.mesaflow.client.core.datastore.SessionStore
+import com.mesaflow.client.core.model.Allergen
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.Menu
 import com.mesaflow.client.core.model.MenuItem
@@ -46,13 +47,15 @@ data class MenuUiState(
     val tableLabel: String = "",
     val query: String = "",
     val selectedSectionId: String? = null,
+    /** Alergenos que el cliente quiere evitar; oculta cualquier item que los declare. */
+    val excludedAllergens: Set<Allergen> = emptySet(),
     /** Producto abierto en el configurador (null = cerrado). */
     val configuringItem: MenuItem? = null,
 ) {
-    /** Secciones tras aplicar buscador y categoria. */
+    /** Secciones tras aplicar buscador, categoria y alergenos a evitar. */
     val filteredSections: List<MenuSection>
         get() = (content as? MenuContentState.Ready)
-            ?.let { MenuFilter.filter(it.menu.sections, query, selectedSectionId) }
+            ?.let { MenuFilter.filter(it.menu.sections, query, selectedSectionId, excludedAllergens) }
             .orEmpty()
 }
 
@@ -79,6 +82,17 @@ class MenuViewModel @Inject constructor(
             )
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CartSummary())
+
+    /**
+     * true si el último intento de enviar el pedido de este restaurante
+     * falló y no se ha reintentado con éxito (ver CartRepository/OrderRepository).
+     * La Carta la usa para avisar aunque el cliente haya vuelto sin
+     * reintentar desde el Snackbar del Carrito.
+     */
+    val hasPendingSubmissionIssue: StateFlow<Boolean> = sessionStore.tableContext
+        .filterNotNull()
+        .flatMapLatest { table -> cartRepository.hasFailedSubmission(table.restaurantId) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init {
         load()
@@ -110,6 +124,14 @@ class MenuViewModel @Inject constructor(
 
     fun onSectionSelected(sectionId: String?) {
         _uiState.update { it.copy(selectedSectionId = sectionId) }
+    }
+
+    /** Añade o quita [allergen] del conjunto a evitar. */
+    fun onAllergenToggled(allergen: Allergen) {
+        _uiState.update { state ->
+            val current = state.excludedAllergens
+            state.copy(excludedAllergens = if (allergen in current) current - allergen else current + allergen)
+        }
     }
 
     /** Abre el configurador para un producto disponible. */

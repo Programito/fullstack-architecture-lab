@@ -41,6 +41,15 @@ object FakeBackend {
         server.enqueue(orderResponse(status = "paid", paidCents = PRICE_CENTS))
     }
 
+    /**
+     * Encola un único 500: sirve para simular que la primera llamada de un
+     * flujo (abrir pedido, registrar pago...) falla en el servidor, sin
+     * llegar a consumir las respuestas ya encoladas para el reintento.
+     */
+    fun enqueueServerError(server: MockWebServer) {
+        server.enqueue(MockResponse().setResponseCode(500))
+    }
+
     private fun demoLoginResponse(): MockResponse = jsonResponse(
         201,
         """

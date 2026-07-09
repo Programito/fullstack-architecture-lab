@@ -30,6 +30,22 @@ export const PREPARATION_ROUTES = {
 
 export type ProductPreparationRoute = (typeof PREPARATION_ROUTES)[keyof typeof PREPARATION_ROUTES];
 
+export type Allergen =
+  | 'gluten'
+  | 'crustaceans'
+  | 'eggs'
+  | 'fish'
+  | 'peanuts'
+  | 'soybeans'
+  | 'milk'
+  | 'nuts'
+  | 'celery'
+  | 'mustard'
+  | 'sesame'
+  | 'sulphites'
+  | 'lupin'
+  | 'molluscs';
+
 export interface ProductPreparationPolicy {
   route: ProductPreparationRoute;
   requiresReadyBeforeServe: boolean;
@@ -44,6 +60,7 @@ export interface CreateProductInput {
   description?: string;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
+  allergens?: Allergen[];
   priceCents: number;
   currency: string;
   course: ProductCourse;
@@ -55,6 +72,7 @@ export interface UpdateProductInput {
   description?: string | null;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
+  allergens?: Allergen[];
   priceCents?: number;
   course?: ProductCourse;
   preparationRoute?: ProductPreparationRoute;
@@ -80,6 +98,10 @@ export interface Product {
   categoryId: string;
   basePrice: Money;
   available: ProductAvailability;
+  // string[] on purpose: menu-mock.service.ts fills this with localized display
+  // text for demo search, not the backend `Allergen` enum keys. The admin form
+  // and API request types (CreateProductInput/UpdateProductInput) use the
+  // strict `Allergen` union instead.
   allergens?: string[];
   course: ProductCourse;
   type: ProductType;

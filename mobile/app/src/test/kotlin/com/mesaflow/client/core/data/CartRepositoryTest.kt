@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -122,5 +123,24 @@ class CartRepositoryTest {
         val restored = repository.cart("rest-1").first().first()
         assertEquals(withBacon, restored.selections)
         assertEquals(1150, restored.unitPriceCents)
+    }
+
+    @Test
+    fun `markSubmissionFailed marca el aviso y clear lo limpia`() = runTest {
+        assertFalse(repository.hasFailedSubmission("rest-1").first())
+
+        repository.markSubmissionFailed("rest-1")
+        assertTrue(repository.hasFailedSubmission("rest-1").first())
+
+        repository.clear("rest-1")
+        assertFalse(repository.hasFailedSubmission("rest-1").first())
+    }
+
+    @Test
+    fun `el aviso de fallo esta aislado por restaurante`() = runTest {
+        repository.markSubmissionFailed("rest-1")
+
+        assertTrue(repository.hasFailedSubmission("rest-1").first())
+        assertFalse(repository.hasFailedSubmission("rest-2").first())
     }
 }

@@ -65,6 +65,20 @@ describe('seedMesaFlowDemo', () => {
 
     // 24 products: 4 drinks + 4 burgers + 4 tapas + 2 salads + 3 platters + 2 desserts + 2 coffee + 1 combo + 1 sandwich + 1 wine
     expect(productUpsert).toHaveBeenCalledTimes(24);
+    expect(productUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId_name: { organizationId: 'org-demo', name: 'Hamburguesa craft' } },
+        create: expect.objectContaining({ allergens: ['gluten', 'eggs', 'milk', 'mustard'] }),
+        update: expect.objectContaining({ allergens: ['gluten', 'eggs', 'milk', 'mustard'] }),
+      }),
+    );
+    expect(productUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId_name: { organizationId: 'org-demo', name: 'Agua mineral' } },
+        create: expect.objectContaining({ allergens: [] }),
+        update: expect.objectContaining({ allergens: [] }),
+      }),
+    );
     expect(restaurantProductUpsert).toHaveBeenCalledTimes(24);
     expect(restaurantProductUpsert).toHaveBeenCalledWith(
       expect.objectContaining({

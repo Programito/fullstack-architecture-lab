@@ -7,7 +7,7 @@ import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { ImageDropzone } from '../image-dropzone/image-dropzone';
 import type { ModifierGroup } from '../../models/modifier-group.model';
-import type { CreateProductInput, UpdateProductInput } from '../../models/product.model';
+import type { Allergen, CreateProductInput, UpdateProductInput } from '../../models/product.model';
 import type { RestaurantProductDetailDto } from '../../services/menu-api.service';
 import {
   ProductImageUploadError,
@@ -15,6 +15,23 @@ import {
 } from '../../services/product-image-upload.service';
 
 type UploadStatus = 'idle' | 'uploading' | 'failed';
+
+const ALLERGEN_VALUES: readonly Allergen[] = [
+  'gluten',
+  'crustaceans',
+  'eggs',
+  'fish',
+  'peanuts',
+  'soybeans',
+  'milk',
+  'nuts',
+  'celery',
+  'mustard',
+  'sesame',
+  'sulphites',
+  'lupin',
+  'molluscs',
+] as const;
 
 @Component({
   selector: 'app-product-form-dialog',
@@ -43,6 +60,7 @@ export class ProductFormDialog {
   protected readonly route = signal('kitchen');
   protected readonly available = signal(true);
   protected readonly selectedModifierGroupIds = signal<string[]>([]);
+  protected readonly selectedAllergens = signal<Allergen[]>([]);
   protected readonly uploadStatus = signal<UploadStatus>('idle');
   protected readonly imageErrorMessage = signal<string | null>(null);
   private readonly pendingRetryFile = signal<File | null>(null);
@@ -83,6 +101,14 @@ export class ProductFormDialog {
     [...this.modifierGroups()].sort((left, right) => left.name.localeCompare(right.name)),
   );
 
+  protected readonly allergenOptions = computed<{ value: Allergen; label: string }[]>(() => {
+    this.activeLang();
+    return ALLERGEN_VALUES.map((value) => ({
+      value,
+      label: this.transloco.translate(`menu.allergen.${value}`),
+    }));
+  });
+
   constructor() {
     effect(() => {
       const product = this.product();
@@ -96,6 +122,7 @@ export class ProductFormDialog {
           this.route.set(product.preparationRoute);
           this.available.set(product.isAvailable);
           this.selectedModifierGroupIds.set([...(product.modifierGroupIds ?? [])]);
+          this.selectedAllergens.set([...(product.allergens ?? [])]);
         } else {
           this.name.set('');
           this.description.set('');
@@ -105,6 +132,7 @@ export class ProductFormDialog {
           this.route.set('kitchen');
           this.available.set(true);
           this.selectedModifierGroupIds.set([]);
+          this.selectedAllergens.set([]);
         }
 
         this.uploadStatus.set('idle');
@@ -145,6 +173,16 @@ export class ProductFormDialog {
     });
   }
 
+  protected toggleAllergen(allergen: Allergen, checked: boolean): void {
+    this.selectedAllergens.update((currentAllergens) => {
+      if (checked) {
+        return currentAllergens.includes(allergen) ? currentAllergens : [...currentAllergens, allergen];
+      }
+
+      return currentAllergens.filter((currentAllergen) => currentAllergen !== allergen);
+    });
+  }
+
   private uploadSelectedFile(file: File): void {
     this.uploadStatus.set('uploading');
     this.imageErrorMessage.set(null);
@@ -173,6 +211,7 @@ export class ProductFormDialog {
         description: this.description().trim() || null,
         imageUrl: this.imageUrl(),
         modifierGroupIds: this.selectedModifierGroupIds(),
+        allergens: this.selectedAllergens(),
         priceCents,
         course: this.course() as UpdateProductInput['course'],
         preparationRoute: this.route() as UpdateProductInput['preparationRoute'],
@@ -184,6 +223,7 @@ export class ProductFormDialog {
         description: this.description().trim() || undefined,
         imageUrl: this.imageUrl(),
         modifierGroupIds: this.selectedModifierGroupIds(),
+        allergens: this.selectedAllergens(),
         priceCents,
         currency: 'EUR',
         course: this.course() as CreateProductInput['course'],

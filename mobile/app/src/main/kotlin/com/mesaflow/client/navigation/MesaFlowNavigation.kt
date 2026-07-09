@@ -15,6 +15,7 @@ import com.mesaflow.client.feature.cart.CartScreen
 import com.mesaflow.client.feature.checkout.CheckoutScreen
 import com.mesaflow.client.feature.entry.EntryScreen
 import com.mesaflow.client.feature.menu.MenuScreen
+import com.mesaflow.client.feature.settings.SettingsScreen
 
 private const val TRANSITION_DURATION_MS = 220
 
@@ -75,6 +76,7 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
             entry<MenuKey> {
                 MenuScreen(
                     onCartClick = { backStack.add(CartKey) },
+                    onSettingsClick = { backStack.add(SettingsKey) },
                 )
             }
             entry<CartKey> {
@@ -89,6 +91,11 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                             ),
                         )
                     },
+                )
+            }
+            entry<SettingsKey> {
+                SettingsScreen(
+                    onBack = { backStack.removeLastOrNull() },
                 )
             }
             entry<CheckoutKey> { key ->

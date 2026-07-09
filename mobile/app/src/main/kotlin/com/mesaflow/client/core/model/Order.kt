@@ -23,3 +23,40 @@ data class PaymentResult(
     val balanceCents: Long,
     val currency: String,
 )
+
+/**
+ * Estado por línea del pedido activo de una mesa, tal cual lo expone
+ * `GET /restaurants/:id/service-points/:tableId/order` (mismo endpoint que
+ * usa el panel de cocina/sala — ver `RestaurantFloorController`). UNKNOWN
+ * cubre valores que el backend pueda enviar y esta version de la app no
+ * reconozca todavia, mismo criterio que con `Allergen`: se muestra como
+ * "actualizando" en vez de ocultarse en silencio.
+ */
+enum class OrderLineKitchenStatus {
+    PENDING,
+    SENT_TO_KITCHEN,
+    PREPARING,
+    READY,
+    PICKED_UP,
+    SERVED,
+    CANCELLED,
+    UNKNOWN,
+}
+
+data class ServicePointOrderLine(
+    val id: String,
+    val productName: String,
+    val quantity: Int,
+    val status: OrderLineKitchenStatus,
+)
+
+/**
+ * Estado del pedido activo de la mesa del cliente. `orderId`/`status` son
+ * null si la mesa no tiene ningun pedido abierto (p.ej. ya se pago y se
+ * libero, o el sondeo arranca antes de que el pedido exista todavia).
+ */
+data class ServicePointOrderStatus(
+    val orderId: String?,
+    val status: String?,
+    val lines: List<ServicePointOrderLine>,
+)

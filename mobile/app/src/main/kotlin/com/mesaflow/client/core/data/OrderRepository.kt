@@ -7,6 +7,7 @@ import com.mesaflow.client.core.common.map
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.model.PaymentResult
+import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.model.SubmittedOrder
 import com.mesaflow.client.core.network.OrdersApi
 import com.mesaflow.client.core.network.dto.OpenOrderRequestDto
@@ -32,6 +33,10 @@ class OrderRepository @Inject constructor(
         tableId: String,
         lines: List<CartLine>,
     ): AppResult<SubmittedOrder> {
+        // Errores de validación (carrito vacío, línea sin producto real) no
+        // llegan a tocar la red: no marcamos aviso persistente para ellos,
+        // porque el usuario los ve al instante en la misma pantalla y
+        // reintentar sin cambiar nada fallaría igual.
         if (lines.isEmpty()) return AppResult.Error(AppError.Validation)
 
         val requests = lines.map { it.toAddLineRequest() ?: return AppResult.Error(AppError.Validation) }
@@ -40,14 +45,20 @@ class OrderRepository @Inject constructor(
             ordersApi.openOrder(restaurantId, tableId, OpenOrderRequestDto(guestCount = 1))
         }) {
             is AppResult.Success -> opened.data.order.id
-            is AppResult.Error -> return opened
+            is AppResult.Error -> {
+                cartRepository.markSubmissionFailed(restaurantId)
+                return opened
+            }
         }
 
         var lastSummary: OrderSummaryDto? = null
         for (request in requests) {
             when (val added = safeApiCall { ordersApi.addLine(restaurantId, orderId, request) }) {
                 is AppResult.Success -> lastSummary = added.data.order
-                is AppResult.Error -> return added
+                is AppResult.Error -> {
+                    cartRepository.markSubmissionFailed(restaurantId)
+                    return added
+                }
             }
         }
         val summary = lastSummary ?: return AppResult.Error(AppError.Unknown(null))
@@ -56,9 +67,13 @@ class OrderRepository @Inject constructor(
         // Si falla, conservamos el carrito para reintentar (igual que con las líneas).
         when (val sent = safeApiCall { ordersApi.sendToKitchen(restaurantId, tableId) }) {
             is AppResult.Success -> Unit
-            is AppResult.Error -> return sent
+            is AppResult.Error -> {
+                cartRepository.markSubmissionFailed(restaurantId)
+                return sent
+            }
         }
 
+        // Éxito total: limpia tanto el carrito como cualquier aviso de fallo previo.
         cartRepository.clear(restaurantId)
         return AppResult.Success(
             SubmittedOrder(
@@ -98,4 +113,16 @@ class OrderRepository @Inject constructor(
             )
         }
     }
+
+    /**
+     * Estado en vivo (por sondeo, ver [com.mesaflow.client.feature.cart.CartViewModel])
+     * del pedido activo de la mesa, con el estado de cada línea en cocina.
+     * Mismo endpoint que usa el panel de sala/cocina para la misma mesa.
+     */
+    suspend fun getServicePointOrder(
+        restaurantId: String,
+        tableId: String,
+    ): AppResult<ServicePointOrderStatus> =
+        safeApiCall { ordersApi.getServicePointOrder(restaurantId, tableId) }
+            .map { it.toServicePointOrderStatus() }
 }

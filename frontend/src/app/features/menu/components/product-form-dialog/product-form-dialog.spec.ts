@@ -25,6 +25,7 @@ const MOCK_PRODUCT: RestaurantProductDetailDto = {
   isAvailable: true,
   isVisible: true,
   modifierGroupIds: ['burger-extras', 'burger-point'],
+  allergens: ['gluten', 'milk'],
 };
 
 const MOCK_MODIFIER_GROUPS: ModifierGroup[] = [
@@ -161,6 +162,36 @@ describe('ProductFormDialog', () => {
 
     expect((screen.getByRole('checkbox', { name: /Extras de hamburguesa/i }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByRole('checkbox', { name: /Punto de la carne/i }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('pre-fills selected allergens in edit mode', async () => {
+    await renderDialog({ product: MOCK_PRODUCT });
+
+    expect((screen.getByRole('checkbox', { name: /^Gluten$/i }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('checkbox', { name: /^Leche$/i }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('checkbox', { name: /^Pescado$/i }) as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('toggles an allergen off when unchecked in edit mode', async () => {
+    const confirmed = vi.fn();
+    await renderDialog({ product: MOCK_PRODUCT, confirmed });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Gluten$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Guardar/i }));
+
+    expect(confirmed).toHaveBeenCalledWith(expect.objectContaining({ allergens: ['milk'] }));
+  });
+
+  it('emits selected allergens when creating a product', async () => {
+    const confirmed = vi.fn();
+    await renderDialog({ product: null, confirmed });
+
+    fireEvent.input(screen.getByRole('textbox', { name: /Nombre/i }), { target: { value: 'Bocadillo' } });
+    fireEvent.input(screen.getByRole('spinbutton', { name: /Precio/i }), { target: { value: '5.50' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Gluten$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
+
+    expect(confirmed).toHaveBeenCalledWith(expect.objectContaining({ allergens: ['gluten'] }));
   });
 
   it('emits selected modifier groups when creating a product', async () => {

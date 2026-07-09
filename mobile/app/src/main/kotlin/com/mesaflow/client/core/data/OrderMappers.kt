@@ -1,10 +1,15 @@
 package com.mesaflow.client.core.data
 
 import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.OrderLineKitchenStatus
+import com.mesaflow.client.core.model.ServicePointOrderLine
+import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.network.dto.AddOrderLineRequestDto
 import com.mesaflow.client.core.network.dto.OrderLineComboSlotRequestDto
 import com.mesaflow.client.core.network.dto.OrderLineModifierRequestDto
 import com.mesaflow.client.core.network.dto.OrderLinePlatterComponentRequestDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderLineDto
+import com.mesaflow.client.core.network.dto.ServicePointOrderResponseDto
 
 /**
  * Traduce una línea de carrito al contrato del backend. Devuelve null si el
@@ -39,4 +44,29 @@ fun CartLine.toAddLineRequest(): AddOrderLineRequestDto? {
             )
         },
     )
+}
+
+/** Traduce la respuesta de `GET .../service-points/{tableId}/order` al modelo de dominio. */
+fun ServicePointOrderResponseDto.toServicePointOrderStatus(): ServicePointOrderStatus = ServicePointOrderStatus(
+    orderId = order?.id,
+    status = order?.status,
+    lines = lines.map { it.toServicePointOrderLine() },
+)
+
+private fun ServicePointOrderLineDto.toServicePointOrderLine(): ServicePointOrderLine = ServicePointOrderLine(
+    id = id,
+    productName = productName,
+    quantity = quantity,
+    status = status.toKitchenStatusOrUnknown(),
+)
+
+private fun String.toKitchenStatusOrUnknown(): OrderLineKitchenStatus = when (this) {
+    "pending" -> OrderLineKitchenStatus.PENDING
+    "sent_to_kitchen" -> OrderLineKitchenStatus.SENT_TO_KITCHEN
+    "preparing" -> OrderLineKitchenStatus.PREPARING
+    "ready" -> OrderLineKitchenStatus.READY
+    "picked_up" -> OrderLineKitchenStatus.PICKED_UP
+    "served" -> OrderLineKitchenStatus.SERVED
+    "cancelled" -> OrderLineKitchenStatus.CANCELLED
+    else -> OrderLineKitchenStatus.UNKNOWN
 }

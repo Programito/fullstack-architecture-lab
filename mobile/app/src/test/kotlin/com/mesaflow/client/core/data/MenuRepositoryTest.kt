@@ -1,6 +1,7 @@
 package com.mesaflow.client.core.data
 
 import com.mesaflow.client.core.common.AppResult
+import com.mesaflow.client.core.model.Allergen
 import com.mesaflow.client.core.model.ProductType
 import com.mesaflow.client.core.network.MenuApi
 import kotlinx.coroutines.runBlocking
@@ -36,6 +37,7 @@ class MenuRepositoryTest {
                   "id": "item-burger", "restaurantProductId": "rp-burger", "name": "Hamburguesa craft",
                   "description": "200g con cheddar", "imageUrl": null, "productType": "simple",
                   "priceCents": 1250, "currency": "EUR", "isAvailable": true,
+                  "allergens": ["gluten", "milk"],
                   "modifierGroups": [
                     {
                       "id": "mg-extras", "name": "Extras", "selectionType": "multiple",
@@ -130,6 +132,19 @@ class MenuRepositoryTest {
 
         val request = server.takeRequest()
         assertEquals("/api/v1/restaurants/rest-demo/menu", request.path)
+    }
+
+    @Test
+    fun `mapea los alergenos declarados por el restaurante`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(menuBody))
+
+        val result = repository.getMenu("rest-demo")
+
+        val burger = (result as AppResult.Success).data.sections.first().items.single()
+        assertEquals(listOf(Allergen.GLUTEN, Allergen.MILK), burger.allergens)
+
+        val menuDia = result.data.sections.last().items.single()
+        assertEquals(emptyList<Allergen>(), menuDia.allergens)
     }
 
     @Test

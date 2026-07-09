@@ -12,6 +12,7 @@ export class RestaurantProductSummaryResponseDto {
   @ApiProperty({ enum: ['simple', 'combo', 'platter'] }) productType!: string;
   @ApiProperty({ enum: ['drinks', 'starter', 'main', 'dessert', 'other'] }) course!: string;
   @ApiProperty({ enum: ['direct', 'bar', 'kitchen', 'cold_station', 'dessert_station'] }) preparationRoute!: string;
+  @ApiProperty({ type: [String] }) allergens!: string[];
   @ApiProperty() priceCents!: number;
   @ApiProperty() currency!: string;
   @ApiProperty() isAvailable!: boolean;
@@ -28,6 +29,7 @@ export class RestaurantProductSummaryResponseDto {
     dto.productType = domain.productType;
     dto.course = domain.course;
     dto.preparationRoute = domain.preparationRoute;
+    dto.allergens = domain.allergens;
     dto.priceCents = domain.priceCents;
     dto.currency = domain.currency;
     dto.isAvailable = domain.isAvailable;

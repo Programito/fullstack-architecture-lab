@@ -47,6 +47,7 @@ const CATALOG_ONLY_PRODUCT: RestaurantProductSummaryDto = {
   currency: 'EUR',
   isAvailable: true,
   isVisible: true,
+  allergens: [],
 };
 
 function makeMockMenuApi(overrides: Partial<{

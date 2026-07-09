@@ -89,6 +89,10 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
+    // Idioma per-app (ajustes: AppCompatDelegate.setApplicationLocales), no requiere
+    // que ninguna Activity extienda AppCompatActivity para que el override funcione.
+    implementation(libs.androidx.appcompat)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -105,6 +109,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
     androidTestImplementation(libs.okhttp.mockwebserver)

@@ -1087,6 +1087,22 @@
       "dessert": "Postre",
       "other": "Otro"
     },
+    "allergen": {
+      "gluten": "Gluten",
+      "crustaceans": "Crustáceos",
+      "eggs": "Huevos",
+      "fish": "Pescado",
+      "peanuts": "Cacahuetes",
+      "soybeans": "Soja",
+      "milk": "Leche",
+      "nuts": "Frutos de cáscara",
+      "celery": "Apio",
+      "mustard": "Mostaza",
+      "sesame": "Sésamo",
+      "sulphites": "Sulfitos",
+      "lupin": "Altramuces",
+      "molluscs": "Moluscos"
+    },
     "page": {
       "eyebrow": "Catálogo operativo",
       "title": "Menú",
@@ -1297,6 +1313,8 @@
         "uploadFailed": "No se pudo subir la imagen. Inténtalo de nuevo.",
         "price": "Precio (€)",
         "modifierGroupsHint": "Selecciona los grupos de modificadores que puede usar este producto.",
+        "allergens": "Alérgenos",
+        "allergensHint": "Selecciona los alérgenos que declara este producto. Ante una alergia grave, el cliente deberá confirmarlo también con el personal.",
         "course": "Servicio",
         "route": "Ruta de preparación",
         "available": "Disponible",

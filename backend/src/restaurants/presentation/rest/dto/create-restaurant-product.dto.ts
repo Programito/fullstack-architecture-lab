@@ -1,6 +1,13 @@
 import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import type { Allergen } from '../../../domain/restaurant-read.models';
+
+const ALLERGENS = [
+  'gluten', 'crustaceans', 'eggs', 'fish', 'peanuts', 'soybeans', 'milk',
+  'nuts', 'celery', 'mustard', 'sesame', 'sulphites', 'lupin', 'molluscs',
+] as const;
+
 export class CreateRestaurantProductDto {
   @ApiProperty({ example: 'Hamburguesa craft' })
   @IsString()
@@ -40,4 +47,10 @@ export class CreateRestaurantProductDto {
   @IsString({ each: true })
   @IsOptional()
   modifierGroupIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], enum: ALLERGENS, example: ['gluten', 'milk'] })
+  @IsArray()
+  @IsEnum(ALLERGENS, { each: true })
+  @IsOptional()
+  allergens?: Allergen[];
 }

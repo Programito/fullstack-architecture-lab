@@ -240,6 +240,7 @@ model Product {
   productType             ProductType
   defaultCourse           ProductCourse
   defaultPreparationRoute PreparationRoute
+  allergens               Allergen[]       @default([])
   taxRateId               String?
   isActive                Boolean          @default(true)
   organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -772,6 +773,29 @@ enum PreparationRoute {
 enum ModifierSelectionType {
   single
   multiple
+}
+
+// Los 14 alergenos de declaracion obligatoria en la UE (Reglamento 1169/2011,
+// anexo II). Lista cerrada y comun a toda la UE: por eso vive como enum
+// nativo en Product (verdad a nivel organizacion), igual que defaultCourse o
+// defaultPreparationRoute, y no como catalogo+tabla-puente (ese patron, el de
+// ModifierGroup, esta pensado para catalogos abiertos que cada organizacion
+// define a su gusto).
+enum Allergen {
+  gluten
+  crustaceans
+  eggs
+  fish
+  peanuts
+  soybeans
+  milk
+  nuts
+  celery
+  mustard
+  sesame
+  sulphites
+  lupin
+  molluscs
 }
 
 enum ComboPricingMode {

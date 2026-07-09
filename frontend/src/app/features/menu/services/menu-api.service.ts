@@ -186,7 +186,7 @@ function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): P
     basePrice: item.priceCents / 100,
     price: item.priceCents / 100,
     available: item.isAvailable,
-    allergens: [],
+    allergens: item.allergens ?? [],
     course: toProductCourse(item.defaultCourse),
     type: item.productType,
     modifierGroupIds: item.modifierGroups.map((mg) => mg.id),

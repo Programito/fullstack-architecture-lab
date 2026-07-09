@@ -16,6 +16,7 @@ export class RestaurantProductDetailResponseDto {
   @ApiProperty({ enum: ['drinks', 'starter', 'main', 'dessert', 'other'] }) course: string;
   @ApiProperty({ enum: ['direct', 'bar', 'kitchen', 'cold_station', 'dessert_station'] }) preparationRoute: string;
   @ApiProperty({ nullable: true }) preparationRouteOverride: string | null;
+  @ApiProperty({ type: [String] }) allergens: string[];
   @ApiProperty() priceCents: number;
   @ApiProperty() currency: string;
   @ApiProperty() isAvailable: boolean;
@@ -36,6 +37,7 @@ export class RestaurantProductDetailResponseDto {
       course: detail.course,
       preparationRoute: detail.preparationRoute,
       preparationRouteOverride: detail.preparationRouteOverride,
+      allergens: detail.allergens,
       priceCents: detail.priceCents,
       currency: detail.currency,
       isAvailable: detail.isAvailable,

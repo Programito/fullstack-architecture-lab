@@ -14,6 +14,10 @@ data object MenuKey : NavKey
 @Serializable
 data object CartKey : NavKey
 
+/** Ajustes de apariencia (tema e idioma); accesible desde la Carta. */
+@Serializable
+data object SettingsKey : NavKey
+
 /** Cobro del pedido recién enviado; lleva lo mínimo para no depender de red. */
 @Serializable
 data class CheckoutKey(

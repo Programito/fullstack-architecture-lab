@@ -5,7 +5,7 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { applicationError, menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { CreateProductData, RestaurantMenuAdminRepository, SortOrderItem, UpdateProductData } from '../../application/ports/restaurant-menu-admin-repository.port';
-import type { PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import type { Allergen, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 
 @Injectable()
 export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminRepository {
@@ -181,7 +181,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       where: { restaurantId },
       orderBy: { sortOrder: 'asc' },
       include: {
-        product: { select: { name: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+        product: { select: { name: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
         modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
@@ -196,6 +196,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       productType: rp.product.productType as 'simple' | 'combo' | 'platter',
       course: rp.product.defaultCourse as RestaurantProductSummary['course'],
       preparationRoute: rp.product.defaultPreparationRoute as RestaurantProductSummary['preparationRoute'],
+      allergens: (rp.product.allergens ?? []) as Allergen[],
       priceCents: rp.priceCents,
       currency: rp.currency,
       isAvailable: rp.isAvailable,
@@ -207,7 +208,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     const rp = await this.prisma.restaurantProduct.findFirst({
       where: { id: productId, restaurantId },
       include: {
-        product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+        product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
         modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
@@ -236,6 +237,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
             productType: 'simple',
             defaultCourse: data.course,
             defaultPreparationRoute: data.preparationRoute,
+            allergens: data.allergens ?? [],
           },
         });
 
@@ -259,7 +261,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
               : undefined,
           },
           include: {
-            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
             modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
           },
         });
@@ -291,7 +293,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           throw new ApplicationErrorException(applicationError('restaurant_product_not_found', `Restaurant product "${productId}" was not found.`, { productId }));
         }
 
-        if (data.name !== undefined || data.description !== undefined || data.course !== undefined || data.preparationRoute !== undefined) {
+        if (data.name !== undefined || data.description !== undefined || data.course !== undefined || data.preparationRoute !== undefined || data.allergens !== undefined) {
           await tx.product.update({
             where: { id: existing.productId },
             data: {
@@ -299,6 +301,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
               ...(data.description !== undefined && { description: data.description }),
               ...(data.course !== undefined && { defaultCourse: data.course }),
               ...(data.preparationRoute !== undefined && { defaultPreparationRoute: data.preparationRoute }),
+              ...(data.allergens !== undefined && { allergens: data.allergens }),
             },
           });
         }
@@ -326,7 +329,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
             ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           },
           include: {
-            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true } },
+            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
             modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
           },
         });
@@ -431,6 +434,7 @@ type RpWithProduct = {
     productType: string;
     defaultCourse: string;
     defaultPreparationRoute: string;
+    allergens?: string[];
   };
 };
 
@@ -449,6 +453,7 @@ function mapProductDetail(rp: RpWithProduct): RestaurantProductDetail {
     course: rp.product.defaultCourse as ProductCourse,
     preparationRoute: rp.product.defaultPreparationRoute as PreparationRoute,
     preparationRouteOverride: rp.preparationRouteOverride as PreparationRoute | null,
+    allergens: (rp.product.allergens ?? []) as Allergen[],
     priceCents: rp.priceCents,
     currency: rp.currency,
     isAvailable: rp.isAvailable,

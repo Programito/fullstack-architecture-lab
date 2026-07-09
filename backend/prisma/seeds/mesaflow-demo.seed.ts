@@ -3,6 +3,22 @@ import type { PrismaClient } from '@prisma/client';
 const DEMO_ORGANIZATION_NAME = 'MesaFlow Demo';
 const DEMO_RESTAURANT_NAME = 'MesaFlow Centro';
 
+type DemoAllergen =
+  | 'gluten'
+  | 'crustaceans'
+  | 'eggs'
+  | 'fish'
+  | 'peanuts'
+  | 'soybeans'
+  | 'milk'
+  | 'nuts'
+  | 'celery'
+  | 'mustard'
+  | 'sesame'
+  | 'sulphites'
+  | 'lupin'
+  | 'molluscs';
+
 type DemoProductDefinition = {
   name: string;
   description?: string;
@@ -10,6 +26,7 @@ type DemoProductDefinition = {
   defaultCourse: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   defaultPreparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   taxName: string;
+  allergens?: DemoAllergen[];
 };
 
 export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
@@ -100,6 +117,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
         productType: product.productType,
         defaultCourse: product.defaultCourse,
         defaultPreparationRoute: product.defaultPreparationRoute,
+        allergens: product.allergens ?? [],
         taxRateId: taxRateIdByName.get(product.taxName) ?? null,
         isActive: true,
       },
@@ -110,6 +128,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
         productType: product.productType,
         defaultCourse: product.defaultCourse,
         defaultPreparationRoute: product.defaultPreparationRoute,
+        allergens: product.allergens ?? [],
         taxRateId: taxRateIdByName.get(product.taxName) ?? null,
         isActive: true,
       },
@@ -481,53 +500,93 @@ function demoProducts(): DemoProductDefinition[] {
       name: 'Hamburguesa craft',
       description: 'Hamburguesa de ternera con lechuga, tomate, cebolla, pepinillos y salsa de la casa.',
       productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['gluten', 'eggs', 'milk', 'mustard'],
     },
     {
       name: 'Hamburguesa clasica',
       description: 'Hamburguesa clásica con queso, lechuga y tomate.',
       productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['gluten', 'milk'],
     },
     {
       name: 'Hamburguesa trufada',
       description: 'Hamburguesa premium con queso de trufa y cebolla caramelizada.',
       productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['gluten', 'milk'],
     },
     {
       name: 'Hamburguesa vegetal',
       description: 'Hamburguesa vegetal con aguacate y pimientos asados.',
       productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['gluten', 'soybeans'],
     },
-    { name: 'Croquetas de jamon iberico', description: 'Croquetas caseras de jamón ibérico de bellota.', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
-    { name: 'Patatas bravas', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
-    { name: 'Nachos caseros', description: 'Totopos con cheddar fundido y pico de gallo.', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
+    {
+      name: 'Croquetas de jamon iberico',
+      description: 'Croquetas caseras de jamón ibérico de bellota.',
+      productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido',
+      allergens: ['gluten', 'milk', 'eggs'],
+    },
+    {
+      name: 'Patatas bravas',
+      productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido',
+      allergens: ['eggs', 'mustard'],
+    },
+    {
+      name: 'Nachos caseros',
+      description: 'Totopos con cheddar fundido y pico de gallo.',
+      productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido',
+      allergens: ['milk'],
+    },
     { name: 'Patatas fritas', productType: 'simple', defaultCourse: 'other', defaultPreparationRoute: 'kitchen', taxName: 'IVA General' },
-    { name: 'Ensalada cesar', description: 'Lechuga romana, pollo a la plancha, anchoas y aliño César.', productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'cold_station', taxName: 'IVA Reducido' },
+    {
+      name: 'Ensalada cesar',
+      description: 'Lechuga romana, pollo a la plancha, anchoas y aliño César.',
+      productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'cold_station', taxName: 'IVA Reducido',
+      allergens: ['fish', 'eggs', 'milk'],
+    },
     { name: 'Ensalada', productType: 'simple', defaultCourse: 'starter', defaultPreparationRoute: 'cold_station', taxName: 'IVA Reducido' },
     {
       name: 'Plato combinado de lomo',
       description: 'Lomo a la plancha con huevo, patatas fritas y ensalada.',
       productType: 'platter', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['eggs'],
     },
     {
       name: 'Plato combinado de pollo',
       description: 'Pollo a la plancha con huevo, patatas fritas y ensalada.',
       productType: 'platter', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['eggs'],
     },
     {
       name: 'Plato combinado vegetal',
       description: 'Huevo, patatas fritas, ensalada y verduras de temporada.',
       productType: 'platter', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['eggs'],
     },
-    { name: 'Tarta de queso', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'dessert_station', taxName: 'IVA Reducido' },
-    { name: 'Coulant de chocolate', description: 'Bizcocho de chocolate con interior fundido y helado de vainilla.', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'dessert_station', taxName: 'IVA Reducido' },
+    {
+      name: 'Tarta de queso',
+      productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'dessert_station', taxName: 'IVA Reducido',
+      allergens: ['gluten', 'milk', 'eggs'],
+    },
+    {
+      name: 'Coulant de chocolate',
+      description: 'Bizcocho de chocolate con interior fundido y helado de vainilla.',
+      productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'dessert_station', taxName: 'IVA Reducido',
+      allergens: ['gluten', 'milk', 'eggs', 'nuts'],
+    },
     { name: 'Cafe solo', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'bar', taxName: 'IVA Reducido' },
-    { name: 'Cafe con leche', productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'bar', taxName: 'IVA Reducido' },
+    {
+      name: 'Cafe con leche',
+      productType: 'simple', defaultCourse: 'dessert', defaultPreparationRoute: 'bar', taxName: 'IVA Reducido',
+      allergens: ['milk'],
+    },
     {
       name: 'Menu Classic Burger',
       description: 'Hamburguesa a elegir, bebida y acompañamiento.',
       productType: 'combo', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA General',
+      allergens: ['gluten', 'milk'],
     },
-    { name: 'Sandwich club', productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido' },
+    { name: 'Sandwich club', productType: 'simple', defaultCourse: 'main', defaultPreparationRoute: 'kitchen', taxName: 'IVA Reducido', allergens: ['gluten', 'eggs', 'milk'] },
   ];
 }
 

@@ -105,7 +105,9 @@ describe('InMemoryIdentitySeed', () => {
       PERMISSION_CATALOG.map((permission) => permission.name).sort(),
     );
     expect(roleResult.value.map((role) => role.name).sort()).toEqual(ROLE_CATALOG.map((role) => role.name).sort());
-    expect(roleResult.value.find((role) => role.name === 'waiter')?.permissionIds).toHaveLength(3);
+    // waiter tiene 4 permisos desde que 'time_tracking' se anadio a su catalogo
+    // (commit "add basic schedule"): service, time_tracking, layout, reservations.
+    expect(roleResult.value.find((role) => role.name === 'waiter')?.permissionIds).toHaveLength(4);
     expect(userResult.value.map((user) => user.email)).toEqual([
       ...DEMO_ACCOUNT_CATALOG.map((account) => account.email),
       'admin@example.com',

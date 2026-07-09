@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -46,6 +47,9 @@ import com.mesaflow.client.core.designsystem.components.EmptyState
 import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.components.QuantityStepper
 import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.OrderLineKitchenStatus
+import com.mesaflow.client.core.model.ServicePointOrderLine
+import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.model.SubmittedOrder
 
 /**
@@ -66,10 +70,18 @@ fun CartScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val errorMessage = uiState.submitError?.let { stringResource(it.toMessageRes()) }
+    val retryLabel = stringResource(R.string.action_retry)
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
-            snackbarHostState.showSnackbar(errorMessage)
+            // El error se limpia antes de esperar la acción: si el usuario
+            // no reintenta, no debe volver a mostrarse el mismo Snackbar al
+            // recomponer. El carrito sigue intacto en cualquier caso (ver
+            // OrderRepository.submitCart): reintentar es solo repetir onSubmit.
+            val result = snackbarHostState.showSnackbar(errorMessage, actionLabel = retryLabel)
             viewModel.onErrorShown()
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.onSubmit()
+            }
         }
     }
 
@@ -95,6 +107,7 @@ fun CartScreen(
             submitted != null -> SubmittedContent(
                 totalCents = submitted.totalCents,
                 currency = submitted.currency,
+                orderStatus = uiState.orderStatus,
                 onBackToMenu = onBack,
                 onCheckout = { onCheckout(submitted) },
                 modifier = Modifier.padding(innerPadding),
@@ -237,6 +250,7 @@ private fun CartLineCard(
 private fun SubmittedContent(
     totalCents: Long,
     currency: String,
+    orderStatus: ServicePointOrderStatus?,
     onBackToMenu: () -> Unit,
     onCheckout: () -> Unit,
     modifier: Modifier = Modifier,
@@ -265,6 +279,12 @@ private fun SubmittedContent(
             currencyCode = currency,
             style = MaterialTheme.typography.headlineMedium,
         )
+        // El pedido puede tardar en aparecer en el primer sondeo (justo se
+        // acaba de enviar); sin lineas todavia no hay nada util que mostrar.
+        if (orderStatus != null && orderStatus.lines.isNotEmpty()) {
+            Spacer(Modifier.height(24.dp))
+            OrderProgressCard(lines = orderStatus.lines)
+        }
         Spacer(Modifier.height(32.dp))
         Button(onClick = onCheckout, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.cart_go_to_checkout))
@@ -276,8 +296,70 @@ private fun SubmittedContent(
     }
 }
 
+/**
+ * Progreso en cocina del pedido recien enviado; se alimenta del sondeo de
+ * [com.mesaflow.client.feature.cart.CartViewModel.startOrderStatusPolling]
+ * (mismo dato que ve el panel de sala/cocina para esta mesa). No hay
+ * confirmacion de entrega real hasta que el camarero sirve la mesa: esto es
+ * un adelanto informativo, no una promesa de tiempos.
+ */
+@Composable
+private fun OrderProgressCard(lines: List<ServicePointOrderLine>) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp).fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.cart_kitchen_progress_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(8.dp))
+            lines.forEach { line ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                ) {
+                    Text(
+                        text = "${line.quantity}× ${line.productName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = orderLineStatusLabel(line.status),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (line.status == OrderLineKitchenStatus.READY ||
+                            line.status == OrderLineKitchenStatus.SERVED
+                        ) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun orderLineStatusLabel(status: OrderLineKitchenStatus): String = stringResource(
+    when (status) {
+        OrderLineKitchenStatus.PENDING -> R.string.order_line_status_pending
+        OrderLineKitchenStatus.SENT_TO_KITCHEN -> R.string.order_line_status_sent_to_kitchen
+        OrderLineKitchenStatus.PREPARING -> R.string.order_line_status_preparing
+        OrderLineKitchenStatus.READY -> R.string.order_line_status_ready
+        OrderLineKitchenStatus.PICKED_UP -> R.string.order_line_status_picked_up
+        OrderLineKitchenStatus.SERVED -> R.string.order_line_status_served
+        OrderLineKitchenStatus.CANCELLED -> R.string.order_line_status_cancelled
+        OrderLineKitchenStatus.UNKNOWN -> R.string.order_line_status_unknown
+    },
+)
+
 private fun AppError.toMessageRes(): Int = when (this) {
     AppError.Network -> R.string.entry_error_network
     AppError.Unauthorized -> R.string.entry_error_unauthorized
+    AppError.Server -> R.string.cart_error_server
     else -> R.string.cart_error_submit
 }

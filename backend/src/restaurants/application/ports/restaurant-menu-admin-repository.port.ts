@@ -1,4 +1,4 @@
-import type { PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import type { Allergen, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 
 export const RESTAURANT_MENU_ADMIN_REPOSITORY = Symbol('RESTAURANT_MENU_ADMIN_REPOSITORY');
 
@@ -13,6 +13,7 @@ export type CreateProductData = {
   currency: string;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
+  allergens?: Allergen[];
 };
 
 export type UpdateProductData = {
@@ -25,6 +26,7 @@ export type UpdateProductData = {
   isVisible?: boolean;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
+  allergens?: Allergen[];
 };
 
 export interface RestaurantMenuAdminRepository {

@@ -895,7 +895,7 @@ function mapSummaryToProduct(cp: RestaurantProductSummaryDto): Product {
     basePrice: cp.priceCents / 100,
     price: cp.priceCents / 100,
     available: cp.isAvailable,
-    allergens: [],
+    allergens: cp.allergens ?? [],
     course: cp.course,
     type: cp.productType as Product['type'],
     modifierGroupIds: cp.modifierGroupIds,

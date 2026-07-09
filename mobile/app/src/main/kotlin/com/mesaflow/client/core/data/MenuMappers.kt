@@ -1,5 +1,6 @@
 package com.mesaflow.client.core.data
 
+import com.mesaflow.client.core.model.Allergen
 import com.mesaflow.client.core.model.ComboDefinition
 import com.mesaflow.client.core.model.ComboSlot
 import com.mesaflow.client.core.model.ComboSlotOption
@@ -40,6 +41,7 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                         priceCents = item.priceCents,
                         currency = item.currency,
                         isAvailable = item.isAvailable,
+                        allergens = item.allergens.map { it.toAllergenOrUnknown() },
                         modifierGroups = item.modifierGroups.map { group ->
                             ModifierGroup(
                                 id = group.id,
@@ -97,3 +99,27 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
             )
         },
 )
+
+/**
+ * Convierte el string del backend (enum Allergen de schema.prisma, p.ej.
+ * "gluten", "crustaceans") al enum de dominio. Un valor no reconocido cae en
+ * [Allergen.UNKNOWN] en vez de descartarse: silenciar un alergeno que el
+ * backend SI declara seria peor que mostrarlo como "otro".
+ */
+internal fun String.toAllergenOrUnknown(): Allergen = when (lowercase()) {
+    "gluten" -> Allergen.GLUTEN
+    "crustaceans" -> Allergen.CRUSTACEANS
+    "eggs" -> Allergen.EGGS
+    "fish" -> Allergen.FISH
+    "peanuts" -> Allergen.PEANUTS
+    "soybeans" -> Allergen.SOYBEANS
+    "milk" -> Allergen.MILK
+    "nuts" -> Allergen.NUTS
+    "celery" -> Allergen.CELERY
+    "mustard" -> Allergen.MUSTARD
+    "sesame" -> Allergen.SESAME
+    "sulphites" -> Allergen.SULPHITES
+    "lupin" -> Allergen.LUPIN
+    "molluscs" -> Allergen.MOLLUSCS
+    else -> Allergen.UNKNOWN
+}

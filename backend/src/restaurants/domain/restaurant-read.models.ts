@@ -68,6 +68,7 @@ export type RestaurantMenuItem = {
   isAvailable: boolean;
   defaultCourse?: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  allergens?: Allergen[];
   modifierGroups?: RestaurantMenuModifierGroup[];
   comboDefinition?: RestaurantMenuComboDefinition | null;
   platterComponents?: RestaurantMenuPlatterComponent[];
@@ -99,6 +100,7 @@ export type RestaurantProductSummary = {
   productType: 'simple' | 'combo' | 'platter';
   course: ProductCourse;
   preparationRoute: PreparationRoute;
+  allergens: Allergen[];
   priceCents: number;
   currency: string;
   isAvailable: boolean;
@@ -107,6 +109,25 @@ export type RestaurantProductSummary = {
 
 export type ProductCourse = 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
 export type PreparationRoute = 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+
+// Los 14 alergenos de declaracion obligatoria en la UE (Reglamento 1169/2011,
+// anexo II) — mismo enum que Allergen en schema.prisma, como union literal
+// para el dominio/DTOs (igual que ProductCourse/PreparationRoute).
+export type Allergen =
+  | 'gluten'
+  | 'crustaceans'
+  | 'eggs'
+  | 'fish'
+  | 'peanuts'
+  | 'soybeans'
+  | 'milk'
+  | 'nuts'
+  | 'celery'
+  | 'mustard'
+  | 'sesame'
+  | 'sulphites'
+  | 'lupin'
+  | 'molluscs';
 
 export type RestaurantProductDetail = {
   id: string;
@@ -122,6 +143,7 @@ export type RestaurantProductDetail = {
   course: ProductCourse;
   preparationRoute: PreparationRoute;
   preparationRouteOverride: PreparationRoute | null;
+  allergens: Allergen[];
   priceCents: number;
   currency: string;
   isAvailable: boolean;

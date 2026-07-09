@@ -85,6 +85,25 @@
           <p class="theme-muted rounded-md border border-dashed px-3 py-3 text-sm">{{ 'menu.page.noModifiers' | transloco }}</p>
         }
       </div>
+      <div class="grid gap-2 rounded-lg border p-3">
+        <div class="grid gap-1">
+          <p class="theme-title text-sm font-semibold">{{ 'menu.product.form.allergens' | transloco }}</p>
+          <p class="theme-muted text-xs">{{ 'menu.product.form.allergensHint' | transloco }}</p>
+        </div>
+        <div class="grid max-h-64 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+          @for (option of allergenOptions(); track option.value) {
+            <label class="theme-field flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm">
+              <input
+                type="checkbox"
+                [checked]="selectedAllergens().includes(option.value)"
+                [disabled]="loading()"
+                (change)="toggleAllergen(option.value, $any($event.target).checked)"
+              />
+              <span class="theme-title font-medium">{{ option.label }}</span>
+            </label>
+          }
+        </div>
+      </div>
       @if (isEdit()) {
         <app-switch
           [label]="'menu.product.form.available' | transloco"

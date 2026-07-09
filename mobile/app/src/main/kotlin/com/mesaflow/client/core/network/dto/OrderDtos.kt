@@ -69,3 +69,43 @@ data class OrderSummaryDto(
 data class OrderResponseDto(
     val order: OrderSummaryDto,
 )
+
+/**
+ * Espejo de `ServicePointOrderResponseDto` (backend), servido por
+ * `GET restaurants/{id}/service-points/{tableId}/order` — mismo endpoint
+ * que usa el panel de sala/cocina para ver el pedido activo de una mesa.
+ * `order` es null si la mesa no tiene pedido abierto ahora mismo.
+ */
+@Serializable
+data class ServicePointOrderInfoDto(
+    val id: String,
+    val tableId: String,
+    val status: String,
+    val openedAt: String = "",
+    val updatedAt: String = "",
+    val subtotalCents: Long = 0,
+    val taxCents: Long = 0,
+    val totalCents: Long = 0,
+    val currency: String = "EUR",
+)
+
+@Serializable
+data class ServicePointOrderLineDto(
+    val id: String,
+    val productName: String,
+    val productType: String = "simple",
+    val quantity: Int = 1,
+    val unitPriceCents: Long = 0,
+    val subtotalCents: Long = 0,
+    val status: String,
+    val course: String = "none",
+    val preparationRoute: String = "kitchen",
+    val kitchenNote: String? = null,
+    val updatedAt: String = "",
+)
+
+@Serializable
+data class ServicePointOrderResponseDto(
+    val order: ServicePointOrderInfoDto? = null,
+    val lines: List<ServicePointOrderLineDto> = emptyList(),
+)

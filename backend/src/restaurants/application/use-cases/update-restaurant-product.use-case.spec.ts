@@ -39,6 +39,7 @@ const UPDATED_DETAIL = {
   course: 'main' as const,
   preparationRoute: 'kitchen' as const,
   preparationRouteOverride: null,
+  allergens: ['gluten'] as Array<'gluten'>,
   priceCents: 1490,
   currency: 'EUR',
   isAvailable: true,
@@ -60,6 +61,7 @@ describe('UpdateRestaurantProductUseCase', () => {
       priceCents: 1490,
       imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger-premium.jpg',
       modifierGroupIds: ['burger-extras'],
+      allergens: ['gluten'],
     });
 
     expect(result).toEqual(ok(UPDATED_DETAIL));
@@ -71,6 +73,7 @@ describe('UpdateRestaurantProductUseCase', () => {
         priceCents: 1490,
         imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger-premium.jpg',
         modifierGroupIds: ['burger-extras'],
+        allergens: ['gluten'],
       }),
     );
   });
