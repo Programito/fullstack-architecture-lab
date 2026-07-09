@@ -4,52 +4,75 @@
       <div class="flex items-center gap-2">
         <app-icon name="task_alt" size="sm" class="text-cyan-600 dark:text-cyan-400" [decorative]="true" />
         <h2 class="theme-title text-base font-semibold">{{ 'menu.page.audit.title' | transloco }}</h2>
+        @if (counters().length) {
+          <app-badge [variant]="badgeVariant(counters()[0].priority)" size="sm">
+            {{ 'menu.page.audit.issuesCount' | transloco:{ count: totalIssues() } }}
+          </app-badge>
+        }
       </div>
       <p class="theme-muted mt-1 text-sm">{{ 'menu.page.audit.description' | transloco }}</p>
     </div>
 
-    @if (selectedFilter() !== 'all') {
-      <app-button variant="neutral" fill="outline" size="sm" (pressed)="selectFilter('all')">
-        {{ 'menu.page.audit.clearFilter' | transloco }}
-      </app-button>
-    }
-  </div>
-
-  @if (counters().length) {
-    <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-      @for (counter of counters(); track counter.type) {
-        <button
-          type="button"
-          class="theme-soft-panel grid gap-2 rounded-md border px-3 py-3 text-left transition-colors hover:border-cyan-500"
-          [class.border-cyan-500]="isSelected(counter.type)"
-          [attr.aria-pressed]="isSelected(counter.type)"
-          (click)="selectFilter(counter.type)"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <span class="theme-title text-sm font-semibold">{{ ('menu.page.audit.warningLabels.' + counter.type) | transloco }}</span>
-            <app-badge [variant]="badgeVariant(counter.priority)" size="sm">{{ counter.count }}</app-badge>
-          </div>
-          @if (counter.exampleProductName) {
-            <p class="theme-muted text-xs">
-              {{ 'menu.page.audit.example' | transloco:{ name: counter.exampleProductName } }}
-            </p>
-          }
-        </button>
+    <div class="flex shrink-0 items-center gap-2">
+      @if (counters().length) {
+        <app-button variant="neutral" fill="outline" size="sm" (pressed)="exportRequested.emit()">
+          <app-icon name="download" size="sm" [decorative]="true" />
+          {{ 'menu.page.audit.exportCsv' | transloco }}
+        </app-button>
+      }
+      @if (selectedFilter() !== 'all') {
+        <app-button variant="neutral" fill="outline" size="sm" (pressed)="selectFilter('all')">
+          {{ 'menu.page.audit.clearFilter' | transloco }}
+        </app-button>
       }
     </div>
+  </div>
 
+  @if (hasHealthScore()) {
+    <app-progress
+      [value]="healthPercent()"
+      [variant]="healthVariant()"
+      size="sm"
+      [showValue]="true"
+      [label]="'menu.page.audit.healthLabel' | transloco"
+    />
+  }
+
+  @if (counters().length) {
     <div class="grid gap-2">
       <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.audit.nextSteps' | transloco }}</p>
-      <ol class="grid gap-2">
-        @for (counter of topCounters(); track counter.type) {
-          <li class="flex items-start gap-2 rounded-md border border-dashed px-3 py-2 text-sm">
-            <app-badge [variant]="badgeVariant(counter.priority)" size="sm">{{ counter.count }}</app-badge>
-            <span class="theme-title">{{ ('menu.page.audit.warningLabels.' + counter.type) | transloco }}</span>
-          </li>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
+        @for (counter of counters(); track counter.type) {
+          <button
+            type="button"
+            class="theme-soft-panel grid gap-2 rounded-md border px-3 py-3 text-left transition-colors hover:border-cyan-500"
+            [class]="accentClass(counter.priority)"
+            [class.border-cyan-500]="isSelected(counter.type)"
+            [attr.aria-pressed]="isSelected(counter.type)"
+            (click)="selectFilter(counter.type)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <span class="flex items-center gap-1.5 text-sm font-semibold theme-title">
+                <app-icon [name]="iconForType(counter.type)" size="sm" class="theme-muted" [decorative]="true" />
+                {{ ('menu.page.audit.warningLabels.' + counter.type) | transloco }}
+              </span>
+              <app-badge [variant]="badgeVariant(counter.priority)" size="sm">{{ counter.count }}</app-badge>
+            </div>
+            @if (counter.exampleProductName) {
+              <p class="theme-muted text-xs">
+                {{ 'menu.page.audit.example' | transloco:{ name: counter.exampleProductName } }}
+              </p>
+            }
+          </button>
         }
-      </ol>
+      </div>
     </div>
   } @else {
-    <p class="theme-muted rounded-md border border-dashed px-3 py-4 text-sm">{{ 'menu.page.audit.empty' | transloco }}</p>
+    <app-empty-state
+      icon="task_alt"
+      appearance="minimal"
+      size="sm"
+      [title]="'menu.page.audit.empty' | transloco"
+    />
   }
 </section>

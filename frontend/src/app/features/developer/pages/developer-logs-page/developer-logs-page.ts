@@ -12,7 +12,7 @@ import { Card } from '../../../../shared/ui/card/card';
 import { Chart, type ChartPointSelection, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/combobox';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import { Table, type TableAction, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
+import { Table, type TableAction, type TableBadgeCell, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { AUDIT_ENTITY_TYPES, CLIENT_ORIGIN_OPTIONS, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
 import type {
@@ -63,12 +63,17 @@ export class DeveloperLogsPage {
   protected readonly filtersExpanded = signal(true);
   protected readonly showOperationsFilters = computed(() => this.view() !== 'audit');
   protected readonly showAuditFilters = computed(() => this.view() !== 'operations');
+  protected readonly showSplitFilterSections = computed(() => this.showOperationsFilters() && this.showAuditFilters());
   protected readonly insightCards = computed<DeveloperLogInsightCardVm[]>(() => buildInsightCards({
+    view: this.view(),
+    filters: this.filters(),
     summary: this.summary(),
     origins: this.breakdown().origins,
     topErrorEvents: this.topErrorEvents(),
     topSlowPaths: this.topSlowPaths(),
+    events: this.timelineEvents(),
     translate: (key: string) => this.transloco.translate(key),
+    clientOriginLabel: (origin: string) => this.clientOriginLabel(origin),
   }));
 
   protected readonly timelineCategories = computed(() => this.timeline().map((point) => shortBucket(point.bucket)));
@@ -197,6 +202,26 @@ export class DeveloperLogsPage {
 
   protected focusInsight(card: DeveloperLogInsightCardVm): void {
     if (!card.action) return;
+
+    if (card.action.kind === 'audit-actor') {
+      this.applyFilterState({ actorUserId: card.action.actorUserId, category: 'audit' }, 'audit');
+      return;
+    }
+
+    if (card.action.kind === 'audit-entity') {
+      this.applyFilterState({ entityType: card.action.entityType, category: 'audit', entityId: '' }, 'audit');
+      return;
+    }
+
+    if (card.action.kind === 'audit-result') {
+      this.applyFilterState({ result: card.action.result, category: 'audit' }, 'audit');
+      return;
+    }
+
+    if (card.action.kind === 'audit-origin') {
+      this.applyFilterState({ clientOrigin: card.action.clientOrigin, category: 'audit' }, 'audit');
+      return;
+    }
 
     if (card.action.kind === 'error') {
       this.applyFilterState({ category: 'request', level: 'error' }, 'operations');
@@ -532,9 +557,9 @@ export class DeveloperLogsPage {
     this.rows.set(items.map((item) => ({
       id: item.id,
       timestamp: formatDate(item.timestamp),
-      level: item.level,
-      category: item.category,
-      clientOrigin: this.clientOriginLabel(item.clientOrigin),
+      level: buildLevelBadge(item.level),
+      category: buildCategoryBadge(item.category),
+      clientOrigin: buildOriginBadge(this.clientOriginLabel(item.clientOrigin)),
       event: item.event,
       message: item.message,
       pathFilter: item.path ?? '',
@@ -591,6 +616,10 @@ type DeveloperLogInsightCardVm = {
   detail: string;
   tone: 'neutral' | 'good' | 'bad';
   action:
+    | { kind: 'audit-actor'; actorUserId: string }
+    | { kind: 'audit-entity'; entityType: string }
+    | { kind: 'audit-result'; result: 'failed' }
+    | { kind: 'audit-origin'; clientOrigin: DeveloperLogFilters['clientOrigin'] }
     | { kind: 'error' | 'latency' }
     | { kind: 'top-error'; event: string; path: string | null; clientOrigin: DeveloperLogFilters['clientOrigin'] }
     | { kind: 'slow-path'; path: string; clientOrigin: DeveloperLogFilters['clientOrigin'] }
@@ -748,6 +777,37 @@ function formatDate(value: string): string {
 }
 
 function buildInsightCards(input: {
+  view: DeveloperLogsView;
+  filters: DeveloperLogFilters;
+  summary: DeveloperLogSummaryDto | null;
+  origins: Array<{ key: string; count: number }>;
+  topErrorEvents: DeveloperLogSummaryDto['topErrorEvents'];
+  topSlowPaths: DeveloperLogSummaryDto['topSlowPaths'];
+  events: DeveloperLogEventDto[];
+  translate: (key: string) => string;
+  clientOriginLabel: (origin: string) => string;
+}): DeveloperLogInsightCardVm[] {
+  if (input.view === 'audit') {
+    return buildAuditInsightCards({
+      filters: input.filters,
+      summary: input.summary,
+      origins: input.origins,
+      events: input.events,
+      translate: input.translate,
+      clientOriginLabel: input.clientOriginLabel,
+    });
+  }
+
+  return buildOperationsInsightCards({
+    summary: input.summary,
+    origins: input.origins,
+    topErrorEvents: input.topErrorEvents,
+    topSlowPaths: input.topSlowPaths,
+    translate: input.translate,
+  });
+}
+
+function buildOperationsInsightCards(input: {
   summary: DeveloperLogSummaryDto | null;
   origins: Array<{ key: string; count: number }>;
   topErrorEvents: DeveloperLogSummaryDto['topErrorEvents'];
@@ -844,6 +904,114 @@ function buildInsightCards(input: {
   return [overview, mainAlert, currentFocus];
 }
 
+function buildAuditInsightCards(input: {
+  filters: DeveloperLogFilters;
+  summary: DeveloperLogSummaryDto | null;
+  origins: Array<{ key: string; count: number }>;
+  events: DeveloperLogEventDto[];
+  translate: (key: string) => string;
+  clientOriginLabel: (origin: string) => string;
+}): DeveloperLogInsightCardVm[] {
+  const actorCounts = countEvents(input.events, (event) => event.userId?.trim() ?? '');
+  const entityCounts = countEvents(input.events, (event) => event.entityType?.trim() ?? '');
+  const failedCount = input.events.filter((event) => event.result === 'failed').length;
+  const authCount = input.events.filter((event) => event.entityType === 'auth').length;
+  const topActor = actorCounts[0] ?? null;
+  const topEntity = entityCounts[0] ?? null;
+  const topOrigin = input.origins[0] ?? null;
+
+  const activityCard: DeveloperLogInsightCardVm = topActor
+    ? {
+        titleKey: 'developer.logs.insights.auditActivity',
+        summary: topActor.key,
+        detail: `${topActor.count} ${input.translate('developer.logs.insights.auditActions')}`,
+        tone: 'neutral',
+        action: { kind: 'audit-actor', actorUserId: topActor.key },
+      }
+    : topEntity
+      ? {
+          titleKey: 'developer.logs.insights.auditActivity',
+          summary: topEntity.key,
+          detail: `${topEntity.count} ${input.translate('developer.logs.insights.auditChanges')}`,
+          tone: 'neutral',
+          action: { kind: 'audit-entity', entityType: topEntity.key },
+        }
+      : {
+          titleKey: 'developer.logs.insights.auditActivity',
+          summary: `${input.summary?.auditEvents ?? 0} ${input.translate('developer.logs.metrics.audit')}`,
+          detail: input.translate('developer.logs.insights.auditActivityFallback'),
+          tone: 'neutral',
+          action: null,
+        };
+
+  const riskCard: DeveloperLogInsightCardVm = failedCount > 0
+    ? {
+        titleKey: 'developer.logs.insights.auditRisk',
+        summary: input.translate('developer.logs.insights.failedAuditActions'),
+        detail: `${failedCount} ${input.translate('developer.logs.sections.occurrences')}`,
+        tone: 'bad',
+        action: { kind: 'audit-result', result: 'failed' },
+      }
+    : authCount > 0
+      ? {
+          titleKey: 'developer.logs.insights.auditRisk',
+          summary: input.translate('developer.logs.insights.authNeedsReview'),
+          detail: `${authCount} ${input.translate('developer.logs.insights.auditActions')}`,
+          tone: 'neutral',
+          action: { kind: 'audit-entity', entityType: 'auth' },
+        }
+      : {
+          titleKey: 'developer.logs.insights.auditRisk',
+          summary: input.translate('developer.logs.insights.noRiskHighlighted'),
+          detail: input.translate('developer.logs.insights.auditRiskFallback'),
+          tone: 'good',
+          action: null,
+        };
+
+  const focusCard: DeveloperLogInsightCardVm = topEntity
+    ? {
+        titleKey: 'developer.logs.insights.currentFocus',
+        summary: topEntity.key,
+        detail: `${topEntity.count} ${input.translate('developer.logs.insights.auditChanges')}`,
+        tone: 'neutral',
+        action: { kind: 'audit-entity', entityType: topEntity.key },
+      }
+    : topOrigin
+      ? {
+          titleKey: 'developer.logs.insights.currentFocus',
+          summary: input.clientOriginLabel(topOrigin.key),
+          detail: `${topOrigin.count} ${input.translate('developer.logs.insights.events')}`,
+          tone: 'neutral',
+          action: { kind: 'audit-origin', clientOrigin: parseClientOrigin(topOrigin.key) ?? '' },
+        }
+      : {
+          titleKey: 'developer.logs.insights.currentFocus',
+          summary: input.translate('developer.logs.insights.noFocus'),
+          detail: input.translate('developer.logs.insights.awaitingSignals'),
+          tone: 'neutral',
+          action: null,
+        };
+
+  return [activityCard, riskCard, focusCard];
+}
+
+function countEvents(
+  events: DeveloperLogEventDto[],
+  keySelector: (event: DeveloperLogEventDto) => string,
+): Array<{ key: string; count: number }> {
+  const counts = new Map<string, number>();
+
+  for (const event of events) {
+    const key = keySelector(event);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key));
+}
+
 function buildRowActions(item: DeveloperLogEventDto, transloco: TranslocoService): TableAction[] {
   const actions: TableAction[] = [];
 
@@ -880,4 +1048,28 @@ function buildRowActions(item: DeveloperLogEventDto, transloco: TranslocoService
   }
 
   return actions;
+}
+
+function buildLevelBadge(level: DeveloperLogEventDto['level']): TableBadgeCell {
+  return {
+    kind: 'badge',
+    label: level,
+    variant: level === 'error' ? 'danger' : level === 'warn' ? 'warning' : 'neutral',
+  };
+}
+
+function buildCategoryBadge(category: DeveloperLogEventDto['category']): TableBadgeCell {
+  return {
+    kind: 'badge',
+    label: category,
+    variant: category === 'audit' ? 'secondary' : category === 'request' ? 'primary' : 'neutral',
+  };
+}
+
+function buildOriginBadge(origin: string): TableBadgeCell {
+  return {
+    kind: 'badge',
+    label: origin,
+    variant: 'neutral',
+  };
 }

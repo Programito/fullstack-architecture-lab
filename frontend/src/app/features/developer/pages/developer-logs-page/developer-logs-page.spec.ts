@@ -74,6 +74,123 @@ function createRouteHarness(initialParams: Params = {}) {
   };
 }
 
+function makeAuditEvent(
+  overrides: Partial<{
+    id: string;
+    timestamp: string;
+    source: string;
+    category: 'audit';
+    level: 'info' | 'warn' | 'error';
+    event: string;
+    message: string;
+    path: string;
+    method: string;
+    statusCode: number;
+    durationMs: number;
+    userId: string | null;
+    restaurantId: string | null;
+    requestId: string;
+    actorRoles: string[];
+    result: 'attempted' | 'succeeded' | 'failed' | null;
+    clientOrigin: 'web-admin' | 'web-demo' | 'web-pos' | 'apk-customer' | 'backend';
+    entityType: string | null;
+    entityId: string | null;
+    entityLabel: string | null;
+    changedFields: string[];
+    metadata: Record<string, unknown> | null;
+  }> = {},
+) {
+  return {
+    id: 'audit-1',
+    timestamp: '2026-07-02T10:00:00.000Z',
+    source: 'backend',
+    category: 'audit' as const,
+    level: 'info' as const,
+    event: 'audit.entity.updated',
+    message: 'Audit action captured',
+    path: '/api/v1/auth/login',
+    method: 'POST',
+    statusCode: 200,
+    durationMs: 12,
+    userId: 'user-1',
+    restaurantId: null,
+    requestId: 'req-audit-1',
+    actorRoles: ['developer'],
+    result: 'succeeded' as const,
+    clientOrigin: 'web-admin' as const,
+    entityType: 'auth',
+    entityId: 'entity-1',
+    entityLabel: 'Auth session',
+    changedFields: ['session'],
+    metadata: null,
+    ...overrides,
+  };
+}
+
+function createAuditInsightApi() {
+  return {
+    ...pickerApiMocks(),
+    getSummary: vi.fn(() => of({
+      totalRequests: 4,
+      errorCount: 0,
+      errorRate: 0,
+      auditEvents: 9,
+      p95DurationMs: 120,
+      authByOrigin: [],
+      topSlowPaths: [],
+      topErrorEvents: [],
+      comparison: {
+        previous: {
+          totalRequests: 2,
+          errorCount: 0,
+          errorRate: 0,
+          auditEvents: 4,
+          p95DurationMs: 100,
+        },
+        delta: {
+          totalRequests: { absolute: 2, percent: 100, direction: 'up' },
+          errorCount: { absolute: 0, percent: 0, direction: 'flat' },
+          errorRate: { absolute: 0, percent: 0, direction: 'flat' },
+          auditEvents: { absolute: 5, percent: 125, direction: 'up' },
+          p95DurationMs: { absolute: 20, percent: 20, direction: 'up' },
+        },
+      },
+    })),
+    getTimeline: vi.fn(() => of([])),
+    getBreakdown: vi.fn(() => of({
+      levels: [],
+      categories: [{ key: 'audit', count: 9 }],
+      origins: [{ key: 'web-admin', count: 6 }],
+    })),
+    getEvents: vi.fn(() => of({
+      total: 3,
+      items: [
+        makeAuditEvent({ id: 'a1', userId: 'user-1', result: 'failed', entityType: 'auth', clientOrigin: 'web-admin' }),
+        makeAuditEvent({ id: 'a2', userId: 'user-1', result: 'succeeded', entityType: 'auth', clientOrigin: 'web-admin' }),
+        makeAuditEvent({ id: 'a3', userId: 'user-2', result: 'succeeded', entityType: 'orders', clientOrigin: 'web-pos' }),
+      ],
+    })),
+    getErrorTrendsByPath: vi.fn(() => of([])),
+  };
+}
+
+async function renderAuditInsightPage() {
+  const i18n = provideI18nTesting();
+  const routeHarness = createRouteHarness({ view: 'audit', category: 'audit' });
+  const api = createAuditInsightApi();
+
+  await render(DeveloperLogsPage, {
+    imports: [...i18n.imports],
+    providers: [
+      ...i18n.providers,
+      ...routeHarness.providers,
+      { provide: DeveloperLogsApiService, useValue: api },
+    ],
+  });
+
+  return { api };
+}
+
 describe('DeveloperLogsPage', () => {
   beforeAll(() => {
     globalThis.ResizeObserver = TestResizeObserver;
@@ -277,6 +394,43 @@ describe('DeveloperLogsPage', () => {
     expect(band?.textContent).toContain('developer.logs.insights.mainAlert');
     expect(band?.textContent).toContain('developer.logs.insights.currentFocus');
     expect(band?.textContent).toContain('http.request.failed');
+  });
+
+  it('renders audit-specific insight cards when the audit view is active', async () => {
+    const setup = await renderAuditInsightPage();
+    const band = document.querySelector('.developer-logs-page__insight-band');
+
+    expect(band?.textContent).toContain('developer.logs.insights.auditActivity');
+    expect(band?.textContent).toContain('developer.logs.insights.auditRisk');
+    expect(band?.textContent).toContain('developer.logs.insights.currentFocus');
+    expect(band?.textContent).toContain('user-1');
+    expect(setup.api.getSummary).toHaveBeenCalled();
+  });
+
+  it('applies a failed-result audit filter when the audit risk card is clicked', async () => {
+    const setup = await renderAuditInsightPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.insights.auditRisk' }));
+
+    expect(setup.api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'audit',
+      result: 'failed',
+    }));
+    expect(setup.api.getEvents).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'audit',
+      result: 'failed',
+    }), 1, 20);
+  });
+
+  it('applies an actor audit filter when the audit activity card is clicked', async () => {
+    const setup = await renderAuditInsightPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.insights.auditActivity' }));
+
+    expect(setup.api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'audit',
+      actorUserId: 'user-1',
+    }));
   });
 
   it('applies error filters when the main alert insight is clicked', async () => {
@@ -1225,6 +1379,9 @@ describe('DeveloperLogsPage', () => {
       category: 'audit',
       entityType: 'auth',
     }), 1, 20);
+
+    const authCard = document.querySelector('.developer-logs-page__channel-card--auth');
+    expect(authCard?.querySelectorAll('.developer-logs-page__auth-stat').length).toBe(2);
   });
 
   it('renders summary kpis separately from per-origin channel cards', async () => {
@@ -1273,6 +1430,8 @@ describe('DeveloperLogsPage', () => {
     expect(summaryCards?.querySelectorAll('app-card').length).toBe(5);
     expect(channelCards?.textContent).toContain('web-admin');
     expect(channelCards?.textContent).toContain('apk-customer');
+    expect(channelCards?.textContent).toContain('developer.logs.events.title');
+    expect(channelCards?.textContent).toContain('developer.logs.sections.authByOrigin');
   });
 
   it('renders auth-by-origin and slow-path trend dashboards when summary data exists', async () => {
@@ -1565,5 +1724,328 @@ describe('DeveloperLogsPage', () => {
     });
 
     expect(container.querySelector('.table.table--sm.table--minimal')).toBeTruthy();
+  });
+
+  it('keeps the top dashboard stack in the compact mixed layout', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.developer-logs-page__dashboard-top')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__shortcuts--compact')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__summary-cards--compact')).toBeTruthy();
+  });
+
+  it('renders a balanced top grid with separate insight and kpi columns', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.developer-logs-page__dashboard-main')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__dashboard-insights')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__dashboard-kpis')).toBeTruthy();
+  });
+
+  it('keeps the visible filter section full width outside the all view', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness({ view: 'operations', category: 'request' });
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.developer-logs-page__fields--split')).toBeNull();
+    expect(container.textContent).toContain('developer.logs.views.operations');
+    expect(container.textContent).not.toContain('developer.logs.views.auditdeveloper.logs.detail.title');
+  });
+
+  it('stretches operation and audit filter panels together in the all view', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness({ view: 'all' });
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.developer-logs-page__fields--split')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__field-section--operations')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__field-section--audit')).toBeTruthy();
+  });
+
+  it('marks the latency kpi as the full-width closing card', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.developer-logs-page__summary-card--wide')).toBeTruthy();
+  });
+
+  it('renders lower insight panels with stronger panel hooks', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [
+          { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 5 },
+        ],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelectorAll('.developer-logs-page__insight-panel').length).toBe(2);
+    expect(container.querySelectorAll('.developer-logs-page__insight-item--panel').length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelectorAll('.developer-logs-page__insight-list--fill').length).toBe(2);
+  });
+
+  it('renders dashboard charts with categories and origins grouped before auth and latency', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [{ key: 'web-admin', succeeded: 3, failed: 1 }],
+        topSlowPaths: [
+          { path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', p95DurationMs: 880, total: 12 },
+        ],
+        topErrorEvents: [
+          { event: 'http.request.failed', path: '/api/v1/orders/:id/payments', clientOrigin: 'web-pos', count: 5 },
+        ],
+      })),
+      getTimeline: vi.fn(() => of([{ bucket: '2026-07-02T10:00', total: 12, errors: 1, audit: 2 }])),
+      getBreakdown: vi.fn(() => of({
+        levels: [{ key: 'error', count: 8 }],
+        categories: [{ key: 'request', count: 50 }],
+        origins: [{ key: 'web-admin', count: 20 }],
+      })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([
+        { bucket: '2026-07-02T10:00', path: '/api/v1/auth/login', count: 2 },
+      ])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelector('.developer-logs-page__charts--overview')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__charts--breakdown')).toBeTruthy();
+    expect(container.querySelector('.developer-logs-page__charts--trends')).toBeTruthy();
+    expect(container.textContent).toContain('developer.logs.charts.categories');
+    expect(container.textContent).toContain('developer.logs.charts.origins');
+    expect(container.textContent).toContain('developer.logs.sections.authByOrigin');
+    expect(container.textContent).toContain('developer.logs.sections.slowPaths');
+  });
+
+  it('renders level, category, and origin as compact badges in the events table', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 120,
+        errorCount: 8,
+        errorRate: 6.7,
+        auditEvents: 20,
+        p95DurationMs: 340,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({
+        total: 1,
+        items: [{
+          id: 'log-1',
+          timestamp: '2026-07-02T10:00:00.000Z',
+          source: 'backend',
+          category: 'request',
+          level: 'error',
+          event: 'http.request.failed',
+          message: 'GET /api/v1/health completed with 500',
+          path: '/api/v1/health',
+          method: 'GET',
+          statusCode: 500,
+          durationMs: 12,
+          userId: null,
+          restaurantId: null,
+          requestId: 'req-1',
+          actorRoles: [],
+          result: null,
+          clientOrigin: 'web-admin',
+          entityType: null,
+          entityId: null,
+          entityLabel: null,
+          changedFields: [],
+          metadata: null,
+        }],
+      })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getAllByText('error').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('request').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('developer.logs.origins.web-admin').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('app-badge').length).toBeGreaterThanOrEqual(3);
   });
 });

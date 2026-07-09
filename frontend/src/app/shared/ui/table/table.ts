@@ -1,4 +1,5 @@
 import { booleanAttribute, Component, computed, input, model, numberAttribute, output } from '@angular/core';
+import { Badge, type BadgeVariant } from '../badge/badge';
 import { EmptyState } from '../empty-state/empty-state';
 import { Icon } from '../icon/icon';
 import { Paginator } from '../paginator/paginator';
@@ -23,6 +24,12 @@ export type TableAction = {
   value: string;
 };
 
+export type TableBadgeCell = {
+  kind: 'badge';
+  label: string;
+  variant: BadgeVariant;
+};
+
 export type TableSort = {
   key: string;
   direction: 'asc' | 'desc';
@@ -30,7 +37,7 @@ export type TableSort = {
 
 @Component({
   selector: 'app-table',
-  imports: [EmptyState, Icon, Paginator],
+  imports: [Badge, EmptyState, Icon, Paginator],
   templateUrl: './table.html',
   styleUrl: './table.css',
 })
@@ -105,6 +112,15 @@ export class Table {
 
   protected isActionColumn(column: TableColumn): boolean {
     return column.key === 'actions';
+  }
+
+  protected isBadgeValue(value: unknown): value is TableBadgeCell {
+    return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'badge';
+  }
+
+  protected badgeValue(row: TableRow, column: TableColumn): TableBadgeCell | null {
+    const value = row[column.key];
+    return this.isBadgeValue(value) ? value : null;
   }
 
   protected rowActions(row: TableRow): TableAction[] {

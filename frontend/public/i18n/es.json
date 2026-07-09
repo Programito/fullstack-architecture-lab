@@ -176,9 +176,18 @@
       "insights": {
         "overview": "Resumen",
         "mainAlert": "Alerta principal",
+        "auditActivity": "Actividad",
+        "auditRisk": "Riesgo",
         "currentFocus": "Foco actual",
         "requests": "peticiones",
         "events": "eventos",
+        "auditActions": "acciones visibles",
+        "auditChanges": "cambios visibles",
+        "auditActivityFallback": "Actividad de auditoría en el rango actual",
+        "failedAuditActions": "Acciones fallidas para revisar",
+        "authNeedsReview": "La actividad de acceso requiere revisión",
+        "noRiskHighlighted": "Sin señal de riesgo destacada",
+        "auditRiskFallback": "No hay un patrón riesgoso dominante en lo visible",
         "errorRateRising": "Sube la tasa de error",
         "latencyRising": "Sube la latencia",
         "errorsRising": "Suben los errores",
@@ -1084,6 +1093,7 @@
       "description": "Revisa productos, disponibilidad, categorías y modificadores antes del servicio.",
       "available": "Disponibles",
       "customizable": "Personalizables",
+      "issues": "Incidencias",
       "categories": "Categorías",
       "soldOut": "Agotado",
       "customizableBadge": "Personalizable",
@@ -1220,6 +1230,19 @@
       "audit": {
         "title": "Revisión rápida del menú",
         "description": "Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.",
+        "healthLabel": "Salud del menú",
+        "issuesCount": "{{count}} incidencias",
+        "exportCsv": "Exportar CSV",
+        "csvColumns": {
+          "product": "Producto",
+          "issue": "Incidencia",
+          "priority": "Prioridad"
+        },
+        "priorityLabels": {
+          "high": "Alta",
+          "medium": "Media",
+          "low": "Baja"
+        },
         "clearFilter": "Ver todo",
         "nextSteps": "Qué revisar a continuación",
         "empty": "No hay alertas abiertas en el catálogo.",

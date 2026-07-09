@@ -194,6 +194,15 @@ export class MenuPage {
   protected readonly auditReport = computed(() => this.audit.buildReport(this.products(), this.modifierGroups(), this.comboDefinitions()));
   protected readonly auditCounters = computed(() => this.auditReport().counters);
   protected readonly activeWarningCount = computed(() => this.auditCounters().reduce((sum, c) => sum + c.count, 0));
+  protected readonly productsWithAuditIssues = computed(
+    () => Object.values(this.auditReport().warningsByProductId).filter((warnings) => warnings.length > 0).length,
+  );
+  protected readonly auditSeverity = computed<'danger' | 'warning' | 'neutral'>(() => {
+    if (this.auditCounters().length === 0) {
+      return 'neutral';
+    }
+    return this.auditCounters().some((counter) => counter.priority === 'high') ? 'danger' : 'warning';
+  });
   protected readonly filteredProducts = computed(() => {
     const query = this.normalize(this.query());
     const categoryFilter = this.categoryFilter();
@@ -824,6 +833,38 @@ export class MenuPage {
 
   protected productHasAuditWarning(product: Product, type: MenuAuditWarningType): boolean {
     return this.audit.hasWarning(product.id, type, this.auditReport());
+  }
+
+  protected exportAuditCsv(): void {
+    const issues = this.auditReport().issues;
+    if (!issues.length) {
+      return;
+    }
+
+    const header = [
+      this.translate('menu.page.audit.csvColumns.product'),
+      this.translate('menu.page.audit.csvColumns.issue'),
+      this.translate('menu.page.audit.csvColumns.priority'),
+    ];
+    const rows = issues.map((issue) => [
+      issue.productName,
+      this.translate(`menu.page.audit.warningLabels.${issue.type}`),
+      this.translate(`menu.page.audit.priorityLabels.${issue.priority}`),
+    ]);
+
+    const csvContent = [header, ...rows].map((row) => row.map((cell) => this.escapeCsvCell(cell)).join(',')).join('\r\n');
+    const blob = new Blob([`﻿${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `auditoria-menu-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private escapeCsvCell(value: string): string {
+    const escaped = value.replace(/"/g, '""');
+    return /[",\r\n]/.test(value) ? `"${escaped}"` : escaped;
   }
 
   private matchesReviewFilter(product: Product, filter: ReviewFilter): boolean {

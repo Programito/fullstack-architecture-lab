@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { booleanAttribute, Component, computed, input } from '@angular/core';
 
 export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 export type CardVariant = 'default' | 'elevated' | 'outlined' | 'filled';
@@ -13,8 +13,15 @@ export class Card {
   readonly variant = input<CardVariant>('default');
   readonly padding = input<CardPadding>('md');
   readonly appearance = input<CardAppearance>('default');
+  readonly stretch = input(false, { transform: booleanAttribute });
 
   protected readonly classes = computed(() =>
-    ['card', `card--${this.variant()}`, `card--padding-${this.padding()}`, `card--${this.appearance()}`].join(' '),
+    [
+      'card',
+      `card--${this.variant()}`,
+      `card--padding-${this.padding()}`,
+      `card--${this.appearance()}`,
+      this.stretch() ? 'card--stretch' : '',
+    ].join(' '),
   );
 }

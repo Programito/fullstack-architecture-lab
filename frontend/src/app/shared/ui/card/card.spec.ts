@@ -20,4 +20,20 @@ describe('Card', () => {
     expect(card?.className).toContain('card--padding-lg');
     expect(card?.className).toContain('card--minimal');
   });
+
+  it('applies the stretch class so the card can fill a grid or flex cell', async () => {
+    const { container } = await render('<app-card [stretch]="true">Contenido</app-card>', {
+      imports: [Card],
+    });
+
+    expect(container.querySelector('.card')?.className).toContain('card--stretch');
+  });
+
+  it('omits the stretch class by default', async () => {
+    const { container } = await render('<app-card>Contenido</app-card>', {
+      imports: [Card],
+    });
+
+    expect(container.querySelector('.card')?.className).not.toContain('card--stretch');
+  });
 });

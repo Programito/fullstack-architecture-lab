@@ -87,6 +87,10 @@
                         </button>
                       }
                     </div>
+                  } @else if (badgeValue(row, column); as badge) {
+                    <app-badge size="sm" fill="soft" shape="round" [variant]="badge.variant">
+                      {{ badge.label }}
+                    </app-badge>
                   } @else {
                     {{ cellValue(row, column) }}
                   }

@@ -80,9 +80,9 @@
           </div>
         </div>
 
-        <div class="developer-logs-page__fields">
+        <div class="developer-logs-page__fields" [class.developer-logs-page__fields--split]="showSplitFilterSections()">
           @if (showOperationsFilters()) {
-            <section class="developer-logs-page__field-section">
+            <section class="developer-logs-page__field-section developer-logs-page__field-section--operations">
               <div class="developer-logs-page__field-section-header">
                 <h3>{{ 'developer.logs.views.operations' | transloco }}</h3>
                 <p>{{ 'developer.logs.filters.title' | transloco }}</p>
@@ -123,7 +123,7 @@
           }
 
           @if (showAuditFilters()) {
-            <section class="developer-logs-page__field-section">
+            <section class="developer-logs-page__field-section developer-logs-page__field-section--audit">
               <div class="developer-logs-page__field-section-header">
                 <h3>{{ 'developer.logs.views.audit' | transloco }}</h3>
                 <p>{{ 'developer.logs.detail.title' | transloco }}</p>
@@ -198,138 +198,154 @@
     </section>
   </app-card>
 
-  <section class="developer-logs-page__shortcuts">
-    <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('auth')">
-      {{ 'developer.logs.shortcuts.auth' | transloco }}
-    </app-button>
-    <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('payments')">
-      {{ 'developer.logs.shortcuts.payments' | transloco }}
-    </app-button>
-  </section>
+  <section class="developer-logs-page__dashboard-top">
+    <section class="developer-logs-page__shortcuts developer-logs-page__shortcuts--compact">
+      <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('auth')">
+        {{ 'developer.logs.shortcuts.auth' | transloco }}
+      </app-button>
+      <app-button variant="neutral" fill="outline" (pressed)="applyShortcut('payments')">
+        {{ 'developer.logs.shortcuts.payments' | transloco }}
+      </app-button>
+    </section>
 
-  <section class="developer-logs-page__insight-band">
-    @for (card of insightCards(); track card.titleKey) {
-      <app-card variant="outlined">
-        @if (card.action) {
-          <button
-            type="button"
-            class="developer-logs-page__insight-card"
-            [class.good]="card.tone === 'good'"
-            [class.bad]="card.tone === 'bad'"
-            [attr.aria-label]="card.titleKey | transloco"
-            (click)="focusInsight(card)"
-          >
-            <p class="developer-logs-page__metric-label">{{ card.titleKey | transloco }}</p>
-            <strong>{{ card.summary }}</strong>
-            <p class="developer-logs-page__insight-copy">{{ card.detail }}</p>
-          </button>
-        } @else {
-          <div class="developer-logs-page__insight-card" [class.good]="card.tone === 'good'" [class.bad]="card.tone === 'bad'">
-            <p class="developer-logs-page__metric-label">{{ card.titleKey | transloco }}</p>
-            <strong>{{ card.summary }}</strong>
-            <p class="developer-logs-page__insight-copy">{{ card.detail }}</p>
-          </div>
-        }
-      </app-card>
-    }
-  </section>
+    <section class="developer-logs-page__dashboard-main">
+      <section class="developer-logs-page__dashboard-insights">
+        <section class="developer-logs-page__insight-band">
+          @for (card of insightCards(); track card.titleKey) {
+            <app-card variant="outlined" [stretch]="true">
+              @if (card.action) {
+                <button
+                  type="button"
+                  class="developer-logs-page__insight-card"
+                  [class.good]="card.tone === 'good'"
+                  [class.bad]="card.tone === 'bad'"
+                  [attr.aria-label]="card.titleKey | transloco"
+                  (click)="focusInsight(card)"
+                >
+                  <p class="developer-logs-page__metric-label">{{ card.titleKey | transloco }}</p>
+                  <strong>{{ card.summary }}</strong>
+                  <p class="developer-logs-page__insight-copy">{{ card.detail }}</p>
+                </button>
+              } @else {
+                <div class="developer-logs-page__insight-card" [class.good]="card.tone === 'good'" [class.bad]="card.tone === 'bad'">
+                  <p class="developer-logs-page__metric-label">{{ card.titleKey | transloco }}</p>
+                  <strong>{{ card.summary }}</strong>
+                  <p class="developer-logs-page__insight-copy">{{ card.detail }}</p>
+                </div>
+              }
+            </app-card>
+          }
+        </section>
+      </section>
 
-  <section class="developer-logs-page__summary-cards">
-    <app-card variant="outlined">
-      <button
-        type="button"
-        class="developer-logs-page__metric-button"
-        [attr.aria-label]="'developer.logs.metrics.requests' | transloco"
-        (click)="focusMetric('requests')"
-      >
-        <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.requests' | transloco }}</p>
-        <strong>{{ summary()?.totalRequests ?? 0 }}</strong>
-        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('totalRequests') === 'good'" [class.bad]="comparisonTone('totalRequests') === 'bad'">
-          {{ comparisonLabel('totalRequests', 'percent') }}
-        </p>
-      </button>
-    </app-card>
-    <app-card variant="outlined">
-      <button
-        type="button"
-        class="developer-logs-page__metric-button"
-        [attr.aria-label]="'developer.logs.metrics.errors' | transloco"
-        (click)="focusMetric('errors')"
-      >
-        <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errors' | transloco }}</p>
-        <strong>{{ summary()?.errorCount ?? 0 }}</strong>
-        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorCount') === 'good'" [class.bad]="comparisonTone('errorCount') === 'bad'">
-          {{ comparisonLabel('errorCount', 'percent') }}
-        </p>
-      </button>
-    </app-card>
-    <app-card variant="outlined">
-      <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errorRate' | transloco }}</p>
-      <strong>{{ summary()?.errorRate ?? 0 }}%</strong>
-      <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorRate') === 'good'" [class.bad]="comparisonTone('errorRate') === 'bad'">
-        {{ comparisonLabel('errorRate', 'percent') }}
-      </p>
-    </app-card>
-    <app-card variant="outlined">
-      <button
-        type="button"
-        class="developer-logs-page__metric-button"
-        [attr.aria-label]="'developer.logs.metrics.audit' | transloco"
-        (click)="focusMetric('audit')"
-      >
-        <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.audit' | transloco }}</p>
-        <strong>{{ summary()?.auditEvents ?? 0 }}</strong>
-        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('auditEvents') === 'good'" [class.bad]="comparisonTone('auditEvents') === 'bad'">
-          {{ comparisonLabel('auditEvents', 'percent') }}
-        </p>
-      </button>
-    </app-card>
-    <app-card variant="outlined">
-      <button
-        type="button"
-        class="developer-logs-page__metric-button"
-        [attr.aria-label]="'developer.logs.metrics.latency' | transloco"
-        (click)="focusMetric('latency')"
-      >
-        <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.latency' | transloco }}</p>
-        <strong>{{ summary()?.p95DurationMs ?? 0 }} ms</strong>
-        <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('p95DurationMs') === 'good'" [class.bad]="comparisonTone('p95DurationMs') === 'bad'">
-          {{ comparisonLabel('p95DurationMs', 'number') }}
-        </p>
-      </button>
-    </app-card>
+      <section class="developer-logs-page__dashboard-kpis">
+        <section class="developer-logs-page__summary-cards developer-logs-page__summary-cards--compact">
+          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-button"
+              [attr.aria-label]="'developer.logs.metrics.requests' | transloco"
+              (click)="focusMetric('requests')"
+            >
+              <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.requests' | transloco }}</p>
+              <strong>{{ summary()?.totalRequests ?? 0 }}</strong>
+              <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('totalRequests') === 'good'" [class.bad]="comparisonTone('totalRequests') === 'bad'">
+                {{ comparisonLabel('totalRequests', 'percent') }}
+              </p>
+            </button>
+          </app-card>
+          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-button"
+              [attr.aria-label]="'developer.logs.metrics.errors' | transloco"
+              (click)="focusMetric('errors')"
+            >
+              <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errors' | transloco }}</p>
+              <strong>{{ summary()?.errorCount ?? 0 }}</strong>
+              <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorCount') === 'good'" [class.bad]="comparisonTone('errorCount') === 'bad'">
+                {{ comparisonLabel('errorCount', 'percent') }}
+              </p>
+            </button>
+          </app-card>
+          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+            <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errorRate' | transloco }}</p>
+            <strong>{{ summary()?.errorRate ?? 0 }}%</strong>
+            <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorRate') === 'good'" [class.bad]="comparisonTone('errorRate') === 'bad'">
+              {{ comparisonLabel('errorRate', 'percent') }}
+            </p>
+          </app-card>
+          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-button"
+              [attr.aria-label]="'developer.logs.metrics.audit' | transloco"
+              (click)="focusMetric('audit')"
+            >
+              <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.audit' | transloco }}</p>
+              <strong>{{ summary()?.auditEvents ?? 0 }}</strong>
+              <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('auditEvents') === 'good'" [class.bad]="comparisonTone('auditEvents') === 'bad'">
+                {{ comparisonLabel('auditEvents', 'percent') }}
+              </p>
+            </button>
+          </app-card>
+          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--wide" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-button"
+              [attr.aria-label]="'developer.logs.metrics.latency' | transloco"
+              (click)="focusMetric('latency')"
+            >
+              <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.latency' | transloco }}</p>
+              <strong>{{ summary()?.p95DurationMs ?? 0 }} ms</strong>
+              <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('p95DurationMs') === 'good'" [class.bad]="comparisonTone('p95DurationMs') === 'bad'">
+                {{ comparisonLabel('p95DurationMs', 'number') }}
+              </p>
+            </button>
+          </app-card>
+        </section>
+      </section>
+    </section>
   </section>
 
   <section class="developer-logs-page__channel-cards">
     @if (breakdown().origins.length) {
       @for (origin of breakdown().origins; track origin.key) {
-        <app-card variant="outlined">
+        <app-card variant="outlined" [stretch]="true">
           <button
             type="button"
-            class="developer-logs-page__metric-button"
+            class="developer-logs-page__metric-button developer-logs-page__channel-card"
             [attr.aria-label]="clientOriginLabel(origin.key) + ' ' + ('developer.logs.charts.origins' | transloco)"
             (click)="focusBreakdownOrigin(origin.key)"
           >
             <p class="developer-logs-page__metric-label">{{ clientOriginLabel(origin.key) }}</p>
             <strong>{{ origin.count }}</strong>
+            <p class="developer-logs-page__metric-comparison">{{ 'developer.logs.events.title' | transloco }}</p>
           </button>
         </app-card>
       }
     }
     @if (authByOrigin().length) {
       @for (origin of authByOrigin(); track origin.key) {
-        <app-card variant="outlined">
+        <app-card variant="outlined" [stretch]="true">
           <button
             type="button"
-            class="developer-logs-page__metric-button"
+            class="developer-logs-page__metric-button developer-logs-page__channel-card developer-logs-page__channel-card--auth"
             [attr.aria-label]="clientOriginLabel(origin.key) + ' ' + ('developer.logs.metrics.loginSucceeded' | transloco)"
             (click)="focusAuthOrigin(origin.key)"
           >
             <p class="developer-logs-page__metric-label">{{ clientOriginLabel(origin.key) }}</p>
-            <strong>{{ origin.succeeded }}</strong>
-            <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.loginSucceeded' | transloco }}</p>
-            <strong>{{ origin.failed }}</strong>
-            <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.loginFailed' | transloco }}</p>
+            <p class="developer-logs-page__metric-comparison">{{ 'developer.logs.sections.authByOrigin' | transloco }}</p>
+            <div class="developer-logs-page__auth-split">
+              <div class="developer-logs-page__auth-stat">
+                <strong>{{ origin.succeeded }}</strong>
+                <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.loginSucceeded' | transloco }}</p>
+              </div>
+              <div class="developer-logs-page__auth-stat">
+                <strong>{{ origin.failed }}</strong>
+                <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.loginFailed' | transloco }}</p>
+              </div>
+            </div>
           </button>
         </app-card>
       }
@@ -339,15 +355,15 @@
   @if (topSlowPaths().length || topErrorEvents().length) {
     <section class="developer-logs-page__insights">
       @if (topSlowPaths().length) {
-        <app-card variant="outlined">
-          <div class="developer-logs-page__table-header">
+        <app-card variant="outlined" class="developer-logs-page__insight-panel">
+          <div class="developer-logs-page__table-header developer-logs-page__table-header--insight">
             <h2>{{ 'developer.logs.sections.topSlowPaths' | transloco }}</h2>
           </div>
-          <div class="developer-logs-page__insight-list">
+          <div class="developer-logs-page__insight-list developer-logs-page__insight-list--fill">
             @for (entry of topSlowPaths(); track entry.path + entry.clientOrigin) {
               <button
                 type="button"
-                class="developer-logs-page__insight-item developer-logs-page__insight-button"
+                class="developer-logs-page__insight-item developer-logs-page__insight-button developer-logs-page__insight-item--panel"
                 (click)="focusSlowPath(entry.path, entry.clientOrigin)"
               >
                 <div>
@@ -365,15 +381,15 @@
       }
 
       @if (topErrorEvents().length) {
-        <app-card variant="outlined">
-          <div class="developer-logs-page__table-header">
+        <app-card variant="outlined" class="developer-logs-page__insight-panel">
+          <div class="developer-logs-page__table-header developer-logs-page__table-header--insight">
             <h2>{{ 'developer.logs.sections.topErrors' | transloco }}</h2>
           </div>
-          <div class="developer-logs-page__insight-list">
+          <div class="developer-logs-page__insight-list developer-logs-page__insight-list--fill">
             @for (entry of topErrorEvents(); track entry.event + entry.clientOrigin + (entry.path ?? '')) {
               <button
                 type="button"
-                class="developer-logs-page__insight-item developer-logs-page__insight-button"
+                class="developer-logs-page__insight-item developer-logs-page__insight-button developer-logs-page__insight-item--panel"
                 (click)="focusTopError(entry.event, entry.path, entry.clientOrigin)"
               >
                 <div>
@@ -393,8 +409,8 @@
     </section>
   }
 
-  <section class="developer-logs-page__charts">
-    <app-card variant="outlined" class="developer-logs-page__chart-card developer-logs-page__chart-card--wide">
+  <section class="developer-logs-page__charts developer-logs-page__charts--overview">
+    <app-card variant="outlined" class="developer-logs-page__chart-card">
       <app-chart
         type="line"
         [loading]="loading()"
@@ -412,6 +428,9 @@
         [data]="levelSeries()"
       />
     </app-card>
+  </section>
+
+  <section class="developer-logs-page__charts developer-logs-page__charts--breakdown">
     <app-card variant="outlined" class="developer-logs-page__chart-card">
       <app-chart
         type="donut"
@@ -454,6 +473,9 @@
         />
       </app-card>
     }
+  </section>
+
+  <section class="developer-logs-page__charts developer-logs-page__charts--trends">
     @if (errorTrendSeries().length) {
       <app-card variant="outlined" class="developer-logs-page__chart-card developer-logs-page__chart-card--wide">
         <app-chart

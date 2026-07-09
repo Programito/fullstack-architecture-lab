@@ -81,3 +81,20 @@ export const Variants: Story = {
     `,
   }),
 };
+
+export const Stretch: Story = {
+  name: 'Stretch en grid',
+  render: () => ({
+    template: `
+      <div class="grid grid-cols-2 gap-4" style="height: 14rem;">
+        <app-card variant="outlined" [stretch]="true">
+          <strong>Corta</strong>
+        </app-card>
+        <app-card variant="outlined" [stretch]="true">
+          <strong>Con más contenido</strong>
+          <p class="m-0 mt-2 text-sm" style="color: var(--ui-muted-fg)">Esta card tiene más texto, pero ambas ocupan el 100% de la altura de su celda de grid gracias a [stretch].</p>
+        </app-card>
+      </div>
+    `,
+  }),
+};

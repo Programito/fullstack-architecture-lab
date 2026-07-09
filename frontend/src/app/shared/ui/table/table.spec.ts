@@ -143,4 +143,32 @@ describe('Table', () => {
     expect(rowAction).toHaveBeenCalledWith({ action: 'path', row: actionRows[0] });
     expect(rowSelected).not.toHaveBeenCalled();
   });
+
+  it('renders badge-style cell values when a row provides badge metadata', async () => {
+    const badgeRows: TableRow[] = [
+      {
+        id: '1',
+        name: 'Acme',
+        status: {
+          kind: 'badge',
+          label: 'Error',
+          variant: 'danger',
+        },
+        amount: {
+          kind: 'badge',
+          label: 'Web admin',
+          variant: 'neutral',
+        },
+      },
+    ];
+
+    const { container } = await render('<app-table [columns]="columns" [rows]="rows" />', {
+      imports: [Table],
+      componentProperties: { columns, rows: badgeRows },
+    });
+
+    expect(screen.getByText('Error')).toBeTruthy();
+    expect(screen.getByText('Web admin')).toBeTruthy();
+    expect(container.querySelectorAll('app-badge').length).toBe(2);
+  });
 });

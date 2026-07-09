@@ -176,9 +176,18 @@
       "insights": {
         "overview": "Resum",
         "mainAlert": "Alerta principal",
+        "auditActivity": "Activitat",
+        "auditRisk": "Risc",
         "currentFocus": "Focus actual",
         "requests": "peticions",
         "events": "esdeveniments",
+        "auditActions": "accions visibles",
+        "auditChanges": "canvis visibles",
+        "auditActivityFallback": "Activitat d'auditoria en el rang actual",
+        "failedAuditActions": "Accions fallides per revisar",
+        "authNeedsReview": "L'activitat d'accés necessita revisió",
+        "noRiskHighlighted": "No hi ha cap senyal de risc destacat",
+        "auditRiskFallback": "No hi ha un patró de risc dominant en el visible",
         "errorRateRising": "Puja la taxa d'error",
         "latencyRising": "Puja la latencia",
         "errorsRising": "Pugen els errors",
@@ -1084,6 +1093,7 @@
       "description": "Revisa productes, disponibilitat, categories i modificadors abans del servei.",
       "available": "Disponibles",
       "customizable": "Personalitzables",
+      "issues": "Incidències",
       "categories": "Categories",
       "soldOut": "Esgotat",
       "customizableBadge": "Personalitzable",
@@ -1220,6 +1230,19 @@
       "audit": {
         "title": "Revisió ràpida del menú",
         "description": "Fes servir aquestes alertes per detectar de pressa quins productes encara necessiten imatge, text o revisió operativa.",
+        "healthLabel": "Salut del menú",
+        "issuesCount": "{{count}} incidències",
+        "exportCsv": "Exporta CSV",
+        "csvColumns": {
+          "product": "Producte",
+          "issue": "Incidència",
+          "priority": "Prioritat"
+        },
+        "priorityLabels": {
+          "high": "Alta",
+          "medium": "Mitjana",
+          "low": "Baixa"
+        },
         "clearFilter": "Veure-ho tot",
         "nextSteps": "Què revisar a continuació",
         "empty": "No hi ha alertes obertes al catàleg.",

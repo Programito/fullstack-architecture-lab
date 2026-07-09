@@ -183,9 +183,18 @@
       "insights": {
         "overview": "Overview",
         "mainAlert": "Main alert",
+        "auditActivity": "Activity",
+        "auditRisk": "Risk",
         "currentFocus": "Current focus",
         "requests": "requests",
         "events": "events",
+        "auditActions": "visible actions",
+        "auditChanges": "visible changes",
+        "auditActivityFallback": "Audit activity in the current range",
+        "failedAuditActions": "Failed audit actions to review",
+        "authNeedsReview": "Access activity needs review",
+        "noRiskHighlighted": "No risky signal highlighted",
+        "auditRiskFallback": "There is no dominant risky pattern in the visible set",
         "errorRateRising": "Error rate rising",
         "latencyRising": "Latency rising",
         "errorsRising": "Errors rising",
@@ -1084,6 +1093,7 @@
       "description": "Review products, availability, categories, and modifiers before service.",
       "available": "Available",
       "customizable": "Customizable",
+      "issues": "Issues",
       "categories": "Categories",
       "soldOut": "Sold out",
       "customizableBadge": "Customizable",
@@ -1220,6 +1230,19 @@
       "audit": {
         "title": "Quick menu review",
         "description": "Use these alerts to spot which products still need imagery, copy, or operational review.",
+        "healthLabel": "Menu health",
+        "issuesCount": "{{count}} issues",
+        "exportCsv": "Export CSV",
+        "csvColumns": {
+          "product": "Product",
+          "issue": "Issue",
+          "priority": "Priority"
+        },
+        "priorityLabels": {
+          "high": "High",
+          "medium": "Medium",
+          "low": "Low"
+        },
         "clearFilter": "View all",
         "nextSteps": "What to fix next",
         "empty": "There are no open catalog alerts.",

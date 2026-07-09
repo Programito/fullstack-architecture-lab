@@ -2,10 +2,22 @@
   display: block;
 }
 
+:host(:has(.card--stretch)) {
+  height: 100%;
+}
+
 .card {
   width: 100%;
   border-radius: 0.5rem;
   color: var(--ui-fg);
+}
+
+.card--stretch {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
 }
 
 .card--default,
