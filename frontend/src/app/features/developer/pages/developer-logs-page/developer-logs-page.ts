@@ -61,6 +61,8 @@ export class DeveloperLogsPage {
   protected readonly quickRange = signal<DeveloperLogsQuickRange>('custom');
   protected readonly selectedEvent = signal<DeveloperLogEventDto | null>(null);
   protected readonly filtersExpanded = signal(true);
+  protected readonly showOperationsFilters = computed(() => this.view() !== 'audit');
+  protected readonly showAuditFilters = computed(() => this.view() !== 'operations');
 
   protected readonly timelineCategories = computed(() => this.timeline().map((point) => shortBucket(point.bucket)));
   protected readonly timelineSeries = computed<ChartSeries[]>(() => {
@@ -237,6 +239,15 @@ export class DeveloperLogsPage {
 
   protected applyFilters(): void {
     void this.updateUrl({ page: 1 });
+  }
+
+  protected clearActiveFilter(key: 'clientOrigin' | 'path'): void {
+    if (key === 'clientOrigin') {
+      this.applyFilterState({ clientOrigin: '' }, this.view());
+      return;
+    }
+
+    this.applyFilterState({ path: '' }, this.view());
   }
 
   protected resetFilters(): void {

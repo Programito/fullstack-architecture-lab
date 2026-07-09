@@ -81,107 +81,119 @@
         </div>
 
         <div class="developer-logs-page__fields">
-          <section class="developer-logs-page__field-section">
-            <div class="developer-logs-page__field-section-header">
-              <h3>{{ 'developer.logs.views.operations' | transloco }}</h3>
-              <p>{{ 'developer.logs.filters.title' | transloco }}</p>
-            </div>
-            <div class="developer-logs-page__field-grid developer-logs-page__field-grid--primary">
-              <label>
-                <span>{{ 'developer.logs.filters.from' | transloco }}</span>
-                <input type="datetime-local" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)" />
-              </label>
-              <label>
-                <span>{{ 'developer.logs.filters.to' | transloco }}</span>
-                <input type="datetime-local" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
-              </label>
-              <label>
-                <span>{{ 'developer.logs.filters.level' | transloco }}</span>
-                <select [ngModel]="filters().level" (ngModelChange)="setFilter('level', $event)">
-                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-                  <option value="info">info</option>
-                  <option value="warn">warn</option>
-                  <option value="error">error</option>
-                </select>
-              </label>
-              <label class="developer-logs-page__field-span-2">
-                <span>{{ 'developer.logs.filters.path' | transloco }}</span>
-                <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
-                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-                  @for (group of pathGroupOptions; track group.value) {
-                    <option [value]="group.value">{{ group.label }}</option>
-                  }
-                </select>
-              </label>
-              <label class="developer-logs-page__field-span-2">
-                <span>{{ 'developer.logs.filters.search' | transloco }}</span>
-                <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />
-              </label>
-            </div>
-          </section>
+          @if (showOperationsFilters()) {
+            <section class="developer-logs-page__field-section">
+              <div class="developer-logs-page__field-section-header">
+                <h3>{{ 'developer.logs.views.operations' | transloco }}</h3>
+                <p>{{ 'developer.logs.filters.title' | transloco }}</p>
+              </div>
+              <div class="developer-logs-page__field-grid developer-logs-page__field-grid--primary">
+                <label>
+                  <span>{{ 'developer.logs.filters.from' | transloco }}</span>
+                  <input type="datetime-local" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)" />
+                </label>
+                <label>
+                  <span>{{ 'developer.logs.filters.to' | transloco }}</span>
+                  <input type="datetime-local" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
+                </label>
+                <label>
+                  <span>{{ 'developer.logs.filters.level' | transloco }}</span>
+                  <select [ngModel]="filters().level" (ngModelChange)="setFilter('level', $event)">
+                    <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                    <option value="info">info</option>
+                    <option value="warn">warn</option>
+                    <option value="error">error</option>
+                  </select>
+                </label>
+                <label class="developer-logs-page__field-span-2">
+                  <span>{{ 'developer.logs.filters.path' | transloco }}</span>
+                  <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
+                    <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                    @for (group of pathGroupOptions; track group.value) {
+                      <option [value]="group.value">{{ group.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="developer-logs-page__field-span-2">
+                  <span>{{ 'developer.logs.filters.search' | transloco }}</span>
+                  <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />
+                </label>
+              </div>
+            </section>
+          }
 
-          <section class="developer-logs-page__field-section">
-            <div class="developer-logs-page__field-section-header">
-              <h3>{{ 'developer.logs.views.audit' | transloco }}</h3>
-              <p>{{ 'developer.logs.detail.title' | transloco }}</p>
-            </div>
-            <div class="developer-logs-page__field-grid developer-logs-page__field-grid--audit">
-              <app-combobox
-                [label]="'developer.logs.filters.restaurantId' | transloco"
-                [hint]="'developer.logs.filters.restaurantIdHint' | transloco"
-                [options]="restaurantOptions()"
-                [value]="filters().restaurantId"
-                (valueChange)="setFilter('restaurantId', $event)"
-              />
-              <app-combobox
-                [label]="'developer.logs.filters.actorUserId' | transloco"
-                [hint]="'developer.logs.filters.actorUserIdHint' | transloco"
-                [options]="actorOptions()"
-                [value]="filters().actorUserId"
-                (valueChange)="setFilter('actorUserId', $event)"
-              />
-              <label>
-                <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
-                <select [ngModel]="filters().entityType" (ngModelChange)="setFilter('entityType', $event)">
-                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-                  @for (entityType of entityTypeOptions; track entityType) {
-                    <option [value]="entityType">{{ entityType }}</option>
-                  }
-                </select>
-              </label>
-              <app-combobox
-                [label]="'developer.logs.filters.entityId' | transloco"
-                [hint]="'developer.logs.filters.entityIdHint' | transloco"
-                [options]="entityOptions()"
-                [value]="filters().entityId"
-                (valueChange)="setFilter('entityId', $event)"
-              />
-              <label>
-                <span>{{ 'developer.logs.filters.result' | transloco }}</span>
-                <select [ngModel]="filters().result" (ngModelChange)="setFilter('result', $event)">
-                  <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
-                  <option value="attempted">attempted</option>
-                  <option value="succeeded">succeeded</option>
-                  <option value="failed">failed</option>
-                </select>
-              </label>
-            </div>
-          </section>
-        </div>
-        <div class="developer-logs-page__actions">
-          <app-button variant="primary" (pressed)="applyFilters()">{{ 'developer.logs.filters.apply' | transloco }}</app-button>
-          <app-button variant="neutral" fill="outline" (pressed)="resetFilters()">{{ 'developer.logs.filters.reset' | transloco }}</app-button>
+          @if (showAuditFilters()) {
+            <section class="developer-logs-page__field-section">
+              <div class="developer-logs-page__field-section-header">
+                <h3>{{ 'developer.logs.views.audit' | transloco }}</h3>
+                <p>{{ 'developer.logs.detail.title' | transloco }}</p>
+              </div>
+              <div class="developer-logs-page__field-grid developer-logs-page__field-grid--audit">
+                <app-combobox
+                  [label]="'developer.logs.filters.restaurantId' | transloco"
+                  [hint]="'developer.logs.filters.restaurantIdHint' | transloco"
+                  [options]="restaurantOptions()"
+                  [value]="filters().restaurantId"
+                  (valueChange)="setFilter('restaurantId', $event)"
+                />
+                <app-combobox
+                  [label]="'developer.logs.filters.actorUserId' | transloco"
+                  [hint]="'developer.logs.filters.actorUserIdHint' | transloco"
+                  [options]="actorOptions()"
+                  [value]="filters().actorUserId"
+                  (valueChange)="setFilter('actorUserId', $event)"
+                />
+                <label>
+                  <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
+                  <select [ngModel]="filters().entityType" (ngModelChange)="setFilter('entityType', $event)">
+                    <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                    @for (entityType of entityTypeOptions; track entityType) {
+                      <option [value]="entityType">{{ entityType }}</option>
+                    }
+                  </select>
+                </label>
+                <app-combobox
+                  [label]="'developer.logs.filters.entityId' | transloco"
+                  [hint]="'developer.logs.filters.entityIdHint' | transloco"
+                  [options]="entityOptions()"
+                  [value]="filters().entityId"
+                  (valueChange)="setFilter('entityId', $event)"
+                />
+                <label>
+                  <span>{{ 'developer.logs.filters.result' | transloco }}</span>
+                  <select [ngModel]="filters().result" (ngModelChange)="setFilter('result', $event)">
+                    <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
+                    <option value="attempted">attempted</option>
+                    <option value="succeeded">succeeded</option>
+                    <option value="failed">failed</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+          }
         </div>
         @if (activeFilterEntries().length) {
           <section class="developer-logs-page__active-filters" aria-label="Filtros activos">
             <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.activeTitle' | transloco }}</p>
-            <div class="developer-logs-page__origin-chips">
+            <div class="developer-logs-page__active-filter-list">
               @for (entry of activeFilterEntries(); track entry.key + entry.value) {
-                <app-badge variant="neutral" fill="soft">{{ entry.value }}</app-badge>
+                <button
+                  type="button"
+                  class="developer-logs-page__active-filter-chip"
+                  [attr.aria-label]="('developer.logs.filters.clear' | transloco) + ' ' + entry.value"
+                  (click)="clearActiveFilter(entry.key === 'clientOrigin' ? 'clientOrigin' : 'path')"
+                >
+                  <span>{{ entry.value }}</span>
+                  <span aria-hidden="true">×</span>
+                </button>
               }
             </div>
           </section>
         }
+        <div class="developer-logs-page__actions">
+          <app-button variant="primary" (pressed)="applyFilters()">{{ 'developer.logs.filters.apply' | transloco }}</app-button>
+          <app-button variant="neutral" fill="outline" (pressed)="resetFilters()">{{ 'developer.logs.filters.reset' | transloco }}</app-button>
+        </div>
       }
     </section>
   </app-card>

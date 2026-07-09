@@ -130,6 +130,7 @@
         "hide": "Hide filters",
         "view": "View",
         "activeTitle": "Active filters",
+        "clear": "Clear",
         "from": "From",
         "to": "To",
         "level": "Level",

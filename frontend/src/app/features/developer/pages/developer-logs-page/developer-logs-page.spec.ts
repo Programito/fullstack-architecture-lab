@@ -794,6 +794,98 @@ describe('DeveloperLogsPage', () => {
     }));
   });
 
+  it('shows only the filter section relevant to the selected view', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 12,
+        errorCount: 1,
+        errorRate: 8.3,
+        auditEvents: 2,
+        p95DurationMs: 180,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(screen.getByRole('heading', { level: 3, name: 'developer.logs.views.operations' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'developer.logs.views.audit' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.views.operations' }));
+    expect(screen.getByRole('heading', { level: 3, name: 'developer.logs.views.operations' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 3, name: 'developer.logs.views.audit' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.views.audit' }));
+    expect(screen.queryByRole('heading', { level: 3, name: 'developer.logs.views.operations' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 3, name: 'developer.logs.views.audit' })).toBeTruthy();
+  });
+
+  it('clears active filters inline from the filter bar', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness({
+      clientOrigin: 'apk-customer',
+      path: '/orders',
+      view: 'operations',
+    });
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 12,
+        errorCount: 1,
+        errorRate: 8.3,
+        auditEvents: 2,
+        p95DurationMs: 180,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+    };
+
+    await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: 'apk-customer',
+      path: '/orders',
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.clear developer.logs.origins.apk-customer' }));
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: '',
+      path: '/orders',
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'developer.logs.filters.clear /restaurants/:id/orders' }));
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({
+      clientOrigin: '',
+      path: '',
+    }));
+  });
+
   it('applies operational filters when the errors kpi is clicked', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
