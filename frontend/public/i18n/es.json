@@ -1151,18 +1151,23 @@
       "customizationAll": "Todos",
       "customizationCustomizable": "Personalizables",
       "customizationSimple": "Simples",
+      "allergenFilter": "Filtrar por alérgenos",
+      "allergenFilterHint": "Muestra los productos que declaran uno o más de los alérgenos seleccionados.",
       "imageFilterWithImage": "Con imagen",
       "imageFilterWithoutImage": "Sin imagen",
       "mobileFilters": "Filtros",
       "reviewButton": "Revisar menú",
       "reviewFilters": {
-        "title": "Atajos de revisión",
+        "title": "Filtros manuales",
+        "description": "Combínalos con los problemas detectados arriba para acotar la lista de productos.",
         "comboOnly": "Solo menús",
         "customizableOnly": "Solo personalizables",
         "withImage": "Con imagen",
         "withoutImage": "Sin imagen",
         "noSection": "Sin sección",
-        "missingDescription": "Sin descripción"
+        "missingDescription": "Sin descripción",
+        "clearAll": "Limpiar filtros",
+        "viewProducts": "Ver {{count}} productos"
       },
       "viewModeLabel": "Vista",
       "viewModes": {
@@ -1201,6 +1206,7 @@
         "remove": "Quitar",
         "choose": "Elegir"
       },
+      "modifierUsage": "Usado en {{count}} productos",
       "modifierLimits": {
         "choose": "Elige {{count}}",
         "upTo": "Hasta {{count}}",
@@ -1217,7 +1223,12 @@
       "noPlatters": "No hay platos combinados configurados.",
       "noSoldOutProducts": "No hay productos agotados.",
       "noModifiers": "Este producto no tiene modificadores.",
+      "noAllergens": "Sin alérgenos",
       "noResults": "No hay productos que coincidan con los filtros.",
+      "noSearchResults": "No hay resultados para tu búsqueda.",
+      "tabSearchLabel": "Buscar en esta pestaña",
+      "tabSearchPlaceholder": "Buscar por nombre",
+      "tabSearchClear": "Limpiar búsqueda",
       "noSelection": "Selecciona un producto para revisar su detalle.",
       "closeDetail": "Cerrar detalle",
       "productDetail": "Detalle del producto",
@@ -1236,6 +1247,7 @@
       "cancelDelete": "Cancelar",
       "newProduct": "Nuevo producto",
       "editProduct": "Editar producto",
+      "deleteProduct": "Eliminar producto",
       "deleteProductTitle": "Eliminar producto",
       "deleteProductDescription": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
       "confirmDeleteProduct": "Eliminar",
@@ -1292,6 +1304,9 @@
       "invalidSelection": "Completa los slots obligatorios para añadir el menú."
     },
     "product": {
+      "editor": {
+        "back": "Volver"
+      },
       "form": {
         "createTitle": "Nuevo producto",
         "editTitle": "Editar producto",
@@ -1313,6 +1328,19 @@
         "uploadFailed": "No se pudo subir la imagen. Inténtalo de nuevo.",
         "price": "Precio (€)",
         "modifierGroupsHint": "Selecciona los grupos de modificadores que puede usar este producto.",
+        "supplementsTitle": "Suplementos",
+        "supplementsHint": "Extras con precio propios de este producto (ej. \"añadir bacon +1,50€\"). No se comparten con otros productos.",
+        "supplementsGroupPrefix": "Suplementos",
+        "addSupplement": "Añadir suplemento",
+        "supplementNamePlaceholder": "Nombre del suplemento",
+        "supplementPricePlaceholder": "Precio (€)",
+        "removeSupplementLabel": "Quitar suplemento",
+        "noSupplements": "Este producto no tiene suplementos propios.",
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "selectedGroupsOrder": "Orden de los grupos seleccionados",
+        "basicInfoTitle": "Información básica",
+        "allergensAndAvailability": "Alérgenos y disponibilidad",
         "allergens": "Alérgenos",
         "allergensHint": "Selecciona los alérgenos que declara este producto. Ante una alergia grave, el cliente deberá confirmarlo también con el personal.",
         "course": "Servicio",
@@ -1331,6 +1359,7 @@
       "errors": {
         "nameTaken": "Ya existe un artículo con ese nombre.",
         "saveFailed": "No se pudo guardar el artículo.",
+        "loadFailed": "No se pudo cargar el artículo.",
         "deleteFailed": "No se pudo eliminar el artículo.",
         "alreadyInSection": "El artículo ya está en esa sección.",
         "addToSectionFailed": "No se pudo añadir el artículo a la sección."
@@ -1350,6 +1379,7 @@
         "removeOption": "Eliminar opción",
         "optionName": "Nombre de la opción",
         "optionPrice": "Precio adicional (€)",
+        "optionImage": "Imagen de la opción",
         "create": "Crear grupo"
       },
       "success": {

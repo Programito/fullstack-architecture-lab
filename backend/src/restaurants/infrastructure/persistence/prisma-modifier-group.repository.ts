@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import { modifierGroupNameTaken } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import type { CreateModifierGroupData, ModifierGroupEntity, ModifierGroupRepository } from '../../application/ports/modifier-group-repository.port';
+import type { CreateModifierGroupData, ModifierGroupEntity, ModifierGroupRepository, UpdateModifierGroupData } from '../../application/ports/modifier-group-repository.port';
 
 type GroupWithOptions = Prisma.ModifierGroupGetPayload<{ include: { options: true } }>;
 
@@ -20,13 +20,21 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
     return restaurant?.organizationId ?? null;
   }
 
-  async findByOrganizationId(organizationId: string): Promise<ModifierGroupEntity[]> {
+  async findByOrganizationId(organizationId: string, scope?: 'shared' | 'product'): Promise<ModifierGroupEntity[]> {
     const groups = await this.prisma.modifierGroup.findMany({
-      where: { organizationId },
+      where: { organizationId, ...(scope ? { scope } : {}) },
       include: { options: { orderBy: { sortOrder: 'asc' } } },
       orderBy: { name: 'asc' },
     });
     return groups.map(this.toEntity);
+  }
+
+  async findById(groupId: string): Promise<ModifierGroupEntity | null> {
+    const group = await this.prisma.modifierGroup.findUnique({
+      where: { id: groupId },
+      include: { options: { orderBy: { sortOrder: 'asc' } } },
+    });
+    return group ? this.toEntity(group) : null;
   }
 
   async create(data: CreateModifierGroupData): Promise<ModifierGroupEntity> {
@@ -39,17 +47,55 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
           minSelections: data.minSelections,
           maxSelections: data.maxSelections,
           isRequired: data.isRequired,
+          scope: data.scope ?? 'shared',
+          ownerRestaurantProductId: data.ownerRestaurantProductId ?? null,
           options: {
             createMany: {
               data: data.options.map((opt, i) => ({
                 name: opt.name,
                 priceDeltaCents: opt.priceDeltaCents,
+                imageUrl: opt.imageUrl ?? null,
                 sortOrder: i + 1,
               })),
             },
           },
         },
         include: { options: { orderBy: { sortOrder: 'asc' } } },
+      });
+      return this.toEntity(group);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ApplicationErrorException(modifierGroupNameTaken(data.name));
+      }
+      throw error;
+    }
+  }
+
+  async update(data: UpdateModifierGroupData): Promise<ModifierGroupEntity> {
+    try {
+      const group = await this.prisma.$transaction(async (tx) => {
+        await tx.modifierOption.deleteMany({ where: { modifierGroupId: data.groupId } });
+        return tx.modifierGroup.update({
+          where: { id: data.groupId },
+          data: {
+            name: data.name,
+            selectionType: data.selectionType,
+            minSelections: data.minSelections,
+            maxSelections: data.maxSelections,
+            isRequired: data.isRequired,
+            options: {
+              createMany: {
+                data: data.options.map((opt, i) => ({
+                  name: opt.name,
+                  priceDeltaCents: opt.priceDeltaCents,
+                  imageUrl: opt.imageUrl ?? null,
+                  sortOrder: i + 1,
+                })),
+              },
+            },
+          },
+          include: { options: { orderBy: { sortOrder: 'asc' } } },
+        });
       });
       return this.toEntity(group);
     } catch (error) {
@@ -84,8 +130,11 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
         id: opt.id,
         name: opt.name,
         priceDeltaCents: opt.priceDeltaCents,
+        imageUrl: opt.imageUrl,
         isAvailable: opt.isAvailable,
       })),
+      scope: group.scope as 'shared' | 'product',
+      ownerRestaurantProductId: group.ownerRestaurantProductId,
     };
   }
 }

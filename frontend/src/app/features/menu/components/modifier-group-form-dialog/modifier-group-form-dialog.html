@@ -38,37 +38,72 @@
       <p class="theme-label text-sm font-medium">{{ 'menu.modifierGroup.form.optionsLabel' | transloco }}</p>
 
       @for (option of options(); track $index) {
-        <div class="flex items-end gap-2">
-          <div class="min-w-0 flex-1">
-            <app-input
-              [label]="$index === 0 ? ('menu.modifierGroup.form.optionName' | transloco) : ''"
-              [placeholder]="'menu.modifierGroup.form.optionName' | transloco"
-              [value]="option.name"
-              [disabled]="loading()"
-              (valueChange)="updateOptionName($index, $event)"
-            />
+        <div class="grid gap-2 rounded-md border p-2">
+          <div class="flex items-end gap-2">
+            <div class="min-w-0 flex-1">
+              <app-input
+                [label]="$index === 0 ? ('menu.modifierGroup.form.optionName' | transloco) : ''"
+                [placeholder]="'menu.modifierGroup.form.optionName' | transloco"
+                [value]="option.name"
+                [disabled]="loading()"
+                (valueChange)="updateOptionName($index, $event)"
+              />
+            </div>
+            <div class="w-24 shrink-0">
+              <app-input
+                [label]="$index === 0 ? ('menu.modifierGroup.form.optionPrice' | transloco) : ''"
+                [placeholder]="'0.00'"
+                [value]="option.priceDeltaCents === 0 ? '' : (option.priceDeltaCents / 100).toFixed(2)"
+                [disabled]="loading()"
+                (valueChange)="updateOptionPrice($index, $event)"
+              />
+            </div>
+            @if (options().length > 1) {
+              <app-button
+                variant="neutral"
+                fill="clear"
+                size="sm"
+                [ariaLabel]="'menu.product.form.moveUp' | transloco"
+                [disabled]="loading() || $index === 0"
+                (pressed)="moveOption($index, -1)"
+              >
+                <app-icon name="arrow_upward" size="sm" [decorative]="true" />
+              </app-button>
+              <app-button
+                variant="neutral"
+                fill="clear"
+                size="sm"
+                [ariaLabel]="'menu.product.form.moveDown' | transloco"
+                [disabled]="loading() || $index === options().length - 1"
+                (pressed)="moveOption($index, 1)"
+              >
+                <app-icon name="arrow_downward" size="sm" [decorative]="true" />
+              </app-button>
+              <app-button
+                variant="neutral"
+                fill="clear"
+                size="sm"
+                [ariaLabel]="'menu.modifierGroup.form.removeOption' | transloco"
+                [disabled]="loading()"
+                (pressed)="removeOption($index)"
+              >
+                <app-icon name="close" size="sm" [decorative]="true" />
+              </app-button>
+            }
           </div>
-          <div class="w-24 shrink-0">
-            <app-input
-              [label]="$index === 0 ? ('menu.modifierGroup.form.optionPrice' | transloco) : ''"
-              [placeholder]="'0.00'"
-              [value]="option.priceDeltaCents === 0 ? '' : (option.priceDeltaCents / 100).toFixed(2)"
-              [disabled]="loading()"
-              (valueChange)="updateOptionPrice($index, $event)"
-            />
-          </div>
-          @if (options().length > 1) {
-            <app-button
-              variant="neutral"
-              fill="clear"
-              size="sm"
-              [ariaLabel]="'menu.modifierGroup.form.removeOption' | transloco"
-              [disabled]="loading()"
-              (pressed)="removeOption($index)"
-            >
-              <app-icon name="close" size="sm" [decorative]="true" />
-            </app-button>
-          }
+
+          <app-image-dropzone
+            size="compact"
+            [imageUrl]="option.imageUrl"
+            [previewAlt]="option.name || ('menu.modifierGroup.form.optionImage' | transloco)"
+            [inputLabel]="'menu.modifierGroup.form.optionImage'"
+            [uploadStatus]="option.uploadStatus"
+            [errorMessage]="option.imageErrorMessage"
+            [disabled]="loading()"
+            (fileSelected)="handleOptionFileSelected($index, $event)"
+            (removeRequested)="handleOptionRemoveImage($index)"
+            (retryRequested)="handleOptionRetryUpload($index)"
+          />
         </div>
       }
 

@@ -1151,18 +1151,23 @@
       "customizationAll": "Tots",
       "customizationCustomizable": "Personalitzables",
       "customizationSimple": "Simples",
+      "allergenFilter": "Filtrar per al·lergògens",
+      "allergenFilterHint": "Mostra els productes que declaren un o més dels al·lergògens seleccionats.",
       "imageFilterWithImage": "Amb imatge",
       "imageFilterWithoutImage": "Sense imatge",
       "mobileFilters": "Filtres",
       "reviewButton": "Revisar menú",
       "reviewFilters": {
-        "title": "Dreceres de revisió",
+        "title": "Filtres manuals",
+        "description": "Combina'ls amb els problemes detectats a dalt per acotar la llista de productes.",
         "comboOnly": "Només menús",
         "customizableOnly": "Només personalitzables",
         "withImage": "Amb imatge",
         "withoutImage": "Sense imatge",
         "noSection": "Sense secció",
-        "missingDescription": "Sense descripció"
+        "missingDescription": "Sense descripció",
+        "clearAll": "Neteja els filtres",
+        "viewProducts": "Veure {{count}} productes"
       },
       "viewModeLabel": "Vista",
       "viewModes": {
@@ -1201,6 +1206,7 @@
         "remove": "Treure",
         "choose": "Triar"
       },
+      "modifierUsage": "Utilitzat en {{count}} productes",
       "modifierLimits": {
         "choose": "Tria {{count}}",
         "upTo": "Fins a {{count}}",
@@ -1217,7 +1223,12 @@
       "noPlatters": "No hi ha plats combinats configurats.",
       "noSoldOutProducts": "No hi ha productes esgotats.",
       "noModifiers": "Aquest producte no té modificadors.",
+      "noAllergens": "Sense al·lergògens",
       "noResults": "No hi ha productes que coincideixin amb els filtres.",
+      "noSearchResults": "No hi ha resultats per a la teva cerca.",
+      "tabSearchLabel": "Cerca en aquesta pestanya",
+      "tabSearchPlaceholder": "Cerca per nom",
+      "tabSearchClear": "Neteja la cerca",
       "noSelection": "Selecciona un producte per revisar-ne el detall.",
       "closeDetail": "Tancar detall",
       "productDetail": "Detall del producte",
@@ -1236,6 +1247,7 @@
       "cancelDelete": "Cancel·lar",
       "newProduct": "Nou producte",
       "editProduct": "Editar producte",
+      "deleteProduct": "Eliminar producte",
       "deleteProductTitle": "Eliminar producte",
       "deleteProductDescription": "Eliminar «{{name}}»? Aquesta acció no es pot desfer.",
       "confirmDeleteProduct": "Eliminar",
@@ -1292,6 +1304,9 @@
       "invalidSelection": "Completa els slots obligatoris per afegir el menú."
     },
     "product": {
+      "editor": {
+        "back": "Enrere"
+      },
       "form": {
         "createTitle": "Nou producte",
         "editTitle": "Editar producte",
@@ -1313,6 +1328,19 @@
         "uploadFailed": "No s'ha pogut pujar la imatge. Torna-ho a provar.",
         "price": "Preu (€)",
         "modifierGroupsHint": "Selecciona els grups de modificadors que pot fer servir aquest producte.",
+        "supplementsTitle": "Suplements",
+        "supplementsHint": "Extres amb preu propis d'aquest producte (ex. \"afegir bacon +1,50€\"). No es comparteixen amb altres productes.",
+        "supplementsGroupPrefix": "Suplements",
+        "addSupplement": "Afegir suplement",
+        "supplementNamePlaceholder": "Nom del suplement",
+        "supplementPricePlaceholder": "Preu (€)",
+        "removeSupplementLabel": "Treure suplement",
+        "noSupplements": "Aquest producte no té suplements propis.",
+        "moveUp": "Puja",
+        "moveDown": "Baixa",
+        "selectedGroupsOrder": "Ordre dels grups seleccionats",
+        "basicInfoTitle": "Informació bàsica",
+        "allergensAndAvailability": "Al·lergògens i disponibilitat",
         "allergens": "Al·lergògens",
         "allergensHint": "Selecciona els al·lergògens que declara aquest producte. Davant una al·lèrgia greu, el client també ho hauria de confirmar amb el personal.",
         "course": "Servei",
@@ -1331,6 +1359,7 @@
       "errors": {
         "nameTaken": "Ja existeix un article amb aquest nom.",
         "saveFailed": "No s'ha pogut guardar l'article.",
+        "loadFailed": "No s'ha pogut carregar l'article.",
         "deleteFailed": "No s'ha pogut eliminar l'article.",
         "alreadyInSection": "L'article ja és a aquesta secció.",
         "addToSectionFailed": "No s'ha pogut afegir l'article a la secció."
@@ -1350,6 +1379,7 @@
         "removeOption": "Eliminar opció",
         "optionName": "Nom de l'opció",
         "optionPrice": "Preu addicional (€)",
+        "optionImage": "Imatge de l'opció",
         "create": "Crear grup"
       },
       "success": {

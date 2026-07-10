@@ -77,8 +77,8 @@
               </app-button>
             </div>
           } @else {
-          <!-- Filtros -->
-          <div class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+          <!-- Filtros: solo buscador visible; el resto vive en el diálogo de filtros (mismo que móvil) -->
+          <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
             <app-search-input
               [label]="'menu.page.searchLabel' | transloco"
               [placeholder]="'menu.page.searchPlaceholder' | transloco"
@@ -87,84 +87,71 @@
               (valueChange)="updateQuery($event)"
               (searched)="updateQuery($event)"
             />
-            <!-- Fila de filtros: botón categoría, segs en columnas iguales -->
-            <div class="grid gap-3">
-              <div class="grid gap-1">
-                <span class="theme-muted text-xs font-medium">{{ 'menu.page.categoryFilter' | transloco }}</span>
-                <button
-                  type="button"
-                  class="theme-field flex h-8 w-full items-center justify-between gap-2 rounded-md border px-3 text-sm transition-colors hover:border-cyan-500"
-                  [attr.aria-label]="'menu.page.categoryFilter' | transloco"
-                  (click)="categorySelectorOpen.set(true)"
-                >
-                  <span class="theme-title truncate">{{ currentCategoryLabel() }}</span>
-                  <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted shrink-0" />
-                </button>
-              </div>
-              <div class="grid grid-cols-2 gap-3">
-                <app-segmented-control
-                  [style.width]="'100%'"
-                  size="sm"
-                  variant="pill"
-                  [ariaLabel]="'menu.page.availabilityFilter' | transloco"
-                  [options]="availabilityOptions()"
-                  [value]="availabilityFilter()"
-                  (valueChange)="setAvailabilityFilter($event)"
-                />
-                <app-segmented-control
-                  [style.width]="'100%'"
-                  size="sm"
-                  variant="pill"
-                  [ariaLabel]="'menu.page.customizationFilter' | transloco"
-                  [options]="customizationOptions()"
-                  [value]="customizationFilter()"
-                  (valueChange)="setCustomizationFilter($event)"
-                />
-              </div>
-            </div>
+            <app-button variant="neutral" fill="outline" size="sm" (pressed)="openMobileFilters()">
+              <app-icon name="tune" size="sm" [decorative]="true" />
+              {{ 'menu.page.mobileFilters' | transloco }}
+              @if (activeFilterCount() > 0) {
+                <app-badge variant="secondary" size="sm">{{ activeFilterCount() }}</app-badge>
+              }
+            </app-button>
           </div>
 
           <!-- Botón nuevo producto -->
           }
 
-          <div
-            class="flex items-center rounded-md"
-            [class.ring-2]="auditSeverity() === 'danger' && !reviewPanelOpen()"
-            [class.ring-red-400]="auditSeverity() === 'danger' && !reviewPanelOpen()"
-            [class.animate-pulse]="auditSeverity() === 'danger' && !reviewPanelOpen()"
+          <app-dialog
+            [open]="reviewPanelOpen()"
+            [title]="'menu.page.audit.title' | transloco"
+            [showActions]="false"
+            size="lg"
+            (closed)="reviewPanelOpen.set(false)"
           >
-            <app-button
-              variant="neutral"
-              fill="outline"
-              size="sm"
-              [attr.aria-expanded]="reviewPanelOpen()"
-              (pressed)="reviewPanelOpen.update(v => !v)"
-            >
-              <app-icon name="fact_check" size="sm" [decorative]="true" />
-              {{ 'menu.page.reviewButton' | transloco }}
-              @if (activeWarningCount() > 0) {
-                <app-badge [variant]="auditSeverity() === 'danger' ? 'danger' : 'warning'" size="sm">{{ activeWarningCount() }}</app-badge>
-              }
-              <app-icon
-                name="expand_more"
-                size="sm"
-                class="transition-transform"
-                [class.rotate-180]="reviewPanelOpen()"
-                [decorative]="true"
+            <div class="grid gap-4">
+              <app-menu-health-panel
+                [counters]="auditCounters()"
+                [selectedFilter]="auditFilter()"
+                [totalProducts]="products().length"
+                [productsWithIssues]="productsWithAuditIssues()"
+                (filterSelected)="handleAuditFilterSelected($event)"
+                (exportRequested)="exportAuditCsv()"
               />
-            </app-button>
-          </div>
 
-          @if (reviewPanelOpen()) {
-            <app-menu-health-panel
-              [counters]="auditCounters()"
-              [selectedFilter]="auditFilter()"
-              [totalProducts]="products().length"
-              [productsWithIssues]="productsWithAuditIssues()"
-              (filterSelected)="setAuditFilter($event)"
-              (exportRequested)="exportAuditCsv()"
-            />
-          }
+              <section class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+                <div class="flex items-center gap-2">
+                  <app-icon name="tune" size="sm" class="text-cyan-600 dark:text-cyan-400" [decorative]="true" />
+                  <h2 class="theme-title text-base font-semibold">{{ 'menu.page.reviewFilters.title' | transloco }}</h2>
+                </div>
+                <p class="theme-muted text-sm">{{ 'menu.page.reviewFilters.description' | transloco }}</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (filter of reviewFilterOptions(); track filter.value) {
+                    <app-button
+                      variant="neutral"
+                      [fill]="hasReviewFilter(filter.value) ? 'solid' : 'outline'"
+                      size="sm"
+                      (pressed)="toggleReviewFilter(filter.value)"
+                    >
+                      {{ filter.label }}
+                    </app-button>
+                  }
+                </div>
+              </section>
+
+              <div class="flex items-center justify-between gap-3 border-t pt-3 dark:border-white/10">
+                <app-button
+                  variant="neutral"
+                  fill="clear"
+                  size="sm"
+                  [disabled]="!hasActiveReviewFilters()"
+                  (pressed)="clearAllReviewFilters()"
+                >
+                  {{ 'menu.page.reviewFilters.clearAll' | transloco }}
+                </app-button>
+                <app-button variant="primary" fill="solid" size="sm" (pressed)="applyReviewFiltersAndClose()">
+                  {{ 'menu.page.reviewFilters.viewProducts' | transloco:{ count: filteredProducts().length } }}
+                </app-button>
+              </div>
+            </div>
+          </app-dialog>
 
           <app-dialog
             [open]="mobileFiltersOpen()"
@@ -205,6 +192,22 @@
                 (valueChange)="setCustomizationFilter($event)"
               />
               <div class="grid gap-2">
+                <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.allergenFilter' | transloco }}</p>
+                <p class="theme-muted text-sm">{{ 'menu.page.allergenFilterHint' | transloco }}</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (filter of allergenFilterOptions(); track filter.value) {
+                    <app-button
+                      variant="neutral"
+                      [fill]="hasAllergenFilter(filter.value) ? 'solid' : 'outline'"
+                      size="sm"
+                      (pressed)="toggleAllergenFilter(filter.value)"
+                    >
+                      {{ filter.label }}
+                    </app-button>
+                  }
+                </div>
+              </div>
+              <div class="grid gap-2">
                 <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.reviewFilters.title' | transloco }}</p>
                 <div class="flex flex-wrap gap-2">
                   @for (filter of reviewFilterOptions(); track filter.value) {
@@ -235,24 +238,6 @@
           </app-dialog>
 
           @if (!isMobile()) {
-            @if (reviewPanelOpen()) {
-              <div class="grid gap-2">
-                <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.page.reviewFilters.title' | transloco }}</p>
-                <div class="flex flex-wrap gap-2">
-                  @for (filter of reviewFilterOptions(); track filter.value) {
-                    <app-button
-                      variant="neutral"
-                      [fill]="hasReviewFilter(filter.value) ? 'solid' : 'outline'"
-                      size="sm"
-                      (pressed)="toggleReviewFilter(filter.value)"
-                    >
-                      {{ filter.label }}
-                    </app-button>
-                  }
-                </div>
-              </div>
-            }
-
           <div class="flex items-center justify-between gap-3">
             <app-segmented-control
               size="sm"
@@ -270,8 +255,8 @@
           }
 
           @if (productViewMode() === 'cards') {
-            <div class="grid gap-3 sm:grid-cols-2">
-              @for (product of filteredProducts(); track product.id) {
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              @for (product of displayedProducts(); track product.id) {
                 <article
                   class="theme-panel grid cursor-pointer gap-0 overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md focus-within:ring-2 focus-within:ring-cyan-500"
                   [class.ring-2]="isSelected(product)"
@@ -286,10 +271,10 @@
                   >
                     <div class="relative flex h-40 items-center justify-center overflow-hidden border-b bg-black/5 dark:bg-white/5">
                       @if (product.imageUrl) {
-                        <img
+                        <img loading="lazy"
                           [src]="product.imageUrl"
                           [alt]="productImageAlt(product)"
-                          class="h-full w-full object-cover"
+                          class="h-full w-full object-contain"
                         />
                       } @else {
                         <div class="grid justify-items-center gap-1 px-4 text-center">
@@ -315,6 +300,9 @@
                       @if (customizationSummary(product)) {
                         <p class="theme-muted line-clamp-2 min-h-[2.5rem] text-sm">{{ customizationSummary(product) }}</p>
                       }
+                      @if (product.allergens?.length) {
+                        <p class="theme-muted text-sm">{{ productAllergenSummary(product) }}</p>
+                      }
                       <div class="flex flex-wrap gap-1.5">
                         <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
                         @if (isCustomizable(product)) {
@@ -323,9 +311,6 @@
                         <app-badge [variant]="product.available ? 'success' : 'danger'" size="sm">{{ availabilityLabel(product) }}</app-badge>
                         @if (isCatalogOnly(product)) {
                           <app-badge variant="neutral" size="sm">{{ 'menu.page.noSection' | transloco }}</app-badge>
-                        }
-                        @if (product.allergens?.length) {
-                          <app-badge variant="warning" size="sm">{{ 'menu.page.allergens' | transloco }}</app-badge>
                         }
                       </div>
                     </div>
@@ -358,9 +343,12 @@
                 <p class="theme-muted col-span-full rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noResults' | transloco }}</p>
               }
             </div>
+            @if (hasMoreProducts()) {
+              <div appNearEnd (nearEnd)="showMoreProducts()" class="h-8" aria-hidden="true"></div>
+            }
           } @else {
             <div class="grid gap-2">
-              @for (product of filteredProducts(); track product.id) {
+              @for (product of displayedProducts(); track product.id) {
                 <article
                   class="theme-panel grid gap-3 rounded-xl border p-3 shadow-sm transition-colors hover:border-cyan-500"
                   [class.ring-2]="isSelected(product)"
@@ -376,7 +364,7 @@
                     >
                       <div class="flex h-18 w-18 items-center justify-center overflow-hidden rounded-md border bg-black/5 dark:bg-white/5">
                         @if (product.imageUrl) {
-                          <img [src]="product.imageUrl" [alt]="productImageAlt(product)" class="h-full w-full object-cover" />
+                          <img loading="lazy" [src]="product.imageUrl" [alt]="productImageAlt(product)" class="h-full w-full object-cover" />
                         } @else {
                           <span class="theme-muted text-xs font-medium">{{ 'menu.page.noImage' | transloco }}</span>
                         }
@@ -385,12 +373,12 @@
                         <div class="flex flex-wrap items-center gap-1.5">
                           <h2 class="theme-title line-clamp-2 text-sm font-semibold leading-tight">{{ product.name }}</h2>
                           <app-badge [variant]="productTypeVariant(product)" size="sm">{{ productTypeLabel(product) }}</app-badge>
-                          @if (isCustomizable(product)) {
-                            <app-badge variant="secondary" size="sm">{{ 'menu.page.customizableBadge' | transloco }}</app-badge>
-                          }
                         </div>
                         <p class="theme-muted text-xs">{{ cardInclusionSummary(product) }}</p>
                         <p class="theme-muted text-xs">{{ 'menu.page.compactMetaLabel' | transloco }} {{ compactMetaSummary(product) }}</p>
+                        @if (product.allergens?.length) {
+                          <p class="theme-muted text-xs">{{ productAllergenSummary(product) }}</p>
+                        }
                       </div>
                       <div class="grid justify-items-end gap-1">
                         <span class="theme-title text-sm font-semibold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</span>
@@ -417,6 +405,9 @@
                 <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noResults' | transloco }}</p>
               }
             </div>
+            @if (hasMoreProducts()) {
+              <div appNearEnd (nearEnd)="showMoreProducts()" class="h-8" aria-hidden="true"></div>
+            }
           }
         </section>
 
@@ -481,15 +472,6 @@
           </ul>
         </div>
       </app-dialog>
-      <!-- Dialog de formulario de producto (crear / editar) -->
-      <app-product-form-dialog
-        [open]="productFormOpen()"
-        [product]="productFormProduct()"
-        [modifierGroups]="modifierGroupsForForm()"
-        [loading]="productFormLoading()"
-        (closed)="closeProductForm()"
-        (confirmed)="submitProductForm($event)"
-      />
       <!-- Dialog de confirmación de borrado de producto -->
       <app-dialog
         [open]="deleteProductOpen()"
@@ -538,6 +520,15 @@
           </app-button>
         </div>
 
+        <app-search-input
+          [label]="'menu.page.tabSearchLabel' | transloco"
+          [placeholder]="'menu.page.tabSearchPlaceholder' | transloco"
+          [value]="tabSearchQuery()"
+          [clearAriaLabel]="'menu.page.tabSearchClear' | transloco"
+          (valueChange)="updateTabSearchQuery($event)"
+          (searched)="updateTabSearchQuery($event)"
+        />
+
         @if (createSectionOpen()) {
           <div class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
             <app-input
@@ -557,12 +548,15 @@
           </div>
         }
 
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          @for (category of categories(); track category.id) {
-            <article class="theme-panel grid gap-2 rounded-xl border p-4 shadow-sm">
+        @if (filteredCategories().length === 0) {
+          <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSearchResults' | transloco }}</p>
+        }
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          @for (category of filteredCategories(); track category.id) {
+            <article class="theme-panel grid gap-2 rounded-xl border p-4 shadow-sm" [class]="categoryAccentClass(category)">
               <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-2">
-                  <app-icon name="category" size="sm" class="theme-muted shrink-0" />
+                  <app-icon name="category" size="sm" class="shrink-0" [class]="categoryIconClass(category)" />
                   <h2 class="theme-title text-base font-semibold">{{ category.name }}</h2>
                 </div>
                 <app-badge variant="neutral" size="sm">{{ categoryProductCount(category.id) }}</app-badge>
@@ -624,30 +618,64 @@
           </app-button>
         </div>
 
-        <section class="grid gap-3 md:grid-cols-2">
-          @for (group of modifierGroups(); track group.id) {
-            <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <app-icon name="tune" size="sm" class="theme-muted shrink-0" />
-                  <h2 class="theme-title text-base font-semibold">{{ group.name }}</h2>
-                </div>
-                <div class="flex items-center gap-2">
-                  <app-badge variant="secondary" size="sm">{{ group.options.length }} {{ 'menu.page.options' | transloco }}</app-badge>
-                  <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'menu.page.deleteModifierGroupAriaLabel' | transloco" (pressed)="openDeleteModifierGroup(group)">
-                    <app-icon name="delete" size="sm" [decorative]="true" />
-                  </app-button>
-                </div>
-              </div>
-              <p class="theme-muted text-sm">{{ 'menu.page.modifierType' | transloco }}: {{ group.type }}</p>
-              <div class="flex flex-wrap gap-1.5">
-                @for (option of group.options; track option.id) {
-                  <app-badge variant="neutral" size="sm">{{ option.name }}</app-badge>
-                }
-              </div>
-            </article>
-          }
-        </section>
+        <app-search-input
+          [label]="'menu.page.tabSearchLabel' | transloco"
+          [placeholder]="'menu.page.tabSearchPlaceholder' | transloco"
+          [value]="tabSearchQuery()"
+          [clearAriaLabel]="'menu.page.tabSearchClear' | transloco"
+          (valueChange)="updateTabSearchQuery($event)"
+          (searched)="updateTabSearchQuery($event)"
+        />
+
+        @if (filteredModifierGroupSections().length === 0) {
+          <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSearchResults' | transloco }}</p>
+        }
+
+        @for (section of filteredModifierGroupSections(); track section.type) {
+          <section class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm" [class]="modifierSectionAccentClass(section.type)">
+            <div class="flex items-center gap-2">
+              <app-icon [name]="modifierSectionIcon(section.type)" size="sm" class="theme-muted shrink-0" [decorative]="true" />
+              <h2 class="theme-title text-sm font-semibold">
+                {{ ('menu.page.modifierTypeLabels.' + section.type) | transloco }}
+              </h2>
+              <app-badge variant="neutral" size="sm">{{ section.groups.length }}</app-badge>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2">
+              @for (group of section.groups; track group.id) {
+                <article class="theme-soft-panel grid gap-3 rounded-lg border p-3">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h3 class="theme-title text-base font-semibold">{{ group.name }}</h3>
+                    <div class="flex items-center gap-2">
+                      <app-badge variant="secondary" size="sm">{{ group.options.length }} {{ 'menu.page.options' | transloco }}</app-badge>
+                      <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'menu.page.deleteModifierGroupAriaLabel' | transloco" (pressed)="openDeleteModifierGroup(group)">
+                        <app-icon name="delete" size="sm" [decorative]="true" />
+                      </app-button>
+                    </div>
+                  </div>
+                  @if (modifierGroupUsageCount(group.id) === 0) {
+                    <app-badge variant="warning" size="sm" class="w-fit">
+                      {{ 'menu.page.modifierUsage' | transloco: { count: 0 } }}
+                    </app-badge>
+                  } @else {
+                    <p class="theme-muted text-sm">
+                      {{ 'menu.page.modifierUsage' | transloco: { count: modifierGroupUsageCount(group.id) } }}
+                    </p>
+                  }
+                  <div class="flex flex-wrap gap-1.5">
+                    @for (option of group.options; track option.id) {
+                      <app-badge [variant]="option.priceDelta > 0 ? 'primary' : 'neutral'" size="sm">
+                        {{ option.name }}
+                        @if (option.priceDelta > 0) {
+                          · +{{ option.priceDelta | currency: 'EUR' }}
+                        }
+                      </app-badge>
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+        }
 
         <app-modifier-group-form-dialog
           [open]="modifierGroupFormOpen()"
@@ -695,15 +723,24 @@
           <p class="theme-muted mt-1 text-sm">{{ 'menu.page.comboGuideDescription' | transloco }}</p>
         </div>
 
+        <app-search-input
+          [label]="'menu.page.tabSearchLabel' | transloco"
+          [placeholder]="'menu.page.tabSearchPlaceholder' | transloco"
+          [value]="tabSearchQuery()"
+          [clearAriaLabel]="'menu.page.tabSearchClear' | transloco"
+          (valueChange)="updateTabSearchQuery($event)"
+          (searched)="updateTabSearchQuery($event)"
+        />
+
         <div class="grid gap-3 md:grid-cols-2">
-        @for (product of comboProducts(); track product.id) {
+        @for (product of filteredComboProducts(); track product.id) {
           <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
             <div class="flex h-36 items-center justify-center overflow-hidden rounded-lg border bg-black/5 dark:bg-white/5">
               @if (product.imageUrl) {
-                <img
+                <img loading="lazy"
                   [src]="product.imageUrl"
                   [alt]="productImageAlt(product)"
-                  class="h-full w-full object-cover"
+                  class="h-full w-full object-contain"
                 />
               } @else {
                 <span class="theme-muted text-sm font-medium">{{ 'menu.page.noImage' | transloco }}</span>
@@ -726,13 +763,37 @@
             </span>
           </article>
         } @empty {
-          <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noCombos' | transloco }}</p>
+          @if (tabSearchQuery().trim()) {
+            <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSearchResults' | transloco }}</p>
+          } @else {
+            <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noCombos' | transloco }}</p>
+          }
         }</div>
       </section>
     } @else if (activeTab() === 'platters') {
-      <section class="grid gap-3 md:grid-cols-2">
-        @for (product of platterProducts(); track product.id) {
+      <section class="grid gap-3">
+        <app-search-input
+          [label]="'menu.page.tabSearchLabel' | transloco"
+          [placeholder]="'menu.page.tabSearchPlaceholder' | transloco"
+          [value]="tabSearchQuery()"
+          [clearAriaLabel]="'menu.page.tabSearchClear' | transloco"
+          (valueChange)="updateTabSearchQuery($event)"
+          (searched)="updateTabSearchQuery($event)"
+        />
+        <div class="grid gap-3 md:grid-cols-2">
+        @for (product of filteredPlatterProducts(); track product.id) {
           <article class="theme-panel grid gap-3 rounded-xl border p-4 shadow-sm">
+            <div class="flex h-36 items-center justify-center overflow-hidden rounded-lg border bg-black/5 dark:bg-white/5">
+              @if (product.imageUrl) {
+                <img loading="lazy"
+                  [src]="product.imageUrl"
+                  [alt]="productImageAlt(product)"
+                  class="h-full w-full object-contain"
+                />
+              } @else {
+                <span class="theme-muted text-sm font-medium">{{ 'menu.page.noImage' | transloco }}</span>
+              }
+            </div>
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="flex items-center gap-2">
                 <app-icon name="set_meal" size="sm" class="theme-muted shrink-0" />
@@ -750,15 +811,30 @@
             </span>
           </article>
         } @empty {
-          <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noPlatters' | transloco }}</p>
-        }
+          @if (tabSearchQuery().trim()) {
+            <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSearchResults' | transloco }}</p>
+          } @else {
+            <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noPlatters' | transloco }}</p>
+          }
+        }</div>
       </section>
     } @else {
       <!-- Tab Disponibilidad -->
       <section class="grid content-start gap-3">
         <p class="theme-muted text-sm">{{ 'menu.page.availabilityManagementDescription' | transloco }}</p>
+        <app-search-input
+          [label]="'menu.page.tabSearchLabel' | transloco"
+          [placeholder]="'menu.page.tabSearchPlaceholder' | transloco"
+          [value]="tabSearchQuery()"
+          [clearAriaLabel]="'menu.page.tabSearchClear' | transloco"
+          (valueChange)="updateTabSearchQuery($event)"
+          (searched)="updateTabSearchQuery($event)"
+        />
+        @if (filteredAvailabilityProducts().length === 0) {
+          <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.page.noSearchResults' | transloco }}</p>
+        }
         <div class="grid gap-2">
-          @for (product of products(); track product.id) {
+          @for (product of filteredAvailabilityProducts(); track product.id) {
             <div class="theme-panel flex items-center justify-between gap-4 rounded-xl border px-4 py-3 shadow-sm">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
@@ -788,10 +864,10 @@
   <div class="grid gap-4">
     <div class="flex h-48 items-center justify-center overflow-hidden rounded-lg border bg-black/5 dark:bg-white/5">
       @if (product.imageUrl) {
-        <img
+        <img loading="lazy"
           [src]="product.imageUrl"
           [alt]="productImageAlt(product)"
-          class="h-full w-full object-cover"
+          class="h-full w-full object-contain"
         />
       } @else {
         <span class="theme-muted text-sm font-medium">{{ 'menu.page.noImage' | transloco }}</span>
@@ -880,7 +956,16 @@
     @if (product.allergens?.length) {
       <section>
         <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.allergens' | transloco }}</h3>
-        <p class="theme-muted mt-1 text-sm">{{ product.allergens?.join(', ') }}</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          @for (label of productAllergenLabels(product); track label) {
+            <app-badge variant="warning" size="sm">{{ label }}</app-badge>
+          }
+        </div>
+      </section>
+    } @else {
+      <section>
+        <h3 class="theme-title text-sm font-semibold">{{ 'menu.page.allergens' | transloco }}</h3>
+        <p class="theme-muted mt-1 text-sm">{{ 'menu.page.noAllergens' | transloco }}</p>
       </section>
     }
 
@@ -895,14 +980,17 @@
             <p class="theme-muted text-xs font-medium">{{ modifierLimitLabel(group) }}</p>
             @for (option of group.options; track option.id) {
               <label class="theme-field flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
-                <span class="inline-flex items-center gap-2">
+                <span class="inline-flex min-w-0 items-center gap-2">
                   <input
                     [type]="modifierDisplayType(group) === 'single-choice' ? 'radio' : 'checkbox'"
                     [name]="group.id"
                     [checked]="isOptionSelected(option.id)"
                     (change)="modifierDisplayType(group) === 'single-choice' ? selectSingle(group, option.id) : toggleOption(option.id)"
                   />
-                  <span>{{ modifierOptionLabel(group, option.name) }}</span>
+                  @if (option.imageUrl) {
+                    <img loading="lazy" [src]="option.imageUrl" [alt]="option.name" class="h-8 w-8 shrink-0 rounded object-cover" />
+                  }
+                  <span class="truncate">{{ modifierOptionLabel(group, option.name) }}</span>
                 </span>
                 <span class="theme-muted text-xs font-semibold">
                   {{ 'menu.page.pricePhrases.supplement' | transloco }} +{{ option.priceDelta | currency: 'EUR' }}

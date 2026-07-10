@@ -275,6 +275,7 @@ model RestaurantProduct {
   product                  Product                         @relation(fields: [productId], references: [id], onDelete: Cascade)
   menuItems                MenuItem[]
   modifierGroups           RestaurantProductModifierGroup[]
+  ownedModifierGroups      ModifierGroup[]
   comboSlotOptions         ComboSlotOption[]
   orderLines               OrderLine[]
   createdAt                DateTime                        @default(now())
@@ -337,13 +338,17 @@ model ModifierGroup {
   minSelections  Int
   maxSelections  Int
   isRequired     Boolean                @default(false)
+  scope          ModifierGroupScope     @default(shared)
+  ownerRestaurantProductId String?
   organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerRestaurantProduct RestaurantProduct? @relation(fields: [ownerRestaurantProductId], references: [id], onDelete: Cascade)
   options        ModifierOption[]
   restaurantProducts RestaurantProductModifierGroup[]
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
   @@unique([organizationId, name])
+  @@index([organizationId, scope])
   @@map("modifier_groups")
 }
 
@@ -352,6 +357,7 @@ model ModifierOption {
   modifierGroupId String
   name           String
   priceDeltaCents Int          @default(0)
+  imageUrl       String?
   isAvailable    Boolean       @default(true)
   sortOrder      Int
   modifierGroup  ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
@@ -773,6 +779,15 @@ enum PreparationRoute {
 enum ModifierSelectionType {
   single
   multiple
+}
+
+// 'shared' = catalogo compartido, visible en la pestaña Modificadores y
+// enlazable a cualquier producto. 'product' = suplemento privado creado desde
+// el propio editor de producto: usa la misma infraestructura pero se oculta
+// del catalogo compartido y va ligado a un RestaurantProduct concreto.
+enum ModifierGroupScope {
+  shared
+  product
 }
 
 // Los 14 alergenos de declaracion obligatoria en la UE (Reglamento 1169/2011,

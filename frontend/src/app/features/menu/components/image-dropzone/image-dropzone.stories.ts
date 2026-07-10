@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import { ImageDropzone, type ImageDropzoneUploadStatus } from './image-dropzone';
+import { ImageDropzone, type ImageDropzoneSize, type ImageDropzoneUploadStatus } from './image-dropzone';
 
 type Args = {
   imageUrl: string | null;
@@ -7,6 +7,7 @@ type Args = {
   uploadStatus: ImageDropzoneUploadStatus;
   errorMessage: string | null;
   disabled: boolean;
+  size: ImageDropzoneSize;
 };
 
 const meta: Meta<Args> = {
@@ -25,6 +26,7 @@ const meta: Meta<Args> = {
     uploadStatus: 'idle',
     errorMessage: null,
     disabled: false,
+    size: 'default',
   },
   render: (args) => ({
     props: args,
@@ -36,6 +38,7 @@ const meta: Meta<Args> = {
           [uploadStatus]="uploadStatus"
           [errorMessage]="errorMessage"
           [disabled]="disabled"
+          [size]="size"
         />
       </div>
     `,
@@ -85,6 +88,20 @@ export const DisabledWithImage: Story = {
     imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/docs/models.jpg',
     previewAlt: 'Hamburguesa craft',
     disabled: true,
+  },
+};
+
+export const Compact: Story = {
+  args: {
+    size: 'compact',
+  },
+};
+
+export const CompactWithImage: Story = {
+  args: {
+    size: 'compact',
+    imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/docs/models.jpg',
+    previewAlt: 'Queso extra',
   },
 };
 

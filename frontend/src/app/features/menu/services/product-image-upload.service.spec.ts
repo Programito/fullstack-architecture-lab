@@ -67,7 +67,7 @@ describe('ProductImageUploadService', () => {
     });
 
     await flushImagePreparation();
-    expect(getProductImageUploadSignature).toHaveBeenCalledWith('restaurant-1', { fileName: 'burger.jpg' });
+    expect(getProductImageUploadSignature).toHaveBeenCalledWith('restaurant-1', { fileName: 'burger.jpg', scope: 'products' });
 
     const request = http.expectOne('https://api.cloudinary.com/v1_1/demo-cloud/image/upload');
     expect(request.request.method).toBe('POST');

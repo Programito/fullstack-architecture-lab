@@ -8,7 +8,9 @@ function makeRepo(): ModifierGroupRepository {
   return {
     findOrganizationIdByRestaurantId: vi.fn(),
     findByOrganizationId: vi.fn(),
+    findById: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
     isAssignedToAnyProduct: vi.fn(),
     delete: vi.fn(),
   };

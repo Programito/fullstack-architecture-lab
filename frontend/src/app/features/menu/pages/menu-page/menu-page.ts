@@ -2,6 +2,7 @@ import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, filter, forkJoin, map, switchMap } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
@@ -9,24 +10,25 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Input } from '../../../../shared/ui/input/input';
+import { NearEndDirective } from '../../../../shared/ui/near-end/near-end.directive';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { MenuHealthPanel } from '../../components/menu-health-panel/menu-health-panel';
-import { ProductFormDialog } from '../../components/product-form-dialog/product-form-dialog';
+import { ALLERGEN_VALUES } from '../../models/allergen.model';
 import type { MenuAuditFilter, MenuAuditWarningType } from '../../models/menu-audit.model';
-import { deriveModifierGroupDisplayType, type ModifierGroupDisplayType } from '../../models/modifier-group.model';
+import { deriveModifierGroupDisplayType, type ModifierGroupDisplayType, type ModifierGroupType } from '../../models/modifier-group.model';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../../models/menu.models';
-import type { CreateProductInput, UpdateProductInput } from '../../models/product.model';
+import type { Allergen } from '../../models/product.model';
 import { mapHttpError } from '../../../../core/errors/http-error.mapper';
 import { ToastService } from '../../../../shared/ui/toast/toast';
-import { MenuApiService, type CreateModifierGroupRequest, type MenuData, type RestaurantProductDetailDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
 import { ModifierGroupFormDialog } from '../../components/modifier-group-form-dialog/modifier-group-form-dialog';
 import { MenuAuditService } from '../../services/menu-audit.service';
 import { MenuPricingService } from '../../services/menu-pricing.service';
 import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
+import { MenuApiService, type CreateModifierGroupRequest, type MenuData, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
 
 type AvailabilityFilter = 'all' | 'available' | 'sold-out';
 type CustomizationFilter = 'all' | 'customizable' | 'simple';
@@ -37,7 +39,7 @@ type PreparationRoute = Product['preparationPolicy']['route'];
 
 @Component({
   selector: 'app-menu-page',
-  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, MenuHealthPanel, ModifierGroupFormDialog, NgTemplateOutlet, ProductFormDialog, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
+  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, MenuHealthPanel, ModifierGroupFormDialog, NearEndDirective, NgTemplateOutlet, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
   templateUrl: './menu-page.html',
 })
 export class MenuPage {
@@ -48,6 +50,7 @@ export class MenuPage {
   private readonly bp = inject(BreakpointObserver);
   private readonly toast = inject(ToastService);
   private readonly restaurantContext = inject(RestaurantContextStore);
+  private readonly router = inject(Router);
 
   private readonly reloadTrigger = new BehaviorSubject<void>(undefined);
   private readonly _menuLoading = signal(true);
@@ -60,6 +63,33 @@ export class MenuPage {
   protected readonly menuId = computed(() => this._menuData()?.menuId ?? '');
   protected readonly categories = computed<MenuCategory[]>(() => this._menuData()?.categories ?? []);
   protected readonly modifierGroups = computed<ModifierGroup[]>(() => this._menuData()?.modifierGroups ?? []);
+  private readonly modifierGroupTypeOrder: readonly ModifierGroupType[] = ['single', 'multiple', 'remove'];
+  protected readonly modifierGroupSections = computed(() => {
+    const groups = this.sharedModifierGroups();
+    return this.modifierGroupTypeOrder
+      .map((type) => ({ type, groups: groups.filter((group) => group.type === type) }))
+      .filter((section) => section.groups.length > 0);
+  });
+
+  private readonly modifierSectionIcons: Record<ModifierGroupType, string> = {
+    single: 'radio_button_checked',
+    multiple: 'checklist',
+    remove: 'remove_circle',
+  };
+
+  private readonly modifierSectionAccentClasses: Record<ModifierGroupType, string> = {
+    single: 'border-l-4 border-l-cyan-500',
+    multiple: 'border-l-4 border-l-violet-500',
+    remove: 'border-l-4 border-l-amber-500',
+  };
+
+  protected modifierSectionIcon(type: ModifierGroupType): string {
+    return this.modifierSectionIcons[type];
+  }
+
+  protected modifierSectionAccentClass(type: ModifierGroupType): string {
+    return this.modifierSectionAccentClasses[type];
+  }
   protected readonly products = computed<Product[]>(() => {
     const menuProducts = this._menuData()?.products ?? [];
     const catalogSummaries = this._catalogProducts();
@@ -78,6 +108,13 @@ export class MenuPage {
   });
   protected readonly comboDefinitions = computed<ComboProductDefinition[]>(() => this._menuData()?.comboProductDefinitions ?? []);
 
+  // Grupos de modificadores "compartidos" (catálogo, pestaña Modificadores). Se piden aparte de
+  // this.modifierGroups() porque ese último solo trae los grupos ya enlazados a algún producto
+  // del menú (necesarios para el pricing), mientras que aquí necesitamos también los grupos
+  // compartidos sin enlazar todavía, y necesitamos excluir los suplementos privados de producto.
+  private readonly _sharedModifierGroups = signal<ModifierGroup[]>([]);
+  protected readonly sharedModifierGroups = this._sharedModifierGroups.asReadonly();
+
   constructor() {
     combineLatest([this.reloadTrigger, toObservable(this.restaurantContext.activeRestaurant)]).pipe(
       filter(([, activeRestaurant]) => activeRestaurant !== null),
@@ -85,13 +122,15 @@ export class MenuPage {
         forkJoin({
           menuData: this.menuApi.getMenu(),
           catalogProducts: this.menuApi.listProducts(),
+          sharedModifierGroups: this.menuApi.listModifierGroups('shared'),
         }),
       ),
       takeUntilDestroyed(),
     ).subscribe({
-      next: ({ menuData, catalogProducts }) => {
+      next: ({ menuData, catalogProducts, sharedModifierGroups }) => {
         this._menuData.set(menuData);
         this._catalogProducts.set(catalogProducts);
+        this._sharedModifierGroups.set(sharedModifierGroups);
         this._menuLoading.set(false);
       },
       error: (err) => {
@@ -106,16 +145,12 @@ export class MenuPage {
   protected readonly sectionToDelete = signal<MenuCategory | null>(null);
   protected readonly deleteSectionOpen = signal(false);
 
-  protected readonly productFormOpen = signal(false);
-  protected readonly productFormProduct = signal<RestaurantProductDetailDto | null>(null);
-  protected readonly productFormLoading = signal(false);
   protected readonly productToDelete = signal<Product | null>(null);
   protected readonly deleteProductOpen = signal(false);
   protected readonly deleteProductLoading = signal(false);
   protected readonly addToSectionProduct = signal<Product | null>(null);
   protected readonly addToSectionOpen = signal(false);
   protected readonly addToSectionLoading = signal(false);
-  protected readonly modifierGroupsForForm = computed(() => this.modifierGroups());
   protected readonly modifierGroupFormOpen = signal(false);
   protected readonly modifierGroupFormLoading = signal(false);
   protected readonly modifierGroupToDelete = signal<ModifierGroup | null>(null);
@@ -134,8 +169,17 @@ export class MenuPage {
   protected readonly categoryFilter = signal('all');
   protected readonly availabilityFilter = signal<AvailabilityFilter>('all');
   protected readonly customizationFilter = signal<CustomizationFilter>('all');
+  protected readonly selectedAllergenFilters = signal<Allergen[]>([]);
+  protected readonly activeFilterCount = computed(() => {
+    let count = 0;
+    if (this.categoryFilter() !== 'all') count++;
+    if (this.availabilityFilter() !== 'all') count++;
+    if (this.customizationFilter() !== 'all') count++;
+    count += this.selectedAllergenFilters().length;
+    return count;
+  });
   protected readonly auditFilter = signal<MenuAuditFilter>('all');
-  protected readonly reviewPanelOpen = signal(true);
+  protected readonly reviewPanelOpen = signal(false);
   protected readonly reviewFilters = signal<ReviewFilter[]>([]);
   protected readonly productViewMode = signal<ProductViewMode>('cards');
   protected readonly activeTab = signal<MenuPageTab>('products');
@@ -179,6 +223,12 @@ export class MenuPage {
     { label: this.translate('menu.page.customizationCustomizable'), value: 'customizable' },
     { label: this.translate('menu.page.customizationSimple'), value: 'simple' },
   ]);
+  protected readonly allergenFilterOptions = computed(() =>
+    ALLERGEN_VALUES.map((value) => ({
+      value,
+      label: this.translate(`menu.allergen.${value}`),
+    })),
+  );
   protected readonly productViewModeOptions = computed<SegmentedControlOption[]>(() => [
     { label: this.translate('menu.page.viewModes.cards'), value: 'cards' },
     { label: this.translate('menu.page.viewModes.compact'), value: 'compact' },
@@ -208,6 +258,7 @@ export class MenuPage {
     const categoryFilter = this.categoryFilter();
     const availabilityFilter = this.availabilityFilter();
     const customizationFilter = this.customizationFilter();
+    const selectedAllergenFilters = this.selectedAllergenFilters();
     const auditFilter = this.auditFilter();
     const reviewFilters = this.reviewFilters();
 
@@ -215,10 +266,26 @@ export class MenuPage {
       .filter((product) => categoryFilter === 'all' || product.categoryId === categoryFilter)
       .filter((product) => availabilityFilter === 'all' || (availabilityFilter === 'available' ? product.available : !product.available))
       .filter((product) => customizationFilter === 'all' || (customizationFilter === 'customizable' ? this.isCustomizable(product) : this.isSimple(product)))
+      .filter((product) => selectedAllergenFilters.length === 0 || this.matchesAllergenFilters(product, selectedAllergenFilters))
       .filter((product) => auditFilter === 'all' || this.productHasAuditWarning(product, auditFilter))
       .filter((product) => reviewFilters.every((filter) => this.matchesReviewFilter(product, filter)))
       .filter((product) => !query || this.productSearchText(product).includes(query));
   });
+  // Carga progresiva: solo se renderizan los primeros `visibleProductCount` productos y el
+  // centinela appNearEnd va ampliando el tramo al acercarse al final de la lista.
+  private static readonly PRODUCTS_PAGE_SIZE = 24;
+  protected readonly visibleProductCount = signal(MenuPage.PRODUCTS_PAGE_SIZE);
+  protected readonly displayedProducts = computed(() => this.filteredProducts().slice(0, this.visibleProductCount()));
+  protected readonly hasMoreProducts = computed(() => this.filteredProducts().length > this.visibleProductCount());
+
+  protected showMoreProducts(): void {
+    this.visibleProductCount.update((count) => count + MenuPage.PRODUCTS_PAGE_SIZE);
+  }
+
+  private resetVisibleProductCount(): void {
+    this.visibleProductCount.set(MenuPage.PRODUCTS_PAGE_SIZE);
+  }
+
   protected readonly comboProducts = computed(() => this.products().filter((product) => product.type === 'combo'));
   protected readonly platterProducts = computed(() => this.products().filter((product) => product.type === 'platter'));
   protected readonly unavailableProducts = computed(() => this.products().filter((product) => !product.available));
@@ -251,18 +318,62 @@ export class MenuPage {
     () => this.comboProducts().filter((product) => this.isCustomizable(product)).length,
   );
 
+  protected readonly tabSearchQuery = signal('');
+
+  protected readonly filteredCategories = computed(() => {
+    const q = this.normalize(this.tabSearchQuery());
+    return q ? this.categories().filter((category) => this.normalize(category.name).includes(q)) : this.categories();
+  });
+
+  protected readonly filteredModifierGroupSections = computed(() => {
+    const q = this.normalize(this.tabSearchQuery());
+    if (!q) return this.modifierGroupSections();
+    return this.modifierGroupSections()
+      .map((section) => ({ ...section, groups: section.groups.filter((group) => this.normalize(group.name).includes(q)) }))
+      .filter((section) => section.groups.length > 0);
+  });
+
+  protected readonly filteredComboProducts = computed(() => {
+    const q = this.normalize(this.tabSearchQuery());
+    return q ? this.comboProducts().filter((product) => this.normalize(product.name).includes(q)) : this.comboProducts();
+  });
+
+  protected readonly filteredPlatterProducts = computed(() => {
+    const q = this.normalize(this.tabSearchQuery());
+    return q ? this.platterProducts().filter((product) => this.normalize(product.name).includes(q)) : this.platterProducts();
+  });
+
+  protected readonly filteredAvailabilityProducts = computed(() => {
+    const q = this.normalize(this.tabSearchQuery());
+    return q ? this.products().filter((product) => this.normalize(product.name).includes(q)) : this.products();
+  });
+
   protected updateQuery(query: string): void {
     this.query.set(query);
+    this.resetVisibleProductCount();
+  }
+
+  protected updateTabSearchQuery(query: string): void {
+    this.tabSearchQuery.set(query);
   }
 
   protected setActiveTab(value: string): void {
     if (this.isMenuPageTab(value)) {
       this.activeTab.set(value);
+      this.tabSearchQuery.set('');
+      this.resetVisibleProductCount();
     }
   }
 
   protected setAuditFilter(value: MenuAuditFilter): void {
     this.auditFilter.set(value);
+  }
+
+  protected handleAuditFilterSelected(value: MenuAuditFilter): void {
+    // Se queda abierto igual que los filtros manuales de abajo: ambos aplican en vivo y el
+    // usuario cierra explícitamente con "Ver productos" cuando ya ve el recuento que le interesa.
+    this.setAuditFilter(value);
+    this.resetSelection();
   }
 
   protected toggleReviewFilter(filter: ReviewFilter): void {
@@ -272,6 +383,18 @@ export class MenuPage {
 
   protected hasReviewFilter(filter: ReviewFilter): boolean {
     return this.reviewFilters().includes(filter);
+  }
+
+  protected readonly hasActiveReviewFilters = computed(() => this.auditFilter() !== 'all' || this.reviewFilters().length > 0);
+
+  protected clearAllReviewFilters(): void {
+    this.auditFilter.set('all');
+    this.reviewFilters.set([]);
+    this.resetSelection();
+  }
+
+  protected applyReviewFiltersAndClose(): void {
+    this.reviewPanelOpen.set(false);
   }
 
   protected setProductViewMode(value: string): void {
@@ -364,49 +487,12 @@ export class MenuPage {
   }
 
   protected openCreateProduct(): void {
-    this.productFormProduct.set(null);
-    this.productFormOpen.set(true);
+    this.router.navigateByUrl('/restaurant-pos/menu/products/new');
   }
 
   protected openEditProduct(product: Product): void {
     if (!product.restaurantProductId) return;
-    this.menuApi.getProduct(product.restaurantProductId).subscribe({
-      next: (detail) => {
-        this.productFormProduct.set(detail);
-        this.productFormOpen.set(true);
-      },
-    });
-  }
-
-  protected closeProductForm(): void {
-    this.productFormOpen.set(false);
-    this.productFormProduct.set(null);
-  }
-
-  protected submitProductForm(input: CreateProductInput | UpdateProductInput): void {
-    this.productFormLoading.set(true);
-    const isEdit = this.productFormProduct() !== null;
-    const product = this.productFormProduct();
-    const req$ = product
-      ? this.menuApi.updateProduct(product.id, input as UpdateProductInput)
-      : this.menuApi.createProduct(input as CreateProductInput);
-    req$.subscribe({
-      complete: () => {
-        this.productFormLoading.set(false);
-        this.productFormOpen.set(false);
-        this.productFormProduct.set(null);
-        this.reloadMenuData();
-        this.toast.success({ title: this.translate(isEdit ? 'menu.product.success.updated' : 'menu.product.success.created') });
-      },
-      error: (err) => {
-        this.productFormLoading.set(false);
-        const appError = mapHttpError(err);
-        const key = appError.type === 'conflict'
-          ? 'menu.product.errors.nameTaken'
-          : 'menu.product.errors.saveFailed';
-        this.toast.danger({ title: this.translate(key) });
-      },
-    });
+    this.router.navigateByUrl(`/restaurant-pos/menu/products/${product.restaurantProductId}/edit`);
   }
 
   protected openDeleteProduct(product: Product): void {
@@ -552,6 +638,17 @@ export class MenuPage {
       this.customizationFilter.set(value);
       this.resetSelection();
     }
+  }
+
+  protected hasAllergenFilter(allergen: Allergen): boolean {
+    return this.selectedAllergenFilters().includes(allergen);
+  }
+
+  protected toggleAllergenFilter(allergen: Allergen): void {
+    this.selectedAllergenFilters.update((current) =>
+      current.includes(allergen) ? current.filter((item) => item !== allergen) : [...current, allergen],
+    );
+    this.resetSelection();
   }
 
   protected isSelected(product: Product): boolean {
@@ -744,8 +841,29 @@ export class MenuPage {
     return this.translate(`menu.page.preparationRoutes.${this.preparationRouteKey(product.preparationPolicy.route)}`);
   }
 
+  protected productAllergenLabels(product: Product): string[] {
+    return (product.allergens ?? []).map((allergen) => this.toAllergenLabel(allergen));
+  }
+
+  protected productAllergenSummary(product: Product, maxVisible = 2): string {
+    const labels = this.productAllergenLabels(product);
+    if (!labels.length) {
+      return this.translate('menu.page.noAllergens');
+    }
+
+    if (labels.length <= maxVisible) {
+      return labels.join(', ');
+    }
+
+    return `${labels.slice(0, maxVisible).join(', ')} +${labels.length - maxVisible}`;
+  }
+
   protected categoryProductCount(categoryId: string): number {
     return this.products().filter((product) => product.categoryId === categoryId).length;
+  }
+
+  protected modifierGroupUsageCount(groupId: string): number {
+    return this.products().filter((product) => product.modifierGroupIds.includes(groupId)).length;
   }
 
   protected childCategories(categoryId: string): string {
@@ -757,6 +875,16 @@ export class MenuPage {
 
   protected parentCategoryName(category: MenuCategory): string {
     return this.categories().find((candidate) => candidate.id === category.parentId)?.name ?? category.parentId ?? '';
+  }
+
+  protected categoryAccentClass(category: MenuCategory): string {
+    return category.parentId
+      ? 'border-l-4 border-l-violet-400 dark:border-l-violet-500'
+      : 'border-l-4 border-l-cyan-400 dark:border-l-cyan-500';
+  }
+
+  protected categoryIconClass(category: MenuCategory): string {
+    return category.parentId ? 'text-violet-500 dark:text-violet-400' : 'text-cyan-500 dark:text-cyan-400';
   }
 
   protected comboSlotCount(product: Product): number {
@@ -807,7 +935,7 @@ export class MenuPage {
         product.type,
         this.productTypeLabel(product),
         this.preparationRouteLabel(product),
-        ...(product.allergens ?? []),
+        ...this.productAllergenLabels(product),
         this.modifierGroupNames(product),
       ]
         .filter(Boolean)
@@ -874,6 +1002,30 @@ export class MenuPage {
     if (filter === 'without-image') return !product.imageUrl;
     if (filter === 'no-section') return this.isCatalogOnly(product);
     return !product.description?.trim();
+  }
+
+  private matchesAllergenFilters(product: Product, selectedFilters: readonly Allergen[]): boolean {
+    const normalizedProductAllergens = new Set(
+      (product.allergens ?? []).flatMap((allergen) => {
+        const label = this.toAllergenLabel(allergen);
+        return [this.normalize(allergen), this.normalize(label)];
+      }),
+    );
+
+    return selectedFilters.some((filter) => {
+      const label = this.translate(`menu.allergen.${filter}`);
+      return normalizedProductAllergens.has(this.normalize(filter)) || normalizedProductAllergens.has(this.normalize(label));
+    });
+  }
+
+  private toAllergenLabel(allergen: string): string {
+    const normalizedValue = this.normalize(allergen);
+    const matched = ALLERGEN_VALUES.find((candidate) => {
+      const label = this.translate(`menu.allergen.${candidate}`);
+      return this.normalize(candidate) === normalizedValue || this.normalize(label) === normalizedValue;
+    });
+
+    return matched ? this.translate(`menu.allergen.${matched}`) : allergen;
   }
 
   private isMenuPageTab(value: string): value is MenuPageTab {

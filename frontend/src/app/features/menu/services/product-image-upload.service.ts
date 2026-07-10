@@ -32,16 +32,22 @@ export class ProductImageUploadService {
   private readonly api = inject(RestaurantPosApiService);
   private readonly context = inject(RestaurantContextStore);
 
-  uploadProductImage(file: File): Observable<string> {
-    const restaurantId = this.context.activeRestaurant()?.id;
-    if (!restaurantId) {
-      throw new Error('No active restaurant');
-    }
+  uploadProductImage(file: File, scope: 'products' | 'modifier-options' = 'products'): Observable<string> {
+    return defer(() => {
+      const restaurantId = this.context.activeRestaurant()?.id;
+      if (!restaurantId) {
+        return throwError(() => new ProductImageUploadError('upload-failed', 'No active restaurant'));
+      }
 
+      return this.uploadToRestaurant(file, scope, restaurantId);
+    });
+  }
+
+  private uploadToRestaurant(file: File, scope: 'products' | 'modifier-options', restaurantId: string): Observable<string> {
     return defer(() => from(prepareImageFile(file))).pipe(
       catchError((error) => throwError(() => this.mapError(error))),
       switchMap((signature) => {
-        return this.api.getProductImageUploadSignature(restaurantId, { fileName: signature.name }).pipe(
+        return this.api.getProductImageUploadSignature(restaurantId, { fileName: signature.name, scope }).pipe(
           map((payload) => ({ payload, preparedFile: signature })),
         );
       }),

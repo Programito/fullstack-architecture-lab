@@ -110,7 +110,8 @@ export class ClientLogErrorHandler implements ErrorHandler {
 export const clientLogHttpInterceptor: HttpInterceptorFn = (request, next) => {
   const logs = inject(ClientLogsService);
   const router = inject(Router);
-  const requestWithOrigin = request.headers.has(CLIENT_ORIGIN_HEADER)
+  const isOwnApi = !request.url.startsWith('http') || request.url.startsWith(window.location.origin);
+  const requestWithOrigin = !isOwnApi || request.headers.has(CLIENT_ORIGIN_HEADER)
     ? request
     : request.clone({ setHeaders: { [CLIENT_ORIGIN_HEADER]: resolveClientOrigin(router.url, request.url) } });
 

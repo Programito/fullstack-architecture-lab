@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { Router } from '@angular/router';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { MenuApiService, type MenuData, type MenuSectionAdminDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
@@ -27,7 +28,7 @@ function buildMockMenuData(): MenuData {
   return {
     menuId: 'menu-demo-main',
     categories: localizeMenuCategories('es'),
-    products: localizeMenuProducts('es'),
+    products: localizeMenuProducts('es').map((product) => ({ ...product, restaurantProductId: product.restaurantProductId ?? product.id })),
     modifierGroups: localizeModifierGroups('es'),
     comboProductDefinitions: localizeComboProductDefinitions('es'),
   };
@@ -75,11 +76,14 @@ function makeMockMenuApi(overrides: Partial<{
 }
 
 describe('MenuPage', () => {
+  const navigateByUrl = vi.fn(async () => true);
+
   const renderPage = async (
     apiOverrides = {},
     locale: 'es' | 'en' | 'ca' = 'es',
     breakpoints: Record<string, boolean> = { '(max-width: 1023px)': false, '(min-width: 900px)': true },
   ) => {
+    navigateByUrl.mockClear();
     const i18n = provideI18nTesting(locale);
 
     const result = await render(MenuPage, {
@@ -94,6 +98,7 @@ describe('MenuPage', () => {
         },
         { provide: MenuApiService, useValue: makeMockMenuApi(apiOverrides) },
         { provide: RestaurantContextStore, useValue: { activeRestaurant: signal(ACTIVE_RESTAURANT).asReadonly() } },
+        { provide: Router, useValue: { navigateByUrl } },
       ],
     });
     await result.fixture.whenStable();
@@ -122,6 +127,8 @@ describe('MenuPage', () => {
   it('filters by category, availability and customization state', async () => {
     const { fixture } = await renderPage();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: 'Categoría' }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: 'Bebidas' }));
@@ -143,9 +150,54 @@ describe('MenuPage', () => {
     expect(screen.queryByText('No hay productos que coincidan con los filtros.')).toBeNull();
   });
 
+  it('filters products by a selected allergen', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Gluten' }));
+    fixture.detectChanges();
+
+    expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Café solo')).toBeNull();
+  });
+
+  it('combines multiple allergen filters with OR logic', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Pescado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leche' }));
+    fixture.detectChanges();
+
+    expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Ensalada César').length).toBeGreaterThan(0);
+  });
+
+  it('shows translated allergens in the selected product detail', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hamburguesa craft/i }));
+    fixture.detectChanges();
+
+    const details = screen.getByRole('complementary');
+    expect(within(details).getByText(/Gluten/)).toBeTruthy();
+    expect(within(details).getByText(/Leche/)).toBeTruthy();
+  });
+
+  it('shows an allergen summary in product cards when allergens are declared', async () => {
+    await renderPage();
+
+    const card = screen.getAllByRole('button', { name: 'Hamburguesa craft' })[0];
+    expect(within(card).getAllByText(/Gluten/).length).toBeGreaterThan(0);
+  });
+
   it('lists menu products with a menu badge and keeps them out of the simple filter', async () => {
     const { fixture } = await renderPage();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: 'Categoría' }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: 'Menús' }));
@@ -170,21 +222,32 @@ it('renders product images when available and the placeholder when missing', asy
 });
 
 
+it('opens the menu review panel as a modal, closed by default', async () => {
+  await renderPage();
+
+  expect(screen.queryByLabelText('Revisión rápida del menú')).toBeNull();
+});
+
 it('renders the menu health panel with actionable warning groups', async () => {
-  await renderPage({
+  const { fixture } = await renderPage({
     listProducts: () => of([CATALOG_ONLY_PRODUCT]),
   });
 
+  fireEvent.click(screen.getByRole('button', { name: /Revisar menú/i }));
+  fixture.detectChanges();
+
   const healthPanel = screen.getByLabelText('Revisión rápida del menú');
-  expect(screen.getByText('Revisión rápida del menú')).toBeTruthy();
   expect(within(healthPanel).getByRole('button', { name: /Sin imagen/i })).toBeTruthy();
   expect(within(healthPanel).getByRole('button', { name: /Sin sección/i })).toBeTruthy();
 });
 
-it('filters the current product list from a warning shortcut', async () => {
+it('filters the current product list from a warning shortcut and closes the modal', async () => {
   const { fixture } = await renderPage({
     listProducts: () => of([CATALOG_ONLY_PRODUCT]),
   });
+
+  fireEvent.click(screen.getByRole('button', { name: /Revisar menú/i }));
+  fixture.detectChanges();
 
   const healthPanel = screen.getByLabelText('Revisión rápida del menú');
   fireEvent.click(within(healthPanel).getByRole('button', { name: /Sin sección/i }));
@@ -192,7 +255,7 @@ it('filters the current product list from a warning shortcut', async () => {
 
   expect(screen.getAllByText('Agua mineral').length).toBeGreaterThan(0);
   expect(screen.queryByText('Hamburguesa craft')).toBeNull();
-  expect(screen.getByRole('button', { name: /Ver todo/i })).toBeTruthy();
+  expect(screen.queryByLabelText('Revisión rápida del menú')).toBeNull();
 });
 
 it('keeps the desktop detail panel pinned while browsing the list', async () => {
@@ -217,6 +280,9 @@ it('supports a compact review mode', async () => {
 
 it('combines operational review filters', async () => {
   const { fixture } = await renderPage();
+
+  fireEvent.click(screen.getByRole('button', { name: /Revisar menú/i }));
+  fixture.detectChanges();
 
   fireEvent.click(screen.getByRole('button', { name: 'Solo menús' }));
   fireEvent.click(screen.getByRole('button', { name: 'Con imagen' }));
@@ -254,6 +320,19 @@ it('opens and closes the filter dialog in mobile mode', async () => {
   expect(screen.queryByRole('dialog', { name: 'Filtros' })).toBeNull();
 });
 
+it('shows allergen filters inside the mobile filter dialog', async () => {
+  const { fixture } = await renderPage({}, 'es', {
+    '(max-width: 1023px)': true,
+    '(min-width: 900px)': false,
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+  fixture.detectChanges();
+
+  const dialog = screen.getByRole('dialog', { name: 'Filtros' });
+  expect(within(dialog).getByRole('button', { name: 'Gluten' })).toBeTruthy();
+});
+
 it('shows combo summaries inside the mobile detail dialog', async () => {
   const { fixture } = await renderPage({}, 'es', {
     '(max-width: 1023px)': true,
@@ -276,7 +355,7 @@ it('keeps create product reachable on smaller widths', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Nuevo producto' }));
   fixture.detectChanges();
 
-  expect(screen.getByRole('dialog', { name: /Nuevo producto/i })).toBeTruthy();
+  expect(navigateByUrl).toHaveBeenCalledWith('/restaurant-pos/menu/products/new');
 });
 
 it('shows only one primary create action in mobile layout', async () => {
@@ -286,6 +365,22 @@ it('shows only one primary create action in mobile layout', async () => {
   });
 
   expect(screen.getAllByRole('button', { name: 'Nuevo producto' })).toHaveLength(1);
+});
+
+it('navigates to the product editor page when creating a product', async () => {
+  await renderPage();
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Nuevo producto' })[0]);
+
+  expect(navigateByUrl).toHaveBeenCalledWith('/restaurant-pos/menu/products/new');
+});
+
+it('navigates to the product editor page when editing a product', async () => {
+  await renderPage();
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Editar producto' })[0]);
+
+  expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching(/^\/restaurant-pos\/menu\/products\/.+\/edit$/));
 });
 
 it('keeps long product names clamped inside cards', async () => {
@@ -473,6 +568,110 @@ it('renders changeable extras summaries for customizable products', async () => 
 
     expect(multiChoiceGroup).toBeTruthy();
     expect(within(multiChoiceGroup!).getByText('Hasta 3')).toBeTruthy();
+  });
+
+  it('shows a price badge for priced options and a warning badge for unused modifier groups', async () => {
+    const menuData = buildMockMenuData();
+    menuData.modifierGroups = [
+      ...menuData.modifierGroups,
+      {
+        id: 'unused-group',
+        name: 'Grupo sin usar',
+        type: 'multiple',
+        required: false,
+        minSelections: 0,
+        maxSelections: 1,
+        options: [{ id: 'unused-opt', name: 'Opción suelta', priceDelta: 0 }],
+      },
+    ];
+
+    const { fixture } = await renderPage({ getMenu: () => of(menuData) });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+
+    const extrasCard = screen.getByText('Extras de hamburguesa').closest('article');
+    expect(within(extrasCard!).getByText(/Bacon.*\+€1\.50/)).toBeTruthy();
+
+    const unusedCard = screen.getByText('Grupo sin usar').closest('article');
+    expect(within(unusedCard!).getByText('Usado en 0 productos')).toBeTruthy();
+  });
+
+  it('groups modifier groups by selection type with a translated heading', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+
+    expect(screen.getAllByText(/Selección única/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Selección múltiple/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Quitar ingredientes/).length).toBeGreaterThan(0);
+  });
+
+  it('filters modifier groups with the per-tab search box', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+
+    fireEvent.input(screen.getByLabelText('Buscar en esta pestaña'), { target: { value: 'extras de hamburguesa' } });
+    fixture.detectChanges();
+
+    expect(screen.getByText('Extras de hamburguesa')).toBeTruthy();
+    expect(screen.queryByText('Punto de la carne')).toBeNull();
+  });
+
+  it('shows a no-results message when the tab search has no matches', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+
+    fireEvent.input(screen.getByLabelText('Buscar en esta pestaña'), { target: { value: 'zzzzz' } });
+    fixture.detectChanges();
+
+    expect(screen.getByText('No hay resultados para tu búsqueda.')).toBeTruthy();
+  });
+
+  it('clears the tab search when switching tabs', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+    fireEvent.input(screen.getByLabelText('Buscar en esta pestaña'), { target: { value: 'extras' } });
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Categorías' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+
+    expect((screen.getByLabelText('Buscar en esta pestaña') as HTMLInputElement).value).toBe('');
+    expect(screen.getByText('Punto de la carne')).toBeTruthy();
+  });
+
+  it('filters combos with the per-tab search box', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
+    fixture.detectChanges();
+
+    fireEvent.input(screen.getByLabelText('Buscar en esta pestaña'), { target: { value: 'zzzzz' } });
+    fixture.detectChanges();
+
+    expect(screen.queryByText('Menu Classic Burger')).toBeNull();
+    expect(screen.getByText('No hay resultados para tu búsqueda.')).toBeTruthy();
+  });
+
+  it('shows an image or placeholder on platter cards, matching combos', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Platos combinados' }));
+    fixture.detectChanges();
+
+    const card = screen.getByText('Plato combinado de lomo').closest('article');
+    expect(card).toBeTruthy();
+    expect(within(card!).queryByRole('img') ?? within(card!).getByText('Sin imagen')).toBeTruthy();
   });
 
   it('shows management tabs for categories, modifiers, menus, platters and availability', async () => {

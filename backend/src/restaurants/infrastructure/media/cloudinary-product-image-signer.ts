@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import type { ProductImageSigningPayload, ProductImageSigningPort } from '../../application/ports/product-image-signing.port';
+import type { ImageUploadScope, ProductImageSigningPayload, ProductImageSigningPort } from '../../application/ports/product-image-signing.port';
 
 @Injectable()
 export class CloudinaryProductImageSigner implements ProductImageSigningPort {
@@ -13,12 +13,13 @@ export class CloudinaryProductImageSigner implements ProductImageSigningPort {
     restaurantId: string;
     fileName?: string;
     timestamp?: number;
+    scope?: ImageUploadScope;
   }): ProductImageSigningPayload {
     const cloudName = requiredConfig(this.config, 'CLOUDINARY_CLOUD_NAME');
     const apiKey = requiredConfig(this.config, 'CLOUDINARY_API_KEY');
     const apiSecret = requiredConfig(this.config, 'CLOUDINARY_API_SECRET');
     const timestamp = input.timestamp ?? Math.floor(Date.now() / 1000);
-    const folder = `restaurants/${input.restaurantId}/products`;
+    const folder = `restaurants/${input.restaurantId}/${input.scope ?? 'products'}`;
     const signatureBase = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
     const signature = createHash('sha1').update(signatureBase).digest('hex');
 

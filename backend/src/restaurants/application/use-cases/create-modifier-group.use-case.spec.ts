@@ -10,7 +10,9 @@ function makeRepo(): ModifierGroupRepository {
   return {
     findOrganizationIdByRestaurantId: vi.fn(),
     findByOrganizationId: vi.fn(),
+    findById: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
     isAssignedToAnyProduct: vi.fn(),
     delete: vi.fn(),
   };
@@ -35,6 +37,8 @@ const created = {
   maxSelections: 3,
   isRequired: false,
   options: [{ id: 'o-1', name: 'Queso extra', priceDeltaCents: 50, isAvailable: true }],
+  scope: 'shared' as const,
+  ownerRestaurantProductId: null,
 };
 
 describe('CreateModifierGroupUseCase', () => {

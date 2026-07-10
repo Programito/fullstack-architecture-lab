@@ -158,6 +158,7 @@ export class RestaurantProductsController {
     const result = await this.createProductImageUploadSignature.execute({
       restaurantId: id,
       fileName: body.fileName,
+      scope: body.scope,
     });
     return ProductImageUploadSignatureResponseDto.from(unwrapResultOrThrow(result));
   }

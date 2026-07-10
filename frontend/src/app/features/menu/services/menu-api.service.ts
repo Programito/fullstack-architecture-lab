@@ -10,6 +10,7 @@ import type {
   RestaurantMenuModifierGroupDto,
   RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
+  UpdateModifierGroupRequest,
   UpdateRestaurantProductRequest,
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
@@ -87,12 +88,20 @@ export class MenuApiService {
     return this.api.deleteRestaurantProduct(this.restaurantId, productId);
   }
 
-  createModifierGroup(data: CreateModifierGroupRequest): Observable<RestaurantMenuModifierGroupDto> {
-    return this.api.createModifierGroup(this.restaurantId, data);
+  createModifierGroup(data: CreateModifierGroupRequest): Observable<ModifierGroup> {
+    return this.api.createModifierGroup(this.restaurantId, data).pipe(map(mapModifierGroupDto));
+  }
+
+  updateModifierGroup(groupId: string, data: UpdateModifierGroupRequest): Observable<ModifierGroup> {
+    return this.api.updateModifierGroup(this.restaurantId, groupId, data).pipe(map(mapModifierGroupDto));
   }
 
   deleteModifierGroup(groupId: string): Observable<void> {
     return this.api.deleteModifierGroup(this.restaurantId, groupId);
+  }
+
+  listModifierGroups(scope?: 'shared' | 'product'): Observable<ModifierGroup[]> {
+    return this.api.listModifierGroups(this.restaurantId, scope).pipe(map((groups) => groups.map(mapModifierGroupDto)));
   }
 }
 
@@ -121,23 +130,7 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
     }
   }
 
-  const modifierGroups: ModifierGroup[] = [...modifierGroupMap.values()].map((mg) => ({
-    id: mg.id,
-    name: mg.name,
-    type: mg.selectionType,
-    displayType: deriveModifierGroupDisplayType({
-      type: mg.selectionType,
-      options: mg.options.map((opt) => ({ priceDelta: opt.priceDeltaCents / 100 })),
-    }),
-    required: mg.isRequired,
-    minSelections: mg.minSelections,
-    maxSelections: mg.maxSelections,
-    options: mg.options.map((opt) => ({
-      id: opt.id,
-      name: opt.name,
-      priceDelta: opt.priceDeltaCents / 100,
-    })),
-  }));
+  const modifierGroups: ModifierGroup[] = [...modifierGroupMap.values()].map(mapModifierGroupDto);
 
   const products: Product[] = allItems.map(({ item, sectionId }) => mapApiItemToProduct(item, sectionId));
 
@@ -172,6 +165,27 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
     });
 
   return { menuId: dto.id, categories, products, modifierGroups, comboProductDefinitions };
+}
+
+function mapModifierGroupDto(mg: RestaurantMenuModifierGroupDto): ModifierGroup {
+  return {
+    id: mg.id,
+    name: mg.name,
+    type: mg.selectionType,
+    displayType: deriveModifierGroupDisplayType({
+      type: mg.selectionType,
+      options: mg.options.map((opt) => ({ priceDelta: opt.priceDeltaCents / 100 })),
+    }),
+    required: mg.isRequired,
+    minSelections: mg.minSelections,
+    maxSelections: mg.maxSelections,
+    options: mg.options.map((opt) => ({
+      id: opt.id,
+      name: opt.name,
+      priceDelta: opt.priceDeltaCents / 100,
+      imageUrl: opt.imageUrl ?? null,
+    })),
+  };
 }
 
 function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): Product {

@@ -8,7 +8,9 @@ function makeRepo(): ModifierGroupRepository {
   return {
     findOrganizationIdByRestaurantId: vi.fn(),
     findByOrganizationId: vi.fn(),
+    findById: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
     isAssignedToAnyProduct: vi.fn(),
     delete: vi.fn(),
   };
@@ -23,6 +25,8 @@ const group = {
   maxSelections: 3,
   isRequired: false,
   options: [],
+  scope: 'shared' as const,
+  ownerRestaurantProductId: null,
 };
 
 describe('ListModifierGroupsUseCase', () => {
@@ -36,7 +40,18 @@ describe('ListModifierGroupsUseCase', () => {
 
     expect(result).toEqual(ok([group]));
     expect(repo.findOrganizationIdByRestaurantId).toHaveBeenCalledWith('r-1');
-    expect(repo.findByOrganizationId).toHaveBeenCalledWith('org-1');
+    expect(repo.findByOrganizationId).toHaveBeenCalledWith('org-1', undefined);
+  });
+
+  it('forwards the scope filter to the repository', async () => {
+    const repo = makeRepo();
+    vi.mocked(repo.findOrganizationIdByRestaurantId).mockResolvedValue('org-1');
+    vi.mocked(repo.findByOrganizationId).mockResolvedValue([group]);
+    const useCase = new ListModifierGroupsUseCase(repo);
+
+    await useCase.execute({ restaurantId: 'r-1', scope: 'shared' });
+
+    expect(repo.findByOrganizationId).toHaveBeenCalledWith('org-1', 'shared');
   });
 
   it('returns restaurant_not_found when the restaurant does not exist', async () => {

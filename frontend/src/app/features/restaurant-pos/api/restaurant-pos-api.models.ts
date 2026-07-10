@@ -405,6 +405,7 @@ export type RestaurantMenuModifierOptionDto = {
   id: string;
   name: string;
   priceDeltaCents: number;
+  imageUrl?: string | null;
   isAvailable: boolean;
 };
 
@@ -416,6 +417,8 @@ export type RestaurantMenuModifierGroupDto = {
   maxSelections: number;
   isRequired: boolean;
   options: RestaurantMenuModifierOptionDto[];
+  scope?: 'shared' | 'product';
+  ownerRestaurantProductId?: string | null;
 };
 
 export type RestaurantMenuComboSlotOptionDto = {
@@ -584,6 +587,7 @@ export type UpdateRestaurantProductRequest = {
 
 export type CreateProductImageUploadSignatureRequest = {
   fileName?: string;
+  scope?: 'products' | 'modifier-options';
 };
 
 export type ProductImageUploadSignatureDto = {
@@ -640,9 +644,21 @@ export type UpdateServiceWindowsRequest = {
 export type CreateModifierGroupOptionRequest = {
   name: string;
   priceDeltaCents: number;
+  imageUrl?: string;
 };
 
 export type CreateModifierGroupRequest = {
+  name: string;
+  selectionType: 'single' | 'multiple';
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: CreateModifierGroupOptionRequest[];
+  scope?: 'shared' | 'product';
+  ownerRestaurantProductId?: string;
+};
+
+export type UpdateModifierGroupRequest = {
   name: string;
   selectionType: 'single' | 'multiple';
   minSelections: number;

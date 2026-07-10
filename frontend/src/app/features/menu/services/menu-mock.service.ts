@@ -60,8 +60,18 @@ export const MOCK_MODIFIER_GROUP_DEFINITIONS: ModifierGroupDefinition[] = [
     minSelections: 0,
     maxSelections: 3,
     options: [
-      { id: 'extra-bacon', name: { es: 'Bacon', en: 'Bacon', ca: 'Bacó' }, priceDelta: 1.5 },
-      { id: 'extra-cheese', name: { es: 'Queso', en: 'Cheese', ca: 'Formatge' }, priceDelta: 1 },
+      {
+        id: 'extra-bacon',
+        name: { es: 'Bacon', en: 'Bacon', ca: 'Bacó' },
+        priceDelta: 1.5,
+        imageUrl: 'https://res.cloudinary.com/demo/image/upload/w_120,h_120,c_fill/food/bacon.jpg',
+      },
+      {
+        id: 'extra-cheese',
+        name: { es: 'Queso', en: 'Cheese', ca: 'Formatge' },
+        priceDelta: 1,
+        imageUrl: 'https://res.cloudinary.com/demo/image/upload/w_120,h_120,c_fill/food/cheese.jpg',
+      },
       { id: 'extra-egg', name: { es: 'Huevo', en: 'Egg', ca: 'Ou' }, priceDelta: 1.2 },
     ],
   },

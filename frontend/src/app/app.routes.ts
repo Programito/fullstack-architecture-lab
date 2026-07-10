@@ -51,6 +51,24 @@ export const routes: Routes = [
           import('./features/identity/pages/user-admin-page/user-admin-page').then((module) => module.UserAdminPage),
       },
       {
+        path: 'menu/products/new',
+        canActivate: [restaurantPosSectionGuard, restaurantScopeGuard],
+        data: { requiredPermission: 'menu' },
+        loadComponent: () =>
+          import('./features/menu/pages/product-editor-page/product-editor-page').then(
+            (module) => module.ProductEditorPage,
+          ),
+      },
+      {
+        path: 'menu/products/:productId/edit',
+        canActivate: [restaurantPosSectionGuard, restaurantScopeGuard],
+        data: { requiredPermission: 'menu' },
+        loadComponent: () =>
+          import('./features/menu/pages/product-editor-page/product-editor-page').then(
+            (module) => module.ProductEditorPage,
+          ),
+      },
+      {
         path: RESTAURANT_POS_ACCESS_PATH,
         loadComponent: () =>
           import('./features/restaurant-pos/pages/restaurant-pos-access-page').then(

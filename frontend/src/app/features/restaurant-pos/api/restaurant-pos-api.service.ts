@@ -45,6 +45,7 @@ import type {
   UpdateRestaurantProductRequest,
   UpdateServiceWindowsRequest,
   CreateModifierGroupRequest,
+  UpdateModifierGroupRequest,
   ReviewTimeEntryChangeRequest,
   RestaurantMenuModifierGroupDto,
 } from './restaurant-pos-api.models';
@@ -301,12 +302,17 @@ export class RestaurantPosApiService {
     return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}`);
   }
 
-  listModifierGroups(restaurantId: string): Observable<RestaurantMenuModifierGroupDto[]> {
-    return this.http.get<RestaurantMenuModifierGroupDto[]>(`${this.restaurantsUrl}/${restaurantId}/modifier-groups`);
+  listModifierGroups(restaurantId: string, scope?: 'shared' | 'product'): Observable<RestaurantMenuModifierGroupDto[]> {
+    const url = `${this.restaurantsUrl}/${restaurantId}/modifier-groups`;
+    return this.http.get<RestaurantMenuModifierGroupDto[]>(scope ? `${url}?scope=${scope}` : url);
   }
 
   createModifierGroup(restaurantId: string, body: CreateModifierGroupRequest): Observable<RestaurantMenuModifierGroupDto> {
     return this.http.post<RestaurantMenuModifierGroupDto>(`${this.restaurantsUrl}/${restaurantId}/modifier-groups`, body);
+  }
+
+  updateModifierGroup(restaurantId: string, groupId: string, body: UpdateModifierGroupRequest): Observable<RestaurantMenuModifierGroupDto> {
+    return this.http.patch<RestaurantMenuModifierGroupDto>(`${this.restaurantsUrl}/${restaurantId}/modifier-groups/${groupId}`, body);
   }
 
   deleteModifierGroup(restaurantId: string, groupId: string): Observable<void> {

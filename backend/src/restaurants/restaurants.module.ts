@@ -72,6 +72,7 @@ import { RestaurantServiceController } from './presentation/rest/restaurant-serv
 import { CreateProductImageUploadSignatureUseCase } from './application/use-cases/create-product-image-upload-signature.use-case';
 import { ListModifierGroupsUseCase } from './application/use-cases/list-modifier-groups.use-case';
 import { CreateModifierGroupUseCase } from './application/use-cases/create-modifier-group.use-case';
+import { UpdateModifierGroupUseCase } from './application/use-cases/update-modifier-group.use-case';
 import { DeleteModifierGroupUseCase } from './application/use-cases/delete-modifier-group.use-case';
 import { MODIFIER_GROUP_REPOSITORY } from './application/ports/modifier-group-repository.port';
 import { PrismaModifierGroupRepository } from './infrastructure/persistence/prisma-modifier-group.repository';
@@ -147,6 +148,7 @@ import { RestaurantAnalyticsController } from './presentation/rest/restaurant-an
     CreateProductImageUploadSignatureUseCase,
     ListModifierGroupsUseCase,
     CreateModifierGroupUseCase,
+    UpdateModifierGroupUseCase,
     DeleteModifierGroupUseCase,
     PrismaModifierGroupRepository,
     {

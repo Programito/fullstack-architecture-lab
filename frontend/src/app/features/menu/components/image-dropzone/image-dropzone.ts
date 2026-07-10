@@ -2,6 +2,7 @@ import { booleanAttribute, Component, computed, ElementRef, input, output, signa
 import { TranslocoPipe } from '@jsverse/transloco';
 
 export type ImageDropzoneUploadStatus = 'idle' | 'uploading' | 'failed';
+export type ImageDropzoneSize = 'default' | 'compact';
 
 @Component({
   selector: 'app-image-dropzone',
@@ -16,6 +17,8 @@ export class ImageDropzone {
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly accept = input('image/jpeg,image/png,image/webp');
   readonly inputLabel = input('menu.product.form.image');
+  /** 'compact' renders a small thumbnail + buttons, for repeated rows (e.g. one per modifier option). */
+  readonly size = input<ImageDropzoneSize>('default');
 
   readonly fileSelected = output<File>();
   readonly removeRequested = output<void>();

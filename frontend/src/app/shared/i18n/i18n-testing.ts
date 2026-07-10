@@ -645,6 +645,8 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         clearSearch: 'Limpiar búsqueda de catálogo',
         categorySearch: 'Buscar categoría',
         categoryFilter: 'Categoría',
+        allergenFilter: 'Alérgenos',
+        allergenFilterHint: 'Filtra la carta por los alérgenos declarados en cada producto.',
         allCategories: 'Todas las categorías',
         availabilityFilter: 'Disponibilidad',
         availabilityAll: 'Todos',
@@ -1263,6 +1265,8 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         clearSearch: 'Clear catalog search',
         categorySearch: 'Search category',
         categoryFilter: 'Category',
+        allergenFilter: 'Allergens',
+        allergenFilterHint: 'Filter the menu by the allergens declared on each product.',
         allCategories: 'All categories',
         availabilityFilter: 'Availability',
         availabilityAll: 'All',
@@ -1687,6 +1691,8 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         clearSearch: 'Netejar cerca del catàleg',
         categorySearch: 'Cercar categoria',
         categoryFilter: 'Categoria',
+        allergenFilter: 'Al·lergògens',
+        allergenFilterHint: 'Filtra la carta pels al·lergògens declarats a cada producte.',
         allCategories: 'Totes les categories',
         availabilityFilter: 'Disponibilitat',
         availabilityAll: 'Tots',
@@ -1845,6 +1851,17 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     },
   };
   clones['es'].menu.page.previewPrice = 'Precio de vista previa';
+  clones['es'].menu.page.issues = 'Incidencias';
+  clones['es'].menu.page.tabSearchLabel = 'Buscar en esta pestaña';
+  clones['es'].menu.page.tabSearchPlaceholder = 'Buscar por nombre';
+  clones['es'].menu.page.tabSearchClear = 'Limpiar búsqueda';
+  clones['es'].menu.page.noSearchResults = 'No hay resultados para tu búsqueda.';
+  clones['es'].menu.page.modifierTypeLabels = {
+    single: 'Selección única',
+    multiple: 'Selección múltiple',
+    remove: 'Quitar ingredientes',
+  };
+  clones['es'].menu.page.modifierUsage = 'Usado en {{count}} productos';
   clones['es'].menu.product.form.image = 'Imagen';
   clones['es'].menu.product.form.noImage = 'Sin imagen';
   clones['es'].menu.product.form.dropImageHint = 'Arrastra una imagen aquí o abre el selector';
@@ -2026,6 +2043,17 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.page.modifierLimits = { choose: 'Choose {{count}}', upTo: 'Up to {{count}}', optional: 'Optional' };
   clones['en'].menu.page.pricePhrases = { from: 'From', supplement: 'Supplement' };
   clones['en'].menu.page.compactMetaLabel = 'Route:';
+  clones['en'].menu.page.issues = 'Issues';
+  clones['en'].menu.page.tabSearchLabel = 'Search this tab';
+  clones['en'].menu.page.tabSearchPlaceholder = 'Search by name';
+  clones['en'].menu.page.tabSearchClear = 'Clear search';
+  clones['en'].menu.page.noSearchResults = 'No results for your search.';
+  clones['en'].menu.page.modifierTypeLabels = {
+    single: 'Single choice',
+    multiple: 'Multiple choice',
+    remove: 'Remove ingredients',
+  };
+  clones['en'].menu.page.modifierUsage = 'Used in {{count}} products';
   clones['en'].menu.page.audit = {
     title: 'Quick menu review',
     description: 'Use these alerts to spot which products still need imagery, copy, or operational review.',
@@ -2240,6 +2268,17 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     },
   };
   clones['ca'].menu.page.previewPrice = 'Preu de vista prèvia';
+  clones['ca'].menu.page.issues = 'Incidències';
+  clones['ca'].menu.page.tabSearchLabel = 'Cerca en aquesta pestanya';
+  clones['ca'].menu.page.tabSearchPlaceholder = 'Cerca per nom';
+  clones['ca'].menu.page.tabSearchClear = 'Neteja la cerca';
+  clones['ca'].menu.page.noSearchResults = 'No hi ha resultats per a la teva cerca.';
+  clones['ca'].menu.page.modifierTypeLabels = {
+    single: 'Selecció única',
+    multiple: 'Selecció múltiple',
+    remove: 'Treure ingredients',
+  };
+  clones['ca'].menu.page.modifierUsage = 'Utilitzat en {{count}} productes';
   clones['ca'].menu.product.form.image = 'Imatge';
   clones['ca'].menu.product.form.noImage = 'Sense imatge';
   clones['ca'].menu.product.form.dropImageHint = 'Arrossega una imatge aquí o obre el selector';

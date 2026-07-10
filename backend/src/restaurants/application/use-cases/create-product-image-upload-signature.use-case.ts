@@ -8,6 +8,7 @@ import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../po
 export type CreateProductImageUploadSignatureCommand = {
   restaurantId: string;
   fileName?: string;
+  scope?: 'products' | 'modifier-options';
 };
 
 @Injectable()
@@ -29,6 +30,7 @@ export class CreateProductImageUploadSignatureUseCase {
       this.signer.createSignedUpload({
         restaurantId: command.restaurantId,
         fileName: command.fileName,
+        scope: command.scope,
       }),
     );
   }

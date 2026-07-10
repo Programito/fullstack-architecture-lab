@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import type { ModifierGroupEntity, ModifierGroupOptionEntity } from '../../../application/ports/modifier-group-repository.port';
 
@@ -6,6 +6,7 @@ export class ModifierGroupOptionResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
   @ApiProperty() priceDeltaCents!: number;
+  @ApiPropertyOptional({ nullable: true }) imageUrl?: string | null;
   @ApiProperty() isAvailable!: boolean;
 
   static from(option: ModifierGroupOptionEntity): ModifierGroupOptionResponseDto {
@@ -13,6 +14,7 @@ export class ModifierGroupOptionResponseDto {
     dto.id = option.id;
     dto.name = option.name;
     dto.priceDeltaCents = option.priceDeltaCents;
+    dto.imageUrl = option.imageUrl ?? null;
     dto.isAvailable = option.isAvailable;
     return dto;
   }
@@ -26,6 +28,8 @@ export class ModifierGroupResponseDto {
   @ApiProperty() maxSelections!: number;
   @ApiProperty() isRequired!: boolean;
   @ApiProperty({ type: [ModifierGroupOptionResponseDto] }) options!: ModifierGroupOptionResponseDto[];
+  @ApiProperty({ enum: ['shared', 'product'] }) scope!: string;
+  @ApiPropertyOptional({ nullable: true }) ownerRestaurantProductId?: string | null;
 
   static from(entity: ModifierGroupEntity): ModifierGroupResponseDto {
     const dto = new ModifierGroupResponseDto();
@@ -36,6 +40,8 @@ export class ModifierGroupResponseDto {
     dto.maxSelections = entity.maxSelections;
     dto.isRequired = entity.isRequired;
     dto.options = entity.options.map(ModifierGroupOptionResponseDto.from);
+    dto.scope = entity.scope;
+    dto.ownerRestaurantProductId = entity.ownerRestaurantProductId;
     return dto;
   }
 }
