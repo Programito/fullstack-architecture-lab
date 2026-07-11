@@ -81,6 +81,7 @@ type RawOrderLine = {
 
 type RawOrder = {
   id: string;
+  dailyNumber: number;
   restaurantId: string;
   tableId: string | null;
   status: string;
@@ -187,6 +188,18 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
   async open(command: OpenRestaurantOrderCommand): Promise<RestaurantOrderView> {
     return this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.findUniqueOrThrow({ where: { id: command.restaurantId } });
+
+      // Numero de ticket visible al cliente: contador diario por restaurante, calculado
+      // dentro de la misma transaccion en la que se crea el pedido. No es una clave de
+      // negocio (no hay restriccion de unicidad) ni requiere aislamiento serializable: es
+      // solo cosmetico para el ticket, asi que una colision entre dos aperturas
+      // exactamente simultaneas en el mismo restaurante es un riesgo aceptado.
+      const dayStart = new Date();
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const ordersToday = await tx.order.count({
+        where: { restaurantId: command.restaurantId, createdAt: { gte: dayStart } },
+      });
+
       const created = await tx.order.create({
         data: {
           restaurantId: command.restaurantId,
@@ -195,6 +208,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
           status: 'open',
           currency: restaurant.currency,
           guestCount: command.guestCount,
+          dailyNumber: ordersToday + 1,
           subtotalCents: 0,
           taxCents: 0,
           discountTotalCents: 0,
@@ -680,6 +694,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     return {
       order: {
         id: raw.id,
+        dailyNumber: raw.dailyNumber,
         restaurantId: raw.restaurantId,
         tableId: raw.tableId,
         status: raw.status as OrderStatus,

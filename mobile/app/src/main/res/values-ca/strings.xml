@@ -26,6 +26,7 @@
     <string name="menu_error_load">No s\'ha pogut carregar la carta.</string>
     <string name="menu_empty_results">No hi ha resultats per a la teva cerca.</string>
     <string name="menu_pending_submission">No s\'ha pogut enviar la teva comanda. Toca aquí per tornar-ho a provar.</string>
+    <string name="menu_updated_notice">La carta s\'ha actualitzat. Toca per veure els canvis.</string>
     <string name="menu_item_open">Configura el producte</string>
     <string name="menu_allergen_filter_open">Filtra per al·lèrgens</string>
     <string name="menu_allergen_filter_title">Al·lèrgens a evitar</string>
@@ -84,7 +85,6 @@
     <string name="checkout_processing">Processant…</string>
     <string name="checkout_accepted_title">Pagament acceptat!</string>
     <string name="checkout_accepted_message">Gràcies per la teva comanda. Bon profit.</string>
-    <string name="checkout_done">Torna a la carta</string>
     <string name="checkout_error_validation">El pagament no és vàlid. Revisa la comanda.</string>
     <string name="checkout_error_generic">No s\'ha pogut completar el pagament. Torna-ho a provar.</string>
     <string name="checkout_error_server">No hem pogut connectar amb el restaurant. La teva comanda no s\'ha cobrat; torna-ho a provar en uns segons.</string>
@@ -100,4 +100,19 @@
     <string name="settings_language_es">Español</string>
     <string name="settings_language_en">English</string>
     <string name="settings_language_ca">Català</string>
+    <string name="settings_table_title">Taula</string>
+    <string name="settings_exit_table_hint">Acaba la sessió amb aquesta taula per escanejar un altre QR o tornar a entrar en mode demo.</string>
+    <string name="settings_exit_table_button">Surt de la taula</string>
+    <string name="settings_exit_table_confirm_title">Vols sortir de la taula?</string>
+    <string name="settings_exit_table_confirm_message">Tornaràs a la pantalla d\'inici i hauràs d\'escanejar un QR o entrar de nou en mode demo.</string>
+    <string name="settings_exit_table_confirm_button">Surt</string>
+    <string name="settings_exit_table_cancel_button">Cancel·la</string>
+    <string name="checkout_ticket_number">Comanda #%1$d</string>
+    <string name="checkout_ticket_table_time">Taula %1$s · %2$s</string>
+    <string name="checkout_ticket_table">Taula %1$s</string>
+    <string name="checkout_paid_label">Pagat</string>
+    <string name="checkout_paid_with">Pagat amb %1$s</string>
+    <string name="checkout_pending_label">Pendent</string>
+    <string name="checkout_pending_hint">Queda un import pendent. Avisa el personal per completar el pagament.</string>
+    <string name="checkout_keep_ordering">Continua demanant</string>
 </resources>

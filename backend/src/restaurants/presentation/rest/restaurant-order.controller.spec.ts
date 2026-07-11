@@ -15,6 +15,7 @@ function makeOrderView(overrides: Partial<RestaurantOrderView['order']> = {}): R
   return {
     order: {
       id: 'order-1',
+      dailyNumber: 1,
       restaurantId: RESTAURANT_ID,
       tableId: TABLE_ID,
       status: 'open',

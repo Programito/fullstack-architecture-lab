@@ -1,6 +1,9 @@
 package com.mesaflow.client.feature.menu
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
@@ -15,6 +18,7 @@ import com.mesaflow.client.core.model.MenuSection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.minutes
 
 sealed interface MenuContentState {
     data object Loading : MenuContentState
@@ -51,6 +56,12 @@ data class MenuUiState(
     val excludedAllergens: Set<Allergen> = emptySet(),
     /** Producto abierto en el configurador (null = cerrado). */
     val configuringItem: MenuItem? = null,
+    /**
+     * true si el refresco periódico detectó una carta distinta mientras el cliente
+     * la estaba mirando; se muestra un aviso y el cambio se aplica solo al tocarlo
+     * (repintar la lista bajo el dedo sería molesto).
+     */
+    val updatedMenuNotice: Boolean = false,
 ) {
     /** Secciones tras aplicar buscador, categoria y alergenos a evitar. */
     val filteredSections: List<MenuSection>
@@ -69,6 +80,15 @@ class MenuViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(MenuUiState())
     val uiState: StateFlow<MenuUiState> = _uiState.asStateFlow()
+
+    /**
+     * Carta nueva detectada por el refresco periódico y aún no aplicada (el cliente
+     * estaba mirando la lista); se aplica al tocar el aviso "La carta se ha actualizado".
+     */
+    private var pendingMenu: Menu? = null
+
+    /** true mientras la pantalla de la carta está en composición (no tapada por Carrito/Ajustes). */
+    private val menuScreenVisible = MutableStateFlow(false)
 
     /** Nº de artículos y total del carrito del restaurante actual, en vivo. */
     val cartSummary: StateFlow<CartSummary> = sessionStore.tableContext
@@ -96,6 +116,7 @@ class MenuViewModel @Inject constructor(
 
     init {
         load()
+        startMenuPolling()
     }
 
     fun load(forceRefresh: Boolean = false) {
@@ -108,14 +129,82 @@ class MenuViewModel @Inject constructor(
             }
             _uiState.update { it.copy(tableLabel = table.tableId) }
             when (val result = menuRepository.getMenu(table.restaurantId, forceRefresh)) {
-                is AppResult.Success -> _uiState.update {
-                    it.copy(content = MenuContentState.Ready(result.data))
+                is AppResult.Success -> {
+                    // Una recarga manual deja la carta al día: cualquier aviso pendiente ya no aplica.
+                    pendingMenu = null
+                    _uiState.update {
+                        it.copy(content = MenuContentState.Ready(result.data), updatedMenuNotice = false)
+                    }
                 }
                 is AppResult.Error -> _uiState.update {
                     it.copy(content = MenuContentState.Error(result.error))
                 }
             }
         }
+    }
+
+    /**
+     * Refresco periódico de la carta: el admin web puede reordenar productos o cambiar precios
+     * en cualquier momento y no hay push (hosting sin websockets fiables), así que cada
+     * [MENU_POLL_INTERVAL] se repide la carta y se compara con la actual. Solo corre con la app
+     * en primer plano (ProcessLifecycleOwner): en background no gasta batería ni mantiene
+     * despierta la base de datos del hosting gratuito.
+     */
+    private fun startMenuPolling() {
+        viewModelScope.launch {
+            ProcessLifecycleOwner.get().lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    delay(MENU_POLL_INTERVAL)
+                    pollMenuOnce()
+                }
+            }
+        }
+    }
+
+    private suspend fun pollMenuOnce() {
+        val table = sessionStore.tableContext.first() ?: return
+        // Si la carta aún carga o está en error, manda el flujo normal de load()/Reintentar.
+        val current = (_uiState.value.content as? MenuContentState.Ready)?.menu ?: return
+        val result = menuRepository.getMenu(table.restaurantId, forceRefresh = true)
+        // Un fallo del polling nunca debe volcar la pantalla a Error: se reintenta al siguiente ciclo.
+        val fresh = (result as? AppResult.Success)?.data ?: return
+
+        if (fresh == current) {
+            // El admin pudo deshacer el cambio antes de que el cliente tocara el aviso.
+            pendingMenu = null
+            _uiState.update { it.copy(updatedMenuNotice = false) }
+            return
+        }
+        if (menuScreenVisible.value) {
+            pendingMenu = fresh
+            _uiState.update { it.copy(updatedMenuNotice = true) }
+        } else {
+            // Con la carta tapada (Carrito/Ajustes) se aplica en silencio: al volver ya está al día.
+            applyMenu(fresh)
+        }
+    }
+
+    /** Aplica una carta nueva conservando búsqueda y alérgenos; resetea el chip si su sección ya no existe. */
+    private fun applyMenu(menu: Menu) {
+        pendingMenu = null
+        _uiState.update { state ->
+            val sectionStillExists = menu.sections.any { it.id == state.selectedSectionId }
+            state.copy(
+                content = MenuContentState.Ready(menu),
+                selectedSectionId = state.selectedSectionId?.takeIf { sectionStillExists },
+                updatedMenuNotice = false,
+            )
+        }
+    }
+
+    /** La pantalla de la carta informa de si está visible (DisposableEffect en MenuScreen). */
+    fun onMenuScreenVisibilityChange(visible: Boolean) {
+        menuScreenVisible.value = visible
+    }
+
+    /** Tap en "La carta se ha actualizado": aplica la carta pendiente. */
+    fun onMenuUpdatedNoticeClick() {
+        pendingMenu?.let(::applyMenu)
     }
 
     fun onQueryChange(query: String) {
@@ -151,5 +240,13 @@ class MenuViewModel @Inject constructor(
             cartRepository.add(table.restaurantId, line)
             _uiState.update { it.copy(configuringItem = null) }
         }
+    }
+
+    companion object {
+        /**
+         * Cada cuánto se comprueba si la carta cambió en el backend. 3 min equilibra
+         * ver los cambios "durante la misma comida" con no castigar batería/BD gratuita.
+         */
+        private val MENU_POLL_INTERVAL = 3.minutes
     }
 }

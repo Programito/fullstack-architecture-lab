@@ -450,6 +450,9 @@ model PlatterComponent {
 
 model Order {
   id                  String            @id @default(uuid())
+  // Contador diario por restaurante (no unico a nivel de fila); ver open() en
+  // PrismaRestaurantOrderRepository. Solo para mostrar al cliente, no es clave de negocio.
+  dailyNumber         Int
   restaurantId        String
   tableId             String?
   status              OrderStatus       @default(open)

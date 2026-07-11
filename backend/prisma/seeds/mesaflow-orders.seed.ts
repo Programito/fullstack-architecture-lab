@@ -88,6 +88,7 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
 
   await upsertOrder(prisma, {
     id: ORDER_SERVICE_ID,
+    dailyNumber: 1,
     restaurantId: restaurant.id,
     tableId: 'table-3',
     status: 'open',
@@ -164,6 +165,7 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
 
   await upsertOrder(prisma, {
     id: ORDER_BAR_ID,
+    dailyNumber: 2,
     restaurantId: restaurant.id,
     tableId: 'table-2',
     status: 'open',
@@ -226,6 +228,7 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
 
   await upsertOrder(prisma, {
     id: ORDER_SERVED_ID,
+    dailyNumber: 3,
     restaurantId: restaurant.id,
     tableId: 'stool-3',
     status: 'pending_payment',
@@ -284,6 +287,7 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
 
   await upsertOrder(prisma, {
     id: ORDER_GROUP_ID,
+    dailyNumber: 4,
     restaurantId: restaurant.id,
     tableId: 'table-4',
     status: 'pending_payment',
@@ -360,6 +364,7 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
 
   await upsertOrder(prisma, {
     id: ORDER_PAID_ID,
+    dailyNumber: 5,
     restaurantId: restaurant.id,
     tableId: 'table-1',
     status: 'paid',
@@ -420,6 +425,7 @@ async function upsertOrder(
   prisma: PrismaClient,
   order: {
     id: string;
+    dailyNumber: number;
     restaurantId: string;
     tableId: string | null;
     status: 'open' | 'pending_payment' | 'paid' | 'cancelled';
@@ -437,6 +443,7 @@ async function upsertOrder(
     where: { id: order.id },
     update: {
       restaurantId: order.restaurantId,
+      dailyNumber: order.dailyNumber,
       tableId: order.tableId,
       status: order.status,
       openedByUserId: order.openedByUserId,

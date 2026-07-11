@@ -25,6 +25,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'developer/tables',
+    canActivate: [developerGuard],
+    loadComponent: () =>
+      import('./features/developer/pages/developer-tables-page/developer-tables-page').then(
+        (module) => module.DeveloperTablesPage,
+      ),
+  },
+  {
     path: 'developer',
     canActivate: [developerGuard],
     loadComponent: () =>

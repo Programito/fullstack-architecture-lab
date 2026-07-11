@@ -110,7 +110,7 @@ Cada fase termina con la app compilando, sus tests en verde y algo demostrable. 
 - [x] Fase 5 — Configurador de producto (extras, combos, "sin X") + carrito Room con merge de líneas idénticas
 - [x] Fase 6 — Resumen del pedido (editar/borrar líneas) y envío real a cocina (abre pedido + líneas + disparo a cocina; el carrito se conserva si algo falla)
 - [x] Fase 7 — Cobro (pasarela mock: tarjeta/Bizum/efectivo, sin cargo real) + registro real del pago en backend + pantalla de pago aceptado
-- [~] Fase 8 — Pulido, i18n completa, APK release: i18n, accesibilidad, animaciones (Nav3 + rebote del carrito) y `docs/mobile-app.md` ya hechos; quedan tests de UI y el APK release firmado.
+- [~] Fase 8 — Pulido, i18n completa, APK release: i18n, accesibilidad, animaciones (Nav3 + rebote del carrito), `docs/mobile-app.md` y tests de UI de los flujos críticos (incl. ticket detallado y salir de la mesa) ya hechos; la firma release lee `keystore.properties` (ver `mobile/README.md`). Queda ejecutar los tests en emulador y generar el keystore + APK final.
 
 ### Fase 0 — Bootstrap del proyecto (≈ ½ día)
 
@@ -249,7 +249,7 @@ Scenario: Pago simulado aceptado
 
 - **Pago real**: implementación `StripePaymentGateway` (Payment Sheet) detrás del mismo puerto; propinas y división de cuenta.
 - **App Links verificados**: abrir la app directamente desde el QR sin escáner in-app (el formato de URL ya lo permite).
-- **Realtime**: suscripción al socket `/realtime` para ver el estado de las líneas (en cocina/servido) en vivo.
+- **Realtime**: suscripción al socket `/realtime` para ver el estado de las líneas (en cocina/servido) en vivo. **Descartado mientras el backend viva en hosting gratuito** (sockets poco fiables); en su lugar se implementó el sondeo inteligente (ETag/304 + parada al servirse todo, ver `docs/mobile-app.md`).
 - **Estado del pedido enriquecido**: pantalla "tu pedido se está preparando" con progreso por línea.
 - **Endpoints públicos de cliente** en backend (sin demo-login) + rate limiting.
 - **Modularización Gradle** (`:feature:*`, `:core:*`) cuando el proyecto o el equipo crezca — la estructura de paquetes ya lo deja preparado.

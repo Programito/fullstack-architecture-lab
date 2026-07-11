@@ -117,6 +117,107 @@
     "storybook": "Explore components, states, and visual patterns.",
     "architectureTitle": "Architecture",
     "architecture": "Review the main frontend decisions and flows.",
+    "tables": {
+      "cardTitle": "Table map",
+      "cardDescription": "Review core entities, base fields, and relationships across domains.",
+      "eyebrow": "Schema",
+      "title": "Table map",
+      "description": "Quick view for reviewing the main product entities before wiring an automatic source of truth.",
+      "back": "Back to resources",
+      "filters": {
+        "title": "Filters",
+        "show": "Show filters",
+        "hide": "Hide filters",
+        "searchLabel": "Search tables or fields",
+        "searchPlaceholder": "Search by table, field, or relation",
+        "clearSearch": "Clear table search",
+        "featureLabel": "Feature",
+        "allFeatures": "All features",
+        "domainLabel": "Domain",
+        "allDomains": "All domains",
+        "reset": "Clear filters"
+      },
+      "map": {
+        "title": "Primary relationships",
+        "description": "Visual summary of the most relevant tables and how they connect."
+      },
+      "diagram": {
+        "title": "Mermaid diagram",
+        "description": "Rendered view and source for the current graph based on active filters.",
+        "interactionHint": "Click a table in the diagram to open its detail.",
+        "renderAction": "Render diagram",
+        "rerenderAction": "Refresh diagram",
+        "hideAction": "Hide render",
+        "fullscreenAction": "Open large",
+        "fullscreenTitle": "Relationship diagram",
+        "fullscreenDescription": "Expanded view of the current diagram to inspect relationships and navigate across tables.",
+        "closeFullscreen": "Close expanded diagram",
+        "renderHint": "The source is always available. Render the SVG only when you need it.",
+        "loading": "Rendering diagram...",
+        "sourceTitle": "Mermaid source",
+        "sourceAction": "View Mermaid source",
+        "closeSource": "Close Mermaid source",
+        "sourceDescription": "Mermaid code generated from the visible tables with the active filters.",
+        "emptyTitle": "No diagram",
+        "emptyDescription": "Adjust or clear the filters to generate the graph again.",
+        "renderError": "The Mermaid diagram could not be rendered. You can still inspect the generated source."
+      },
+      "summary": {
+        "title": "Entity inventory",
+        "description": "Select a table to inspect its most important fields and references.",
+        "results": "{{ count }} visible tables",
+        "emptyTitle": "No tables",
+        "emptyDescription": "There are no documented entities yet.",
+        "columns": {
+          "name": "Table",
+          "feature": "Feature",
+          "domain": "Domain",
+          "fields": "Fields",
+          "relations": "Relations"
+        }
+      },
+      "detail": {
+        "title": "Entity detail",
+        "meta": "{{ fields }} fields · {{ relations }} relationships",
+        "searchLabel": "Search fields",
+        "searchPlaceholder": "Search by field, type, or reference",
+        "clearSearch": "Clear field search",
+        "relationCount": "{{ count }} relationships",
+        "compact": {
+          "enable": "Compact view",
+          "disable": "Comfort view"
+        },
+        "stats": {
+          "fields": "Fields",
+          "relations": "Relationships",
+          "foreignKeys": "Foreign keys",
+          "nullable": "Nullable"
+        },
+        "columns": {
+          "name": "Field",
+          "role": "Role",
+          "type": "Type",
+          "nullable": "Nullable",
+          "reference": "Reference",
+          "description": "Description"
+        },
+        "relationsTitle": "Visible relationships",
+        "emptyTitle": "No fields",
+        "emptyDescription": "This table does not have documented fields yet.",
+        "emptySearchDescription": "No fields match the current search.",
+        "yes": "Yes",
+        "no": "No",
+        "none": "No reference",
+        "roles": {
+          "primaryKey": "PK",
+          "foreignKey": "FK",
+          "attribute": "Data"
+        },
+        "goToRelation": "Go to table {{ target }}",
+        "noRelations": "There are no documented relationships for this table.",
+        "noSelection": "No table matches the current filters."
+      }
+    },
     "logs": {
       "cardTitle": "Logs and audit",
       "cardDescription": "Review operational health, recent errors, and audited activity.",

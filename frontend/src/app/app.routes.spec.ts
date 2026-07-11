@@ -43,6 +43,7 @@ describe('app routes', () => {
   it('defines login and developer routes', () => {
     expect(routes.find((route) => route.path === 'login')?.loadComponent).toBeTypeOf('function');
     expect(routes.find((route) => route.path === 'developer')?.loadComponent).toBeTypeOf('function');
+    expect(routes.find((route) => route.path === 'developer/tables')?.loadComponent).toBeTypeOf('function');
   });
 
   it('wraps user administration in the restaurant shell', () => {

@@ -54,6 +54,7 @@ data class RegisterPaymentRequestDto(
 @Serializable
 data class OrderSummaryDto(
     val id: String,
+    val dailyNumber: Int = 0,
     val restaurantId: String,
     val tableId: String? = null,
     val status: String,

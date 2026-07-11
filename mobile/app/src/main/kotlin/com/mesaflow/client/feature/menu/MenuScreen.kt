@@ -29,6 +29,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
@@ -45,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -99,6 +101,13 @@ fun MenuScreen(
     val hasPendingSubmissionIssue by viewModel.hasPendingSubmissionIssue.collectAsStateWithLifecycle()
     var showAllergenFilter by remember { mutableStateOf(false) }
 
+    // El refresco periódico decide con esto si aplicar una carta nueva en silencio
+    // (pantalla tapada por Carrito/Ajustes) o avisar sin repintar (pantalla visible).
+    DisposableEffect(Unit) {
+        viewModel.onMenuScreenVisibilityChange(true)
+        onDispose { viewModel.onMenuScreenVisibilityChange(false) }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
@@ -128,6 +137,13 @@ fun MenuScreen(
             // aunque el flag interno siga marcado hasta el próximo envío.
             if (hasPendingSubmissionIssue && !cartSummary.isEmpty) {
                 PendingSubmissionBanner(onClick = onCartClick)
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // El refresco periódico detectó cambios mientras el cliente miraba la carta:
+            // se avisa en vez de reordenar la lista bajo su dedo; tocar aplica la carta nueva.
+            if (uiState.updatedMenuNotice) {
+                MenuUpdatedBanner(onClick = viewModel::onMenuUpdatedNoticeClick)
                 Spacer(Modifier.height(8.dp))
             }
 
@@ -341,6 +357,37 @@ private fun MenuHeader(menuName: String, tableLabel: String, onSettingsClick: ()
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = stringResource(R.string.settings_open),
+            )
+        }
+    }
+}
+
+/** La carta cambió en el backend mientras el cliente la miraba; tocar aplica la versión nueva. */
+@Composable
+private fun MenuUpdatedBanner(onClick: () -> Unit) {
+    val label = stringResource(R.string.menu_updated_notice)
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = label, role = Role.Button, onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
         }
     }

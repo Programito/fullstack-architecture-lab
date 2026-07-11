@@ -1,6 +1,9 @@
 package com.mesaflow.client.feature.cart
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
@@ -8,6 +11,7 @@ import com.mesaflow.client.core.data.CartRepository
 import com.mesaflow.client.core.data.OrderRepository
 import com.mesaflow.client.core.datastore.SessionStore
 import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.OrderLineKitchenStatus
 import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.model.SubmittedOrder
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,6 +38,13 @@ data class CartUiState(
     val submitted: SubmittedOrder? = null,
     /** Progreso en cocina del pedido ya enviado; ver [CartViewModel.startOrderStatusPolling]. */
     val orderStatus: ServicePointOrderStatus? = null,
+    /**
+     * Foto de las líneas justo antes de enviarlas: el carrito real se vacía en cuanto el envío
+     * tiene éxito, así que es la única fuente para el ticket detallado en Cobro/Pago aceptado.
+     */
+    val submittedLines: List<CartLine> = emptyList(),
+    /** Mesa del pedido enviado, para mostrarla en el ticket (mismo valor que usa la Carta). */
+    val tableLabel: String = "",
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -78,9 +89,19 @@ class CartViewModel @Inject constructor(
                 _uiState.update { it.copy(isSubmitting = false, submitError = AppError.Unknown(null)) }
                 return@launch
             }
-            when (val result = orderRepository.submitCart(table.restaurantId, table.tableId, lines.value)) {
+            // Foto de las líneas ANTES de enviar: submitCart() vacía el carrito real en cuanto
+            // el envío tiene éxito, así que lines.value ya no serviría después del await.
+            val linesSnapshot = lines.value
+            when (val result = orderRepository.submitCart(table.restaurantId, table.tableId, linesSnapshot)) {
                 is AppResult.Success -> {
-                    _uiState.update { it.copy(isSubmitting = false, submitted = result.data) }
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            submitted = result.data,
+                            submittedLines = linesSnapshot,
+                            tableLabel = table.tableId,
+                        )
+                    }
                     startOrderStatusPolling(table.restaurantId, table.tableId)
                 }
                 is AppResult.Error -> _uiState.update {
@@ -93,27 +114,45 @@ class CartViewModel @Inject constructor(
     /**
      * Sondea el estado del pedido cada [ORDER_STATUS_POLL_INTERVAL_MS] mientras
      * el cliente ve la pantalla de "pedido enviado". No hay push real (la app
-     * no tiene cliente WebSocket todavia, aunque el backend ya emite
-     * `order:invalidated` por ese canal para el panel de sala/cocina); el
-     * backend SI expone ya el estado por linea
+     * no tiene cliente WebSocket a proposito: el hosting gratuito del backend
+     * no ofrece sockets fiables); el backend SI expone el estado por linea
      * (`GetRestaurantServicePointOrderUseCase`), asi que un sondeo corto es
-     * la forma mas simple de dar feedback casi en vivo sin anadir una
-     * dependencia de socket nueva a la app cliente. Un fallo puntual de red
-     * no interrumpe el sondeo (se reintenta en la siguiente vuelta); el job
-     * se cancela solo al limpiarse el ViewModel ([onCleared]).
+     * la forma mas simple de dar feedback casi en vivo. Pensado para no
+     * castigar al backend gratuito:
+     * - solo corre con la app en primer plano (ProcessLifecycleOwner, igual
+     *   que el refresco periodico de la carta en MenuViewModel);
+     * - se detiene del todo cuando todas las lineas llegan a un estado final
+     *   (servido/cancelado): ya no queda nada que actualizar;
+     * - la respuesta viaja con ETag + Cache-Control, asi que las vueltas sin
+     *   cambios son un 304 sin cuerpo (ver NetworkModule);
+     * - un fallo puntual de red no interrumpe el sondeo (se reintenta en la
+     *   siguiente vuelta); el job muere al limpiarse el ViewModel ([onCleared]).
      */
     private fun startOrderStatusPolling(restaurantId: String, tableId: String) {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
-            while (isActive) {
-                when (val result = orderRepository.getServicePointOrder(restaurantId, tableId)) {
-                    is AppResult.Success -> _uiState.update { it.copy(orderStatus = result.data) }
-                    is AppResult.Error -> Unit
+            ProcessLifecycleOwner.get().lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isActive) {
+                    when (val result = orderRepository.getServicePointOrder(restaurantId, tableId)) {
+                        is AppResult.Success -> {
+                            _uiState.update { it.copy(orderStatus = result.data) }
+                            val lines = result.data.lines
+                            if (lines.isNotEmpty() && lines.all { it.status.isFinal() }) {
+                                pollJob?.cancel()
+                                return@repeatOnLifecycle
+                            }
+                        }
+                        is AppResult.Error -> Unit
+                    }
+                    delay(ORDER_STATUS_POLL_INTERVAL_MS)
                 }
-                delay(ORDER_STATUS_POLL_INTERVAL_MS)
             }
         }
     }
+
+    /** Estados desde los que una linea ya no cambia: no justifican seguir sondeando. */
+    private fun OrderLineKitchenStatus.isFinal(): Boolean =
+        this == OrderLineKitchenStatus.SERVED || this == OrderLineKitchenStatus.CANCELLED
 
     override fun onCleared() {
         pollJob?.cancel()

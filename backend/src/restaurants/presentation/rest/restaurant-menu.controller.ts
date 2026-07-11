@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, HttpStatus, Param, Patch, Post, Put, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 type HttpResponse = { status(code: number): HttpResponse };
@@ -48,6 +48,10 @@ export class RestaurantMenuController {
   ) {}
 
   @Get(':id/menu')
+  // must-revalidate permite a la app movil cachear la carta y revalidar con ETag (304)
+  // en cada sondeo pese a llevar Authorization (regla de caches HTTP); el ETag debil lo
+  // genera Express por defecto sobre el cuerpo JSON.
+  @Header('Cache-Control', 'private, max-age=0, must-revalidate')
   @Version('1')
   @UseGuards(AuthGuard, RestaurantAccessGuard)
   @RequireRestaurantScope()

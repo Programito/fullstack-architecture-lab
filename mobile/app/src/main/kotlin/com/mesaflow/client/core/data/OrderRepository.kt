@@ -79,6 +79,7 @@ class OrderRepository @Inject constructor(
             SubmittedOrder(
                 orderId = orderId,
                 status = summary.status,
+                dailyNumber = summary.dailyNumber,
                 totalCents = summary.totalCents,
                 currency = summary.currency,
             ),
@@ -107,6 +108,7 @@ class OrderRepository @Inject constructor(
             PaymentResult(
                 orderId = response.order.id,
                 status = response.order.status,
+                dailyNumber = response.order.dailyNumber,
                 paidCents = response.order.paidCents,
                 balanceCents = response.order.balanceCents,
                 currency = response.order.currency,

@@ -1054,3 +1054,18 @@ Comportamiento:
 - ofrece una accion directa a `/developer/logs`
 
 La idea es que `login` resuelva incertidumbre para el acceso, mientras `developer` mantenga contexto operativo y enlace rapido con los logs.
+
+## Mapa de tablas en developer
+
+La ruta tecnica `/developer/tables` vive en:
+
+```txt
+src/app/features/developer/pages/developer-tables-page/
+```
+
+Su objetivo es complementar `/developer/logs` con una lectura rápida de entidades, campos base y
+relaciones visibles entre dominios.
+
+La documentación específica y el diagrama Mermaid asociado viven en:
+
+- [frontend/docs/developer-tables.md](C:/Users/Thor_/Documents/Proyecto/frontend/docs/developer-tables.md)

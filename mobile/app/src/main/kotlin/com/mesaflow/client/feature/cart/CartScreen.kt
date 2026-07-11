@@ -61,7 +61,11 @@ import com.mesaflow.client.core.model.SubmittedOrder
 @Composable
 fun CartScreen(
     onBack: () -> Unit,
-    onCheckout: (SubmittedOrder) -> Unit = {},
+    /**
+     * lines: foto de las líneas enviadas (el carrito real ya está vacío en este punto);
+     * tableLabel: mesa del pedido. Ambos viajan a Cobro para el ticket detallado.
+     */
+    onCheckout: (submitted: SubmittedOrder, lines: List<CartLine>, tableLabel: String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: CartViewModel = viewModel(),
 ) {
@@ -109,7 +113,7 @@ fun CartScreen(
                 currency = submitted.currency,
                 orderStatus = uiState.orderStatus,
                 onBackToMenu = onBack,
-                onCheckout = { onCheckout(submitted) },
+                onCheckout = { onCheckout(submitted, uiState.submittedLines, uiState.tableLabel) },
                 modifier = Modifier.padding(innerPadding),
             )
 

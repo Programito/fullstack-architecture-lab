@@ -9,6 +9,7 @@ function makeOrder(overrides: Partial<RestaurantOrderView['order']> = {}): Resta
   return {
     order: {
       id: 'order-1',
+      dailyNumber: 1,
       restaurantId: 'restaurant-1',
       tableId: 'table-1',
       status: 'open',

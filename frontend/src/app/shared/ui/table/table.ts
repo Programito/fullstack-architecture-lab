@@ -45,6 +45,7 @@ export class Table {
   readonly columns = input<TableColumn[]>([]);
   readonly rows = input<TableRow[]>([]);
   readonly rowId = input('id');
+  readonly activeRowId = input('');
   readonly loading = input(false, { transform: booleanAttribute });
   readonly emptyTitle = input('Sin datos');
   readonly emptyDescription = input('No hay filas para mostrar.');
@@ -57,6 +58,8 @@ export class Table {
   readonly size = input<TableSize>('md');
   readonly variant = input<TableVariant>('primary');
   readonly appearance = input<TableAppearance>('default');
+  readonly maxHeight = input('');
+  readonly stickyHeader = input(false, { transform: booleanAttribute });
 
   readonly selected = model<string[]>([]);
   readonly sort = model<TableSort | null>(null);
@@ -86,10 +89,12 @@ export class Table {
       `table--${this.size()}`,
       `table--${this.variant()}`,
       `table--${this.appearance()}`,
+      this.stickyHeader() ? 'table--sticky-header' : '',
       this.loading() ? 'table--loading' : '',
       this.selectable() ? 'table--selectable' : '',
     ].join(' '),
   );
+  protected readonly scrollerStyle = computed(() => (this.maxHeight() ? `max-height: ${this.maxHeight()};` : null));
 
   protected rowKey(row: TableRow, index: number): string {
     const value = row[this.rowId()];
@@ -146,6 +151,10 @@ export class Table {
 
   protected isSelected(row: TableRow, index: number): boolean {
     return this.selectedSet().has(this.rowKey(row, index));
+  }
+
+  protected isActive(row: TableRow, index: number): boolean {
+    return this.activeRowId() !== '' && this.rowKey(row, index) === this.activeRowId();
   }
 
   protected toggleRow(row: TableRow, index: number, event?: Event): void {

@@ -60,6 +60,14 @@
   text-align: left;
 }
 
+.table--sticky-header .table__header-cell,
+.table--sticky-header .table__select-cell[scope='col'] {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ui-surface);
+}
+
 .table__row:last-child .table__cell,
 .table__row:last-child .table__select-cell,
 tbody tr:last-child .table__state-cell {
@@ -81,6 +89,11 @@ tbody tr:last-child .table__state-cell {
 
 .table__row--selected {
   background: color-mix(in srgb, var(--table-accent) 10%, transparent);
+}
+
+.table__row--active {
+  background: color-mix(in srgb, var(--table-accent) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--table-accent);
 }
 
 .table__select-cell {

@@ -18,10 +18,19 @@ data object CartKey : NavKey
 @Serializable
 data object SettingsKey : NavKey
 
-/** Cobro del pedido recién enviado; lleva lo mínimo para no depender de red. */
+/**
+ * Cobro del pedido recién enviado; lleva lo mínimo para no depender de red.
+ * [linesJson] es una foto (JSON, [CartLine] serializado) de las líneas enviadas: el carrito
+ * real ya está vacío al llegar aquí, así que es la única fuente para el ticket detallado en
+ * la pantalla de pago aceptado. [dailyNumber] y [tableLabel] son solo para mostrar (número de
+ * ticket y mesa); no hace falta volver a pedirlos al backend.
+ */
 @Serializable
 data class CheckoutKey(
     val orderId: String,
     val totalCents: Long,
     val currency: String,
+    val linesJson: String,
+    val dailyNumber: Int,
+    val tableLabel: String,
 ) : NavKey

@@ -9,7 +9,8 @@ import { RegisterRestaurantOrderPaymentUseCase } from './register-restaurant-ord
 
 function makeOrderView(): RestaurantOrderView {
   return {
-    order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'paid', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 1200, balanceCents: 0, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:01:00.000Z', closedAt: '2026-06-24T10:01:00.000Z' },
+    order: { id: 'order-1',
+      dailyNumber: 1, restaurantId: 'restaurant-1', tableId: 'table-1', status: 'paid', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 1200, balanceCents: 0, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:01:00.000Z', closedAt: '2026-06-24T10:01:00.000Z' },
     lines: [],
     payments: [{ id: 'pay-1', method: 'card', amountCents: 1200, status: 'completed', paidAt: '2026-06-24T10:01:00.000Z' }],
   };

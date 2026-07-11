@@ -1109,9 +1109,13 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
   }
 
   private buildDemoOrderView(restaurantId: string, order: DemoOrder): RestaurantOrderView {
+    // Numero de ticket del modo demo: posicion 1-based del pedido dentro de su restaurante
+    // (estable y suficiente para mostrar; el real lo asigna PrismaRestaurantOrderRepository).
+    const orderIndex = this.getOrders(restaurantId).findIndex((candidate) => candidate.id === order.id);
     return {
       order: {
         id: order.id,
+        dailyNumber: orderIndex >= 0 ? orderIndex + 1 : 1,
         restaurantId,
         tableId: order.tableId,
         status: order.status === 'payment_pending' ? 'pending_payment' : (order.status as 'open' | 'paid' | 'cancelled'),

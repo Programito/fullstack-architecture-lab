@@ -129,6 +129,8 @@ export class RestaurantOrderPaymentResponseDto {
 
 export class RestaurantOrderSummaryResponseDto {
   @ApiProperty() id!: string;
+  @ApiProperty({ description: 'Numero de ticket visible al cliente: contador diario por restaurante.' })
+  dailyNumber!: number;
   @ApiProperty() restaurantId!: string;
   @ApiPropertyOptional({ nullable: true }) tableId!: string | null;
   @ApiProperty() status!: string;

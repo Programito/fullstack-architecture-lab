@@ -111,6 +111,8 @@ export type RestaurantOrderPaymentView = {
 export type RestaurantOrderView = {
   order: {
     id: string;
+    /** Numero de ticket visible al cliente: contador diario por restaurante, no unico a nivel de fila. */
+    dailyNumber: number;
     restaurantId: string;
     tableId: string | null;
     status: OrderStatus;

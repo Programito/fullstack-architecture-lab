@@ -1,0 +1,326 @@
+<main class="developer-tables-page">
+  <header class="developer-tables-page__header">
+    <div>
+      <p class="developer-tables-page__eyebrow">{{ 'developer.tables.eyebrow' | transloco }}</p>
+      <h1>{{ 'developer.tables.title' | transloco }}</h1>
+      <p>{{ 'developer.tables.description' | transloco }}</p>
+    </div>
+
+    <app-button variant="neutral" fill="outline" routerLink="/developer">
+      {{ 'developer.tables.back' | transloco }}
+    </app-button>
+  </header>
+
+  <section class="developer-tables-page__hero">
+    <app-card variant="outlined">
+      <section class="developer-tables-page__filters-card" aria-label="Filtros de tablas">
+        <div class="developer-tables-page__filters-header">
+          <h2>{{ 'developer.tables.filters.title' | transloco }}</h2>
+          <app-button
+            variant="neutral"
+            fill="clear"
+            shape="round"
+            [ariaLabel]="(filtersExpanded() ? 'developer.tables.filters.hide' : 'developer.tables.filters.show') | transloco"
+            (pressed)="toggleFilters()"
+          >
+            <app-icon [name]="filtersExpanded() ? 'visibility_off' : 'visibility'" />
+          </app-button>
+        </div>
+
+        @if (filtersExpanded()) {
+          <div class="developer-tables-page__filters">
+            <app-search-input
+              [label]="'developer.tables.filters.searchLabel' | transloco"
+              [placeholder]="'developer.tables.filters.searchPlaceholder' | transloco"
+              [clearAriaLabel]="'developer.tables.filters.clearSearch' | transloco"
+              [value]="searchQuery()"
+              appearance="minimal"
+              variant="neutral"
+              (valueChange)="searchQuery.set($event)"
+              (cleared)="searchQuery.set('')"
+            />
+
+            <app-select
+              [label]="'developer.tables.filters.featureLabel' | transloco"
+              [value]="selectedFeature()"
+              [options]="featureOptions()"
+              appearance="minimal"
+              variant="neutral"
+              (valueChange)="selectedFeature.set($event)"
+            />
+
+            <app-select
+              [label]="'developer.tables.filters.domainLabel' | transloco"
+              [value]="selectedDomain()"
+              [options]="domainOptions()"
+              appearance="minimal"
+              variant="neutral"
+              (valueChange)="selectedDomain.set($event)"
+            />
+
+            <app-button variant="neutral" fill="outline" (click)="clearFilters()">
+              {{ 'developer.tables.filters.reset' | transloco }}
+            </app-button>
+          </div>
+        }
+      </section>
+    </app-card>
+
+    <app-card variant="outlined">
+      <div class="developer-tables-page__diagram-shell">
+        <div class="developer-tables-page__diagram-heading">
+          <p class="developer-tables-page__section-label">{{ 'developer.tables.diagram.title' | transloco }}</p>
+          <p class="developer-tables-page__section-description">
+            {{ 'developer.tables.diagram.description' | transloco }}
+          </p>
+          <p class="developer-tables-page__diagram-tip">{{ 'developer.tables.diagram.interactionHint' | transloco }}</p>
+        </div>
+
+        @if (filteredSchemas().length > 0) {
+          <div class="developer-tables-page__diagram-preview">
+            <div class="developer-tables-page__diagram-actions">
+              @if (!diagramRequested()) {
+                <app-button variant="neutral" fill="outline" (click)="requestDiagramRender()">
+                  {{ 'developer.tables.diagram.renderAction' | transloco }}
+                </app-button>
+              } @else {
+                <app-button variant="neutral" fill="outline" (click)="requestDiagramRender()">
+                  {{ 'developer.tables.diagram.rerenderAction' | transloco }}
+                </app-button>
+
+                <app-button variant="neutral" fill="outline" (click)="hideDiagramRender()">
+                  {{ 'developer.tables.diagram.hideAction' | transloco }}
+                </app-button>
+              }
+
+              <app-button variant="neutral" fill="outline" (click)="openMermaidSource()">
+                {{ 'developer.tables.diagram.sourceAction' | transloco }}
+              </app-button>
+
+              <app-button variant="neutral" fill="outline" (click)="openDiagramFullscreen()">
+                {{ 'developer.tables.diagram.fullscreenAction' | transloco }}
+              </app-button>
+            </div>
+
+            @if (!diagramRequested()) {
+              <p class="developer-tables-page__section-description">
+                {{ 'developer.tables.diagram.renderHint' | transloco }}
+              </p>
+            } @else if (diagramSvg(); as svg) {
+              <div class="developer-tables-page__diagram-canvas" (click)="selectSchemaFromDiagram($event)" [innerHTML]="svg"></div>
+            } @else if (diagramError()) {
+              <p class="developer-tables-page__section-description">{{ diagramError() }}</p>
+            } @else {
+              <p class="developer-tables-page__section-description">
+                {{ 'developer.tables.diagram.loading' | transloco }}
+              </p>
+            }
+          </div>
+        } @else {
+          <div class="developer-tables-page__diagram-empty">
+            <p class="developer-tables-page__section-label">{{ 'developer.tables.diagram.emptyTitle' | transloco }}</p>
+            <p class="developer-tables-page__section-description">
+              {{ 'developer.tables.diagram.emptyDescription' | transloco }}
+            </p>
+          </div>
+        }
+      </div>
+    </app-card>
+  </section>
+
+  <section class="developer-tables-page__content">
+    <app-card variant="outlined">
+      <p class="developer-tables-page__section-label">{{ 'developer.tables.summary.title' | transloco }}</p>
+      <p class="developer-tables-page__section-description">{{ 'developer.tables.summary.description' | transloco }}</p>
+
+      <div class="developer-tables-page__summary-toolbar">
+        <p class="developer-tables-page__summary-results">{{ summaryResultsLabel() }}</p>
+
+        @if (activeFilterChips().length > 0) {
+          <div class="developer-tables-page__active-filters" aria-label="Filtros activos">
+            @for (chip of activeFilterChips(); track chip.id) {
+              <button class="developer-tables-page__filter-chip" type="button" (click)="clearFilterChip(chip.id)">
+                <span>{{ chip.label }}: {{ chip.value }}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="developer-tables-page__overview-stats" aria-label="Resumen de entidades visibles">
+        @for (stat of overviewStats(); track stat.label) {
+          <div class="developer-tables-page__overview-stat">
+            <span>{{ stat.label }}</span>
+            <strong>{{ stat.value }}</strong>
+          </div>
+        }
+      </div>
+
+      <app-table
+        [columns]="summaryColumns()"
+        [rows]="summaryRows()"
+        [activeRowId]="selectedSchemaId()"
+        [sort]="summarySort()"
+        maxHeight="34rem"
+        [stickyHeader]="true"
+        [size]="tableSize()"
+        [emptyTitle]="'developer.tables.summary.emptyTitle' | transloco"
+        [emptyDescription]="'developer.tables.summary.emptyDescription' | transloco"
+        appearance="minimal"
+        variant="neutral"
+        (sortChange)="summarySort.set($event)"
+        (rowSelected)="selectSchema($event)"
+      />
+    </app-card>
+
+    <app-card id="developer-table-detail" variant="outlined">
+      <p class="developer-tables-page__section-label">{{ 'developer.tables.detail.title' | transloco }}</p>
+
+      @if (selectedSchema(); as schema) {
+        <div class="developer-tables-page__detail-header">
+          <div>
+            <h2>{{ schema.name }}</h2>
+            @if (selectedSchemaMeta(); as meta) {
+              <p class="developer-tables-page__detail-meta">{{ meta }}</p>
+            }
+            <p>{{ schema.description }}</p>
+          </div>
+          <div class="developer-tables-page__badge-group">
+            <span class="developer-tables-page__domain">{{ schema.feature }}</span>
+            <span class="developer-tables-page__domain">{{ schema.domain }}</span>
+          </div>
+        </div>
+
+        <div class="developer-tables-page__detail-stats" aria-label="Resumen de la tabla seleccionada">
+          @for (stat of detailStats(); track stat.label) {
+            <div class="developer-tables-page__detail-stat">
+              <span>{{ stat.label }}</span>
+              <strong>{{ stat.value }}</strong>
+            </div>
+          }
+        </div>
+
+        <div class="developer-tables-page__detail-tools">
+          <app-search-input
+            [label]="'developer.tables.detail.searchLabel' | transloco"
+            [placeholder]="'developer.tables.detail.searchPlaceholder' | transloco"
+            [clearAriaLabel]="'developer.tables.detail.clearSearch' | transloco"
+            [value]="fieldSearchQuery()"
+            appearance="minimal"
+            variant="neutral"
+            (valueChange)="fieldSearchQuery.set($event)"
+            (cleared)="clearFieldSearch()"
+          />
+
+          <app-button variant="neutral" fill="outline" (click)="toggleCompactMode()">
+            {{
+              (compactMode() ? 'developer.tables.detail.compact.disable' : 'developer.tables.detail.compact.enable')
+                | transloco
+            }}
+          </app-button>
+        </div>
+
+        <app-table
+          [columns]="fieldColumns()"
+          [rows]="fieldRows()"
+          [emptyTitle]="'developer.tables.detail.emptyTitle' | transloco"
+          [emptyDescription]="fieldEmptyDescription()"
+          maxHeight="30rem"
+          [stickyHeader]="true"
+          [size]="tableSize()"
+          appearance="minimal"
+          variant="primary"
+        />
+
+        <div class="developer-tables-page__relations">
+          <p class="developer-tables-page__section-label">{{ 'developer.tables.detail.relationsTitle' | transloco }}</p>
+          @if (relationGroups().length > 0) {
+            <div class="developer-tables-page__relation-groups">
+              @for (group of relationGroups(); track group.targetTableId) {
+                <section class="developer-tables-page__relation-group">
+                  <div class="developer-tables-page__relation-group-header">
+                    <button
+                      class="developer-tables-page__relation-target"
+                      type="button"
+                      [attr.aria-label]="'developer.tables.detail.goToRelation' | transloco: { target: group.targetTableId }"
+                      (click)="navigateToRelation(group.targetTableId)"
+                    >
+                      {{ group.targetTableName }}
+                    </button>
+                    <span class="developer-tables-page__relation-count">
+                      {{ 'developer.tables.detail.relationCount' | transloco: { count: group.count } }}
+                    </span>
+                  </div>
+
+                  <div class="developer-tables-page__relation-list">
+                    @for (relation of group.relations; track relation.label) {
+                      <button
+                        class="developer-tables-page__relation-chip"
+                        type="button"
+                        [attr.aria-label]="'developer.tables.detail.goToRelation' | transloco: { target: relation.targetTableId }"
+                        (click)="navigateToRelation(relation.targetTableId)"
+                      >
+                        {{ relation.label }}
+                      </button>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          } @else {
+            <p class="developer-tables-page__section-description">{{ 'developer.tables.detail.noRelations' | transloco }}</p>
+          }
+        </div>
+      } @else {
+        <p class="developer-tables-page__section-description">{{ 'developer.tables.detail.noSelection' | transloco }}</p>
+      }
+    </app-card>
+  </section>
+
+  <app-dialog
+    [open]="mermaidSourceOpen()"
+    [title]="'developer.tables.diagram.sourceTitle' | transloco"
+    [description]="'developer.tables.diagram.sourceDescription' | transloco"
+    size="lg"
+    appearance="minimal"
+    [showActions]="false"
+    [closeAriaLabel]="'developer.tables.diagram.closeSource' | transloco"
+    (closed)="closeMermaidSource()"
+  >
+    <div class="developer-tables-page__diagram-source">
+      <pre>{{ mermaidSource() }}</pre>
+    </div>
+  </app-dialog>
+
+  <app-dialog
+    [open]="diagramFullscreenOpen()"
+    [title]="'developer.tables.diagram.fullscreenTitle' | transloco"
+    [description]="'developer.tables.diagram.fullscreenDescription' | transloco"
+    size="lg"
+    appearance="minimal"
+    [showActions]="false"
+    [closeAriaLabel]="'developer.tables.diagram.closeFullscreen' | transloco"
+    (closed)="closeDiagramFullscreen()"
+  >
+    <div class="developer-tables-page__diagram-fullscreen">
+      <div class="developer-tables-page__diagram-actions">
+        <app-button variant="neutral" fill="outline" (click)="requestDiagramRender()">
+          {{ 'developer.tables.diagram.rerenderAction' | transloco }}
+        </app-button>
+
+        <app-button variant="neutral" fill="outline" (click)="openMermaidSource()">
+          {{ 'developer.tables.diagram.sourceAction' | transloco }}
+        </app-button>
+      </div>
+
+      @if (diagramSvg(); as fullscreenSvg) {
+        <div class="developer-tables-page__diagram-canvas developer-tables-page__diagram-canvas--fullscreen" (click)="selectSchemaFromDiagram($event)" [innerHTML]="fullscreenSvg"></div>
+      } @else if (diagramError()) {
+        <p class="developer-tables-page__section-description">{{ diagramError() }}</p>
+      } @else {
+        <p class="developer-tables-page__section-description">{{ 'developer.tables.diagram.loading' | transloco }}</p>
+      }
+    </div>
+  </app-dialog>
+</main>

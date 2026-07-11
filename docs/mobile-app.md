@@ -90,16 +90,69 @@ stateDiagram-v2
     Menu --> Cart: onCartClick
     Cart --> Menu: onBack
     Cart --> Checkout: onCheckout (pedido enviado a cocina)
-    Checkout --> Menu: onDone (pago aceptado, stack limpio)
+    Checkout --> Menu: onDone (Seguir pidiendo, stack limpio)
+    Checkout --> Entry: onExitTable (Salir de la mesa, logout y stack vacío)
     Menu --> Entry: sessionExpired (stack vacío)
 ```
 
-Entry → Menu y Checkout → Menu **reemplazan** el stack (`backStack.clear()`)
+Entry → Menu, Checkout → Menu y Checkout → Entry **reemplazan** el stack (`backStack.clear()`)
 para que atrás nunca vuelva al login ni a un cobro ya cerrado. Las
 transiciones (`MesaFlowNavigation.kt`) son un fundido + deslizamiento sutil
 (`transitionSpec`/`popTransitionSpec`, 220 ms), simétrico en ambas
 direcciones e incluye `predictivePopTransitionSpec` para el gesto de retroceso
 predictivo de Android.
+
+### Pantalla de pago aceptado (ticket)
+
+Tras confirmarse el pago, `PaymentAcceptedContent` (`CheckoutScreen.kt`)
+muestra un ticket detallado en lugar del total a secas:
+
+- **Número de pedido** (`Order.dailyNumber`): contador diario por restaurante
+  calculado por el backend al abrir el pedido; viaja por `CheckoutKey` junto a
+  la mesa, solo para mostrar.
+- **Líneas del pedido**: `CheckoutKey.linesJson` lleva una foto serializada de
+  las `CartLine` enviadas, porque el carrito Room se vacía en cuanto el envío
+  a cocina tiene éxito y ya no se puede releer.
+- **Importes reales**: se pintan `paidCents`/`balanceCents` del
+  `PaymentResult`, no el total de navegación; si quedara saldo pendiente se
+  muestra en rojo y se oculta "Salir de la mesa" (la cuenta no está cerrada).
+- **Método de pago y hora**: el método sale de `CheckoutUiState.method` y la
+  hora se sella en `paidAtMillis` al confirmarse el pago (no viene del
+  backend).
+- **Dos salidas**: "Seguir pidiendo" (vuelve a la carta) y "Salir de la mesa"
+  (confirmación con `ExitTableConfirmDialog`, compartido con Ajustes; hace
+  logout vía `CheckoutViewModel.onExitTableRequested()` y vacía el stack hasta
+  Entry).
+- **Accesibilidad**: al entrar, el foco salta al título para que TalkBack
+  anuncie el éxito.
+
+### Refresco periódico de la carta
+
+El admin web puede cambiar la carta (orden, precios, disponibilidad) en
+cualquier momento y el hosting gratuito no ofrece websockets fiables, así que
+`MenuViewModel` repide la carta cada 3 minutos (`MENU_POLL_INTERVAL`) y la
+compara estructuralmente con la actual. Solo corre con la app en primer plano
+(`ProcessLifecycleOwner` + `repeatOnLifecycle(STARTED)`) para no gastar
+batería ni mantener despierta la BD gratuita. Si hay cambios y el cliente está
+en otra pantalla (Carrito/Ajustes), la carta se aplica en silencio; si está
+mirándola, se muestra el banner "La carta se ha actualizado" y el cambio se
+aplica al tocarlo (nunca se repinta la lista bajo el dedo). Un fallo del
+polling se ignora (se reintenta al siguiente ciclo) y jamás vuelca la pantalla
+al estado de error.
+
+### Sondeos pensados para hosting gratuito
+
+No hay cliente WebSocket a propósito: el hosting gratuito del backend no ofrece
+sockets fiables, así que ambos refrescos son sondeos, pero baratos:
+
+- **Caché HTTP condicional**: el backend marca los GET de carta y estado del
+  pedido con `Cache-Control: private, max-age=0, must-revalidate` (más el ETag
+  débil que Express genera por defecto), y OkHttp guarda la respuesta en una
+  caché de disco (`NetworkModule`) y revalida con `If-None-Match`: las vueltas
+  sin cambios son un 304 sin cuerpo.
+- **El sondeo del pedido se apaga solo**: `CartViewModel` deja de sondear cuando
+  todas las líneas llegan a un estado final (servido/cancelado) y, como el de la
+  carta, solo corre con la app en primer plano (`ProcessLifecycleOwner`).
 
 ## Flujo crítico: pedir y enviar a cocina
 

@@ -16,6 +16,8 @@ import com.mesaflow.client.feature.checkout.CheckoutScreen
 import com.mesaflow.client.feature.entry.EntryScreen
 import com.mesaflow.client.feature.menu.MenuScreen
 import com.mesaflow.client.feature.settings.SettingsScreen
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private const val TRANSITION_DURATION_MS = 220
 
@@ -82,12 +84,15 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
             entry<CartKey> {
                 CartScreen(
                     onBack = { backStack.removeLastOrNull() },
-                    onCheckout = { submitted ->
+                    onCheckout = { submitted, lines, tableLabel ->
                         backStack.add(
                             CheckoutKey(
                                 orderId = submitted.orderId,
                                 totalCents = submitted.totalCents,
                                 currency = submitted.currency,
+                                linesJson = Json.encodeToString(lines),
+                                dailyNumber = submitted.dailyNumber,
+                                tableLabel = tableLabel,
                             ),
                         )
                     },
@@ -96,6 +101,11 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
             entry<SettingsKey> {
                 SettingsScreen(
                     onBack = { backStack.removeLastOrNull() },
+                    onExitTable = {
+                        // Igual que sessionExpired: vaciar el stack para que atrás no vuelva a la mesa anterior.
+                        backStack.clear()
+                        backStack.add(EntryKey)
+                    },
                 )
             }
             entry<CheckoutKey> { key ->
@@ -103,11 +113,19 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                     orderId = key.orderId,
                     totalCents = key.totalCents,
                     currency = key.currency,
+                    linesJson = key.linesJson,
+                    dailyNumber = key.dailyNumber,
+                    tableLabel = key.tableLabel,
                     onBack = { backStack.removeLastOrNull() },
                     onDone = {
                         // Pago aceptado: vuelta limpia a la carta (sin carrito ni cobro detrás).
                         backStack.clear()
                         backStack.add(MenuKey)
+                    },
+                    onExitTable = {
+                        // Igual que en Ajustes: vaciar el stack para que atrás no vuelva a la mesa cerrada.
+                        backStack.clear()
+                        backStack.add(EntryKey)
                     },
                 )
             }

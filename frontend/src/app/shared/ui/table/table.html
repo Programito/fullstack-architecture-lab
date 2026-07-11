@@ -1,5 +1,5 @@
 <div [class]="classes()">
-  <div class="table__scroller">
+  <div class="table__scroller" [attr.style]="scrollerStyle()">
     <table class="table__element">
       <thead>
         <tr>
@@ -55,6 +55,8 @@
             <tr
               class="table__row"
               [class.table__row--selected]="isSelected(row, rowIndex)"
+              [class.table__row--active]="isActive(row, rowIndex)"
+              [attr.data-row-id]="rowKey(row, rowIndex)"
               tabindex="0"
               (click)="selectRow(row)"
               (keydown.enter)="selectRow(row)"

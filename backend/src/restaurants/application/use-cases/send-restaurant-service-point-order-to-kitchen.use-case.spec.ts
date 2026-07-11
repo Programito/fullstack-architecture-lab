@@ -26,7 +26,8 @@ function makeServicePoint(): ServicePointDetailView {
 
 function makeOrderWithPendingLine(): RestaurantOrderView {
   return {
-    order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 0, balanceCents: 1200, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null },
+    order: { id: 'order-1',
+      dailyNumber: 1, restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 0, balanceCents: 1200, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null },
     lines: [{ id: 'line-1', restaurantProductId: 'rp-1', productId: 'p-1', productName: 'Burger', productType: 'simple', course: 'main', preparationRoute: 'kitchen', basePriceCents: 1200, unitPriceCents: 1200, quantity: 1, subtotalCents: 1200, taxRateName: 'IVA', taxRatePercent: 21, taxCents: 208, status: 'pending', kitchenNote: null, cancellationReason: null, cancelledAt: null, configurationSignature: 'rp-1||', modifiers: [], comboSlots: [], platterComponents: [] }],
     payments: [],
   };
@@ -34,7 +35,7 @@ function makeOrderWithPendingLine(): RestaurantOrderView {
 
 function makeOrderWithNoEligibleLines(): RestaurantOrderView {
   return {
-    order: { id: 'order-1', restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 0, balanceCents: 1200, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null },
+    order: { id: 'order-1', dailyNumber: 1, restaurantId: 'restaurant-1', tableId: 'table-1', status: 'open', currency: 'EUR', guestCount: 2, subtotalCents: 1200, taxCents: 208, discountTotalCents: 0, totalCents: 1200, paidCents: 0, balanceCents: 1200, openedAt: '2026-06-24T10:00:00.000Z', updatedAt: '2026-06-24T10:00:00.000Z', closedAt: null },
     lines: [{ id: 'line-1', restaurantProductId: 'rp-1', productId: 'p-1', productName: 'Burger', productType: 'simple', course: 'main', preparationRoute: 'kitchen', basePriceCents: 1200, unitPriceCents: 1200, quantity: 1, subtotalCents: 1200, taxRateName: 'IVA', taxRatePercent: 21, taxCents: 208, status: 'preparing', kitchenNote: null, cancellationReason: null, cancelledAt: null, configurationSignature: 'rp-1||', modifiers: [], comboSlots: [], platterComponents: [] }],
     payments: [],
   };

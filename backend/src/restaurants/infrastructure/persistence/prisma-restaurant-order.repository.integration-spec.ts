@@ -90,8 +90,26 @@ describe('PrismaRestaurantOrderRepository (integration)', () => {
     expect(view.order.tableId).toBe(tableId);
     expect(view.order.status).toBe('open');
     expect(view.order.guestCount).toBe(2);
+    expect(view.order.dailyNumber).toBe(1);
     expect(view.lines).toEqual([]);
     expect(view.payments).toEqual([]);
+  });
+
+  it('assigns sequential dailyNumber per restaurant for orders opened the same day', async () => {
+    const secondTable = await prisma.restaurantTable.create({
+      data: { restaurantId, tableNumber: 4, name: 'Mesa 4', capacity: 4 },
+    });
+
+    const first = await repository.open({ restaurantId, tableId, openedByUserId: userId, guestCount: 2 });
+    const second = await repository.open({
+      restaurantId,
+      tableId: secondTable.id,
+      openedByUserId: userId,
+      guestCount: 2,
+    });
+
+    expect(first.order.dailyNumber).toBe(1);
+    expect(second.order.dailyNumber).toBe(2);
   });
 
   it('rejects a second open call for a table that already has an active order', async () => {

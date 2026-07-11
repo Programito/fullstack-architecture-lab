@@ -27,6 +27,7 @@
     <string name="menu_error_load">No se ha podido cargar la carta.</string>
     <string name="menu_empty_results">No hay resultados para tu búsqueda.</string>
     <string name="menu_pending_submission">No se ha podido enviar tu pedido. Toca aquí para intentarlo de nuevo.</string>
+    <string name="menu_updated_notice">La carta se ha actualizado. Toca para ver los cambios.</string>
     <string name="menu_item_open">Configurar producto</string>
     <string name="menu_allergen_filter_open">Filtrar por alérgenos</string>
     <string name="menu_allergen_filter_title">Alérgenos a evitar</string>
@@ -85,7 +86,6 @@
     <string name="checkout_processing">Procesando…</string>
     <string name="checkout_accepted_title">¡Pago aceptado!</string>
     <string name="checkout_accepted_message">Gracias por tu pedido. Que aproveche.</string>
-    <string name="checkout_done">Volver a la carta</string>
     <string name="checkout_error_validation">El pago no es válido. Revisa el pedido.</string>
     <string name="checkout_error_generic">No se ha podido completar el pago. Inténtalo de nuevo.</string>
     <string name="checkout_error_server">No hemos podido conectar con el restaurante. Tu pedido no se ha cobrado; inténtalo de nuevo en unos segundos.</string>
@@ -101,4 +101,19 @@
     <string name="settings_language_es">Español</string>
     <string name="settings_language_en">English</string>
     <string name="settings_language_ca">Català</string>
+    <string name="settings_table_title">Mesa</string>
+    <string name="settings_exit_table_hint">Termina la sesión con esta mesa para escanear otro QR o entrar de nuevo en modo demo.</string>
+    <string name="settings_exit_table_button">Salir de la mesa</string>
+    <string name="settings_exit_table_confirm_title">¿Salir de la mesa?</string>
+    <string name="settings_exit_table_confirm_message">Volverás a la pantalla de inicio y tendrás que escanear un QR o entrar de nuevo en modo demo.</string>
+    <string name="settings_exit_table_confirm_button">Salir</string>
+    <string name="settings_exit_table_cancel_button">Cancelar</string>
+    <string name="checkout_ticket_number">Pedido #%1$d</string>
+    <string name="checkout_ticket_table_time">Mesa %1$s · %2$s</string>
+    <string name="checkout_ticket_table">Mesa %1$s</string>
+    <string name="checkout_paid_label">Pagado</string>
+    <string name="checkout_paid_with">Pagado con %1$s</string>
+    <string name="checkout_pending_label">Pendiente</string>
+    <string name="checkout_pending_hint">Queda un importe pendiente. Avisa al personal para completar el pago.</string>
+    <string name="checkout_keep_ordering">Seguir pidiendo</string>
 </resources>

@@ -19,9 +19,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
 import javax.inject.Named
 import javax.inject.Singleton
 import kotlinx.serialization.json.Json
+import okhttp3.Cache
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -31,6 +33,16 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    /**
+     * Caché HTTP en disco para respuestas con ETag (carta y estado del pedido): el backend
+     * marca esos GET con `Cache-Control: private, max-age=0, must-revalidate`, así que OkHttp
+     * revalida con If-None-Match y los sondeos repetidos se convierten en 304 sin cuerpo —
+     * clave con un backend en hosting gratuito. Solo la usa el cliente principal; el de
+     * refresh no hace GETs cacheables.
+     */
+    private const val HTTP_CACHE_DIR = "http_cache"
+    private const val HTTP_CACHE_SIZE_BYTES = 5L * 1024 * 1024
 
     @Provides
     @Named("baseUrl")
@@ -80,12 +92,14 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
+        @ApplicationContext context: Context,
         cookieJar: SessionCookieJar,
         clientOriginInterceptor: ClientOriginInterceptor,
         authInterceptor: AuthInterceptor,
         tokenAuthenticator: TokenAuthenticator,
     ): OkHttpClient =
         OkHttpClient.Builder()
+            .cache(Cache(File(context.cacheDir, HTTP_CACHE_DIR), HTTP_CACHE_SIZE_BYTES))
             .cookieJar(cookieJar)
             .addInterceptor(clientOriginInterceptor)
             .addInterceptor(authInterceptor)

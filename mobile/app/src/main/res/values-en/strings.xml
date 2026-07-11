@@ -26,6 +26,7 @@
     <string name="menu_error_load">The menu could not be loaded.</string>
     <string name="menu_empty_results">No results for your search.</string>
     <string name="menu_pending_submission">Your order could not be sent. Tap here to try again.</string>
+    <string name="menu_updated_notice">The menu has been updated. Tap to see the changes.</string>
     <string name="menu_item_open">Configure product</string>
     <string name="menu_allergen_filter_open">Filter by allergens</string>
     <string name="menu_allergen_filter_title">Allergens to avoid</string>
@@ -84,7 +85,6 @@
     <string name="checkout_processing">Processing…</string>
     <string name="checkout_accepted_title">Payment accepted!</string>
     <string name="checkout_accepted_message">Thanks for your order. Enjoy your meal.</string>
-    <string name="checkout_done">Back to the menu</string>
     <string name="checkout_error_validation">The payment is not valid. Review the order.</string>
     <string name="checkout_error_generic">The payment could not be completed. Please try again.</string>
     <string name="checkout_error_server">We couldn\'t reach the restaurant. Your order hasn\'t been charged; please try again in a few seconds.</string>
@@ -100,4 +100,19 @@
     <string name="settings_language_es">Español</string>
     <string name="settings_language_en">English</string>
     <string name="settings_language_ca">Català</string>
+    <string name="settings_table_title">Table</string>
+    <string name="settings_exit_table_hint">End this table\'s session to scan another QR code or enter demo mode again.</string>
+    <string name="settings_exit_table_button">Exit table</string>
+    <string name="settings_exit_table_confirm_title">Exit table?</string>
+    <string name="settings_exit_table_confirm_message">You\'ll return to the start screen and need to scan a QR code or enter demo mode again.</string>
+    <string name="settings_exit_table_confirm_button">Exit</string>
+    <string name="settings_exit_table_cancel_button">Cancel</string>
+    <string name="checkout_ticket_number">Order #%1$d</string>
+    <string name="checkout_ticket_table_time">Table %1$s · %2$s</string>
+    <string name="checkout_ticket_table">Table %1$s</string>
+    <string name="checkout_paid_label">Paid</string>
+    <string name="checkout_paid_with">Paid with %1$s</string>
+    <string name="checkout_pending_label">Pending</string>
+    <string name="checkout_pending_hint">There is an outstanding amount. Please ask the staff to complete the payment.</string>
+    <string name="checkout_keep_ordering">Keep ordering</string>
 </resources>

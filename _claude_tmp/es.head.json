@@ -1,0 +1,1396 @@
+{
+  "app": {
+    "eyebrow": "Frontend Angular",
+    "title": "Proyecto Full Stack",
+    "description": "Base moderna con Angular, Tailwind, Vitest, Testing Library, Playwright y Storybook.",
+    "tools": {
+      "tailwind": "Tailwind CSS",
+      "vitest": "Vitest",
+      "testingLibrary": "Testing Library",
+      "playwright": "Playwright"
+    }
+  },
+  "auth": {
+    "eyebrow": "Sala, cocina y cobros",
+    "title": "Explora MesaFlow",
+    "badge": "Restaurant Suite",
+    "description": "Gestiona mesas, pedidos, cocina y cobros desde una experiencia pensada para restaurantes.",
+    "methodLabel": "Método de acceso",
+    "benefits": {
+      "floor": "Plano de mesas, pedidos y cobros",
+      "kitchen": "Cocina y preparación en tiempo real",
+      "menu": "Carta, menús y platos combinados"
+    },
+    "demo": {
+      "tab": "Demo rápida",
+      "title": "Demo rápida",
+      "description": "Elige un perfil para recorrer MesaFlow sin introducir credenciales.",
+      "restaurantTitle": "Perfiles de restaurante",
+      "restaurantDescription": "Accede a operación, servicio y cocina con un clic.",
+      "technicalTitle": "Perfil técnico",
+      "technicalDescription": "Revisa documentación, Storybook y arquitectura.",
+      "action": "Entrar ahora",
+      "loading": "Abriendo..."
+    },
+    "credentials": {
+      "tab": "Usuario y contraseña",
+      "title": "Usuario y contraseña",
+      "description": "Accede con las credenciales de tu cuenta para continuar donde lo dejaste.",
+      "email": "Email",
+      "password": "Contraseña",
+      "submit": "Entrar",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "validation": {
+        "emailRequired": "Introduce tu email.",
+        "emailInvalid": "Introduce un email válido.",
+        "passwordRequired": "Introduce tu contraseña.",
+        "passwordMinLength": "La contraseña debe tener al menos 8 caracteres."
+      }
+    },
+    "roles": {
+      "admin": {
+        "label": "Admin",
+        "description": "Control completo del restaurante."
+      },
+      "manager": {
+        "label": "Encargado",
+        "description": "Turnos, descuentos, menú y caja."
+      },
+      "waiter": {
+        "label": "Camarero",
+        "description": "Mesas, pedidos y cobros."
+      },
+      "kitchen": {
+        "label": "Cocina",
+        "description": "Pedidos en cocina y preparados."
+      },
+      "developer": {
+        "label": "Developer",
+        "description": "Documentación, Storybook y arquitectura."
+      }
+    },
+    "errors": {
+      "invalidCredentials": "No se ha podido iniciar sesión. Revisa el email y la contraseña.",
+      "demoUnavailable": "No se ha podido abrir la demo ahora mismo. Inténtalo de nuevo en unos minutos."
+    },
+    "readiness": {
+      "warmingUp": {
+        "title": "Estamos despertando la base de datos",
+        "description": "El primer acceso puede tardar unos segundos. Reintentamos en segundo plano para que puedas entrar en cuanto todo responda."
+      },
+      "down": {
+        "title": "Ahora mismo los servicios no responden",
+        "description": "La aplicación sigue intentando recuperar la conexión. Si persiste, revisa el estado de la base de datos y vuelve a intentarlo."
+      }
+    },
+    "seed": {
+      "label": "Cargar datos de demostración",
+      "loading": "Cargando datos...",
+      "done": "Datos de demostración cargados correctamente.",
+      "error": "No se han podido cargar los datos. Inténtalo de nuevo."
+    }
+  },
+  "developer": {
+    "eyebrow": "Espacio técnico",
+    "title": "Recursos para Developer",
+    "description": "Documentación técnica disponible únicamente para cuentas con rol Developer.",
+    "platformStatus": {
+      "eyebrow": "Plataforma",
+      "action": "Ver logs",
+      "duration": "Última comprobación: {{ durationMs }} ms",
+      "ready": {
+        "title": "Servicios operativos",
+        "description": "Base de datos lista para responder."
+      },
+      "warming_up": {
+        "title": "Base de datos despertando",
+        "description": "El primer acceso puede tardar unos segundos mientras la infraestructura vuelve a responder."
+      },
+      "down": {
+        "title": "Servicios con incidencia",
+        "description": "La plataforma sigue intentando recuperar la conexión con la base de datos."
+      }
+    },
+    "loading": "Cargando recursos...",
+    "apiDocs": "Consulta los contratos y endpoints de la API.",
+    "storybook": "Explora los componentes, estados y patrones visuales.",
+    "architectureTitle": "Arquitectura",
+    "architecture": "Revisa las decisiones y flujos principales del frontend.",
+    "logs": {
+      "cardTitle": "Logs y auditoría",
+      "cardDescription": "Revisa salud operativa, errores recientes y actividad auditada.",
+      "eyebrow": "Observabilidad",
+      "title": "Logs operativos",
+      "description": "Supervisa peticiones, errores y actividad de auditoría desde una vista técnica simple.",
+      "back": "Volver a recursos",
+      "filters": {
+        "title": "Filtros",
+        "show": "Mostrar filtros",
+        "hide": "Ocultar filtros",
+        "view": "Vista",
+        "activeTitle": "Filtros activos",
+        "clear": "Quitar",
+        "from": "Desde",
+        "to": "Hasta",
+        "level": "Nivel",
+        "category": "Categoría",
+        "path": "Ruta",
+        "actorUserId": "Usuario actor",
+        "actorUserIdHint": "Solo aparecen usuarios con actividad auditada.",
+        "restaurantId": "Restaurante",
+        "restaurantIdHint": "Escribe para buscar por nombre.",
+        "entityType": "Entidad",
+        "entityId": "ID entidad",
+        "entityIdHint": "Elige primero un tipo de entidad para ver opciones.",
+        "result": "Resultado",
+        "search": "Buscar",
+        "all": "Todos",
+        "apply": "Aplicar filtros",
+        "reset": "Restablecer",
+        "clientOrigin": "Origen"
+      },
+      "views": {
+        "all": "Todo",
+        "operations": "Operación",
+        "audit": "Auditoría"
+      },
+      "ranges": {
+        "1h": "1h",
+        "6h": "6h",
+        "24h": "24h",
+        "3d": "3d",
+        "7d": "7d"
+      },
+      "metrics": {
+        "requests": "Peticiones",
+        "errors": "Errores",
+        "errorRate": "Tasa de error",
+        "audit": "Eventos auditados",
+        "latency": "Latencia p95",
+        "loginSucceeded": "Login correcto",
+        "loginFailed": "Login fallido",
+        "vsPrevious": "vs anterior",
+        "noComparison": "Sin comparativa"
+      },
+      "insights": {
+        "overview": "Resumen",
+        "mainAlert": "Alerta principal",
+        "auditActivity": "Actividad",
+        "auditRisk": "Riesgo",
+        "currentFocus": "Foco actual",
+        "requests": "peticiones",
+        "events": "eventos",
+        "auditActions": "acciones visibles",
+        "auditChanges": "cambios visibles",
+        "auditActivityFallback": "Actividad de auditoría en el rango actual",
+        "failedAuditActions": "Acciones fallidas para revisar",
+        "authNeedsReview": "La actividad de acceso requiere revisión",
+        "noRiskHighlighted": "Sin señal de riesgo destacada",
+        "auditRiskFallback": "No hay un patrón riesgoso dominante en lo visible",
+        "errorRateRising": "Sube la tasa de error",
+        "latencyRising": "Sube la latencia",
+        "errorsRising": "Suben los errores",
+        "noAlert": "Sin alerta activa",
+        "systemStable": "Las señales principales se mantienen estables",
+        "noFocus": "Sin foco claro",
+        "awaitingSignals": "Esperando una señal más clara"
+      },
+      "charts": {
+        "activity": "Actividad",
+        "levels": "Niveles",
+        "categories": "Categorías",
+        "series": {
+          "events": "Eventos",
+          "errors": "Errores",
+          "audit": "Auditoría",
+          "levels": "Niveles",
+          "categories": "Categorías",
+          "origins": "Canales"
+        },
+        "origins": "Canales"
+      },
+      "table": {
+        "timestamp": "Hora",
+        "level": "Nivel",
+        "category": "Tipo",
+        "actionsHeader": "Acciones",
+        "actions": {
+          "origin": "Filtrar por origen",
+          "originShort": "Origen",
+          "path": "Filtrar por ruta",
+          "pathShort": "Ruta",
+          "actor": "Filtrar por actor",
+          "actorShort": "Actor",
+          "result": "Filtrar por resultado",
+          "resultShort": "Resultado"
+        },
+        "event": "Evento",
+        "message": "Detalle",
+        "emptyTitle": "Sin eventos",
+        "emptyDescription": "Todavía no hay eventos para este rango.",
+        "clientOrigin": "Origen"
+      },
+      "detail": {
+        "title": "Detalle del evento",
+        "timestamp": "Fecha",
+        "source": "Origen",
+        "category": "Categoría",
+        "path": "Ruta",
+        "method": "Método",
+        "status": "Estado",
+        "duration": "Duración (ms)",
+        "requestId": "Request ID",
+        "actorUserId": "Usuario actor",
+        "actorRoles": "Roles actor",
+        "result": "Resultado",
+        "entityType": "Entidad",
+        "entityId": "ID entidad",
+        "entityLabel": "Etiqueta entidad",
+        "changedFields": "Campos modificados",
+        "clientOrigin": "Canal"
+      },
+      "events": {
+        "title": "Eventos recientes"
+      },
+      "shortcuts": {
+        "apkCustomer": "APK cliente",
+        "webDemo": "Web demo",
+        "webPos": "Web POS",
+        "auth": "Login y auth",
+        "payments": "Pagos"
+      },
+      "sections": {
+        "topSlowPaths": "Top rutas lentas",
+        "topErrors": "Top errores por canal",
+        "authByOrigin": "Logins por origen",
+        "slowPaths": "Latencia por rutas lentas",
+        "errorTrends": "Tendencia de errores por ruta",
+        "requests": "peticiones",
+        "occurrences": "ocurrencias"
+      },
+      "origins": {
+        "web-admin": "Web admin",
+        "web-demo": "Web demo",
+        "web-pos": "Web POS",
+        "apk-customer": "APK cliente",
+        "backend": "Backend"
+      }
+    },
+    "open": "Abrir recurso",
+    "logout": "Cerrar sesión"
+  },
+  "userAdmin": {
+    "navigation": "Usuarios",
+    "eyebrow": "Administración",
+    "title": "Cuentas de usuario",
+    "description": "Consulta el tipo de cuenta y controla qué usuarios pueden iniciar sesión.",
+    "user": "Usuario",
+    "status": "Estado",
+    "accountType": "Tipo de cuenta",
+    "accountTypeFor": "Tipo de cuenta de {{name}}",
+    "enabled": "Activa",
+    "disabled": "Desactivada",
+    "enabledFor": "Cuenta activa de {{name}}",
+    "loading": "Cargando usuarios...",
+    "empty": "No hay usuarios disponibles.",
+    "confirmRevocation": "El cambio puede cerrar las sesiones activas de este usuario.",
+    "types": {
+      "regular": "Regular",
+      "demo": "Demo",
+      "system": "Sistema",
+      "test": "Pruebas"
+    },
+    "demoRestriction": {
+      "title": "Cambio de tipo de cuenta deshabilitado",
+      "description": "Las cuentas de demostración no pueden cambiar el tipo de cuenta de otros usuarios."
+    },
+    "scope": "Acceso",
+    "scopeOrganization": "Organización",
+    "scopeOrganizationFor": "Organización de {{name}}",
+    "scopeSelectOrganization": "Selecciona una organización",
+    "scopeRestaurant": "Restaurante",
+    "scopeRestaurantFor": "Restaurante de {{name}}",
+    "scopeSelectRestaurant": "Todos los restaurantes de la organización",
+    "scopeSave": "Guardar acceso",
+    "scopeSaveFor": "Guardar acceso de {{name}}",
+    "scopeSaved": "El acceso se ha actualizado correctamente."
+  },
+  "languageSelect": {
+    "label": "Idioma",
+    "hint": "La preferencia se aplica a la interfaz.",
+    "buttonAriaLabel": "{{label}}: {{language}}",
+    "closeAriaLabel": "Cerrar selector de idioma",
+    "listboxAriaLabel": "Idioma",
+    "languages": {
+      "es": "Español",
+      "ca": "Català",
+      "en": "English"
+    }
+  },
+  "colorMode": {
+    "label": "Tema",
+    "buttonAriaLabel": "Tema: {{preference}}. Modo activo: {{mode}}",
+    "switchToDark": "Cambiar a modo oscuro",
+    "switchToLight": "Cambiar a modo claro",
+    "optionAriaLabel": "Usar tema {{option}}",
+    "options": {
+      "system": {
+        "label": "Sistema",
+        "description": "Sigue la preferencia del dispositivo."
+      },
+      "light": {
+        "label": "Claro",
+        "description": "Interfaz con fondo claro."
+      },
+      "dark": {
+        "label": "Oscuro",
+        "description": "Interfaz con fondo oscuro."
+      }
+    }
+  },
+  "restaurantPos": {
+    "common": {
+      "layout": "Plano",
+      "service": "Servicio",
+      "time": "Horario",
+      "menu": "Menú",
+      "kitchen": "Cocina",
+      "reservations": "Reservas",
+      "dashboard": "Analíticas",
+      "pos": "TPV restaurante",
+      "navigation": "Navegación principal",
+      "logout": "Cerrar sesión",
+      "cancel": "Cancelar",
+      "saveChanges": "Guardar cambios",
+      "columnsRows": "{{columns}} columnas x {{rows}} filas",
+      "pax": "{{count}} pax",
+      "capacity": "Capacidad: {{value}}"
+    },
+    "access": {
+      "eyebrow": "Acceso al TPV",
+      "title": "Sin módulos disponibles",
+      "description": "Tu usuario no tiene permisos para acceder a las secciones operativas del TPV."
+    },
+    "errors": {
+      "selectTableFirst": "Selecciona una mesa primero.",
+      "productUnavailable": "El producto no está disponible.",
+      "cannotPlaceElement": "No se puede colocar el elemento aquí.",
+      "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz.",
+      "addLineFailed": "No se pudo añadir el producto. Revisa el estado de la mesa."
+    },
+    "layout": {
+      "title": "Plano del restaurante",
+      "description": "Diseña el comedor, la barra, la cocina y las zonas de servicio.",
+      "editingActions": "Acciones de edición del plano",
+      "resizeLayout": "Redimensionar plano",
+      "addElement": "Añadir elemento",
+      "saveChanges": "Guardar cambios",
+      "backToService": "Volver al modo servicio",
+      "floorPlan": "Plano de sala",
+      "status": "Estado del plano",
+      "layoutMode": "Modo plano",
+      "elementCount": "{{count}} elementos",
+      "selectedElement": "Seleccionado: {{label}}",
+      "noElementSelected": "Ningún elemento seleccionado",
+      "resizeDialog": {
+        "title": "Redimensionar plano",
+        "description": "Elige el tamaño de la matriz antes de aplicarlo.",
+        "close": "Cerrar redimensionar plano",
+        "controls": "Controles de tamaño del plano",
+        "rows": "Filas",
+        "columns": "Columnas",
+        "preview": "Vista previa de redimensión",
+        "matrix": "Matriz de redimensión",
+        "selectSize": "Seleccionar {{columns}} columnas x {{rows}} filas",
+        "apply": "Aplicar tamaño del plano"
+      },
+      "resizeElementDialog": {
+        "title": "Redimensionar elemento",
+        "description": "Cambia cuántas celdas de la matriz ocupa este elemento.",
+        "width": "Ancho del elemento",
+        "height": "Alto del elemento",
+        "apply": "Aplicar tamaño"
+      },
+      "elementDialog": {
+        "addTitle": "Añadir elemento",
+        "editTitle": "Editar elemento",
+        "description": "Elige un preset y colócalo dentro de la matriz actual.",
+        "close": "Cerrar formulario de elemento",
+        "configuration": "Configuración del elemento",
+        "type": "Tipo de elemento",
+        "presetSize": "Tamaño predefinido",
+        "label": "Etiqueta del elemento",
+        "width": "Ancho",
+        "height": "Alto",
+        "tableCapacity": "Capacidad de mesa",
+        "preview": "Vista previa del elemento seleccionado",
+        "previewTitle": "Vista previa",
+        "positionTitle": "Selecciona una posición",
+        "positionDescription": "Selecciona la esquina superior izquierda del elemento.",
+        "positionSelector": "Selector de posición",
+        "placeAt": "Colocar en columna {{column}} fila {{row}}",
+        "invalidPosition": "La posición seleccionada no está disponible. Elige otra celda libre dentro de la matriz.",
+        "selectedPosition": "Posición: columna {{column}}, fila {{row}}",
+        "unselectedPosition": "Posición: sin seleccionar",
+        "unselectedPositionBadge": "Posición sin seleccionar",
+        "singleCellBadge": "Columna {{column}}, fila {{row}}",
+        "rangeBadge": "Columnas {{startColumn}}-{{endColumn}}, filas {{startRow}}-{{endRow}}",
+        "size": "Tamaño: {{width}} x {{height}}",
+        "addNamed": "Añadir {{label}}",
+        "addElement": "Añadir elemento",
+        "editAction": "Editar",
+        "saveChanges": "Guardar cambios"
+      }
+    },
+    "service": {
+      "eyebrow": "Operación de servicio",
+      "title": "Servicio de sala",
+      "sections": "Secciones del TPV restaurante",
+      "description": "Esta ruta gestionará el estado de las mesas, los pedidos, el flujo de cocina y los pagos en próximas iteraciones.",
+      "shiftSummary": "Resumen del turno",
+      "occupiedTables": "Ocupadas",
+      "kitchenQueue": "Cocina",
+      "salesToday": "Ventas",
+      "floorTitle": "Plano de servicio",
+      "floorDescription": "Selecciona una mesa para trabajar su servicio, platos y pago.",
+      "tablePanel": "Panel de mesa seleccionada",
+      "selectedTable": "Mesa seleccionada",
+      "tableTitle": "Mesa {{number}}",
+      "noTableTitle": "Selecciona una mesa",
+      "noTableDescription": "Selecciona una mesa para empezar.",
+      "startedAt": "Inicio",
+      "occupiedFor": "Ocupada",
+      "guests": "Comensales",
+      "servicePhase": "Fase",
+      "total": "Total",
+      "notStarted": "Sin iniciar",
+      "noOrderPhase": "Sin pedido",
+      "coursePending": "{{course}} pendiente",
+      "readyToChargePhase": "Listo para cobrar",
+      "serviceSummary": "{{status}} · {{duration}} · {{phase}} · {{total}}",
+      "nextAction": "Siguiente acción",
+      "nextActionSendKitchen": "Siguiente: enviar {{count}} a cocina",
+      "nextActionMarkServed": "Siguiente: marcar servido",
+      "nextActionCharge": "Siguiente: cobrar",
+      "nextActionCleaning": "Siguiente: pasar a limpieza",
+      "nextActionFreeTable": "Siguiente: liberar mesa",
+      "nextActionNone": "Sin acción pendiente",
+      "pendingKitchenCount": "Pendiente cocina: {{count}}",
+      "courseSummary": "{{count}} uds · {{total}}",
+      "startService": "Iniciar servicio",
+      "searchServicePoint": "Buscar mesa/taburete",
+      "searchServicePointDescription": "Busca una mesa o taburete y selecciónalo en el plano de servicio.",
+      "searchServicePointPlaceholder": "Buscar mesa, taburete, estado o capacidad",
+      "servicePointStatusFilter": "Estado",
+      "allServicePointStatuses": "Todos los estados",
+      "returnToLastServicePoint": "Volver a {{label}}",
+      "closeServicePointSearch": "Cerrar buscador de mesas y taburetes",
+      "clearServicePointSearch": "Limpiar búsqueda de mesas y taburetes",
+      "addProductsTitle": "Añadir productos",
+      "addProductsDescription": "Busca, filtra y añade productos al pedido.",
+      "searchProduct": "Buscar producto",
+      "searchProductDescription": "Busca por nombre, categoría o alérgenos y añade productos al pedido.",
+      "searchProductPlaceholder": "Buscar plato, bebida o alérgeno",
+      "productView": "Vista de productos",
+      "allProducts": "Todos",
+      "favoriteProducts": "Favoritos",
+      "bestSellerProducts": "Más vendidos",
+      "drinkProducts": "Bebidas",
+      "foodProducts": "Comida",
+      "comboProducts": "Menús",
+      "platterProducts": "Platos combinados",
+      "dessertProducts": "Postres",
+      "productSearchResults": "Resultados",
+      "productSearchResultsFor": "Resultados para \"{{query}}\"",
+      "productCategoryFilter": "Categoría",
+      "allProductCategories": "Todas",
+      "productAdded": "Añadido",
+      "finishProductSearch": "Cerrar",
+      "productPickerSummary": "{{count}} productos añadidos · {{total}}",
+      "addProductAction": "Añadir",
+      "configureProductAction": "Configurar",
+      "configureComboAction": "Configurar menú",
+      "configurePlatterAction": "Configurar plato",
+      "comboComingSoonAction": "Próximamente",
+      "configureProductActionLabel": "Configurar {{name}}",
+      "configureComboActionLabel": "Configurar menú {{name}}",
+      "configurePlatterActionLabel": "Configurar plato {{name}}",
+      "comboComingSoonActionLabel": "Configuración de menú próximamente para {{name}}",
+      "addComboToOrder": "Añadir menú",
+      "comboBasePrice": "Precio base",
+      "comboTotal": "Total menú",
+      "productQuantityLabel": "Cantidad de {{name}}: {{count}}",
+      "addFavoriteProduct": "Añadir {{name}} a favoritos",
+      "removeFavoriteProduct": "Quitar {{name}} de favoritos",
+      "closeProductSearch": "Cerrar buscador de productos",
+      "clearProductSearch": "Limpiar búsqueda de productos",
+      "quickProducts": "Añadir rápido",
+      "order": "Pedido",
+      "emptyOrder": "Todavía no hay productos añadidos.",
+      "noProductResults": "No hay productos que coincidan con la búsqueda.",
+      "noServicePointResults": "No hay mesas ni taburetes que coincidan con la búsqueda.",
+      "noAllergens": "Sin alérgenos indicados",
+      "customizable": "Personalizable",
+      "platter": "Plato combinado",
+      "combo": "Menú",
+      "soldOut": "Agotado",
+      "favoriteBadge": "Favorito",
+      "bestSellerBadge": "Más vendido",
+      "sendKitchen": "Cocina",
+      "markServed": "Servido",
+      "charge": "Cobrar",
+      "cleaning": "Limpieza",
+      "freeTable": "Liberar mesa",
+      "kitchenActions": "Acciones de cocina",
+      "paymentActions": "Acciones de pago",
+      "closingActions": "Acciones de cierre de mesa",
+      "sendKitchenActionLabel": "Enviar el pedido de la mesa seleccionada a cocina",
+      "markServedActionLabel": "Marcar el pedido de la mesa seleccionada como servido",
+      "increaseProductQuantityActionLabel": "Añadir una unidad de {{name}}",
+      "decreaseProductQuantityActionLabel": "Quitar una unidad de {{name}}",
+      "newProductOptionAction": "Nueva opción",
+      "newProductOptionActionLabel": "Crear otra opción de {{name}}",
+      "viewProductOptionsAction": "Ver opciones",
+      "hideProductOptionsAction": "Ocultar",
+      "productOptionsSummary": "{{count}} en pedido · {{options}} opciones",
+      "defaultProductOption": "Opción estándar",
+      "noteSummary": "Nota: {{note}}",
+      "productLineQuantityLabel": "Cantidad de {{name}} ({{summary}}): {{count}}",
+      "increaseProductLineQuantityActionLabel": "Añadir una unidad de {{name}} con {{summary}}",
+      "decreaseProductLineQuantityActionLabel": "Quitar una unidad de {{name}} con {{summary}}",
+      "lineNote": "Nota",
+      "lineNoteActionLabel": "Nota para {{name}}",
+      "kitchenNotePrefix": "Nota:",
+      "platterComponentsLabel": "Incluye:",
+      "withoutModifier": "SIN {{name}}",
+      "markProductReady": "Preparado",
+      "markProductServed": "Servir",
+      "removeProduct": "Eliminar",
+      "markProductReadyActionLabel": "Marcar {{name}} como preparado",
+      "markProductServedActionLabel": "Marcar {{name}} como servido",
+      "removeProductActionLabel": "Eliminar {{name}} del pedido",
+      "chargeActionLabel": "Cobrar la mesa seleccionada",
+      "setCashPaymentActionLabel": "Seleccionar pago en efectivo para la mesa seleccionada",
+      "setCardPaymentActionLabel": "Seleccionar pago con tarjeta para la mesa seleccionada",
+      "cleaningActionLabel": "Marcar la mesa seleccionada para limpieza",
+      "freeTableActionLabel": "Liberar la mesa seleccionada",
+      "freeTableConfirmTitle": "Liberar mesa",
+      "freeTableConfirmDescription": "Esta acción vaciará el pedido y dejará la mesa libre.",
+      "confirmFreeTable": "Liberar mesa",
+      "cancelFreeTable": "Mantener mesa"
+    },
+    "reservations": {
+      "eyebrow": "Libro de sala",
+      "title": "Agenda de reservas",
+      "description": "Consulta las reservas del día y organízalas por servicio antes de abrir sala.",
+      "selectedDate": "Fecha activa",
+      "dateLabel": "Selecciona una fecha",
+      "summaryReservations": "Reservas",
+      "summaryPax": "Pax",
+      "summaryUnassigned": "Sin mesa",
+      "summaryOverdue": "Pendientes",
+      "searchLabel": "Buscar reserva",
+      "searchPlaceholder": "Buscar por nombre de cliente o teléfono",
+      "statusFilter": "Estado",
+      "statusAll": "Todos",
+      "serviceFilter": "Servicio",
+      "serviceAll": "Todos",
+      "serviceLunch": "Comidas",
+      "serviceDinner": "Cenas",
+      "lunch": "Comidas",
+      "lunchDescription": "Reservas previstas para el servicio de mediodía.",
+      "dinner": "Cenas",
+      "dinnerDescription": "Reservas previstas para el servicio de noche.",
+      "partySize": "{{count}} comensales",
+      "empty": "No hay reservas para este servicio.",
+      "unassignedTable": "Sin mesa asignada",
+      "unassignedBadge": "Sin mesa",
+      "upcoming": "Próxima",
+      "overdue": "Pendiente",
+      "loading": "Cargando reservas",
+      "loadError": "No se han podido cargar las reservas. Comprueba la conexión e inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "confirmCancelTitle": "¿Cancelar reserva?",
+      "confirmCancelDescription": "La reserva quedará cancelada y no se puede deshacer.",
+      "confirmNoShowTitle": "¿No presentado?",
+      "confirmNoShowDescription": "Se registrará que el cliente no se presentó.",
+      "confirmDestructiveLabel": "Sí, continuar",
+      "previousDay": "Día anterior",
+      "nextDay": "Día siguiente",
+      "today": "Hoy",
+      "countdownNow": "Ahora",
+      "countdownMinutes": "En {{count}} min",
+      "emptyDayTitle": "Sin reservas para este día",
+      "emptyDayDescription": "No hay reservas registradas para la fecha seleccionada.",
+      "actionError": "No se ha podido actualizar la reserva.",
+      "actionSuccess": {
+        "confirm": {
+          "title": "Reserva confirmada",
+          "description": "La reserva ha pasado a estado confirmada."
+        },
+        "seat": {
+          "title": "Cliente sentado",
+          "description": "La reserva ha pasado a estado sentado."
+        },
+        "no_show": {
+          "title": "No presentado",
+          "description": "La reserva ha sido marcada como no presentado."
+        },
+        "cancel": {
+          "title": "Reserva cancelada",
+          "description": "La reserva ha sido cancelada correctamente."
+        }
+      },
+      "actions": {
+        "confirm": "Confirmar",
+        "seat": "Sentar",
+        "noShow": "No-show",
+        "cancel": "Cancelar"
+      },
+      "create": {
+        "open": "Nueva reserva",
+        "title": "Crear reserva",
+        "customerName": "Cliente",
+        "customerPhone": "Telefono",
+        "partySize": "Comensales",
+        "time": "Hora",
+        "duration": "Duracion",
+        "notes": "Notas",
+        "tables": "Mesas",
+        "timeSlots": "Hora de llegada",
+        "editServiceWindows": "Editar franjas",
+        "customer": "Cliente",
+        "customerSearchPlaceholder": "Buscar por nombre o teléfono...",
+        "customerChange": "Cambiar",
+        "customerNoShows": "{{ count }} no-show",
+        "submit": "Guardar reserva",
+        "cancel": "Cerrar",
+        "error": "No se ha podido crear la reserva.",
+        "validation": {
+          "customerNameRequired": "Introduce el nombre del cliente.",
+          "partySizeRequired": "Indica al menos un comensal.",
+          "timeRequired": "Indica una hora valida."
+        },
+        "capacityHint": "Capacidad total de las mesas seleccionadas: {{count}} plazas.",
+        "capacityWarning": {
+          "title": "El grupo supera la capacidad de las mesas",
+          "description": "Has indicado {{partySize}} comensales pero las mesas seleccionadas tienen capacidad para {{capacity}}. Puedes continuar igualmente o revisar la seleccion.",
+          "confirm": "Continuar igualmente",
+          "cancel": "Revisar seleccion"
+        }
+      },
+      "serviceWindowsDialog": {
+        "title": "Franjas de servicio",
+        "save": "Guardar franjas",
+        "addWindow": "Añadir franja",
+        "removeWindow": "Eliminar franja",
+        "windowName": "Nombre",
+        "windowStart": "Inicio",
+        "windowEnd": "Fin",
+        "errorAtLeastOne": "Debe haber al menos una franja de servicio.",
+        "useDefaults": "Restaurar valores predeterminados",
+        "defaultLunch": "Comidas",
+        "defaultDinner": "Cenas"
+      },
+      "status": {
+        "pending": "Pendiente",
+        "confirmed": "Confirmada",
+        "seated": "Sentada",
+        "cancelled": "Cancelada",
+        "no_show": "No show"
+      }
+    },
+    "kitchen": {
+      "eyebrow": "Producción",
+      "title": "Cocina",
+      "queueTitle": "Comandas en preparación",
+      "queueDescription": "Revisa los platos enviados desde sala y marca cada línea cuando esté preparada.",
+      "pending": "Pendientes",
+      "preparing": "Preparándose",
+      "ready": "Preparados",
+      "orders": "Comandas de cocina",
+      "emptyTitle": "Sin comandas en cocina",
+      "emptyDescription": "Cuando sala envíe un pedido a cocina, aparecerá aquí para prepararlo.",
+      "openTable": "Ver mesa",
+      "startPreparing": "Empezar",
+      "startPreparingActionLabel": "Empezar {{name}}",
+      "markReady": "Preparado",
+      "markReadyActionLabel": "Marcar {{name}} como preparado",
+      "readyForPickup": "Listo para coger",
+      "readyForPickupActionLabel": "{{name}} preparado para coger",
+      "archive": "Archivar",
+      "archiveActionLabel": "Archivar {{name}} de cocina",
+      "moveBackActionLabel": "Volver {{name}} a la fase anterior",
+      "ticketElapsed": "Tiempo máximo: {{time}}",
+      "lineElapsed": "Espera: {{time}}",
+      "elapsedPending": "sin enviar",
+      "elapsedLessThanMinute": "menos de 1 min",
+      "elapsedMinutes": "{{count}} min",
+      "soundOn": "Sonido activado",
+      "soundOff": "Activar sonido",
+      "columns": {
+        "sent_to_kitchen": {
+          "title": "En cola",
+          "description": "Pendiente de empezar.",
+          "empty": "No hay platos en cola."
+        },
+        "preparing": {
+          "title": "Preparándose",
+          "description": "Platos que cocina está preparando.",
+          "empty": "No hay platos preparándose."
+        },
+        "ready": {
+          "title": "Preparado para coger",
+          "description": "Listo para que sala lo recoja.",
+          "empty": "No hay platos listos para coger."
+        }
+      }
+    },
+    "preparationBoard": {
+      "title": "Preparación",
+      "description": "Mueve las líneas entre pendiente, preparándose y preparado.",
+      "pending": "Pendiente",
+      "preparing": "Preparándose",
+      "ready": "Preparado",
+      "emptyColumn": "No hay líneas en esta fase.",
+      "tableLabel": "Mesa {{number}}",
+      "markPreparing": "Preparándose",
+      "markReady": "Preparado",
+      "directStation": "Barra",
+      "genericMoveError": "No se ha podido mover la línea.",
+      "servedCount": "{{count}} servido(s)",
+      "servedModalTitle": "Líneas servidas",
+      "servedModalDescription": "Revisa las líneas ya servidas. Puedes cancelar una si se ha servido por error.",
+      "cancelLine": "Cancelar línea",
+      "cancelLineConfirm": "¿Cancelar esta línea? Esta acción no se puede deshacer.",
+      "cancelLineConfirmAction": "Sí, cancelar",
+      "cancelLineAbort": "Volver",
+      "elapsedMinutes": "{{count}} min"
+    },
+    "tableStatus": {
+      "free": "Libre",
+      "occupied": "Ocupada",
+      "waiting_kitchen": "En cocina",
+      "served": "Servida",
+      "payment_pending": "Pago pendiente",
+      "paid": "Pagada",
+      "cleaning": "Limpieza",
+      "reserved": "Reservada"
+    },
+    "lineStatus": {
+      "pending": "Pendiente",
+      "sent_to_kitchen": "En cocina",
+      "preparing": "Preparándose",
+      "ready": "Preparado",
+      "picked_up": "Recogido",
+      "served": "Servido",
+      "cancelled": "Cancelado"
+    },
+    "course": {
+      "drinks": "Bebidas",
+      "starter": "Entrante",
+      "main": "Principal",
+      "dessert": "Postre",
+      "other": "Otro"
+    },
+    "payment": {
+      "cash": "Efectivo",
+      "card": "Tarjeta",
+      "bizum": "Bizum",
+      "pending": "Pendiente"
+    },
+    "paymentGateway": {
+      "title": "Pasarela bancaria",
+      "description": "Simulación de cobro con tarjeta para el terminal.",
+      "connecting": "Conectando con terminal...",
+      "rejected": "Pago rechazado. Revisa el terminal o prueba otro método.",
+      "accept": "Aceptar pago",
+      "error": "Error",
+      "cancel": "Cancelar"
+    },
+    "floorPlan": {
+      "legend": "Leyenda del plano",
+      "canvas": "Lienzo del plano",
+      "scrollHint": "Indicación de plano desplazable",
+      "matrix": "Matriz del plano",
+      "cell": "Celda {{x}}, {{y}}",
+      "floorElement": "{{label}} elemento del plano",
+      "serviceTable": "{{label}} mesa, {{status}}",
+      "object": "{{label}} objeto",
+      "tableShape": "Forma de mesa {{shape}}",
+      "actions": "Acciones del elemento del plano",
+      "move": "Mover {{label}}",
+      "resize": "Redimensionar {{label}}",
+      "edit": "Editar {{label}}",
+      "delete": "Eliminar {{label}}",
+      "deleteConfirm": "¿Eliminar este elemento del plano?",
+      "table": "Mesa",
+      "bar": "Barra",
+      "kitchen": "Cocina",
+      "entrance": "Entrada",
+      "bathroom": "Baño",
+      "stool": "Taburete",
+      "selectedServicePoint": "Seleccionada",
+      "blocked": "Zona bloqueada"
+    },
+    "presets": {
+      "smallTable": "Mesa pequeña 2 pax",
+      "squareTable": "Mesa cuadrada 4 pax",
+      "rectangularTable": "Mesa rectangular 6 pax",
+      "largeTable": "Mesa grande 8 pax",
+      "longTable": "Mesa larga",
+      "barHorizontal": "Barra horizontal",
+      "barVertical": "Barra vertical",
+      "kitchen": "Cocina",
+      "bathroom": "Baño",
+      "entrance": "Entrada",
+      "blockedArea": "Zona bloqueada",
+      "stool": "Taburete"
+    },
+    "selector": {
+      "title": "Selecciona un restaurante",
+      "description": "Elige el restaurante en el que quieres trabajar."
+    },
+    "time": {
+      "eyebrow": "Control horario",
+      "title": "Registro de jornada",
+      "description": "Ficha entrada y salida, revisa tu historial y gestiona solicitudes de correccion.",
+      "tabsLabel": "Vistas de control horario",
+      "tabs": {
+        "mine": "Mi fichaje",
+        "team": "Equipo"
+      },
+      "loading": "Cargando fichajes...",
+      "errorTitle": "No se ha podido completar la accion",
+      "errors": {
+        "load": "No se han podido cargar los fichajes ahora mismo.",
+        "clockAction": "No se ha podido registrar el fichaje.",
+        "changeRequest": "No se ha podido enviar la solicitud de correccion.",
+        "review": "No se ha podido revisar la solicitud."
+      },
+      "clockCard": {
+        "title": "Fichaje actual",
+        "openState": "Turno abierto desde {{ clockInAt }}.",
+        "closedState": "No hay ningun turno abierto en este momento.",
+        "noteLabel": "Observaciones",
+        "clockIn": "Registrar entrada",
+        "clockOut": "Registrar salida"
+      },
+      "history": {
+        "title": "Historial personal",
+        "description": "Consulta las horas registradas y solicita correcciones cuando haga falta.",
+        "empty": "Todavia no hay fichajes registrados.",
+        "duration": "Duracion: {{ duration }}",
+        "clockIn": "Entrada",
+        "clockOut": "Salida",
+        "clockInNote": "Observacion de entrada",
+        "clockOutNote": "Observacion de salida",
+        "requestChange": "Solicitar correccion"
+      },
+      "changeRequest": {
+        "requestedClockInAt": "Nueva hora de entrada",
+        "requestedClockOutAt": "Nueva hora de salida",
+        "requestedClockInNote": "Nueva observacion de entrada",
+        "requestedClockOutNote": "Nueva observacion de salida",
+        "reason": "Motivo de la correccion",
+        "submit": "Enviar solicitud"
+      },
+      "team": {
+        "title": "Fichajes del equipo",
+        "description": "Revisa los sellajes del restaurante activo y filtra por periodo, estado o trabajador.",
+        "empty": "No hay fichajes para los filtros seleccionados.",
+        "filters": {
+          "from": "Desde",
+          "to": "Hasta",
+          "status": "Estado",
+          "worker": "Trabajador",
+          "allStatuses": "Todos los estados",
+          "allWorkers": "Toda la plantilla",
+          "apply": "Aplicar filtros",
+          "reset": "Restablecer"
+        },
+        "periods": {
+          "label": "Periodos de consulta",
+          "today": "Hoy",
+          "yesterday": "Ayer",
+          "thisWeek": "Esta semana",
+          "lastWeek": "Semana pasada",
+          "thisMonth": "Este mes",
+          "lastMonth": "Mes pasado"
+        },
+        "summary": {
+          "totalHours": "Horas registradas",
+          "totalEntriesValue": "{{count}} fichajes en el periodo",
+          "recordedWorkers": "Trabajadores con registros",
+          "recordedWorkersValue": "{{count}} personas con actividad",
+          "openEntries": "Fichajes abiertos",
+          "openEntriesValue": "{{count}} turnos pendientes de salida",
+          "pendingRequests": "Correcciones pendientes",
+          "pendingRequestsValue": "{{count}} solicitudes por revisar"
+        },
+        "columns": {
+          "worker": "Trabajador",
+          "clockIn": "Entrada",
+          "clockOut": "Salida",
+          "duration": "Duracion",
+          "notes": "Observaciones",
+          "status": "Estado"
+        }
+      },
+      "requests": {
+        "title": "Solicitudes pendientes",
+        "description": "Aprueba o rechaza cambios de hora enviados por el equipo.",
+        "empty": "No hay solicitudes pendientes.",
+        "approve": "Aprobar",
+        "reject": "Rechazar",
+        "requestedAt": "Enviada el {{ value }}",
+        "requestedBy": "Solicitada por",
+        "reason": "Motivo",
+        "originalClockIn": "Entrada original",
+        "originalClockOut": "Salida original",
+        "reviewNote": "Nota de revision para rechazo"
+      },
+      "status": {
+        "open": "Abierto",
+        "closed": "Cerrado",
+        "corrected": "Corregido",
+        "pending": "Pendiente",
+        "approved": "Aprobada",
+        "rejected": "Rechazada"
+      }
+    },
+    "dashboard": {
+      "title": "Analíticas del restaurante",
+      "description": "Consulta el rendimiento histórico del restaurante: ventas, productos y ocupación.",
+      "ranges": {
+        "today": "Hoy",
+        "7d": "7 días",
+        "30d": "30 días"
+      },
+      "filters": {
+        "from": "Desde",
+        "to": "Hasta",
+        "rangeLabel": "Rango de fechas",
+        "rangeClamped": "El rango máximo es de 1 año; se ha ajustado la fecha.",
+        "viewAsTable": "Ver como tabla",
+        "viewAsChart": "Ver como gráfico",
+        "title": "Filtros",
+        "active": "Filtros activos",
+        "show": "Mostrar filtros",
+        "hide": "Ocultar filtros",
+        "reset": "Limpiar filtros"
+      },
+      "tableHeaders": {
+        "date": "Fecha",
+        "product": "Producto",
+        "method": "Método",
+        "hour": "Hora",
+        "share": "Mix",
+        "operations": "Operaciones",
+        "averageTicket": "Ticket medio"
+      },
+      "metrics": {
+        "revenue": "Ingresos",
+        "orders": "Pedidos",
+        "averageTicket": "Ticket medio",
+        "tableTurnover": "Rotación media de mesa",
+        "tableTurnoverValue": "{{minutes}} min",
+        "loading": "Cargando métrica",
+        "vsIncrease": "{{pct}}% más que el periodo anterior",
+        "vsDecrease": "{{pct}}% menos que el periodo anterior",
+        "vsFlat": "Igual que el periodo anterior",
+        "dominantPayment": "Método dominante",
+        "bestDayValue": "Mejor día: {{date}}"
+      },
+      "charts": {
+        "salesByDay": "Ventas por día",
+        "topProducts": "Productos más vendidos",
+        "paymentBreakdown": "Ingresos por método de pago",
+        "peakHours": "Horas punta",
+        "revenue": "Ingresos",
+        "quantity": "Cantidad",
+        "amount": "Importe",
+        "orders": "Pedidos",
+        "paymentShare": "Mix de pagos",
+        "averageTicketByDay": "Ticket medio por día",
+        "previousPeriod": "Periodo anterior"
+      },
+      "paymentMethods": {
+        "cash": "Efectivo",
+        "card": "Tarjeta",
+        "bizum": "Bizum",
+        "other": "Otro"
+      },
+      "errors": {
+        "title": "No se han podido cargar las analíticas",
+        "invalidRange": "Revisa el rango de fechas seleccionado."
+      },
+      "emptyTitle": "Sin datos de ventas",
+      "empty": "No hay datos de ventas para el periodo seleccionado.",
+      "payments": {
+        "dominant": "Método dominante: {{method}}"
+      },
+      "sections": {
+        "summary": "Resumen",
+        "trends": "Tendencias",
+        "payments": "Pagos",
+        "secondary": "Operativa"
+      },
+      "panelEmpty": {
+        "salesByDayTitle": "Sin ventas por día",
+        "salesByDayDescription": "No hay ventas diarias para este periodo.",
+        "averageTicketByDayTitle": "Sin ticket medio diario",
+        "averageTicketByDayDescription": "No hay tickets diarios para este periodo.",
+        "paymentBreakdownTitle": "Sin ingresos por pagos",
+        "paymentBreakdownDescription": "No hay ingresos por método para este periodo.",
+        "topProductsTitle": "Sin productos destacados",
+        "topProductsDescription": "No hay productos destacados para este periodo.",
+        "peakHoursTitle": "Sin horas punta",
+        "peakHoursDescription": "No hay horas punta registradas para este periodo."
+      },
+      "export": {
+        "button": "Exportar",
+        "sheets": {
+          "summary": "Resumen",
+          "salesByDay": "Ventas por día",
+          "payments": "Pagos",
+          "averageTicketByDay": "Ticket medio diario",
+          "topProducts": "Top productos",
+          "peakHours": "Horas punta"
+        },
+        "metadata": {
+          "restaurant": "Restaurante",
+          "period": "Periodo",
+          "generatedAt": "Fecha de exportación"
+        },
+        "summaryMetrics": {
+          "revenue": "Ingresos",
+          "orders": "Pedidos",
+          "averageTicket": "Ticket medio",
+          "tableTurnover": "Rotación media de mesa (min)"
+        },
+        "columns": {
+          "metric": "Métrica",
+          "value": "Valor"
+        },
+        "excelOption": "Excel (.xlsx)",
+        "csvOption": "CSV (.zip)"
+      }
+    }
+  },
+  "menu": {
+    "course": {
+      "drinks": "Bebidas",
+      "starter": "Entrante",
+      "main": "Principal",
+      "dessert": "Postre",
+      "other": "Otro"
+    },
+    "allergen": {
+      "gluten": "Gluten",
+      "crustaceans": "Crustáceos",
+      "eggs": "Huevos",
+      "fish": "Pescado",
+      "peanuts": "Cacahuetes",
+      "soybeans": "Soja",
+      "milk": "Leche",
+      "nuts": "Frutos de cáscara",
+      "celery": "Apio",
+      "mustard": "Mostaza",
+      "sesame": "Sésamo",
+      "sulphites": "Sulfitos",
+      "lupin": "Altramuces",
+      "molluscs": "Moluscos"
+    },
+    "page": {
+      "eyebrow": "Catálogo operativo",
+      "title": "Menú",
+      "description": "Revisa productos, disponibilidad, categorías y modificadores antes del servicio.",
+      "available": "Disponibles",
+      "customizable": "Personalizables",
+      "issues": "Incidencias",
+      "categories": "Categorías",
+      "soldOut": "Agotado",
+      "customizableBadge": "Personalizable",
+      "comboBadge": "Menú",
+      "platterBadge": "Plato combinado",
+      "tabsLabel": "Secciones del menú",
+      "tabs": {
+        "products": "Productos",
+        "categories": "Categorías",
+        "modifiers": "Modificadores",
+        "combos": "Menús",
+        "platters": "Platos combinados",
+        "availability": "Disponibilidad"
+      },
+      "productTypes": {
+        "simple": "Simple",
+        "customizable": "Personalizable",
+        "combo": "Menú",
+        "platter": "Plato combinado"
+      },
+      "preparationRoutes": {
+        "direct": "Directo",
+        "bar": "Barra",
+        "kitchen": "Cocina",
+        "cold": "Frío",
+        "dessert": "Postres"
+      },
+      "searchLabel": "Buscar en el catálogo",
+      "searchPlaceholder": "Buscar producto, categoría, alérgeno o modificador",
+      "clearSearch": "Limpiar búsqueda de catálogo",
+      "categorySearch": "Buscar categoría",
+      "categoryFilter": "Categoría",
+      "allCategories": "Todas las categorías",
+      "availabilityFilter": "Disponibilidad",
+      "availabilityAll": "Todos",
+      "availabilityAvailable": "Disponibles",
+      "availabilitySoldOut": "Agotados",
+      "customizationFilter": "Personalización",
+      "customizationAll": "Todos",
+      "customizationCustomizable": "Personalizables",
+      "customizationSimple": "Simples",
+      "allergenFilter": "Filtrar por alérgenos",
+      "allergenFilterHint": "Muestra los productos que declaran uno o más de los alérgenos seleccionados.",
+      "imageFilterWithImage": "Con imagen",
+      "imageFilterWithoutImage": "Sin imagen",
+      "mobileFilters": "Filtros",
+      "reviewButton": "Revisar menú",
+      "reviewFilters": {
+        "title": "Filtros manuales",
+        "description": "Combínalos con los problemas detectados arriba para acotar la lista de productos.",
+        "comboOnly": "Solo menús",
+        "customizableOnly": "Solo personalizables",
+        "withImage": "Con imagen",
+        "withoutImage": "Sin imagen",
+        "noSection": "Sin sección",
+        "missingDescription": "Sin descripción",
+        "clearAll": "Limpiar filtros",
+        "viewProducts": "Ver {{count}} productos"
+      },
+      "viewModeLabel": "Vista",
+      "viewModes": {
+        "cards": "Tarjetas",
+        "compact": "Compacta"
+      },
+      "allergens": "Alérgenos",
+      "noImage": "Sin imagen",
+      "compactMetaLabel": "Ruta:",
+      "modifiers": "Modificadores",
+      "previewPrice": "Precio de vista previa",
+      "parentCategory": "Categoría padre",
+      "childCategories": "Subcategorías",
+      "noChildCategories": "Sin subcategorías",
+      "options": "opciones",
+      "modifierType": "Tipo",
+      "newModifierGroup": "Nuevo grupo",
+      "deleteModifierGroupAriaLabel": "Eliminar grupo de modificadores",
+      "deleteModifierGroupTitle": "Eliminar grupo de modificadores",
+      "deleteModifierGroupDescription": "Se eliminará el grupo \"{{ name }}\" y todas sus opciones. Esta acción no se puede deshacer.",
+      "confirmDeleteModifierGroup": "Eliminar grupo",
+      "slots": "slots",
+      "comboReady": "Listo para vender",
+      "comboGuideTitle": "Qué revisar en los combos",
+      "comboGuideDescription": "Comprueba de un vistazo qué menús tienen imagen, cuántos slots requieren y cuáles siguen siendo personalizables.",
+      "comboConfigurationSummary": "{{slotCount}} slots · {{customizationLabel}}",
+      "comboInclusionSummary": "Incluye {{items}}",
+      "summaryConjunction": "o",
+      "summaryHeadings": {
+        "included": "Incluye",
+        "change": "Puedes cambiar",
+        "priceImpact": "Suplemento"
+      },
+      "modifierActions": {
+        "add": "Añadir",
+        "remove": "Quitar",
+        "choose": "Elegir"
+      },
+      "modifierUsage": "Usado en {{count}} productos",
+      "modifierLimits": {
+        "choose": "Elige {{count}}",
+        "upTo": "Hasta {{count}}",
+        "optional": "Opcional"
+      },
+      "pricePhrases": {
+        "from": "Desde",
+        "supplement": "Suplemento"
+      },
+      "components": "componentes",
+      "availableProducts": "Productos disponibles",
+      "soldOutProducts": "Productos agotados",
+      "noCombos": "No hay menús configurados.",
+      "noPlatters": "No hay platos combinados configurados.",
+      "noSoldOutProducts": "No hay productos agotados.",
+      "noModifiers": "Este producto no tiene modificadores.",
+      "noAllergens": "Sin alérgenos",
+      "noResults": "No hay productos que coincidan con los filtros.",
+      "noSearchResults": "No hay resultados para tu búsqueda.",
+      "tabSearchLabel": "Buscar en esta pestaña",
+      "tabSearchPlaceholder": "Buscar por nombre",
+      "tabSearchClear": "Limpiar búsqueda",
+      "noSelection": "Selecciona un producto para revisar su detalle.",
+      "closeDetail": "Cerrar detalle",
+      "productDetail": "Detalle del producto",
+      "toggleAvailability": "Disponible",
+      "availabilityManagementDescription": "Activa o desactiva productos para el servicio de hoy.",
+      "newSection": "Nueva sección",
+      "sectionNameLabel": "Nombre",
+      "sectionNamePlaceholder": "Nombre de la sección",
+      "saveSection": "Guardar",
+      "cancelSection": "Cancelar",
+      "sectionVisibilityLabel": "Visible en la carta",
+      "deleteSectionLabel": "Eliminar sección",
+      "deleteSectionTitle": "Eliminar sección",
+      "deleteSectionConfirm": "¿Eliminar la sección \"{{name}}\"? Se eliminarán también los ítems que contiene.",
+      "confirmDelete": "Confirmar eliminación",
+      "cancelDelete": "Cancelar",
+      "newProduct": "Nuevo producto",
+      "editProduct": "Editar producto",
+      "deleteProduct": "Eliminar producto",
+      "deleteProductTitle": "Eliminar producto",
+      "deleteProductDescription": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
+      "confirmDeleteProduct": "Eliminar",
+      "cancelDeleteProduct": "Cancelar",
+      "noSection": "Sin sección",
+      "addToSection": "Añadir a sección",
+      "addToSectionTitle": "Añadir a sección",
+      "audit": {
+        "title": "Revisión rápida del menú",
+        "description": "Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.",
+        "healthLabel": "Salud del menú",
+        "issuesCount": "{{count}} incidencias",
+        "exportCsv": "Exportar CSV",
+        "csvColumns": {
+          "product": "Producto",
+          "issue": "Incidencia",
+          "priority": "Prioridad"
+        },
+        "priorityLabels": {
+          "high": "Alta",
+          "medium": "Media",
+          "low": "Baja"
+        },
+        "clearFilter": "Ver todo",
+        "nextSteps": "Qué revisar a continuación",
+        "empty": "No hay alertas abiertas en el catálogo.",
+        "example": "Ejemplo: {{name}}",
+        "warningLabels": {
+          "missing-image": "Sin imagen",
+          "missing-description": "Sin descripción",
+          "missing-section": "Sin sección",
+          "unavailable": "No disponibles",
+          "weak-combo-summary": "Resumen de menú débil",
+          "weak-customization-summary": "Extras poco claros"
+        }
+      }
+    },
+    "customizer": {
+      "title": "Personalizar producto",
+      "description": "Selecciona modificadores y añade una nota para cocina si hace falta.",
+      "close": "Cerrar personalización",
+      "basePrice": "Precio base",
+      "required": "obligatorio",
+      "without": "SIN {{name}}",
+      "kitchenNote": "Nota de cocina",
+      "kitchenNotePlaceholder": "Ejemplo: sin sal, poco hecho, salsa aparte...",
+      "addFor": "Añadir por {{price}}"
+    },
+    "comboCustomizer": {
+      "title": "Configurar menú",
+      "description": "Elige hamburguesa, acompañamiento y bebida.",
+      "close": "Cerrar configuración de menú",
+      "noValidProducts": "No hay productos disponibles para este slot.",
+      "invalidSelection": "Completa los slots obligatorios para añadir el menú."
+    },
+    "product": {
+      "editor": {
+        "back": "Volver"
+      },
+      "form": {
+        "createTitle": "Nuevo producto",
+        "editTitle": "Editar producto",
+        "name": "Nombre",
+        "namePlaceholder": "Nombre del producto",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Descripción opcional",
+        "image": "Imagen",
+        "noImage": "Sin imagen",
+        "dropImageHint": "Arrastra una imagen aquí o abre el selector",
+        "uploadImage": "Subir imagen",
+        "uploadingImage": "Subiendo imagen...",
+        "replaceImage": "Reemplazar imagen",
+        "removeImage": "Quitar imagen",
+        "retryUpload": "Reintentar subida",
+        "invalidImageType": "Usa una imagen JPG, PNG o WEBP.",
+        "imageTooLarge": "La imagen es demasiado pesada. Prueba con un archivo más ligero.",
+        "imageTooSmall": "La imagen es demasiado pequeña. Usa una resolución mayor.",
+        "uploadFailed": "No se pudo subir la imagen. Inténtalo de nuevo.",
+        "price": "Precio (€)",
+        "modifierGroupsHint": "Selecciona los grupos de modificadores que puede usar este producto.",
+        "supplementsTitle": "Suplementos",
+        "supplementsHint": "Extras con precio propios de este producto (ej. \"añadir bacon +1,50€\"). No se comparten con otros productos.",
+        "supplementsGroupPrefix": "Suplementos",
+        "addSupplement": "Añadir suplemento",
+        "supplementNamePlaceholder": "Nombre del suplemento",
+        "supplementPricePlaceholder": "Precio (€)",
+        "removeSupplementLabel": "Quitar suplemento",
+        "noSupplements": "Este producto no tiene suplementos propios.",
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "selectedGroupsOrder": "Orden de los grupos seleccionados",
+        "basicInfoTitle": "Información básica",
+        "allergensAndAvailability": "Alérgenos y disponibilidad",
+        "allergens": "Alérgenos",
+        "allergensHint": "Selecciona los alérgenos que declara este producto. Ante una alergia grave, el cliente deberá confirmarlo también con el personal.",
+        "course": "Servicio",
+        "route": "Ruta de preparación",
+        "available": "Disponible",
+        "create": "Crear producto",
+        "save": "Guardar cambios",
+        "cancel": "Cancelar"
+      },
+      "success": {
+        "created": "Artículo creado correctamente.",
+        "updated": "Artículo actualizado correctamente.",
+        "deleted": "Artículo eliminado correctamente.",
+        "addedToSection": "Artículo añadido a la sección correctamente."
+      },
+      "errors": {
+        "nameTaken": "Ya existe un artículo con ese nombre.",
+        "saveFailed": "No se pudo guardar el artículo.",
+        "loadFailed": "No se pudo cargar el artículo.",
+        "deleteFailed": "No se pudo eliminar el artículo.",
+        "alreadyInSection": "El artículo ya está en esa sección.",
+        "addToSectionFailed": "No se pudo añadir el artículo a la sección."
+      }
+    },
+    "modifierGroup": {
+      "form": {
+        "createTitle": "Nuevo grupo de modificadores",
+        "nameLabel": "Nombre del grupo",
+        "namePlaceholder": "Nombre del grupo",
+        "typeLabel": "Tipo de selección",
+        "typeSingle": "Una opción",
+        "typeMultiple": "Varias opciones",
+        "requiredLabel": "Obligatorio",
+        "optionsLabel": "Opciones",
+        "addOption": "Añadir opción",
+        "removeOption": "Eliminar opción",
+        "optionName": "Nombre de la opción",
+        "optionPrice": "Precio adicional (€)",
+        "optionImage": "Imagen de la opción",
+        "create": "Crear grupo"
+      },
+      "success": {
+        "created": "Grupo de modificadores creado.",
+        "deleted": "Grupo de modificadores eliminado."
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar el grupo. Inténtalo de nuevo.",
+        "deleteFailed": "No se pudo eliminar el grupo.",
+        "inUse": "El grupo está asignado a productos y no puede eliminarse."
+      }
+    }
+  }
+}

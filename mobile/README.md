@@ -68,3 +68,28 @@ ante cualquier fallo se conserva para reintentar.
 > `kitchen`. Queda un TODO en `restaurant-order.controller.ts`: cuando exista un
 > rol/permiso dedicado de cliente final, diferenciarlo ahí.
 
+
+## Build release firmado (Fase 8)
+
+1. Genera un keystore propio una sola vez y guárdalo **fuera del repo** (o en la
+   raíz de `mobile/`, está ignorado por git):
+   ```
+   keytool -genkeypair -v -keystore mesaflow-release.jks -alias mesaflow -keyalg RSA -keysize 2048 -validity 10000
+   ```
+2. Crea `mobile/keystore.properties` (también ignorado por git):
+   ```
+   storeFile=mesaflow-release.jks
+   storePassword=<contraseña del almacén>
+   keyAlias=mesaflow
+   keyPassword=<contraseña de la clave>
+   ```
+   `storeFile` se resuelve relativo a `mobile/`; también acepta ruta absoluta.
+3. Revisa `BASE_URL` del build type `release` en `app/build.gradle.kts` (hoy es un
+   placeholder `https://api.mesaflow.example`): debe apuntar al backend real HTTPS.
+4. Compila:
+   ```
+   ./gradlew :app:assembleRelease
+   ```
+   El APK queda en `app/build/outputs/apk/release/` con R8 y `shrinkResources`
+   activados. Si `keystore.properties` no existe, el APK sale **sin firmar**
+   (útil en CI, no instalable tal cual).

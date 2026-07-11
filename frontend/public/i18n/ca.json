@@ -117,6 +117,107 @@
     "storybook": "Explora els components, estats i patrons visuals.",
     "architectureTitle": "Arquitectura",
     "architecture": "Revisa les decisions i els fluxos principals del frontend.",
+    "tables": {
+      "cardTitle": "Mapa de taules",
+      "cardDescription": "Consulta entitats clau, camps base i relacions entre dominis.",
+      "eyebrow": "Esquema",
+      "title": "Mapa de taules",
+      "description": "Vista ràpida per revisar les entitats principals del producte abans de connectar una font de veritat automàtica.",
+      "back": "Tornar als recursos",
+      "filters": {
+        "title": "Filtres",
+        "show": "Mostrar filtres",
+        "hide": "Amagar filtres",
+        "searchLabel": "Cercar taules o camps",
+        "searchPlaceholder": "Cerca per taula, camp o relació",
+        "clearSearch": "Neteja la cerca de taules",
+        "featureLabel": "Feature",
+        "allFeatures": "Totes les features",
+        "domainLabel": "Domini",
+        "allDomains": "Tots els dominis",
+        "reset": "Neteja els filtres"
+      },
+      "map": {
+        "title": "Relacions principals",
+        "description": "Resum visual de les taules més rellevants i de com s'enllacen entre elles."
+      },
+      "diagram": {
+        "title": "Diagrama Mermaid",
+        "description": "Vista renderitzada i source del graf actual segons els filtres actius.",
+        "interactionHint": "Fes clic en una taula del diagrama per obrir-ne el detall.",
+        "renderAction": "Renderitza diagrama",
+        "rerenderAction": "Actualitza diagrama",
+        "hideAction": "Amaga render",
+        "fullscreenAction": "Obrir en gran",
+        "fullscreenTitle": "Diagrama de relacions",
+        "fullscreenDescription": "Vista ampliada del diagrama actual per revisar relacions i navegar entre taules.",
+        "closeFullscreen": "Tancar diagrama ampliat",
+        "renderHint": "El source està disponible sempre. Renderitza l'SVG només quan et calgui.",
+        "loading": "Renderitzant diagrama...",
+        "sourceTitle": "Source Mermaid",
+        "sourceAction": "Veure source Mermaid",
+        "closeSource": "Tancar source Mermaid",
+        "sourceDescription": "Codi Mermaid generat a partir de les taules visibles amb els filtres actius.",
+        "emptyTitle": "Sense diagrama",
+        "emptyDescription": "Ajusta o neteja els filtres per tornar a generar el graf.",
+        "renderError": "No s'ha pogut renderitzar el diagrama Mermaid. Pots revisar el source generat."
+      },
+      "summary": {
+        "title": "Inventari d'entitats",
+        "description": "Selecciona una taula per revisar-ne els camps i les referències més importants.",
+        "results": "{{ count }} taules visibles",
+        "emptyTitle": "Sense taules",
+        "emptyDescription": "Encara no hi ha entitats documentades.",
+        "columns": {
+          "name": "Taula",
+          "feature": "Feature",
+          "domain": "Domini",
+          "fields": "Camps",
+          "relations": "Relacions"
+        }
+      },
+      "detail": {
+        "title": "Detall d'entitat",
+        "meta": "{{ fields }} camps · {{ relations }} relacions",
+        "searchLabel": "Cercar camps",
+        "searchPlaceholder": "Cerca per camp, tipus o referència",
+        "clearSearch": "Netejar cerca de camps",
+        "relationCount": "{{ count }} relacions",
+        "compact": {
+          "enable": "Vista compacta",
+          "disable": "Vista còmoda"
+        },
+        "stats": {
+          "fields": "Camps",
+          "relations": "Relacions",
+          "foreignKeys": "Claus foranes",
+          "nullable": "Nullable"
+        },
+        "columns": {
+          "name": "Camp",
+          "role": "Rol",
+          "type": "Tipus",
+          "nullable": "Nullable",
+          "reference": "Referència",
+          "description": "Descripció"
+        },
+        "relationsTitle": "Relacions visibles",
+        "emptyTitle": "Sense camps",
+        "emptyDescription": "Aquesta taula encara no té camps documentats.",
+        "emptySearchDescription": "No hi ha camps que coincideixin amb la cerca actual.",
+        "yes": "Sí",
+        "no": "No",
+        "none": "Sense referència",
+        "roles": {
+          "primaryKey": "PK",
+          "foreignKey": "FK",
+          "attribute": "Dada"
+        },
+        "goToRelation": "Ves a la taula {{ target }}",
+        "noRelations": "No hi ha relacions documentades per a aquesta taula.",
+        "noSelection": "No hi ha cap taula que coincideixi amb els filtres actuals."
+      }
+    },
     "logs": {
       "cardTitle": "Logs i auditoria",
       "cardDescription": "Revisa la salut operativa, els errors recents i l'activitat auditada.",

@@ -5,8 +5,12 @@ import kotlinx.serialization.Serializable
 /**
  * Línea del carrito: un producto configurado (extras, combo, ingredientes
  * quitados) con su cantidad. Las selecciones son @Serializable porque se
- * persisten como JSON en Room y viajarán al backend en la Fase 6.
+ * persisten como JSON en Room y viajarán al backend en la Fase 6. La propia
+ * línea también es @Serializable: se lleva como foto (JSON) en la navegación
+ * de Cobro a Pago aceptado para poder pintar el ticket detallado, ya que el
+ * carrito real se vacía en cuanto el pedido se envía con éxito.
  */
+@Serializable
 data class CartLine(
     val id: Long = 0L,
     val menuItemId: String,

@@ -8,3 +8,4 @@ captures/
 *.jks
 !debug.keystore
 .DS_Store
+keystore.properties

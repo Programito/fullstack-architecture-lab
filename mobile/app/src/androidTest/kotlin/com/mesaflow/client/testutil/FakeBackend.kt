@@ -21,6 +21,9 @@ object FakeBackend {
     const val PRICE_CENTS = 1050L
     const val CURRENCY = "EUR"
 
+    /** Número de ticket que devuelve el pedido falso; se asevera en el ticket de pago aceptado. */
+    const val DAILY_NUMBER = 1
+
     fun start(): MockWebServer = MockWebServer().apply { start() }
 
     /** Encola demo-login + carta: lo necesario para llegar de Entry a Menu. */
@@ -39,6 +42,15 @@ object FakeBackend {
     /** Encola el registro de pago (Checkout → pago aceptado). */
     fun enqueuePayment(server: MockWebServer) {
         server.enqueue(orderResponse(status = "paid", paidCents = PRICE_CENTS))
+    }
+
+    /**
+     * Encola el logout de "Salir de la mesa". [com.mesaflow.client.core.data.AuthRepository.logout]
+     * ignora fallos de red, pero sin respuesta encolada la llamada esperaría el
+     * timeout completo de OkHttp y alargaría el test sin motivo.
+     */
+    fun enqueueLogout(server: MockWebServer) {
+        server.enqueue(jsonResponse(200, "{}"))
     }
 
     /**
@@ -104,6 +116,7 @@ object FakeBackend {
             {
               "order": {
                 "id": "$ORDER_ID",
+                "dailyNumber": $DAILY_NUMBER,
                 "restaurantId": "$RESTAURANT_ID",
                 "tableId": "$TABLE_ID",
                 "status": "$status",

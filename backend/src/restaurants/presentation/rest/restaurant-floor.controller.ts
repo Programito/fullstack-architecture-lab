@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Patch, Post, Put, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
@@ -73,6 +73,9 @@ export class RestaurantFloorController {
   }
 
   @Get(':id/service-points/:tableId/order')
+  // Igual que la carta: la app movil sondea este estado cada pocos segundos, y con
+  // ETag + must-revalidate las vueltas sin cambios son un 304 sin cuerpo.
+  @Header('Cache-Control', 'private, max-age=0, must-revalidate')
   @Version('1')
   @UseGuards(AuthGuard, RestaurantAccessGuard)
   @RequireRestaurantScope()

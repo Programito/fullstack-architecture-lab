@@ -4,6 +4,8 @@ package com.mesaflow.client.core.model
 data class SubmittedOrder(
     val orderId: String,
     val status: String,
+    /** Número de ticket visible al cliente: contador diario por restaurante. */
+    val dailyNumber: Int,
     val totalCents: Long,
     val currency: String,
 )
@@ -19,6 +21,8 @@ enum class PaymentMethod(val apiValue: String) {
 data class PaymentResult(
     val orderId: String,
     val status: String,
+    /** Número de ticket visible al cliente: contador diario por restaurante. */
+    val dailyNumber: Int,
     val paidCents: Long,
     val balanceCents: Long,
     val currency: String,
