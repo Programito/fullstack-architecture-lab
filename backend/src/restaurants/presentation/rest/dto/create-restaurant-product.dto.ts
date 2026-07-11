@@ -1,7 +1,9 @@
-import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import type { Allergen } from '../../../domain/restaurant-read.models';
+import { NameI18nDto } from './name-i18n.dto';
 
 const ALLERGENS = [
   'gluten', 'crustaceans', 'eggs', 'fish', 'peanuts', 'soybeans', 'milk',
@@ -18,6 +20,15 @@ export class CreateRestaurantProductDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({
+    type: NameI18nDto,
+    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NameI18nDto)
+  nameI18n?: NameI18nDto;
 
   @ApiProperty({ example: 1290, description: 'Price in cents' })
   @IsInt()

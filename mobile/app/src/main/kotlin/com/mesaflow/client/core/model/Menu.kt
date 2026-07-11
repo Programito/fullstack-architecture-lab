@@ -8,9 +8,24 @@ data class Menu(
     val sections: List<MenuSection>,
 )
 
+/**
+ * Variantes de nombre por idioma (ES/CA/EN), aditivas y opcionales junto al
+ * nombre canonico en castellano (campo `name` de cada entidad). El backend
+ * siempre devuelve las que existan; esta app resuelve cual mostrar segun su
+ * idioma activo (ver [com.mesaflow.client.core.common.resolveName]) — nunca
+ * se resuelve en el servidor, para no perder la cache ETag/304 de la carta.
+ * Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+ */
+data class NameI18n(
+    val es: String? = null,
+    val ca: String? = null,
+    val en: String? = null,
+)
+
 data class MenuSection(
     val id: String,
     val name: String,
+    val nameI18n: NameI18n? = null,
     val sortOrder: Int,
     val items: List<MenuItem>,
 )
@@ -47,6 +62,7 @@ data class MenuItem(
     val id: String,
     val restaurantProductId: String?,
     val name: String,
+    val nameI18n: NameI18n? = null,
     val description: String?,
     val imageUrl: String?,
     val productType: ProductType,
@@ -65,6 +81,7 @@ data class MenuItem(
 data class ModifierGroup(
     val id: String,
     val name: String,
+    val nameI18n: NameI18n? = null,
     val singleSelection: Boolean,
     val minSelections: Int,
     val maxSelections: Int,
@@ -75,6 +92,7 @@ data class ModifierGroup(
 data class ModifierOption(
     val id: String,
     val name: String,
+    val nameI18n: NameI18n? = null,
     val priceDeltaCents: Long,
     val isAvailable: Boolean,
 )
@@ -87,12 +105,15 @@ data class ComboDefinition(
 data class ComboSlot(
     val id: String,
     val name: String,
+    val nameI18n: NameI18n? = null,
     val minSelections: Int,
     val maxSelections: Int,
     val isRequired: Boolean,
     val options: List<ComboSlotOption>,
 )
 
+// Sin nameI18n propio: su nombre de display viene del RestaurantProduct/Product
+// asociado, no de un campo propio (ver nota equivalente en MenuDtos.kt).
 data class ComboSlotOption(
     val id: String,
     val restaurantProductId: String,
@@ -104,6 +125,7 @@ data class ComboSlotOption(
 data class PlatterComponent(
     val id: String,
     val name: String,
+    val nameI18n: NameI18n? = null,
     val removable: Boolean,
     val replaceable: Boolean,
     val sortOrder: Int,

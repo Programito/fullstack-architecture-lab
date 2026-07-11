@@ -154,6 +154,39 @@ sockets fiables, así que ambos refrescos son sondeos, pero baratos:
   todas las líneas llegan a un estado final (servido/cancelado) y, como el de la
   carta, solo corre con la app en primer plano (`ProcessLifecycleOwner`).
 
+### Nombres multiidioma de la carta
+
+Además del `name` canónico en castellano, el backend puede devolver `nameI18n:
+{ es?, ca?, en? }` en sección, producto, grupo/opción de modificador, slot de
+combo y componente de platter (ver
+`docs/superpowers/plans/2026-07-11-menu-multilingual-names.md`). La resolución
+de qué variante mostrar **se hace siempre en la app, nunca en el backend**:
+
+- El backend no resuelve por `Accept-Language` a propósito. La carta va cacheada
+  con `Cache-Control` + ETag/`If-None-Match` (ver más abajo); si el servidor
+  devolviera un idioma ya resuelto, cada cambio de idioma del cliente
+  invalidaría esa caché y forzaría ida a red — justo lo que el 304
+  condicional intenta evitar.
+- `core/common/NameResolution.kt` centraliza la resolución:
+  `resolveName(nameI18n, fallback, localeTag)` decide qué variante pintar
+  (con fallback al `name` canónico si falta la traducción o está en blanco),
+  y `Menu.withResolvedNames(localeTag)` recorre toda la carta ya cargada y
+  sustituye cada `name` por su variante resuelta.
+- `MenuViewModel` guarda la carta cruda (`rawMenu`, con `nameI18n` sin
+  resolver) aparte del estado publicado a la UI (`_uiState`, ya resuelto).
+  Al cambiar el idioma en Ajustes (`SettingsStore.language`), el ViewModel
+  vuelve a resolver `rawMenu` con el nuevo idioma **sin llamar a
+  `MenuRepository`**: los datos de las tres variantes ya viajaron en la
+  última respuesta 200/304, así que cambiar de idioma repinta la carta al
+  instante y sin red.
+- Ni el buscador (`MenuFilter`) ni el configurador de producto
+  (`ProductConfig`/`ProductConfiguratorSheet`) necesitaron cambios: ambos ya
+  leían `item.name`/`group.name`/etc., que llegan resueltos desde
+  `MenuViewModel` antes de publicarse.
+- `ComboSlotOption` no lleva `nameI18n` propio: su nombre de display sale del
+  `RestaurantProduct`/`Product` asociado, no de un campo propio del slot-option
+  (igual criterio que en backend/frontend).
+
 ## Flujo crítico: pedir y enviar a cocina
 
 ```mermaid

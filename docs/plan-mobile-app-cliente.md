@@ -240,6 +240,7 @@ Scenario: Pago simulado aceptado
 4. Tests de UI (Compose) de los dos flujos críticos: demo → carta → configurar → pedir, y pedir → pagar → aceptado.
 5. APK: `release` firmado con keystore propio, R8 activado; documentar el build en `mobile/README.md`.
 6. ~~Docs: `docs/mobile-app.md` (o `mobile/docs/`) con arquitectura + 2–3 diagramas Mermaid pequeños, validados con el validador del repo.~~ **Hecho** — `docs/mobile-app.md` (arquitectura por capas, navegación entre pantallas, flujo de envío a cocina); pendiente que el usuario ejecute el validador local (ver nota abajo, la máquina de validación no es accesible desde este entorno).
+7. ~~Nombres de carta multiidioma (ES/CA/EN): resolución por idioma en el mapper (`core/common/NameResolution.kt`), repintado sin red al cambiar idioma en Ajustes.~~ **Hecho** — ver `docs/superpowers/plans/2026-07-11-menu-multilingual-names.md` y la sección "Nombres multiidioma de la carta" en `docs/mobile-app.md`. Iteración añadida sobre el alcance original de esta fase, a petición del usuario; pendiente que confirme `./gradlew test` en verde.
 
 **Cierre:** checklist final tipo frontend del CLAUDE.md — i18n completa, dark/light, accesibilidad, tests de flujos críticos en verde, APK instalable.
 

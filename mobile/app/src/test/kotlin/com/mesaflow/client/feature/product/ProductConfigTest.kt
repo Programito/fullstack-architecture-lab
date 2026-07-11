@@ -23,8 +23,8 @@ class ProductConfigTest {
         maxSelections = 1,
         isRequired = true,
         options = listOf(
-            ModifierOption("o-brava", "Brava", 0, true),
-            ModifierOption("o-alioli", "Alioli", 50, true),
+            ModifierOption("o-brava", "Brava", priceDeltaCents = 0, isAvailable = true),
+            ModifierOption("o-alioli", "Alioli", priceDeltaCents = 50, isAvailable = true),
         ),
     )
 
@@ -36,9 +36,9 @@ class ProductConfigTest {
         maxSelections = 2,
         isRequired = false,
         options = listOf(
-            ModifierOption("o-bacon", "Bacon", 150, true),
-            ModifierOption("o-queso", "Queso", 100, true),
-            ModifierOption("o-huevo", "Huevo", 120, true),
+            ModifierOption("o-bacon", "Bacon", priceDeltaCents = 150, isAvailable = true),
+            ModifierOption("o-queso", "Queso", priceDeltaCents = 100, isAvailable = true),
+            ModifierOption("o-huevo", "Huevo", priceDeltaCents = 120, isAvailable = true),
         ),
     )
 

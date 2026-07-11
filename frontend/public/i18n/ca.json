@@ -148,6 +148,10 @@
         "renderAction": "Renderitza diagrama",
         "rerenderAction": "Actualitza diagrama",
         "hideAction": "Amaga render",
+        "zoomOutAction": "Allunyar",
+        "zoomInAction": "Apropar",
+        "resetZoomAction": "Reiniciar zoom",
+        "zoomLabel": "Zoom {{ percent }}%",
         "fullscreenAction": "Obrir en gran",
         "fullscreenTitle": "Diagrama de relacions",
         "fullscreenDescription": "Vista ampliada del diagrama actual per revisar relacions i navegar entre taules.",
@@ -167,6 +171,7 @@
         "description": "Selecciona una taula per revisar-ne els camps i les referències més importants.",
         "results": "{{ count }} taules visibles",
         "emptyTitle": "Sense taules",
+        "emptyFilteredDescription": "No hi ha taules que coincideixin amb els filtres actuals.",
         "emptyDescription": "Encara no hi ha entitats documentades.",
         "columns": {
           "name": "Taula",
@@ -215,7 +220,8 @@
         },
         "goToRelation": "Ves a la taula {{ target }}",
         "noRelations": "No hi ha relacions documentades per a aquesta taula.",
-        "noSelection": "No hi ha cap taula que coincideixi amb els filtres actuals."
+        "noSelection": "Selecciona una taula de l'inventari o del diagrama per revisar-ne el detall.",
+        "noSelectionFiltered": "No hi ha cap taula visible amb els filtres actuals."
       }
     },
     "logs": {
@@ -1358,6 +1364,9 @@
       "newSection": "Nova secció",
       "sectionNameLabel": "Nom",
       "sectionNamePlaceholder": "Nom de la secció",
+      "sectionNameCaLabel": "Nom (català)",
+      "sectionNameEnLabel": "Nom (anglès)",
+      "sectionNameI18nPlaceholder": "Opcional",
       "saveSection": "Desar",
       "cancelSection": "Cancel·lar",
       "sectionVisibilityLabel": "Visible a la carta",
@@ -1433,6 +1442,9 @@
         "editTitle": "Editar producte",
         "name": "Nom",
         "namePlaceholder": "Nom del producte",
+        "nameCa": "Nom (català)",
+        "nameEn": "Nom (anglès)",
+        "nameI18nPlaceholder": "Opcional",
         "description": "Descripció",
         "descriptionPlaceholder": "Descripció opcional",
         "image": "Imatge",

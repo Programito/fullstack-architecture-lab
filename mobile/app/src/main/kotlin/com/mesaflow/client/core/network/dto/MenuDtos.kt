@@ -13,10 +13,24 @@ data class RestaurantMenuDto(
     val sections: List<MenuSectionDto> = emptyList(),
 )
 
+/**
+ * Variantes de nombre por idioma (ES/CA/EN), aditivas y opcionales junto al
+ * nombre canonico en castellano (`name`). Espejo de NameI18nResponseDto en
+ * backend/.../restaurant-menu-response.dto.ts. Ver
+ * docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+ */
+@Serializable
+data class NameI18nDto(
+    val es: String? = null,
+    val ca: String? = null,
+    val en: String? = null,
+)
+
 @Serializable
 data class MenuSectionDto(
     val id: String,
     val name: String,
+    val nameI18n: NameI18nDto? = null,
     val sortOrder: Int = 0,
     val isVisible: Boolean = true,
     val items: List<MenuItemDto> = emptyList(),
@@ -28,6 +42,7 @@ data class MenuItemDto(
     val restaurantProductId: String? = null,
     val productId: String? = null,
     val name: String,
+    val nameI18n: NameI18nDto? = null,
     val description: String? = null,
     val imageUrl: String? = null,
     val productType: String = "simple",
@@ -46,6 +61,7 @@ data class MenuItemDto(
 data class ModifierGroupDto(
     val id: String,
     val name: String,
+    val nameI18n: NameI18nDto? = null,
     val selectionType: String = "multiple",
     val minSelections: Int = 0,
     val maxSelections: Int = 0,
@@ -57,6 +73,7 @@ data class ModifierGroupDto(
 data class ModifierOptionDto(
     val id: String,
     val name: String,
+    val nameI18n: NameI18nDto? = null,
     val priceDeltaCents: Long = 0,
     val isAvailable: Boolean = true,
 )
@@ -71,12 +88,16 @@ data class ComboDefinitionDto(
 data class ComboSlotDto(
     val id: String,
     val name: String,
+    val nameI18n: NameI18nDto? = null,
     val minSelections: Int = 0,
     val maxSelections: Int = 1,
     val isRequired: Boolean = false,
     val options: List<ComboSlotOptionDto> = emptyList(),
 )
 
+// ComboSlotOption no lleva nameI18n propio: su nombre de display viene del
+// RestaurantProduct/Product asociado, no de un campo propio del slot-option
+// (igual que en backend/frontend, ver Fase 1 Paso 3 del plan multiidioma).
 @Serializable
 data class ComboSlotOptionDto(
     val id: String,
@@ -90,6 +111,7 @@ data class ComboSlotOptionDto(
 data class PlatterComponentDto(
     val id: String,
     val name: String,
+    val nameI18n: NameI18nDto? = null,
     val removable: Boolean = false,
     val replaceable: Boolean = false,
     val sortOrder: Int = 0,

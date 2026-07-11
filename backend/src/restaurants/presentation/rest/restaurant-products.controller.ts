@@ -76,6 +76,7 @@ export class RestaurantProductsController {
     const result = await this.createRestaurantProduct.execute({
       restaurantId: id,
       name: body.name,
+      nameI18n: body.nameI18n,
       description: body.description,
       course: body.course,
       preparationRoute: body.preparationRoute,
@@ -94,7 +95,7 @@ export class RestaurantProductsController {
       entityType: 'product',
       entityId: product.id,
       entityLabel: product.displayName,
-      changedFields: ['name', 'description', 'course', 'preparationRoute', 'priceCents', 'currency', 'imageUrl', 'modifierGroupIds', 'allergens'],
+      changedFields: ['name', 'nameI18n', 'description', 'course', 'preparationRoute', 'priceCents', 'currency', 'imageUrl', 'modifierGroupIds', 'allergens'],
       metadata: { productId: product.id, name: product.displayName },
     });
     return RestaurantProductDetailResponseDto.from(product);
@@ -118,6 +119,7 @@ export class RestaurantProductsController {
       restaurantId: id,
       productId,
       name: body.name,
+      nameI18n: body.nameI18n,
       description: body.description,
       course: body.course,
       preparationRoute: body.preparationRoute,
@@ -137,7 +139,7 @@ export class RestaurantProductsController {
       entityType: 'product',
       entityId: productId,
       entityLabel: product.displayName,
-      changedFields: collectChangedFields(body, ['name', 'description', 'course', 'preparationRoute', 'priceCents', 'isAvailable', 'isVisible', 'imageUrl', 'modifierGroupIds', 'allergens']),
+      changedFields: collectChangedFields(body, ['name', 'nameI18n', 'description', 'course', 'preparationRoute', 'priceCents', 'isAvailable', 'isVisible', 'imageUrl', 'modifierGroupIds', 'allergens']),
       metadata: { productId, name: product.displayName },
     });
     return RestaurantProductDetailResponseDto.from(product);

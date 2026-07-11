@@ -148,6 +148,10 @@
         "renderAction": "Render diagram",
         "rerenderAction": "Refresh diagram",
         "hideAction": "Hide render",
+        "zoomOutAction": "Zoom out",
+        "zoomInAction": "Zoom in",
+        "resetZoomAction": "Reset zoom",
+        "zoomLabel": "Zoom {{ percent }}%",
         "fullscreenAction": "Open large",
         "fullscreenTitle": "Relationship diagram",
         "fullscreenDescription": "Expanded view of the current diagram to inspect relationships and navigate across tables.",
@@ -167,6 +171,7 @@
         "description": "Select a table to inspect its most important fields and references.",
         "results": "{{ count }} visible tables",
         "emptyTitle": "No tables",
+        "emptyFilteredDescription": "No tables match the current filters.",
         "emptyDescription": "There are no documented entities yet.",
         "columns": {
           "name": "Table",
@@ -215,7 +220,8 @@
         },
         "goToRelation": "Go to table {{ target }}",
         "noRelations": "There are no documented relationships for this table.",
-        "noSelection": "No table matches the current filters."
+        "noSelection": "Select a table from the inventory or the diagram to review its details.",
+        "noSelectionFiltered": "There are no visible tables for the current filters."
       }
     },
     "logs": {
@@ -1358,6 +1364,9 @@
       "newSection": "New section",
       "sectionNameLabel": "Name",
       "sectionNamePlaceholder": "Section name",
+      "sectionNameCaLabel": "Name (Catalan)",
+      "sectionNameEnLabel": "Name (English)",
+      "sectionNameI18nPlaceholder": "Optional",
       "saveSection": "Save",
       "cancelSection": "Cancel",
       "sectionVisibilityLabel": "Visible on the menu",
@@ -1433,6 +1442,9 @@
         "editTitle": "Edit product",
         "name": "Name",
         "namePlaceholder": "Product name",
+        "nameCa": "Name (Catalan)",
+        "nameEn": "Name (English)",
+        "nameI18nPlaceholder": "Optional",
         "description": "Description",
         "descriptionPlaceholder": "Optional description",
         "image": "Image",

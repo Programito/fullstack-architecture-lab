@@ -5,6 +5,7 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { modifierGroupNameTaken } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { CreateModifierGroupData, ModifierGroupEntity, ModifierGroupRepository, UpdateModifierGroupData } from '../../application/ports/modifier-group-repository.port';
+import { asNameI18n, toNameI18nJson } from './name-i18n.mapper';
 
 type GroupWithOptions = Prisma.ModifierGroupGetPayload<{ include: { options: true } }>;
 
@@ -43,6 +44,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
         data: {
           organizationId: data.organizationId,
           name: data.name,
+          nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
           selectionType: data.selectionType,
           minSelections: data.minSelections,
           maxSelections: data.maxSelections,
@@ -53,6 +55,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
             createMany: {
               data: data.options.map((opt, i) => ({
                 name: opt.name,
+                nameI18n: toNameI18nJson(opt.nameI18n) ?? Prisma.JsonNull,
                 priceDeltaCents: opt.priceDeltaCents,
                 imageUrl: opt.imageUrl ?? null,
                 sortOrder: i + 1,
@@ -79,6 +82,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
           where: { id: data.groupId },
           data: {
             name: data.name,
+            nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
             selectionType: data.selectionType,
             minSelections: data.minSelections,
             maxSelections: data.maxSelections,
@@ -87,6 +91,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
               createMany: {
                 data: data.options.map((opt, i) => ({
                   name: opt.name,
+                  nameI18n: toNameI18nJson(opt.nameI18n) ?? Prisma.JsonNull,
                   priceDeltaCents: opt.priceDeltaCents,
                   imageUrl: opt.imageUrl ?? null,
                   sortOrder: i + 1,
@@ -122,6 +127,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
       id: group.id,
       organizationId: group.organizationId,
       name: group.name,
+      nameI18n: asNameI18n(group.nameI18n),
       selectionType: group.selectionType as 'single' | 'multiple',
       minSelections: group.minSelections,
       maxSelections: group.maxSelections,
@@ -129,6 +135,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
       options: group.options.map((opt) => ({
         id: opt.id,
         name: opt.name,
+        nameI18n: asNameI18n(opt.nameI18n),
         priceDeltaCents: opt.priceDeltaCents,
         imageUrl: opt.imageUrl,
         isAvailable: opt.isAvailable,

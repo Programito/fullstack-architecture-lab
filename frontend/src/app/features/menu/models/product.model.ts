@@ -1,3 +1,5 @@
+import type { NameI18n } from './name-i18n.model';
+
 export type Money = number;
 export type ProductName = string;
 export type ProductAvailability = boolean;
@@ -57,6 +59,7 @@ export interface ProductCustomizationPolicy {
 
 export interface CreateProductInput {
   name: string;
+  nameI18n?: NameI18n;
   description?: string;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
@@ -69,6 +72,7 @@ export interface CreateProductInput {
 
 export interface UpdateProductInput {
   name?: string;
+  nameI18n?: NameI18n;
   description?: string | null;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
@@ -93,6 +97,7 @@ export interface Product {
   id: string;
   restaurantProductId?: string;
   name: ProductName;
+  nameI18n?: NameI18n;
   description?: string;
   imageUrl?: string | null;
   categoryId: string;

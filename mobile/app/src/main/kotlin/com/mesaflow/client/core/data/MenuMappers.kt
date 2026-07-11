@@ -9,8 +9,10 @@ import com.mesaflow.client.core.model.MenuItem
 import com.mesaflow.client.core.model.MenuSection
 import com.mesaflow.client.core.model.ModifierGroup
 import com.mesaflow.client.core.model.ModifierOption
+import com.mesaflow.client.core.model.NameI18n
 import com.mesaflow.client.core.model.PlatterComponent
 import com.mesaflow.client.core.model.ProductType
+import com.mesaflow.client.core.network.dto.NameI18nDto
 import com.mesaflow.client.core.network.dto.RestaurantMenuDto
 
 /** Mapea el DTO del backend a dominio, descartando secciones/items no visibles. */
@@ -25,12 +27,14 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
             MenuSection(
                 id = section.id,
                 name = section.name,
+                nameI18n = section.nameI18n.toDomain(),
                 sortOrder = section.sortOrder,
                 items = section.items.map { item ->
                     MenuItem(
                         id = item.id,
                         restaurantProductId = item.restaurantProductId,
                         name = item.name,
+                        nameI18n = item.nameI18n.toDomain(),
                         description = item.description,
                         imageUrl = item.imageUrl,
                         productType = when (item.productType.lowercase()) {
@@ -46,6 +50,7 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                             ModifierGroup(
                                 id = group.id,
                                 name = group.name,
+                                nameI18n = group.nameI18n.toDomain(),
                                 singleSelection = group.selectionType.equals("single", ignoreCase = true),
                                 minSelections = group.minSelections,
                                 maxSelections = group.maxSelections,
@@ -54,6 +59,7 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                                     ModifierOption(
                                         id = opt.id,
                                         name = opt.name,
+                                        nameI18n = opt.nameI18n.toDomain(),
                                         priceDeltaCents = opt.priceDeltaCents,
                                         isAvailable = opt.isAvailable,
                                     )
@@ -67,6 +73,7 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                                     ComboSlot(
                                         id = slot.id,
                                         name = slot.name,
+                                        nameI18n = slot.nameI18n.toDomain(),
                                         minSelections = slot.minSelections,
                                         maxSelections = slot.maxSelections,
                                         isRequired = slot.isRequired,
@@ -89,6 +96,7 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                                 PlatterComponent(
                                     id = comp.id,
                                     name = comp.name,
+                                    nameI18n = comp.nameI18n.toDomain(),
                                     removable = comp.removable,
                                     replaceable = comp.replaceable,
                                     sortOrder = comp.sortOrder,
@@ -99,6 +107,9 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
             )
         },
 )
+
+private fun NameI18nDto?.toDomain(): NameI18n? =
+    this?.let { NameI18n(es = it.es, ca = it.ca, en = it.en) }
 
 /**
  * Convierte el string del backend (enum Allergen de schema.prisma, p.ej.

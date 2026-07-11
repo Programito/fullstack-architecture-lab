@@ -809,7 +809,7 @@ it('renders changeable extras summaries for customizable products', async () => 
       fixture.detectChanges();
       await fixture.whenStable();
 
-      expect(createSection).toHaveBeenCalledWith('menu-demo-main', 'Tapas', true);
+      expect(createSection).toHaveBeenCalledWith('menu-demo-main', 'Tapas', true, undefined);
     });
 
     it('cierra el formulario sin llamar a la API al pulsar cancelar', async () => {

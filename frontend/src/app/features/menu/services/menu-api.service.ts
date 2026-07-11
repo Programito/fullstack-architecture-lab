@@ -16,7 +16,7 @@ import type {
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../restaurant-pos/state/restaurant-context.store';
 import { deriveModifierGroupDisplayType } from '../models/modifier-group.model';
-import type { ComboProductDefinition, MenuCategory, ModifierGroup, Product } from '../models/menu.models';
+import type { ComboProductDefinition, MenuCategory, ModifierGroup, NameI18n, Product } from '../models/menu.models';
 import type { ProductCourse, ProductPreparationRoute } from '../models/product.model';
 
 export type MenuData = {
@@ -48,11 +48,11 @@ export class MenuApiService {
     return this.api.setMenuItemAvailability(this.restaurantId, restaurantProductId, available);
   }
 
-  createSection(menuId: string, name: string, isVisible = true): Observable<MenuSectionAdminDto> {
-    return this.api.createMenuSection(this.restaurantId, menuId, { name, isVisible });
+  createSection(menuId: string, name: string, isVisible = true, nameI18n?: NameI18n): Observable<MenuSectionAdminDto> {
+    return this.api.createMenuSection(this.restaurantId, menuId, { name, isVisible, ...(nameI18n ? { nameI18n } : {}) });
   }
 
-  updateSection(menuId: string, sectionId: string, data: { name?: string; isVisible?: boolean }): Observable<MenuSectionAdminDto> {
+  updateSection(menuId: string, sectionId: string, data: { name?: string; isVisible?: boolean; nameI18n?: NameI18n }): Observable<MenuSectionAdminDto> {
     return this.api.updateMenuSection(this.restaurantId, menuId, sectionId, data);
   }
 
@@ -117,6 +117,7 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
   const categories: MenuCategory[] = dto.sections.map((section, index) => ({
     id: section.id,
     name: section.name,
+    nameI18n: section.nameI18n,
     sortOrder: section.sortOrder ?? (index + 1) * 10,
     isVisible: section.isVisible,
   }));
@@ -159,6 +160,7 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
         slots: combo.slots.map((slot) => ({
           id: slot.id,
           name: slot.name,
+          nameI18n: slot.nameI18n,
           required: slot.isRequired,
           minSelections: slot.minSelections,
           maxSelections: slot.maxSelections,
@@ -179,6 +181,7 @@ function mapModifierGroupDto(mg: RestaurantMenuModifierGroupDto): ModifierGroup 
   return {
     id: mg.id,
     name: mg.name,
+    nameI18n: mg.nameI18n,
     type: mg.selectionType,
     displayType: deriveModifierGroupDisplayType({
       type: mg.selectionType,
@@ -190,6 +193,7 @@ function mapModifierGroupDto(mg: RestaurantMenuModifierGroupDto): ModifierGroup 
     options: mg.options.map((opt) => ({
       id: opt.id,
       name: opt.name,
+      nameI18n: opt.nameI18n,
       priceDelta: opt.priceDeltaCents / 100,
       imageUrl: opt.imageUrl ?? null,
     })),
@@ -206,6 +210,7 @@ function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): P
     id: item.id,
     restaurantProductId: item.restaurantProductId,
     name: item.name,
+    nameI18n: item.nameI18n,
     ...(item.description ? { description: item.description } : {}),
     imageUrl: item.imageUrl ?? null,
     categoryId,

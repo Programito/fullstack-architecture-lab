@@ -1,20 +1,39 @@
+import { BehaviorSubject } from 'rxjs';
 import { render, screen, fireEvent, waitFor } from '@testing-library/angular';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter, type NavigationExtras, type Params } from '@angular/router';
+import { vi } from 'vitest';
 
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { DeveloperTablesPage } from './developer-tables-page';
 
 describe('DeveloperTablesPage', () => {
-  const renderPage = async () => {
+  const renderPage = async (initialParams: Params = {}) => {
     const i18n = provideI18nTesting();
+    const queryParams$ = new BehaviorSubject(convertToParamMap(initialParams));
+    const route = {
+      snapshot: { queryParamMap: convertToParamMap(initialParams) },
+      queryParamMap: queryParams$.asObservable(),
+    };
 
-    return render(DeveloperTablesPage, {
+    const view = await render(DeveloperTablesPage, {
       imports: [...i18n.imports],
       providers: [
         ...i18n.providers,
         provideRouter([]),
+        { provide: ActivatedRoute, useValue: route },
       ],
     });
+
+    const router = view.fixture.componentRef.injector.get(Router);
+    vi.spyOn(router, 'navigate').mockImplementation(async (_commands: readonly unknown[], options?: NavigationExtras) => {
+      const nextParams = Object.fromEntries(
+        Object.entries(options?.queryParams ?? {}).filter(([, value]) => value !== null && value !== undefined),
+      );
+      queryParams$.next(convertToParamMap(nextParams));
+      return true;
+    });
+
+    return { ...view, router, route, queryParams$ };
   };
 
   it('renders the schema overview and the default selected table', async () => {
@@ -140,6 +159,48 @@ describe('DeveloperTablesPage', () => {
     });
   });
 
+  it('hydrates filters and selection from query params', async () => {
+    await renderPage({ q: 'dailyNumber', feature: 'orders', domain: 'service', table: 'orders' });
+
+    expect(screen.getByRole('heading', { name: 'orders' })).toBeTruthy();
+    expect(screen.getByText('dailyNumber')).toBeTruthy();
+    expect((screen.getByRole('combobox', { name: /feature/i }) as HTMLSelectElement).value).toBe('orders');
+    expect((screen.getByRole('combobox', { name: /dominio/i }) as HTMLSelectElement).value).toBe('service');
+  });
+
+  it('persists filters and selected table in the url state', async () => {
+    const view = await renderPage();
+
+    const ordersRow = screen
+      .getAllByRole('row')
+      .find((row) => row.textContent?.replace(/\s+/g, ' ').includes('orders orders service'));
+
+    expect(ordersRow).toBeTruthy();
+    fireEvent.click(ordersRow!);
+
+    await waitFor(() => {
+      expect(view.router.navigate).toHaveBeenLastCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ table: 'orders' }),
+        }),
+      );
+    });
+
+    fireEvent.input(screen.getByRole('searchbox', { name: /buscar tablas o campos/i }), {
+      target: { value: 'dailyNumber' },
+    });
+
+    await waitFor(() => {
+      expect(view.router.navigate).toHaveBeenLastCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ q: 'dailyNumber', table: 'orders' }),
+        }),
+      );
+    });
+  });
+
   it('toggles compact mode in the detail tools', async () => {
     await renderPage();
 
@@ -165,6 +226,26 @@ describe('DeveloperTablesPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('searchbox', { name: /buscar tablas o campos/i })).toBeTruthy();
+    });
+  });
+
+  it('shows an actionable empty state when filters hide every table', async () => {
+    await renderPage();
+
+    fireEvent.input(screen.getByRole('searchbox', { name: /buscar tablas o campos/i }), {
+      target: { value: 'zzz-not-found' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/no hay tablas que coincidan con los filtros actuales/i)).toBeTruthy();
+      expect(screen.getAllByRole('button', { name: /limpiar filtros/i }).length).toBeGreaterThan(0);
+      expect(screen.getByText(/no hay ninguna tabla visible con los filtros actuales/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /limpiar filtros/i })[0]!);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('users').length).toBeGreaterThan(0);
     });
   });
 
@@ -228,7 +309,113 @@ describe('DeveloperTablesPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: /diagrama de relaciones/i })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /acercar/i })).toBeTruthy();
+      expect(screen.getByText(/zoom 100%/i)).toBeTruthy();
     });
+  });
+
+  it('updates the fullscreen zoom controls state', async () => {
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir en grande/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/zoom 100%/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /acercar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/zoom 120%/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /reset zoom/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/zoom 100%/i)).toBeTruthy();
+    });
+  });
+
+  it('pans the fullscreen diagram canvas while dragging', async () => {
+    const view = await renderPage();
+    const component = view.fixture.componentInstance as DeveloperTablesPage & {
+      startDiagramPan(event: PointerEvent): void;
+      moveDiagramPan(event: PointerEvent): void;
+      endDiagramPan(event: PointerEvent): void;
+    };
+
+    const canvas = document.createElement('div');
+    canvas.scrollLeft = 40;
+    canvas.scrollTop = 30;
+    canvas.setPointerCapture = () => undefined;
+    canvas.releasePointerCapture = () => undefined;
+
+    component.startDiagramPan({
+      button: 0,
+      pointerId: 1,
+      clientX: 100,
+      clientY: 80,
+      currentTarget: canvas,
+      target: canvas,
+    } as unknown as PointerEvent);
+
+    component.moveDiagramPan({
+      pointerId: 1,
+      clientX: 70,
+      clientY: 50,
+      currentTarget: canvas,
+    } as unknown as PointerEvent);
+
+    expect(canvas.scrollLeft).toBe(70);
+    expect(canvas.scrollTop).toBe(60);
+
+    component.endDiagramPan({
+      pointerId: 1,
+      currentTarget: canvas,
+    } as unknown as PointerEvent);
+  });
+
+  it('ignores diagram selection right after a drag gesture', async () => {
+    const view = await renderPage();
+    const component = view.fixture.componentInstance as DeveloperTablesPage & {
+      startDiagramPan(event: PointerEvent): void;
+      moveDiagramPan(event: PointerEvent): void;
+      selectSchemaFromDiagram(event: MouseEvent): void;
+    };
+
+    const canvas = document.createElement('div');
+    canvas.scrollLeft = 0;
+    canvas.scrollTop = 0;
+    canvas.setPointerCapture = () => undefined;
+
+    component.startDiagramPan({
+      button: 0,
+      pointerId: 1,
+      clientX: 100,
+      clientY: 80,
+      currentTarget: canvas,
+      target: canvas,
+    } as unknown as PointerEvent);
+
+    component.moveDiagramPan({
+      pointerId: 1,
+      clientX: 80,
+      clientY: 60,
+      currentTarget: canvas,
+    } as unknown as PointerEvent);
+
+    const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+    link.setAttribute('href', '#schema-orders');
+    const node = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    link.appendChild(node);
+    document.body.appendChild(link);
+
+    component.selectSchemaFromDiagram({ target: node, preventDefault: () => undefined } as unknown as MouseEvent);
+    view.fixture.detectChanges();
+
+    expect(screen.getByRole('heading', { name: 'users' })).toBeTruthy();
+
+    link.remove();
   });
 
   it('includes clickable mermaid links in the generated source', async () => {

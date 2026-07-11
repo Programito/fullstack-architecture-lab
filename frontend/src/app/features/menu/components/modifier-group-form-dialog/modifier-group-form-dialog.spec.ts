@@ -30,8 +30,8 @@ describe('ModifierGroupFormDialog', () => {
   it('enables confirm after filling name and at least one option', async () => {
     const { fixture } = await renderDialog();
 
-    fireEvent.input(screen.getAllByRole('textbox')[0], { target: { value: 'Extras' } });
-    fireEvent.input(screen.getAllByRole('textbox')[1], { target: { value: 'Queso extra' } });
+    fireEvent.input(screen.getByPlaceholderText('Nombre del grupo'), { target: { value: 'Extras' } });
+    fireEvent.input(screen.getByPlaceholderText('Nombre de la opción'), { target: { value: 'Queso extra' } });
     fixture.detectChanges();
 
     expect(screen.getByRole('button', { name: /crear grupo/i }).hasAttribute('disabled')).toBe(false);
@@ -41,8 +41,8 @@ describe('ModifierGroupFormDialog', () => {
     const confirmed = vi.fn();
     const { fixture } = await renderDialog({ confirmed });
 
-    fireEvent.input(screen.getAllByRole('textbox')[0], { target: { value: 'Extras' } });
-    fireEvent.input(screen.getAllByRole('textbox')[1], { target: { value: 'Queso extra' } });
+    fireEvent.input(screen.getByPlaceholderText('Nombre del grupo'), { target: { value: 'Extras' } });
+    fireEvent.input(screen.getByPlaceholderText('Nombre de la opción'), { target: { value: 'Queso extra' } });
     fixture.detectChanges();
 
     fireEvent.click(screen.getByRole('button', { name: /crear grupo/i }));

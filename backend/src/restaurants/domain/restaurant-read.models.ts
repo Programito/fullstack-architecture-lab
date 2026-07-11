@@ -8,9 +8,20 @@ export type RestaurantSummary = {
   isActive: boolean;
 };
 
+// Variantes de nombre por idioma, aditivas y opcionales junto al `name`
+// canonico (castellano). El servidor solo persiste y devuelve las que
+// existan; la resolucion de idioma se hace siempre en el cliente (ver
+// docs/superpowers/plans/2026-07-11-menu-multilingual-names.md).
+export type NameI18n = {
+  es?: string;
+  ca?: string;
+  en?: string;
+};
+
 export type RestaurantMenuModifierOption = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   priceDeltaCents: number;
   isAvailable: boolean;
 };
@@ -18,6 +29,7 @@ export type RestaurantMenuModifierOption = {
 export type RestaurantMenuModifierGroup = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
@@ -36,6 +48,7 @@ export type RestaurantMenuComboSlotOption = {
 export type RestaurantMenuComboSlot = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   minSelections: number;
   maxSelections: number;
   isRequired: boolean;
@@ -50,6 +63,7 @@ export type RestaurantMenuComboDefinition = {
 export type RestaurantMenuPlatterComponent = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   removable: boolean;
   replaceable: boolean;
   sortOrder: number;
@@ -60,6 +74,7 @@ export type RestaurantMenuItem = {
   restaurantProductId?: string;
   productId?: string;
   name: string;
+  nameI18n?: NameI18n;
   description?: string;
   imageUrl: string | null;
   productType: 'simple' | 'combo' | 'platter';
@@ -77,6 +92,7 @@ export type RestaurantMenuItem = {
 export type RestaurantMenuSection = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   sortOrder: number;
   isVisible: boolean;
   items: RestaurantMenuItem[];
@@ -94,6 +110,7 @@ export type RestaurantProductSummary = {
   id: string;
   productId: string;
   name: string;
+  nameI18n?: NameI18n;
   displayName: string | null;
   imageUrl: string | null;
   modifierGroupIds: string[];
@@ -134,6 +151,7 @@ export type RestaurantProductDetail = {
   productId: string;
   organizationId: string;
   name: string;
+  nameI18n?: NameI18n;
   displayName: string | null;
   description: string | null;
   displayDescription: string | null;
@@ -154,6 +172,7 @@ export type RestaurantMenuSectionView = {
   id: string;
   menuId: string;
   name: string;
+  nameI18n?: NameI18n;
   sortOrder: number;
   isVisible: boolean;
 };

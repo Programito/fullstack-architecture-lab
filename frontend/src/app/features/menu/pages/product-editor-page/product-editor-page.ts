@@ -65,6 +65,10 @@ export class ProductEditorPage {
   private readonly existingSupplementGroupId = signal<string | null>(null);
 
   protected readonly name = signal('');
+  // Nombres opcionales en catalan/ingles, junto al `name` canonico en castellano.
+  // Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  protected readonly nameCa = signal('');
+  protected readonly nameEn = signal('');
   protected readonly description = signal('');
   protected readonly imageUrl = signal<string | null>(null);
   protected readonly priceEuros = signal('');
@@ -295,6 +299,8 @@ export class ProductEditorPage {
 
   private applyProduct(product: RestaurantProductDetailDto): void {
     this.name.set(product.name);
+    this.nameCa.set(product.nameI18n?.ca ?? '');
+    this.nameEn.set(product.nameI18n?.en ?? '');
     this.description.set(product.description ?? '');
     this.imageUrl.set(product.imageUrl ?? null);
     this.priceEuros.set((product.priceCents / 100).toFixed(2));
@@ -367,11 +373,21 @@ export class ProductEditorPage {
     this.router.navigateByUrl(MENU_URL);
   }
 
+  // `name` (castellano) sigue siendo obligatorio y canonico; CA/EN son opcionales y solo se
+  // envian si hay algun valor, para no mandar `nameI18n: {}` cuando no se ha rellenado nada.
+  private buildNameI18n(): { ca?: string; en?: string } | undefined {
+    const ca = this.nameCa().trim();
+    const en = this.nameEn().trim();
+    if (!ca && !en) return undefined;
+    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}) };
+  }
+
   protected save(): void {
     if (this.saveDisabled() || this.saving()) return;
     const name = this.name().trim();
     if (!name) return;
     const priceCents = Math.round(parseFloat(this.priceEuros().replace(',', '.') || '0') * 100);
+    const nameI18n = this.buildNameI18n();
 
     this.saving.set(true);
     const existing = this.existingProduct();
@@ -381,6 +397,7 @@ export class ProductEditorPage {
           switchMap((supplementGroupId) =>
             this.menuApi.updateProduct(existing.id, {
               name,
+              nameI18n,
               description: this.description().trim() || null,
               imageUrl: this.imageUrl(),
               modifierGroupIds: this.mergeSupplementGroupId(supplementGroupId),
@@ -395,6 +412,7 @@ export class ProductEditorPage {
       : this.menuApi
           .createProduct({
             name,
+            nameI18n,
             description: this.description().trim() || undefined,
             imageUrl: this.imageUrl(),
             modifierGroupIds: this.selectedModifierGroupIds(),

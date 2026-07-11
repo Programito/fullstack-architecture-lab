@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { Button } from '../../../../shared/ui/button/button';
@@ -22,7 +22,12 @@ export class DeveloperTablesPage {
   private renderSequence = 0;
   private readonly sanitizer = inject(DomSanitizer);
   private readonly transloco = inject(TranslocoService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly schemas = DEVELOPER_TABLE_SCHEMAS;
+  private readonly knownFeatures = new Set(this.schemas.map((schema) => schema.feature));
+  private readonly knownDomains = new Set(this.schemas.map((schema) => schema.domain));
+  private readonly knownTableIds = new Set(this.schemas.map((schema) => schema.id));
   protected readonly searchQuery = signal('');
   protected readonly fieldSearchQuery = signal('');
   protected readonly selectedFeature = signal('');
@@ -36,9 +41,37 @@ export class DeveloperTablesPage {
   protected readonly diagramError = signal('');
   protected readonly mermaidSourceOpen = signal(false);
   protected readonly diagramFullscreenOpen = signal(false);
+  protected readonly diagramScale = signal(1);
+  protected readonly diagramDragging = signal(false);
   private selectionOrigin: 'inventory' | 'diagram' | 'relation' | null = null;
+  private lastQuerySignature = '';
+  private dragPanState:
+    | {
+        pointerId: number;
+        startX: number;
+        startY: number;
+        startScrollLeft: number;
+        startScrollTop: number;
+        moved: boolean;
+      }
+    | null = null;
+  private suppressDiagramClick = false;
 
   constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      const state = parseDeveloperTablesQueryState(params, {
+        knownFeatures: this.knownFeatures,
+        knownDomains: this.knownDomains,
+        knownTableIds: this.knownTableIds,
+      });
+
+      this.searchQuery.set(state.search);
+      this.selectedFeature.set(state.feature);
+      this.selectedDomain.set(state.domain);
+      this.selectedTableId.set(state.tableId);
+      this.lastQuerySignature = JSON.stringify(buildDeveloperTablesQueryParams(state));
+    });
+
     effect(() => {
       const schemas = this.filteredSchemas();
       const selectedTableId = this.selectedTableId();
@@ -71,6 +104,29 @@ export class DeveloperTablesPage {
       queueMicrotask(() => {
         this.syncSelectionFocus();
         this.selectionOrigin = null;
+      });
+    });
+
+    effect(() => {
+      const state: DeveloperTablesQueryState = {
+        search: this.searchQuery().trim(),
+        feature: this.selectedFeature(),
+        domain: this.selectedDomain(),
+        tableId: this.selectedTableId(),
+      };
+      const queryParams = buildDeveloperTablesQueryParams(state);
+      const signature = JSON.stringify(queryParams);
+
+      if (signature === this.lastQuerySignature) {
+        return;
+      }
+
+      this.lastQuerySignature = signature;
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams,
+        queryParamsHandling: '',
+        replaceUrl: true,
       });
     });
   }
@@ -206,6 +262,20 @@ export class DeveloperTablesPage {
   });
   protected readonly summaryResultsLabel = computed(() =>
     this.transloco.translate('developer.tables.summary.results', { count: this.sortedSchemas().length }),
+  );
+  protected readonly diagramZoomLabel = computed(() =>
+    this.transloco.translate('developer.tables.diagram.zoomLabel', { percent: Math.round(this.diagramScale() * 100) }),
+  );
+  protected readonly hasActiveFilters = computed(() => this.activeFilterChips().length > 0);
+  protected readonly summaryEmptyDescription = computed(() =>
+    this.hasActiveFilters()
+      ? this.transloco.translate('developer.tables.summary.emptyFilteredDescription')
+      : this.transloco.translate('developer.tables.summary.emptyDescription'),
+  );
+  protected readonly detailEmptyDescription = computed(() =>
+    this.hasActiveFilters()
+      ? this.transloco.translate('developer.tables.detail.noSelectionFiltered')
+      : this.transloco.translate('developer.tables.detail.noSelection'),
   );
 
   protected readonly selectedSchema = computed(
@@ -417,6 +487,7 @@ export class DeveloperTablesPage {
       this.requestDiagramRender();
     }
 
+    this.diagramScale.set(1);
     this.diagramFullscreenOpen.set(true);
   }
 
@@ -430,7 +501,84 @@ export class DeveloperTablesPage {
     this.diagramError.set('');
   }
 
+  protected zoomDiagramIn(): void {
+    this.diagramScale.update((value) => clampDiagramScale(value + 0.2));
+  }
+
+  protected zoomDiagramOut(): void {
+    this.diagramScale.update((value) => clampDiagramScale(value - 0.2));
+  }
+
+  protected resetDiagramZoom(): void {
+    this.diagramScale.set(1);
+  }
+
+  protected startDiagramPan(event: PointerEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const target = event.target;
+    if (target instanceof Element && target.closest('a, button')) {
+      return;
+    }
+
+    const container = event.currentTarget;
+    if (!(container instanceof HTMLElement)) {
+      return;
+    }
+
+    this.dragPanState = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startScrollLeft: container.scrollLeft,
+      startScrollTop: container.scrollTop,
+      moved: false,
+    };
+    this.diagramDragging.set(true);
+    this.suppressDiagramClick = false;
+    container.setPointerCapture?.(event.pointerId);
+  }
+
+  protected moveDiagramPan(event: PointerEvent): void {
+    const state = this.dragPanState;
+    const container = event.currentTarget;
+    if (!state || !(container instanceof HTMLElement) || event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - state.startX;
+    const deltaY = event.clientY - state.startY;
+
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      state.moved = true;
+      this.suppressDiagramClick = true;
+    }
+
+    container.scrollLeft = state.startScrollLeft - deltaX;
+    container.scrollTop = state.startScrollTop - deltaY;
+  }
+
+  protected endDiagramPan(event: PointerEvent | MouseEvent): void {
+    const container = event.currentTarget;
+    const pointerId = 'pointerId' in event ? event.pointerId : null;
+
+    if (container instanceof HTMLElement && this.dragPanState && pointerId === this.dragPanState.pointerId) {
+      container.releasePointerCapture?.(pointerId);
+    }
+
+    this.dragPanState = null;
+    this.diagramDragging.set(false);
+  }
+
   protected selectSchemaFromDiagram(event: MouseEvent): void {
+    if (this.suppressDiagramClick) {
+      this.suppressDiagramClick = false;
+      event.preventDefault();
+      return;
+    }
+
     const target = event.target;
 
     if (!(target instanceof Element)) {
@@ -604,4 +752,45 @@ function toMermaidNodeId(value: string): string {
 
 function extractTargetTableId(value: string): string {
   return value.split('.')[0] ?? value;
+}
+
+function clampDiagramScale(value: number): number {
+  return Math.max(0.6, Math.min(2.2, Number(value.toFixed(2))));
+}
+
+type DeveloperTablesQueryState = {
+  search: string;
+  feature: string;
+  domain: string;
+  tableId: string;
+};
+
+function parseDeveloperTablesQueryState(
+  params: { get(name: string): string | null },
+  options: {
+    knownFeatures: Set<string>;
+    knownDomains: Set<string>;
+    knownTableIds: Set<string>;
+  },
+): DeveloperTablesQueryState {
+  const search = params.get('q')?.trim() ?? '';
+  const feature = params.get('feature') ?? '';
+  const domain = params.get('domain') ?? '';
+  const tableId = params.get('table') ?? '';
+
+  return {
+    search,
+    feature: options.knownFeatures.has(feature) ? feature : '',
+    domain: options.knownDomains.has(domain) ? domain : '',
+    tableId: options.knownTableIds.has(tableId) ? tableId : '',
+  };
+}
+
+function buildDeveloperTablesQueryParams(state: DeveloperTablesQueryState): Record<string, string | null> {
+  return {
+    q: state.search || null,
+    feature: state.feature || null,
+    domain: state.domain || null,
+    table: state.tableId || null,
+  };
 }

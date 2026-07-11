@@ -1,10 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import type { ModifierGroupEntity, ModifierGroupOptionEntity } from '../../../application/ports/modifier-group-repository.port';
+import type { NameI18n } from '../../../domain/restaurant-read.models';
+import { NameI18nDto } from './name-i18n.dto';
 
 export class ModifierGroupOptionResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiPropertyOptional({ type: NameI18nDto }) nameI18n?: NameI18n;
   @ApiProperty() priceDeltaCents!: number;
   @ApiPropertyOptional({ nullable: true }) imageUrl?: string | null;
   @ApiProperty() isAvailable!: boolean;
@@ -13,6 +16,7 @@ export class ModifierGroupOptionResponseDto {
     const dto = new ModifierGroupOptionResponseDto();
     dto.id = option.id;
     dto.name = option.name;
+    dto.nameI18n = option.nameI18n;
     dto.priceDeltaCents = option.priceDeltaCents;
     dto.imageUrl = option.imageUrl ?? null;
     dto.isAvailable = option.isAvailable;
@@ -23,6 +27,7 @@ export class ModifierGroupOptionResponseDto {
 export class ModifierGroupResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiPropertyOptional({ type: NameI18nDto }) nameI18n?: NameI18n;
   @ApiProperty({ enum: ['single', 'multiple'] }) selectionType!: string;
   @ApiProperty() minSelections!: number;
   @ApiProperty() maxSelections!: number;
@@ -35,6 +40,7 @@ export class ModifierGroupResponseDto {
     const dto = new ModifierGroupResponseDto();
     dto.id = entity.id;
     dto.name = entity.name;
+    dto.nameI18n = entity.nameI18n;
     dto.selectionType = entity.selectionType;
     dto.minSelections = entity.minSelections;
     dto.maxSelections = entity.maxSelections;

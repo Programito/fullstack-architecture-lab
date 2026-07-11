@@ -1,6 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import type {
+  NameI18n,
   RestaurantMenu,
   RestaurantMenuComboDefinition,
   RestaurantMenuComboSlot,
@@ -12,9 +13,20 @@ import type {
   RestaurantMenuSection,
 } from '../../../domain/restaurant-read.models';
 
+// Variantes de nombre por idioma (ES/CA/EN), aditivas y opcionales junto al
+// `name` canonico (castellano). Solo viajan las que existan; la resolucion de
+// idioma se hace siempre en el cliente, ver
+// docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+class NameI18nResponseDto {
+  @ApiPropertyOptional({ example: 'Hamburguesa craft' }) es?: string;
+  @ApiPropertyOptional({ example: 'Hamburguesa craft' }) ca?: string;
+  @ApiPropertyOptional({ example: 'Craft burger' }) en?: string;
+}
+
 class RestaurantMenuModifierOptionResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty() priceDeltaCents!: number;
   @ApiProperty() isAvailable!: boolean;
 }
@@ -22,6 +34,7 @@ class RestaurantMenuModifierOptionResponseDto {
 class RestaurantMenuModifierGroupResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty({ enum: ['single', 'multiple'] }) selectionType!: 'single' | 'multiple';
   @ApiProperty() minSelections!: number;
   @ApiProperty() maxSelections!: number;
@@ -40,6 +53,7 @@ class RestaurantMenuComboSlotOptionResponseDto {
 class RestaurantMenuComboSlotResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty() minSelections!: number;
   @ApiProperty() maxSelections!: number;
   @ApiProperty() isRequired!: boolean;
@@ -54,6 +68,7 @@ class RestaurantMenuComboDefinitionResponseDto {
 class RestaurantMenuPlatterComponentResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty() removable!: boolean;
   @ApiProperty() replaceable!: boolean;
   @ApiProperty() sortOrder!: number;
@@ -64,6 +79,7 @@ class RestaurantMenuItemResponseDto {
   @ApiProperty({ example: 'rp-burger-001', required: false }) restaurantProductId?: string;
   @ApiProperty({ example: 'product-burger-001', required: false }) productId?: string;
   @ApiProperty({ example: 'Hamburguesa craft' }) name!: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty({ example: 'Hamburguesa de 200g con queso cheddar', required: false }) description?: string;
   @ApiProperty({ nullable: true, required: false }) imageUrl?: string | null;
   @ApiProperty({ enum: ['simple', 'combo', 'platter'], example: 'simple' }) productType!: RestaurantMenuItem['productType'];
@@ -81,6 +97,7 @@ class RestaurantMenuItemResponseDto {
 class RestaurantMenuSectionResponseDto {
   @ApiProperty({ example: 'menu-section-mains' }) id!: string;
   @ApiProperty({ example: 'Principales' }) name!: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty({ example: 2 }) sortOrder!: number;
   @ApiProperty({ example: true }) isVisible!: boolean;
   @ApiProperty({ type: [RestaurantMenuItemResponseDto] }) items!: RestaurantMenuItemResponseDto[];
@@ -108,6 +125,7 @@ function mapSection(section: RestaurantMenuSection): RestaurantMenuSectionRespon
   return {
     id: section.id,
     name: section.name,
+    nameI18n: section.nameI18n,
     sortOrder: section.sortOrder,
     isVisible: section.isVisible,
     items: section.items.map(mapItem),
@@ -120,6 +138,7 @@ function mapItem(item: RestaurantMenuItem): RestaurantMenuItemResponseDto {
     restaurantProductId: item.restaurantProductId,
     productId: item.productId,
     name: item.name,
+    nameI18n: item.nameI18n,
     description: item.description,
     imageUrl: item.imageUrl,
     productType: item.productType,
@@ -139,6 +158,7 @@ function mapModifierGroup(mg: RestaurantMenuModifierGroup): RestaurantMenuModifi
   return {
     id: mg.id,
     name: mg.name,
+    nameI18n: mg.nameI18n,
     selectionType: mg.selectionType,
     minSelections: mg.minSelections,
     maxSelections: mg.maxSelections,
@@ -146,6 +166,7 @@ function mapModifierGroup(mg: RestaurantMenuModifierGroup): RestaurantMenuModifi
     options: mg.options.map((opt: RestaurantMenuModifierOption) => ({
       id: opt.id,
       name: opt.name,
+      nameI18n: opt.nameI18n,
       priceDeltaCents: opt.priceDeltaCents,
       isAvailable: opt.isAvailable,
     })),
@@ -158,6 +179,7 @@ function mapComboDefinition(combo: RestaurantMenuComboDefinition): RestaurantMen
     slots: combo.slots.map((slot: RestaurantMenuComboSlot) => ({
       id: slot.id,
       name: slot.name,
+      nameI18n: slot.nameI18n,
       minSelections: slot.minSelections,
       maxSelections: slot.maxSelections,
       isRequired: slot.isRequired,
@@ -176,6 +198,7 @@ function mapPlatterComponent(component: RestaurantMenuPlatterComponent): Restaur
   return {
     id: component.id,
     name: component.name,
+    nameI18n: component.nameI18n,
     removable: component.removable,
     replaceable: component.replaceable,
     sortOrder: component.sortOrder,

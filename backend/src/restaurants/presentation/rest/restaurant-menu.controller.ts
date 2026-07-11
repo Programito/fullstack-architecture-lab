@@ -94,7 +94,13 @@ export class RestaurantMenuController {
     @Req() request: AuthenticatedRequest,
   ): Promise<MenuSectionResponseDto> {
     const section = unwrapResultOrThrow(
-      await this.createMenuSection.execute({ restaurantId: id, menuId, name: body.name, isVisible: body.isVisible }),
+      await this.createMenuSection.execute({
+        restaurantId: id,
+        menuId,
+        name: body.name,
+        nameI18n: body.nameI18n,
+        isVisible: body.isVisible,
+      }),
     );
     await this.audit.record({
       ...auditContext(request, id),
@@ -104,7 +110,7 @@ export class RestaurantMenuController {
       entityType: 'menu-section',
       entityId: section.id,
       entityLabel: section.name,
-      changedFields: ['name', 'isVisible'],
+      changedFields: ['name', 'nameI18n', 'isVisible'],
       metadata: { menuId, sectionId: section.id, name: section.name },
     });
     return section;
@@ -126,7 +132,14 @@ export class RestaurantMenuController {
     @Req() request: AuthenticatedRequest,
   ): Promise<MenuSectionResponseDto> {
     const section = unwrapResultOrThrow(
-      await this.updateMenuSection.execute({ restaurantId: id, menuId, sectionId, name: body.name, isVisible: body.isVisible }),
+      await this.updateMenuSection.execute({
+        restaurantId: id,
+        menuId,
+        sectionId,
+        name: body.name,
+        nameI18n: body.nameI18n,
+        isVisible: body.isVisible,
+      }),
     );
     await this.audit.record({
       ...auditContext(request, id),
@@ -136,7 +149,7 @@ export class RestaurantMenuController {
       entityType: 'menu-section',
       entityId: sectionId,
       entityLabel: section.name,
-      changedFields: collectChangedFields(body, ['name', 'isVisible']),
+      changedFields: collectChangedFields(body, ['name', 'nameI18n', 'isVisible']),
       metadata: { menuId, sectionId, name: section.name },
     });
     return section;

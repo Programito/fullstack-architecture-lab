@@ -4,7 +4,7 @@ import { inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import type { AppLocale } from '../../../shared/i18n/locale.types';
 import { deriveModifierGroupDisplayType } from '../models/modifier-group.model';
-import type { ComboProductDefinition, ComboSlot, MenuCategory, ModifierGroup, ModifierOption, Product, ProductPreparationPolicy } from '../models/menu.models';
+import type { ComboProductDefinition, ComboSlot, MenuCategory, ModifierGroup, ModifierOption, NameI18n, Product, ProductPreparationPolicy } from '../models/menu.models';
 
 type LocalizedText = Record<AppLocale, string>;
 type LocalizedOptionalText = Partial<Record<AppLocale, string>>;
@@ -507,6 +507,7 @@ export const localizeMenuCategories = (locale: AppLocale): MenuCategory[] =>
   MOCK_MENU_CATEGORY_DEFINITIONS.map((category) => ({
     ...category,
     name: localizeText(category.name, locale),
+    nameI18n: toNameI18n(category.name),
   }));
 
 export const localizeModifierGroups = (locale: AppLocale): ModifierGroup[] =>
@@ -514,12 +515,14 @@ export const localizeModifierGroups = (locale: AppLocale): ModifierGroup[] =>
     const options = group.options.map((option) => ({
       ...option,
       name: localizeText(option.name, locale),
+      nameI18n: toNameI18n(option.name),
     }));
 
     return {
       ...group,
       displayType: deriveModifierGroupDisplayType({ type: group.type, options }),
       name: localizeText(group.name, locale),
+      nameI18n: toNameI18n(group.name),
       options,
     };
   });
@@ -530,6 +533,7 @@ export const localizeMenuProducts = (locale: AppLocale): Product[] => {
   return MOCK_MENU_PRODUCT_DEFINITIONS.map(({ name, description, allergens, ...product }) => ({
     ...product,
     name: localizeText(name, locale),
+    nameI18n: toNameI18n(name),
     ...(description ? { description: localizeOptionalText(description, locale) } : {}),
     category: categories.find((category) => category.id === product.categoryId)?.name ?? product.categoryId,
     allergens: allergens?.map((allergen) => localizeText(allergen, locale)),
@@ -542,6 +546,7 @@ export const localizeComboProductDefinitions = (locale: AppLocale): ComboProduct
     slots: definition.slots.map((slot) => ({
       ...slot,
       name: localizeText(slot.name, locale),
+      nameI18n: toNameI18n(slot.name),
     })),
   }));
 
@@ -590,6 +595,13 @@ export class MenuMockService {
 
 function localizeText(text: LocalizedText, locale: AppLocale): string {
   return text[locale] ?? text.es;
+}
+
+// Expone las tres variantes de nombre de la definicion mock como `nameI18n`,
+// igual que hace el backend real, para que el admin (formularios ES/CA/EN)
+// se comporte igual en modo demo que contra el API real.
+function toNameI18n(text: LocalizedText): NameI18n {
+  return { es: text.es, ca: text.ca, en: text.en };
 }
 
 function localizeOptionalText(text: LocalizedOptionalText, locale: AppLocale): string | undefined {

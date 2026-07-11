@@ -3,13 +3,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import { menuNotFound, type ApplicationError } from '../../../shared/errors/application-error';
 import { err, ok, type Result } from '../../../shared/result/result';
-import type { RestaurantMenuSectionView } from '../../domain/restaurant-read.models';
+import type { NameI18n, RestaurantMenuSectionView } from '../../domain/restaurant-read.models';
 import { RESTAURANT_MENU_ADMIN_REPOSITORY, type RestaurantMenuAdminRepository } from '../ports/restaurant-menu-admin-repository.port';
 
 export type CreateMenuSectionCommand = {
   restaurantId: string;
   menuId: string;
   name: string;
+  nameI18n?: NameI18n;
   isVisible?: boolean;
 };
 
@@ -28,6 +29,7 @@ export class CreateMenuSectionUseCase {
     try {
       const section = await this.menuAdmin.createSection(command.restaurantId, command.menuId, {
         name: command.name,
+        nameI18n: command.nameI18n,
         isVisible: command.isVisible ?? true,
       });
       return ok(section);

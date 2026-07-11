@@ -157,21 +157,33 @@
         }
       </div>
 
-      <app-table
-        [columns]="summaryColumns()"
-        [rows]="summaryRows()"
-        [activeRowId]="selectedSchemaId()"
-        [sort]="summarySort()"
-        maxHeight="34rem"
-        [stickyHeader]="true"
-        [size]="tableSize()"
-        [emptyTitle]="'developer.tables.summary.emptyTitle' | transloco"
-        [emptyDescription]="'developer.tables.summary.emptyDescription' | transloco"
-        appearance="minimal"
-        variant="neutral"
-        (sortChange)="summarySort.set($event)"
-        (rowSelected)="selectSchema($event)"
-      />
+      @if (summaryRows().length > 0) {
+        <app-table
+          [columns]="summaryColumns()"
+          [rows]="summaryRows()"
+          [activeRowId]="selectedSchemaId()"
+          [sort]="summarySort()"
+          maxHeight="34rem"
+          [stickyHeader]="true"
+          [size]="tableSize()"
+          [emptyTitle]="'developer.tables.summary.emptyTitle' | transloco"
+          [emptyDescription]="summaryEmptyDescription()"
+          appearance="minimal"
+          variant="neutral"
+          (sortChange)="summarySort.set($event)"
+          (rowSelected)="selectSchema($event)"
+        />
+      } @else {
+        <div class="developer-tables-page__empty-state">
+          <p class="developer-tables-page__empty-title">{{ 'developer.tables.summary.emptyTitle' | transloco }}</p>
+          <p class="developer-tables-page__section-description">{{ summaryEmptyDescription() }}</p>
+          @if (hasActiveFilters()) {
+            <app-button variant="neutral" fill="outline" (click)="clearFilters()">
+              {{ 'developer.tables.filters.reset' | transloco }}
+            </app-button>
+          }
+        </div>
+      }
     </app-card>
 
     <app-card id="developer-table-detail" variant="outlined">
@@ -273,7 +285,15 @@
           }
         </div>
       } @else {
-        <p class="developer-tables-page__section-description">{{ 'developer.tables.detail.noSelection' | transloco }}</p>
+        <div class="developer-tables-page__empty-state developer-tables-page__empty-state--detail">
+          <p class="developer-tables-page__empty-title">{{ 'developer.tables.detail.title' | transloco }}</p>
+          <p class="developer-tables-page__section-description">{{ detailEmptyDescription() }}</p>
+          @if (hasActiveFilters()) {
+            <app-button variant="neutral" fill="outline" (click)="clearFilters()">
+              {{ 'developer.tables.filters.reset' | transloco }}
+            </app-button>
+          }
+        </div>
       }
     </app-card>
   </section>
@@ -305,6 +325,22 @@
   >
     <div class="developer-tables-page__diagram-fullscreen">
       <div class="developer-tables-page__diagram-actions">
+        <div class="developer-tables-page__diagram-zoom-controls">
+          <app-button variant="neutral" fill="outline" (click)="zoomDiagramOut()">
+            {{ 'developer.tables.diagram.zoomOutAction' | transloco }}
+          </app-button>
+
+          <p class="developer-tables-page__diagram-zoom-label">{{ diagramZoomLabel() }}</p>
+
+          <app-button variant="neutral" fill="outline" (click)="zoomDiagramIn()">
+            {{ 'developer.tables.diagram.zoomInAction' | transloco }}
+          </app-button>
+
+          <app-button variant="neutral" fill="outline" (click)="resetDiagramZoom()">
+            {{ 'developer.tables.diagram.resetZoomAction' | transloco }}
+          </app-button>
+        </div>
+
         <app-button variant="neutral" fill="outline" (click)="requestDiagramRender()">
           {{ 'developer.tables.diagram.rerenderAction' | transloco }}
         </app-button>
@@ -315,7 +351,22 @@
       </div>
 
       @if (diagramSvg(); as fullscreenSvg) {
-        <div class="developer-tables-page__diagram-canvas developer-tables-page__diagram-canvas--fullscreen" (click)="selectSchemaFromDiagram($event)" [innerHTML]="fullscreenSvg"></div>
+        <div
+          class="developer-tables-page__diagram-canvas developer-tables-page__diagram-canvas--fullscreen"
+          [class.developer-tables-page__diagram-canvas--dragging]="diagramDragging()"
+          (pointerdown)="startDiagramPan($event)"
+          (pointermove)="moveDiagramPan($event)"
+          (pointerup)="endDiagramPan($event)"
+          (pointercancel)="endDiagramPan($event)"
+          (mouseleave)="endDiagramPan($event)"
+          (click)="selectSchemaFromDiagram($event)"
+        >
+          <div
+            class="developer-tables-page__diagram-scaled-content"
+            [style.--developer-diagram-scale]="diagramScale()"
+            [innerHTML]="fullscreenSvg"
+          ></div>
+        </div>
       } @else if (diagramError()) {
         <p class="developer-tables-page__section-description">{{ diagramError() }}</p>
       } @else {

@@ -5,7 +5,8 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { applicationError, menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { CreateProductData, RestaurantMenuAdminRepository, SortOrderItem, UpdateProductData } from '../../application/ports/restaurant-menu-admin-repository.port';
-import type { Allergen, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import type { Allergen, NameI18n, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import { asNameI18n, toNameI18nJson } from './name-i18n.mapper';
 
 @Injectable()
 export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminRepository {
@@ -25,13 +26,14 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     return section ? mapSection(section) : null;
   }
 
-  async createSection(restaurantId: string, menuId: string, data: { name: string; isVisible: boolean }): Promise<RestaurantMenuSectionView> {
+  async createSection(restaurantId: string, menuId: string, data: { name: string; nameI18n?: NameI18n; isVisible: boolean }): Promise<RestaurantMenuSectionView> {
     const count = await this.prisma.menuSection.count({ where: { menuId } });
     try {
       const section = await this.prisma.menuSection.create({
         data: {
           menuId,
           name: data.name,
+          nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
           sortOrder: count,
           isVisible: data.isVisible,
         },
@@ -45,7 +47,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     }
   }
 
-  async updateSection(restaurantId: string, menuId: string, sectionId: string, data: { name?: string; isVisible?: boolean }): Promise<RestaurantMenuSectionView | null> {
+  async updateSection(restaurantId: string, menuId: string, sectionId: string, data: { name?: string; nameI18n?: NameI18n; isVisible?: boolean }): Promise<RestaurantMenuSectionView | null> {
     const existing = await this.prisma.menuSection.findFirst({
       where: { id: sectionId, menuId, menu: { restaurantId } },
       select: { id: true },
@@ -55,7 +57,11 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     try {
       const section = await this.prisma.menuSection.update({
         where: { id: sectionId },
-        data,
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.nameI18n !== undefined && { nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull }),
+          ...(data.isVisible !== undefined && { isVisible: data.isVisible }),
+        },
       });
       return mapSection(section);
     } catch (error) {
@@ -181,7 +187,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       where: { restaurantId },
       orderBy: { sortOrder: 'asc' },
       include: {
-        product: { select: { name: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+        product: { select: { name: true, nameI18n: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
         modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
@@ -190,6 +196,9 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       id: rp.id,
       productId: rp.productId,
       name: rp.displayName ?? rp.product.name,
+      // El override de restaurante no tiene traduccion propia todavia: la
+      // traduccion solo aplica al nombre canonico del producto.
+      nameI18n: asNameI18n(rp.product.nameI18n),
       displayName: rp.displayName,
       imageUrl: rp.imageUrl,
       modifierGroupIds: rp.modifierGroups.map(({ modifierGroupId }) => modifierGroupId),
@@ -208,7 +217,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     const rp = await this.prisma.restaurantProduct.findFirst({
       where: { id: productId, restaurantId },
       include: {
-        product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+        product: { select: { organizationId: true, name: true, nameI18n: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
         modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
@@ -233,6 +242,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           data: {
             organizationId: restaurant.organizationId,
             name: data.name,
+            nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
             description: data.description ?? null,
             productType: 'simple',
             defaultCourse: data.course,
@@ -261,7 +271,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
               : undefined,
           },
           include: {
-            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+            product: { select: { organizationId: true, name: true, nameI18n: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
             modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
           },
         });
@@ -293,11 +303,19 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           throw new ApplicationErrorException(applicationError('restaurant_product_not_found', `Restaurant product "${productId}" was not found.`, { productId }));
         }
 
-        if (data.name !== undefined || data.description !== undefined || data.course !== undefined || data.preparationRoute !== undefined || data.allergens !== undefined) {
+        if (
+          data.name !== undefined ||
+          data.nameI18n !== undefined ||
+          data.description !== undefined ||
+          data.course !== undefined ||
+          data.preparationRoute !== undefined ||
+          data.allergens !== undefined
+        ) {
           await tx.product.update({
             where: { id: existing.productId },
             data: {
               ...(data.name !== undefined && { name: data.name }),
+              ...(data.nameI18n !== undefined && { nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull }),
               ...(data.description !== undefined && { description: data.description }),
               ...(data.course !== undefined && { defaultCourse: data.course }),
               ...(data.preparationRoute !== undefined && { defaultPreparationRoute: data.preparationRoute }),
@@ -329,7 +347,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
             ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           },
           include: {
-            product: { select: { organizationId: true, name: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+            product: { select: { organizationId: true, name: true, nameI18n: true, description: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
             modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
           },
         });
@@ -393,11 +411,12 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
   }
 }
 
-function mapSection(section: { id: string; menuId: string; name: string; sortOrder: number; isVisible: boolean }): RestaurantMenuSectionView {
+function mapSection(section: { id: string; menuId: string; name: string; nameI18n?: unknown; sortOrder: number; isVisible: boolean }): RestaurantMenuSectionView {
   return {
     id: section.id,
     menuId: section.menuId,
     name: section.name,
+    nameI18n: asNameI18n(section.nameI18n),
     sortOrder: section.sortOrder,
     isVisible: section.isVisible,
   };
@@ -430,6 +449,7 @@ type RpWithProduct = {
   product: {
     organizationId: string;
     name: string;
+    nameI18n?: unknown;
     description: string | null;
     productType: string;
     defaultCourse: string;
@@ -444,6 +464,7 @@ function mapProductDetail(rp: RpWithProduct): RestaurantProductDetail {
     productId: rp.productId,
     organizationId: rp.product.organizationId,
     name: rp.product.name,
+    nameI18n: asNameI18n(rp.product.nameI18n),
     displayName: rp.displayName,
     description: rp.product.description,
     displayDescription: rp.displayDescription,

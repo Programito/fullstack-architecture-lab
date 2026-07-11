@@ -1,6 +1,9 @@
+import type { NameI18n } from './name-i18n.model';
+
 export interface ComboSlot {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   required: boolean;
   minSelections: number;
   maxSelections: number;

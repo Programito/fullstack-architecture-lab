@@ -133,6 +133,46 @@
 .developer-tables-page__diagram-canvas--fullscreen {
   min-height: min(70vh, 48rem);
   overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--ui-border-subtle, #d4d4d8) 82%, transparent);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ui-surface, #fff) 97%, #dbeafe 3%), var(--ui-surface, #fff));
+  padding: 0.75rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.developer-tables-page__diagram-canvas--dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.developer-tables-page__diagram-zoom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.developer-tables-page__diagram-zoom-label {
+  margin: 0;
+  min-width: 5.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--ui-primary, #2563eb) 78%, black 22%);
+}
+
+.developer-tables-page__diagram-scaled-content {
+  width: max-content;
+  min-width: 100%;
+}
+
+.developer-tables-page__diagram-scaled-content :is(svg) {
+  width: max-content;
+  max-width: none;
+  height: auto;
+  transform: scale(var(--developer-diagram-scale, 1));
+  transform-origin: top left;
 }
 
 .developer-tables-page__filters {
@@ -202,6 +242,27 @@
 .developer-tables-page__overview-stat strong {
   font-size: 1.65rem;
   line-height: 1;
+  color: var(--ui-text, #18181b);
+}
+
+.developer-tables-page__empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--ui-primary, #2563eb) 28%, var(--ui-border-subtle, #d4d4d8));
+  border-radius: 1rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ui-surface, #fff) 96%, #dbeafe 4%), var(--ui-surface, #fff));
+}
+
+.developer-tables-page__empty-state--detail {
+  margin-top: 0.75rem;
+}
+
+.developer-tables-page__empty-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--ui-text, #18181b);
 }
 
@@ -389,6 +450,10 @@
 
   .developer-tables-page__overview-stats {
     grid-template-columns: 1fr;
+  }
+
+  .developer-tables-page__diagram-zoom-controls {
+    width: 100%;
   }
 
   .developer-tables-page__relation-group-header {

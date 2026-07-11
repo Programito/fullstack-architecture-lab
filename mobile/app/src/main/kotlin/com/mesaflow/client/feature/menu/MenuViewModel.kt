@@ -7,10 +7,14 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
+import com.mesaflow.client.core.common.resolveLocaleTag
+import com.mesaflow.client.core.common.withResolvedNames
 import com.mesaflow.client.core.data.CartRepository
 import com.mesaflow.client.core.data.MenuRepository
 import com.mesaflow.client.core.datastore.SessionStore
+import com.mesaflow.client.core.datastore.SettingsStore
 import com.mesaflow.client.core.model.Allergen
+import com.mesaflow.client.core.model.AppLanguage
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.Menu
 import com.mesaflow.client.core.model.MenuItem
@@ -76,6 +80,7 @@ class MenuViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
     private val sessionStore: SessionStore,
     private val cartRepository: CartRepository,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MenuUiState())
@@ -86,6 +91,17 @@ class MenuViewModel @Inject constructor(
      * estaba mirando la lista); se aplica al tocar el aviso "La carta se ha actualizado".
      */
     private var pendingMenu: Menu? = null
+
+    /**
+     * Ultima carta cruda recibida del backend (con `name` canonico en castellano y
+     * `nameI18n` sin resolver). Se guarda aparte del `_uiState.content` porque este ultimo
+     * ya lleva los nombres resueltos al idioma activo — reresolver al cambiar de idioma
+     * necesita partir siempre de los datos crudos, no de una resolucion anterior.
+     */
+    private var rawMenu: Menu? = null
+
+    /** Idioma activo resuelto (es/ca/en), actualizado por [observeLanguage]. */
+    private var currentLocaleTag: String = AppLanguage.SYSTEM.resolveLocaleTag()
 
     /** true mientras la pantalla de la carta está en composición (no tapada por Carrito/Ajustes). */
     private val menuScreenVisible = MutableStateFlow(false)
@@ -117,6 +133,7 @@ class MenuViewModel @Inject constructor(
     init {
         load()
         startMenuPolling()
+        observeLanguage()
     }
 
     fun load(forceRefresh: Boolean = false) {
@@ -132,12 +149,26 @@ class MenuViewModel @Inject constructor(
                 is AppResult.Success -> {
                     // Una recarga manual deja la carta al día: cualquier aviso pendiente ya no aplica.
                     pendingMenu = null
-                    _uiState.update {
-                        it.copy(content = MenuContentState.Ready(result.data), updatedMenuNotice = false)
-                    }
+                    applyMenu(result.data, notice = false)
                 }
                 is AppResult.Error -> _uiState.update {
                     it.copy(content = MenuContentState.Error(result.error))
+                }
+            }
+        }
+    }
+
+    /**
+     * Reacciona a cambios del idioma activo (Ajustes) reresolviendo los nombres de la carta ya
+     * cargada, sin volver a pedirla a red: los datos de las tres variantes ya viajaron en la
+     * ultima respuesta 200/304 y solo hace falta recalcular que variante pintar.
+     */
+    private fun observeLanguage() {
+        viewModelScope.launch {
+            settingsStore.language.collect { language ->
+                currentLocaleTag = language.resolveLocaleTag()
+                rawMenu?.let { menu ->
+                    _uiState.update { it.copy(content = MenuContentState.Ready(menu.withResolvedNames(currentLocaleTag))) }
                 }
             }
         }
@@ -164,12 +195,12 @@ class MenuViewModel @Inject constructor(
     private suspend fun pollMenuOnce() {
         val table = sessionStore.tableContext.first() ?: return
         // Si la carta aún carga o está en error, manda el flujo normal de load()/Reintentar.
-        val current = (_uiState.value.content as? MenuContentState.Ready)?.menu ?: return
+        if (rawMenu == null) return
         val result = menuRepository.getMenu(table.restaurantId, forceRefresh = true)
         // Un fallo del polling nunca debe volcar la pantalla a Error: se reintenta al siguiente ciclo.
         val fresh = (result as? AppResult.Success)?.data ?: return
 
-        if (fresh == current) {
+        if (fresh == rawMenu) {
             // El admin pudo deshacer el cambio antes de que el cliente tocara el aviso.
             pendingMenu = null
             _uiState.update { it.copy(updatedMenuNotice = false) }
@@ -180,19 +211,25 @@ class MenuViewModel @Inject constructor(
             _uiState.update { it.copy(updatedMenuNotice = true) }
         } else {
             // Con la carta tapada (Carrito/Ajustes) se aplica en silencio: al volver ya está al día.
-            applyMenu(fresh)
+            applyMenu(fresh, notice = false)
         }
     }
 
-    /** Aplica una carta nueva conservando búsqueda y alérgenos; resetea el chip si su sección ya no existe. */
-    private fun applyMenu(menu: Menu) {
+    /**
+     * Aplica una carta cruda nueva: guarda el original (para poder reresolver si cambia el idioma
+     * mas tarde sin red) y publica en `_uiState` la version ya resuelta al idioma activo,
+     * conservando búsqueda y alérgenos; resetea el chip si su sección ya no existe.
+     */
+    private fun applyMenu(menu: Menu, notice: Boolean) {
         pendingMenu = null
+        rawMenu = menu
+        val resolved = menu.withResolvedNames(currentLocaleTag)
         _uiState.update { state ->
-            val sectionStillExists = menu.sections.any { it.id == state.selectedSectionId }
+            val sectionStillExists = resolved.sections.any { it.id == state.selectedSectionId }
             state.copy(
-                content = MenuContentState.Ready(menu),
+                content = MenuContentState.Ready(resolved),
                 selectedSectionId = state.selectedSectionId?.takeIf { sectionStillExists },
-                updatedMenuNotice = false,
+                updatedMenuNotice = notice,
             )
         }
     }
@@ -204,7 +241,7 @@ class MenuViewModel @Inject constructor(
 
     /** Tap en "La carta se ha actualizado": aplica la carta pendiente. */
     fun onMenuUpdatedNoticeClick() {
-        pendingMenu?.let(::applyMenu)
+        pendingMenu?.let { applyMenu(it, notice = false) }
     }
 
     fun onQueryChange(query: String) {

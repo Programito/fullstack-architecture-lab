@@ -1,7 +1,10 @@
+import type { NameI18n } from '../../domain/restaurant-read.models';
+
 export const MODIFIER_GROUP_REPOSITORY = Symbol('MODIFIER_GROUP_REPOSITORY');
 
 export type ModifierGroupOptionData = {
   name: string;
+  nameI18n?: NameI18n;
   priceDeltaCents: number;
   imageUrl?: string | null;
 };
@@ -9,6 +12,7 @@ export type ModifierGroupOptionData = {
 export type CreateModifierGroupData = {
   organizationId: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
@@ -21,6 +25,7 @@ export type CreateModifierGroupData = {
 export type UpdateModifierGroupData = {
   groupId: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
@@ -31,6 +36,7 @@ export type UpdateModifierGroupData = {
 export type ModifierGroupOptionEntity = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   priceDeltaCents: number;
   imageUrl?: string | null;
   isAvailable: boolean;
@@ -40,6 +46,7 @@ export type ModifierGroupEntity = {
   id: string;
   organizationId: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;

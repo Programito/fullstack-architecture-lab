@@ -53,6 +53,7 @@ export class RestaurantModifierGroupsController {
     const result = await this.createUseCase.execute({
       restaurantId: id,
       name: body.name,
+      nameI18n: body.nameI18n,
       selectionType: body.selectionType,
       minSelections: body.minSelections,
       maxSelections: body.maxSelections,
@@ -81,6 +82,7 @@ export class RestaurantModifierGroupsController {
       restaurantId: id,
       groupId: gid,
       name: body.name,
+      nameI18n: body.nameI18n,
       selectionType: body.selectionType,
       minSelections: body.minSelections,
       maxSelections: body.maxSelections,

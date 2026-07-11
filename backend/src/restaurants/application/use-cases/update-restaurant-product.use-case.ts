@@ -3,13 +3,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import { restaurantProductNotFound, productNameTaken, type ApplicationError } from '../../../shared/errors/application-error';
 import { err, ok, type Result } from '../../../shared/result/result';
-import type { Allergen, PreparationRoute, ProductCourse, RestaurantProductDetail } from '../../domain/restaurant-read.models';
+import type { Allergen, NameI18n, PreparationRoute, ProductCourse, RestaurantProductDetail } from '../../domain/restaurant-read.models';
 import { RESTAURANT_MENU_ADMIN_REPOSITORY, type RestaurantMenuAdminRepository } from '../ports/restaurant-menu-admin-repository.port';
 
 export type UpdateRestaurantProductCommand = {
   restaurantId: string;
   productId: string;
   name?: string;
+  nameI18n?: NameI18n;
   description?: string | null;
   course?: ProductCourse;
   preparationRoute?: PreparationRoute;
@@ -31,6 +32,7 @@ export class UpdateRestaurantProductUseCase {
     try {
       const product = await this.menuAdmin.updateProduct(command.restaurantId, command.productId, {
         name: command.name,
+        nameI18n: command.nameI18n,
         description: command.description,
         course: command.course,
         preparationRoute: command.preparationRoute,

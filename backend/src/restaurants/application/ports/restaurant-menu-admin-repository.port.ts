@@ -1,4 +1,4 @@
-import type { Allergen, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
+import type { Allergen, NameI18n, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 
 export const RESTAURANT_MENU_ADMIN_REPOSITORY = Symbol('RESTAURANT_MENU_ADMIN_REPOSITORY');
 
@@ -6,6 +6,7 @@ export type SortOrderItem = { id: string; sortOrder: number };
 
 export type CreateProductData = {
   name: string;
+  nameI18n?: NameI18n;
   description?: string;
   course: ProductCourse;
   preparationRoute: PreparationRoute;
@@ -18,6 +19,7 @@ export type CreateProductData = {
 
 export type UpdateProductData = {
   name?: string;
+  nameI18n?: NameI18n;
   description?: string | null;
   course?: ProductCourse;
   preparationRoute?: PreparationRoute;
@@ -32,8 +34,8 @@ export type UpdateProductData = {
 export interface RestaurantMenuAdminRepository {
   findMenuById(restaurantId: string, menuId: string): Promise<{ id: string } | null>;
   findSectionById(restaurantId: string, menuId: string, sectionId: string): Promise<RestaurantMenuSectionView | null>;
-  createSection(restaurantId: string, menuId: string, data: { name: string; isVisible: boolean }): Promise<RestaurantMenuSectionView>;
-  updateSection(restaurantId: string, menuId: string, sectionId: string, data: { name?: string; isVisible?: boolean }): Promise<RestaurantMenuSectionView | null>;
+  createSection(restaurantId: string, menuId: string, data: { name: string; nameI18n?: NameI18n; isVisible: boolean }): Promise<RestaurantMenuSectionView>;
+  updateSection(restaurantId: string, menuId: string, sectionId: string, data: { name?: string; nameI18n?: NameI18n; isVisible?: boolean }): Promise<RestaurantMenuSectionView | null>;
   deleteSection(restaurantId: string, menuId: string, sectionId: string): Promise<boolean>;
   reorderSections(restaurantId: string, menuId: string, items: SortOrderItem[]): Promise<boolean>;
   findItemById(restaurantId: string, menuId: string, sectionId: string, itemId: string): Promise<RestaurantMenuItemView | null>;

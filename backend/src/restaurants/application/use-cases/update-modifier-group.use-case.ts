@@ -4,16 +4,18 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { modifierGroupNotFound, type ApplicationError } from '../../../shared/errors/application-error';
 import { ok, err, type Result } from '../../../shared/result/result';
 import { MODIFIER_GROUP_REPOSITORY, type ModifierGroupEntity, type ModifierGroupRepository } from '../ports/modifier-group-repository.port';
+import type { NameI18n } from '../../domain/restaurant-read.models';
 
 export type UpdateModifierGroupCommand = {
   restaurantId: string;
   groupId: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
   isRequired: boolean;
-  options: { name: string; priceDeltaCents: number; imageUrl?: string }[];
+  options: { name: string; nameI18n?: NameI18n; priceDeltaCents: number; imageUrl?: string }[];
 };
 
 @Injectable()
@@ -30,6 +32,7 @@ export class UpdateModifierGroupUseCase {
       const group = await this.repo.update({
         groupId: command.groupId,
         name: command.name,
+        nameI18n: command.nameI18n,
         selectionType: command.selectionType,
         minSelections: command.minSelections,
         maxSelections: command.maxSelections,

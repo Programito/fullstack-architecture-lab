@@ -19,6 +19,23 @@
       (valueChange)="name.set($event)"
     />
 
+    <div class="grid gap-3 sm:grid-cols-2">
+      <app-input
+        [label]="'menu.product.form.nameCa' | transloco"
+        [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+        [value]="nameCa()"
+        [disabled]="loading()"
+        (valueChange)="nameCa.set($event)"
+      />
+      <app-input
+        [label]="'menu.product.form.nameEn' | transloco"
+        [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+        [value]="nameEn()"
+        [disabled]="loading()"
+        (valueChange)="nameEn.set($event)"
+      />
+    </div>
+
     <app-select
       [label]="'menu.modifierGroup.form.typeLabel' | transloco"
       [options]="selectionTypeOptions"
@@ -90,6 +107,23 @@
                 <app-icon name="close" size="sm" [decorative]="true" />
               </app-button>
             }
+          </div>
+
+          <div class="grid gap-2 sm:grid-cols-2">
+            <app-input
+              [label]="$index === 0 ? ('menu.product.form.nameCa' | transloco) : ''"
+              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+              [value]="option.nameCa"
+              [disabled]="loading()"
+              (valueChange)="updateOptionNameCa($index, $event)"
+            />
+            <app-input
+              [label]="$index === 0 ? ('menu.product.form.nameEn' | transloco) : ''"
+              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+              [value]="option.nameEn"
+              [disabled]="loading()"
+              (valueChange)="updateOptionNameEn($index, $event)"
+            />
           </div>
 
           <app-image-dropzone

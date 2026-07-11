@@ -1,10 +1,13 @@
 package com.mesaflow.client.core.data
 
 import com.mesaflow.client.core.model.Allergen
+import com.mesaflow.client.core.model.NameI18n
 import com.mesaflow.client.core.network.dto.MenuItemDto
 import com.mesaflow.client.core.network.dto.MenuSectionDto
+import com.mesaflow.client.core.network.dto.NameI18nDto
 import com.mesaflow.client.core.network.dto.RestaurantMenuDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class MenuMappersTest {
@@ -70,5 +73,51 @@ class MenuMappersTest {
             listOf(Allergen.GLUTEN, Allergen.MILK),
             menu.sections.single().items.single().allergens,
         )
+    }
+
+    @Test
+    fun `mapea nameI18n de seccion y producto cuando el backend lo envia`() {
+        val dto = RestaurantMenuDto(
+            id = "menu-1",
+            restaurantId = "rest-1",
+            name = "Carta",
+            isActive = true,
+            sections = listOf(
+                MenuSectionDto(
+                    id = "sec-1",
+                    name = "Principales",
+                    nameI18n = NameI18nDto(es = "Principales", ca = "Principals", en = "Mains"),
+                    sortOrder = 0,
+                    isVisible = true,
+                    items = listOf(
+                        MenuItemDto(
+                            id = "item-1",
+                            name = "Hamburguesa",
+                            nameI18n = NameI18nDto(ca = "Hamburguesa (ca)", en = "Burger"),
+                            priceCents = 1000,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val menu = dto.toDomain()
+
+        assertEquals(
+            NameI18n(es = "Principales", ca = "Principals", en = "Mains"),
+            menu.sections.single().nameI18n,
+        )
+        assertEquals(
+            NameI18n(es = null, ca = "Hamburguesa (ca)", en = "Burger"),
+            menu.sections.single().items.single().nameI18n,
+        )
+    }
+
+    @Test
+    fun `sin nameI18n en el DTO, el dominio lo mapea a null`() {
+        val menu = menuWithAllergens(emptyList()).toDomain()
+
+        assertNull(menu.sections.single().nameI18n)
+        assertNull(menu.sections.single().items.single().nameI18n)
     }
 }

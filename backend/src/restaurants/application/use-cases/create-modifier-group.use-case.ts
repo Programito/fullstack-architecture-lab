@@ -4,15 +4,17 @@ import { ApplicationErrorException } from '../../../shared/errors/application-er
 import { restaurantNotFound, type ApplicationError } from '../../../shared/errors/application-error';
 import { ok, err, type Result } from '../../../shared/result/result';
 import { MODIFIER_GROUP_REPOSITORY, type ModifierGroupEntity, type ModifierGroupRepository } from '../ports/modifier-group-repository.port';
+import type { NameI18n } from '../../domain/restaurant-read.models';
 
 export type CreateModifierGroupCommand = {
   restaurantId: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
   isRequired: boolean;
-  options: { name: string; priceDeltaCents: number; imageUrl?: string }[];
+  options: { name: string; nameI18n?: NameI18n; priceDeltaCents: number; imageUrl?: string }[];
   scope?: 'shared' | 'product';
   ownerRestaurantProductId?: string | null;
 };
@@ -31,6 +33,7 @@ export class CreateModifierGroupUseCase {
       const group = await this.repo.create({
         organizationId,
         name: command.name,
+        nameI18n: command.nameI18n,
         selectionType: command.selectionType,
         minSelections: command.minSelections,
         maxSelections: command.maxSelections,

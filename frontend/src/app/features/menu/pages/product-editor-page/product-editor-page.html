@@ -48,6 +48,20 @@
             required
             (valueChange)="name.set($event)"
           />
+          <div class="grid gap-3 sm:grid-cols-2">
+            <app-input
+              [label]="'menu.product.form.nameCa' | transloco"
+              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+              [value]="nameCa()"
+              (valueChange)="nameCa.set($event)"
+            />
+            <app-input
+              [label]="'menu.product.form.nameEn' | transloco"
+              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+              [value]="nameEn()"
+              (valueChange)="nameEn.set($event)"
+            />
+          </div>
           <app-input
             [label]="'menu.product.form.description' | transloco"
             [placeholder]="'menu.product.form.descriptionPlaceholder' | transloco"

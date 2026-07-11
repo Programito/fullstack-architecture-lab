@@ -166,6 +166,10 @@ export class MenuPage {
 
   protected readonly createSectionOpen = signal(false);
   protected readonly newSectionName = signal('');
+  // Nombres opcionales en catalan/ingles para la nueva seccion, junto al nombre canonico
+  // en castellano. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  protected readonly newSectionNameCa = signal('');
+  protected readonly newSectionNameEn = signal('');
   protected readonly sectionToDelete = signal<MenuCategory | null>(null);
   protected readonly deleteSectionOpen = signal(false);
 
@@ -788,21 +792,30 @@ export class MenuPage {
 
   protected openCreateSection(): void {
     this.newSectionName.set('');
+    this.newSectionNameCa.set('');
+    this.newSectionNameEn.set('');
     this.createSectionOpen.set(true);
   }
 
   protected cancelCreateSection(): void {
     this.createSectionOpen.set(false);
     this.newSectionName.set('');
+    this.newSectionNameCa.set('');
+    this.newSectionNameEn.set('');
   }
 
   protected submitCreateSection(): void {
     const name = this.newSectionName().trim();
     if (!name) return;
-    this.menuApi.createSection(this.menuId(), name, true).subscribe({
+    const ca = this.newSectionNameCa().trim();
+    const en = this.newSectionNameEn().trim();
+    const nameI18n = ca || en ? { ...(ca ? { ca } : {}), ...(en ? { en } : {}) } : undefined;
+    this.menuApi.createSection(this.menuId(), name, true, nameI18n).subscribe({
       complete: () => {
         this.createSectionOpen.set(false);
         this.newSectionName.set('');
+        this.newSectionNameCa.set('');
+        this.newSectionNameEn.set('');
         this.reloadMenuData();
       },
     });

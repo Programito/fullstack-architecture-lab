@@ -2,11 +2,22 @@ import { Type } from 'class-transformer';
 import { ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 
+import { NameI18nDto } from './name-i18n.dto';
+
 export class CreateModifierOptionDto {
   @ApiProperty({ example: 'Queso extra' })
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiPropertyOptional({
+    type: NameI18nDto,
+    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NameI18nDto)
+  nameI18n?: NameI18nDto;
 
   @ApiProperty({ example: 50, description: 'Price delta in cents (can be 0)' })
   @IsInt()
@@ -27,6 +38,15 @@ export class CreateModifierGroupDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiPropertyOptional({
+    type: NameI18nDto,
+    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NameI18nDto)
+  nameI18n?: NameI18nDto;
 
   @ApiProperty({ enum: ['single', 'multiple'], example: 'multiple' })
   @IsEnum(['single', 'multiple'])
@@ -73,6 +93,15 @@ export class UpdateModifierGroupDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiPropertyOptional({
+    type: NameI18nDto,
+    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NameI18nDto)
+  nameI18n?: NameI18nDto;
 
   @ApiProperty({ enum: ['single', 'multiple'], example: 'multiple' })
   @IsEnum(['single', 'multiple'])

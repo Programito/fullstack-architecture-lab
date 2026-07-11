@@ -748,6 +748,20 @@
               [value]="newSectionName()"
               (valueChange)="newSectionName.set($event)"
             />
+            <div class="grid gap-3 sm:grid-cols-2">
+              <app-input
+                [label]="'menu.page.sectionNameCaLabel' | transloco"
+                [placeholder]="'menu.page.sectionNameI18nPlaceholder' | transloco"
+                [value]="newSectionNameCa()"
+                (valueChange)="newSectionNameCa.set($event)"
+              />
+              <app-input
+                [label]="'menu.page.sectionNameEnLabel' | transloco"
+                [placeholder]="'menu.page.sectionNameI18nPlaceholder' | transloco"
+                [value]="newSectionNameEn()"
+                (valueChange)="newSectionNameEn.set($event)"
+              />
+            </div>
             <div class="flex gap-2">
               <app-button size="sm" variant="primary" (pressed)="submitCreateSection()">
                 {{ 'menu.page.saveSection' | transloco }}

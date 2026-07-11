@@ -1,3 +1,5 @@
+import type { NameI18n } from '../../menu/models/name-i18n.model';
+
 export type RestaurantElementType = 'table' | 'bar' | 'kitchen' | 'bathroom' | 'entrance' | 'blocked' | 'stool';
 
 export type RestaurantElementShape = 'round' | 'square' | 'rectangle' | 'long';
@@ -404,6 +406,7 @@ export type ReorderFloorElementsRequest = {
 export type RestaurantMenuModifierOptionDto = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   priceDeltaCents: number;
   imageUrl?: string | null;
   isAvailable: boolean;
@@ -412,6 +415,7 @@ export type RestaurantMenuModifierOptionDto = {
 export type RestaurantMenuModifierGroupDto = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
@@ -432,6 +436,7 @@ export type RestaurantMenuComboSlotOptionDto = {
 export type RestaurantMenuComboSlotDto = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   minSelections: number;
   maxSelections: number;
   isRequired: boolean;
@@ -446,6 +451,7 @@ export type RestaurantMenuComboDefinitionDto = {
 export type RestaurantMenuPlatterComponentDto = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   removable: boolean;
   replaceable: boolean;
   sortOrder: number;
@@ -474,6 +480,7 @@ export type RestaurantMenuItemDto = {
   restaurantProductId?: string;
   productId?: string;
   name: string;
+  nameI18n?: NameI18n;
   description?: string;
   imageUrl?: string | null;
   productType: 'simple' | 'combo' | 'platter';
@@ -491,6 +498,7 @@ export type RestaurantMenuItemDto = {
 export type RestaurantMenuSectionDto = {
   id: string;
   name: string;
+  nameI18n?: NameI18n;
   sortOrder: number;
   isVisible: boolean;
   items: RestaurantMenuItemDto[];
@@ -508,6 +516,7 @@ export type MenuSectionAdminDto = {
   id: string;
   menuId: string;
   name: string;
+  nameI18n?: NameI18n;
   sortOrder: number;
   isVisible: boolean;
 };
@@ -526,6 +535,7 @@ export type RestaurantProductSummaryDto = {
   id: string;
   productId: string;
   name: string;
+  nameI18n?: NameI18n;
   displayName: string | null;
   imageUrl: string | null;
   modifierGroupIds: string[];
@@ -544,6 +554,7 @@ export type RestaurantProductDetailDto = {
   productId: string;
   organizationId: string;
   name: string;
+  nameI18n?: NameI18n;
   displayName: string | null;
   imageUrl: string | null;
   description: string | null;
@@ -562,6 +573,7 @@ export type RestaurantProductDetailDto = {
 
 export type CreateRestaurantProductRequest = {
   name: string;
+  nameI18n?: NameI18n;
   description?: string;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
@@ -574,6 +586,7 @@ export type CreateRestaurantProductRequest = {
 
 export type UpdateRestaurantProductRequest = {
   name?: string;
+  nameI18n?: NameI18n;
   description?: string | null;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
@@ -598,8 +611,8 @@ export type ProductImageUploadSignatureDto = {
   folder: string;
 };
 
-export type CreateMenuSectionRequest = { name: string; isVisible?: boolean };
-export type UpdateMenuSectionRequest = { name?: string; isVisible?: boolean };
+export type CreateMenuSectionRequest = { name: string; nameI18n?: NameI18n; isVisible?: boolean };
+export type UpdateMenuSectionRequest = { name?: string; nameI18n?: NameI18n; isVisible?: boolean };
 export type AddMenuSectionItemRequest = { restaurantProductId: string; displayNameOverride?: string; priceOverrideCents?: number };
 export type UpdateMenuSectionItemRequest = { displayNameOverride?: string | null; priceOverrideCents?: number | null; isVisible?: boolean };
 export type ReorderItemsRequest = { items: Array<{ id: string; sortOrder: number }> };
@@ -643,12 +656,14 @@ export type UpdateServiceWindowsRequest = {
 
 export type CreateModifierGroupOptionRequest = {
   name: string;
+  nameI18n?: NameI18n;
   priceDeltaCents: number;
   imageUrl?: string;
 };
 
 export type CreateModifierGroupRequest = {
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;
@@ -660,6 +675,7 @@ export type CreateModifierGroupRequest = {
 
 export type UpdateModifierGroupRequest = {
   name: string;
+  nameI18n?: NameI18n;
   selectionType: 'single' | 'multiple';
   minSelections: number;
   maxSelections: number;

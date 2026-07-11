@@ -12,6 +12,7 @@ import type {
   RestaurantSummary,
 } from '../../domain/restaurant-read.models';
 import type { RestaurantOrderView } from '../../domain/restaurant-order.models';
+import { asNameI18n } from './name-i18n.mapper';
 import { deriveServicePhase, getServiceDurationMinutes } from '../../domain/service-phase';
 import type {
   ServiceFloorView,
@@ -116,6 +117,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
       sections: menu.sections.map((section) => ({
         id: section.id,
         name: section.name,
+        nameI18n: asNameI18n(section.nameI18n),
         sortOrder: section.sortOrder,
         isVisible: section.isVisible,
         items: section.items.map((item) => ({
@@ -126,6 +128,10 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
             item.displayNameOverride ??
             item.restaurantProduct.displayName ??
             item.restaurantProduct.product.name,
+          // `nameI18n` solo existe sobre el nombre canonico del producto: los
+          // overrides (displayNameOverride/displayName) se quedan en
+          // castellano por ahora, ver el plan de nombres multiidioma.
+          nameI18n: asNameI18n(item.restaurantProduct.product.nameI18n),
           description: item.restaurantProduct.product.description ?? undefined,
           imageUrl: item.restaurantProduct.imageUrl,
           productType: item.restaurantProduct.product.productType as 'simple' | 'combo' | 'platter',
@@ -147,6 +153,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
           modifierGroups: item.restaurantProduct.modifierGroups.map(({ modifierGroup }) => ({
             id: modifierGroup.id,
             name: modifierGroup.name,
+            nameI18n: asNameI18n(modifierGroup.nameI18n),
             selectionType: (modifierGroup.selectionType === 'single' ? 'single' : 'multiple') as 'single' | 'multiple',
             minSelections: modifierGroup.minSelections,
             maxSelections: modifierGroup.maxSelections,
@@ -154,6 +161,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
             options: modifierGroup.options.map((option) => ({
               id: option.id,
               name: option.name,
+              nameI18n: asNameI18n(option.nameI18n),
               priceDeltaCents: option.priceDeltaCents,
               isAvailable: option.isAvailable,
             })),
@@ -164,6 +172,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
                 slots: item.restaurantProduct.product.comboDefinition.slots.map((slot) => ({
                   id: slot.id,
                   name: slot.name,
+                  nameI18n: asNameI18n(slot.nameI18n),
                   minSelections: slot.minSelections,
                   maxSelections: slot.maxSelections,
                   isRequired: slot.isRequired,
@@ -181,6 +190,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
             ? item.restaurantProduct.product.platterDefinition.components.map((component) => ({
                 id: component.id,
                 name: component.name,
+                nameI18n: asNameI18n(component.nameI18n),
                 removable: component.isRemovable,
                 replaceable: component.isReplaceable,
                 sortOrder: component.sortOrder,

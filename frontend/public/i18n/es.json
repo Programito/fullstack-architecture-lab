@@ -153,6 +153,10 @@
         "renderAction": "Renderizar diagrama",
         "rerenderAction": "Actualizar diagrama",
         "hideAction": "Ocultar render",
+        "zoomOutAction": "Alejar",
+        "zoomInAction": "Acercar",
+        "resetZoomAction": "Reset zoom",
+        "zoomLabel": "Zoom {{ percent }}%",
         "fullscreenAction": "Abrir en grande",
         "fullscreenTitle": "Diagrama de relaciones",
         "fullscreenDescription": "Vista ampliada del diagrama actual para revisar relaciones y navegar entre tablas.",
@@ -172,6 +176,7 @@
         "description": "Selecciona una tabla para revisar sus campos y referencias más importantes.",
         "results": "{{ count }} tablas visibles",
         "emptyTitle": "Sin tablas",
+        "emptyFilteredDescription": "No hay tablas que coincidan con los filtros actuales.",
         "emptyDescription": "Todavía no hay entidades documentadas.",
         "columns": {
           "name": "Tabla",
@@ -220,7 +225,8 @@
         },
         "goToRelation": "Ir a la tabla {{ target }}",
         "noRelations": "No hay relaciones documentadas para esta tabla.",
-        "noSelection": "No hay ninguna tabla que coincida con los filtros actuales."
+        "noSelection": "Selecciona una tabla del inventario o del diagrama para revisar su detalle.",
+        "noSelectionFiltered": "No hay ninguna tabla visible con los filtros actuales."
       }
     },
     "logs": {
@@ -1363,6 +1369,9 @@
       "newSection": "Nueva sección",
       "sectionNameLabel": "Nombre",
       "sectionNamePlaceholder": "Nombre de la sección",
+      "sectionNameCaLabel": "Nombre (catalán)",
+      "sectionNameEnLabel": "Nombre (inglés)",
+      "sectionNameI18nPlaceholder": "Opcional",
       "saveSection": "Guardar",
       "cancelSection": "Cancelar",
       "sectionVisibilityLabel": "Visible en la carta",
@@ -1438,6 +1447,9 @@
         "editTitle": "Editar producto",
         "name": "Nombre",
         "namePlaceholder": "Nombre del producto",
+        "nameCa": "Nombre (catalán)",
+        "nameEn": "Nombre (inglés)",
+        "nameI18nPlaceholder": "Opcional",
         "description": "Descripción",
         "descriptionPlaceholder": "Descripción opcional",
         "image": "Imagen",

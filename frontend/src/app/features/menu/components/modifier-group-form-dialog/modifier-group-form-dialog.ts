@@ -17,6 +17,10 @@ type OptionUploadStatus = 'idle' | 'uploading' | 'failed';
 
 export type ModifierGroupOptionDraft = {
   name: string;
+  // CA/EN opcionales junto al nombre canonico en castellano (name). Ver
+  // docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  nameCa: string;
+  nameEn: string;
   priceDeltaCents: number;
   imageUrl: string | null;
   uploadStatus: OptionUploadStatus;
@@ -24,7 +28,7 @@ export type ModifierGroupOptionDraft = {
 };
 
 function emptyOption(): ModifierGroupOptionDraft {
-  return { name: '', priceDeltaCents: 0, imageUrl: null, uploadStatus: 'idle', imageErrorMessage: null };
+  return { name: '', nameCa: '', nameEn: '', priceDeltaCents: 0, imageUrl: null, uploadStatus: 'idle', imageErrorMessage: null };
 }
 
 @Component({
@@ -42,6 +46,11 @@ export class ModifierGroupFormDialog {
   private readonly imageUpload = inject(ProductImageUploadService);
 
   protected readonly name = signal('');
+  // CA/EN opcionales junto al nombre canonico en castellano (name). Nota: este dialogo solo
+  // soporta creacion hoy (el effect() de abajo resetea todos los campos al abrir, sin
+  // precargar ningun valor existente) — hueco preexistente no introducido por esta feature.
+  protected readonly nameCa = signal('');
+  protected readonly nameEn = signal('');
   protected readonly selectionType = signal<'single' | 'multiple'>('single');
   protected readonly isRequired = signal(false);
   protected readonly options = signal<ModifierGroupOptionDraft[]>([emptyOption()]);
@@ -65,6 +74,8 @@ export class ModifierGroupFormDialog {
     effect(() => {
       if (this.open()) {
         this.name.set('');
+        this.nameCa.set('');
+        this.nameEn.set('');
         this.selectionType.set('single');
         this.isRequired.set(false);
         this.options.set([emptyOption()]);
@@ -98,6 +109,14 @@ export class ModifierGroupFormDialog {
 
   protected updateOptionName(index: number, value: string): void {
     this.options.update((opts) => opts.map((opt, i) => (i === index ? { ...opt, name: value } : opt)));
+  }
+
+  protected updateOptionNameCa(index: number, value: string): void {
+    this.options.update((opts) => opts.map((opt, i) => (i === index ? { ...opt, nameCa: value } : opt)));
+  }
+
+  protected updateOptionNameEn(index: number, value: string): void {
+    this.options.update((opts) => opts.map((opt, i) => (i === index ? { ...opt, nameEn: value } : opt)));
   }
 
   protected updateOptionPrice(index: number, raw: string): void {
@@ -151,17 +170,26 @@ export class ModifierGroupFormDialog {
     });
   }
 
+  private buildNameI18n(ca: string, en: string): { ca?: string; en?: string } | undefined {
+    const trimmedCa = ca.trim();
+    const trimmedEn = en.trim();
+    if (!trimmedCa && !trimmedEn) return undefined;
+    return { ...(trimmedCa ? { ca: trimmedCa } : {}), ...(trimmedEn ? { en: trimmedEn } : {}) };
+  }
+
   protected handleConfirm(): void {
     if (!this.isValid() || this.loading()) return;
     const type = this.selectionType();
     this.confirmed.emit({
       name: this.name().trim(),
+      nameI18n: this.buildNameI18n(this.nameCa(), this.nameEn()),
       selectionType: type,
       minSelections: this.isRequired() ? 1 : 0,
       maxSelections: type === 'single' ? 1 : this.options().length,
       isRequired: this.isRequired(),
       options: this.options().map((o) => ({
         name: o.name.trim(),
+        nameI18n: this.buildNameI18n(o.nameCa, o.nameEn),
         priceDeltaCents: o.priceDeltaCents,
         ...(o.imageUrl ? { imageUrl: o.imageUrl } : {}),
       })),
