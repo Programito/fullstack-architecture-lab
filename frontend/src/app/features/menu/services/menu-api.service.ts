@@ -72,6 +72,14 @@ export class MenuApiService {
     return this.api.removeMenuSectionItem(this.restaurantId, menuId, sectionId, itemId);
   }
 
+  reorderSections(menuId: string, items: Array<{ id: string; sortOrder: number }>): Observable<void> {
+    return this.api.reorderMenuSections(this.restaurantId, menuId, { items });
+  }
+
+  reorderSectionItems(menuId: string, sectionId: string, items: Array<{ id: string; sortOrder: number }>): Observable<void> {
+    return this.api.reorderMenuSectionItems(this.restaurantId, menuId, sectionId, { items });
+  }
+
   getProduct(productId: string): Observable<RestaurantProductDetailDto> {
     return this.api.getRestaurantProduct(this.restaurantId, productId);
   }
@@ -185,6 +193,10 @@ function mapModifierGroupDto(mg: RestaurantMenuModifierGroupDto): ModifierGroup 
       priceDelta: opt.priceDeltaCents / 100,
       imageUrl: opt.imageUrl ?? null,
     })),
+    // scope/owner son necesarios para distinguir los grupos privados de producto (suplementos)
+    // de los compartidos — p. ej. al precargar suplementos en el editor o al duplicar productos.
+    ...(mg.scope ? { scope: mg.scope } : {}),
+    ownerRestaurantProductId: mg.ownerRestaurantProductId ?? null,
   };
 }
 

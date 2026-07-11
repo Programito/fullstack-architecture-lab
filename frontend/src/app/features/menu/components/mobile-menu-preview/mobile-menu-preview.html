@@ -1,0 +1,147 @@
+<div class="mobile-preview-shell">
+  <span class="mobile-preview-side-button mobile-preview-side-button--volume" aria-hidden="true"></span>
+  <span class="mobile-preview-side-button mobile-preview-side-button--power" aria-hidden="true"></span>
+  <div class="mobile-preview-frame">
+    <div class="mobile-preview-statusbar">
+      <span class="mobile-preview-statusbar-time">12:30</span>
+      <span class="mobile-preview-camera" aria-hidden="true"></span>
+      <span class="mobile-preview-statusbar-icons">
+        <app-icon name="signal_cellular_alt" size="sm" [decorative]="true" />
+        <app-icon name="wifi" size="sm" [decorative]="true" />
+        <app-icon name="battery_full" size="sm" [decorative]="true" />
+      </span>
+    </div>
+    <div class="mobile-preview-viewport">
+      <div class="mobile-preview-screen">
+        <header class="mobile-preview-header">
+          <div class="min-w-0">
+            <p class="mobile-preview-menu-name">{{ menuName() || ('menu.page.title' | transloco) }}</p>
+            @if (tableLabel()) {
+              <p class="mobile-preview-table-label">{{ tableLabel() }}</p>
+            }
+          </div>
+          <app-icon name="settings" size="sm" class="mobile-preview-settings-icon" [decorative]="true" />
+        </header>
+
+        <div class="mobile-preview-search-row">
+          <div class="mobile-preview-search">
+            <input
+              type="text"
+              class="mobile-preview-search-input"
+              [value]="searchQuery()"
+              (input)="updateSearch($event)"
+              [placeholder]="'menu.product.form.previewSearchHint' | transloco"
+              [attr.aria-label]="'menu.product.form.previewSearchHint' | transloco"
+            />
+          </div>
+          <span class="mobile-preview-filter-button">
+            <app-icon name="filter_alt" size="sm" [decorative]="true" />
+          </span>
+        </div>
+
+        @if (sections().length) {
+          <div class="mobile-preview-chips">
+            <button
+              type="button"
+              class="mobile-preview-chip"
+              [class.mobile-preview-chip--active]="effectiveSectionId() === null"
+              (click)="selectSection(null)"
+            >
+              @if (effectiveSectionId() === null) {
+                <app-icon name="check" size="sm" [decorative]="true" />
+              }
+              {{ 'menu.product.form.previewAllChip' | transloco }}
+            </button>
+            @for (section of sections(); track trackSection($index, section)) {
+              <button
+                type="button"
+                class="mobile-preview-chip"
+                [class.mobile-preview-chip--active]="section.id === effectiveSectionId()"
+                (click)="selectSection(section.id)"
+              >
+                @if (section.id === effectiveSectionId()) {
+                  <app-icon name="check" size="sm" [decorative]="true" />
+                }
+                {{ section.name }}
+              </button>
+            }
+          </div>
+        }
+
+        <div
+          class="mobile-preview-list"
+          cdkDropList
+          [cdkDropListDisabled]="!reorderable() || hasSearch()"
+          (cdkDropListDropped)="handleSectionDrop($event)"
+        >
+          @if (!visibleSections().length) {
+            <p class="mobile-preview-empty">{{ 'menu.page.noSelection' | transloco }}</p>
+          }
+          @for (section of visibleSections(); track trackSection($index, section)) {
+            <div class="mobile-preview-section" cdkDrag [cdkDragDisabled]="!reorderable() || hasSearch()">
+              <div class="mobile-preview-section-header">
+                <p class="mobile-preview-section-title">{{ section.name }}</p>
+                @if (reorderable() && !hasSearch()) {
+                  <span class="mobile-preview-drag-handle" cdkDragHandle>
+                    <app-icon name="drag_indicator" size="sm" [decorative]="true" />
+                  </span>
+                }
+              </div>
+              <div
+                class="mobile-preview-section-products"
+                cdkDropList
+                [cdkDropListDisabled]="!reorderable() || hasSearch()"
+                (cdkDropListDropped)="handleProductDrop(section, $event)"
+              >
+                @for (product of section.products; track trackProduct($index, product)) {
+                  <div
+                    class="mobile-preview-card"
+                    [class.mobile-preview-card--highlight]="isHighlighted(product)"
+                    [class.mobile-preview-card--unavailable]="!product.available"
+                    cdkDrag
+                    [cdkDragDisabled]="!reorderable() || hasSearch()"
+                  >
+                    @if (product.imageUrl) {
+                      <img loading="lazy" [src]="product.imageUrl" [alt]="product.name" class="mobile-preview-card-image" />
+                    } @else {
+                      <div class="mobile-preview-card-image mobile-preview-card-image--empty"></div>
+                    }
+                    <div class="mobile-preview-card-body">
+                      <p class="mobile-preview-card-name">{{ product.name }}</p>
+                      @if (product.description) {
+                        <p class="mobile-preview-card-description">{{ product.description }}</p>
+                      }
+                      @if (product.available) {
+                        <p class="mobile-preview-card-price">{{ product.priceEuros | currency: 'EUR' }}</p>
+                      } @else {
+                        <p class="mobile-preview-card-unavailable">{{ 'menu.page.soldOut' | transloco }}</p>
+                      }
+                      @if (product.allergenLabels.length) {
+                        <p class="mobile-preview-card-allergens">
+                          <app-icon name="warning" size="sm" [decorative]="true" />
+                          {{ 'menu.product.form.previewContains' | transloco: { list: product.allergenLabels.join(', ') } }}
+                        </p>
+                      }
+                    </div>
+                    @if (reorderable() && !hasSearch()) {
+                      <span class="mobile-preview-drag-handle mobile-preview-card-drag" cdkDragHandle>
+                        <app-icon name="drag_indicator" size="sm" [decorative]="true" />
+                      </span>
+                    }
+                  </div>
+                } @empty {}
+              </div>
+            </div>
+          }
+          <div class="mobile-preview-list-footer"></div>
+        </div>
+      </div>
+
+      <div class="mobile-preview-cart-fab">
+        <app-icon name="shopping_cart" size="sm" [decorative]="true" />
+        {{ 'menu.product.form.previewCartFab' | transloco }}
+      </div>
+      <span class="mobile-preview-home-indicator" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>

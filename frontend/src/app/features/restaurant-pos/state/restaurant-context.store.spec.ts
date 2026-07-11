@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { vi } from 'vitest';
 
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from './restaurant-context.store';
@@ -117,25 +118,38 @@ describe('RestaurantContextStore', () => {
     expect(store.activeRestaurant()?.name).toBe('Norte');
   });
 
-  it('stores a load error when the request fails', () => {
-    TestBed.configureTestingModule({
-      providers: [
-        RestaurantContextStore,
-        {
-          provide: RestaurantPosApiService,
-          useValue: {
-            listRestaurants: () => throwError(() => new Error('boom')),
+  it('stores a load error when the request fails', async () => {
+    vi.useFakeTimers();
+    try {
+      TestBed.configureTestingModule({
+        providers: [
+          RestaurantContextStore,
+          {
+            provide: RestaurantPosApiService,
+            useValue: {
+              listRestaurants: () => throwError(() => new Error('boom')),
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
 
-    const store = TestBed.inject(RestaurantContextStore);
-    store.load();
+      const store = TestBed.inject(RestaurantContextStore);
+      store.load();
 
-    expect(store.activeRestaurant()).toBeNull();
-    expect(store.isLoading()).toBe(false);
-    expect(store.loadError()).toBe('restaurantPos.layout.errors.loadRestaurants');
-    expect(store.hasNoRestaurants()).toBe(false);
+      // Con los reintentos automáticos (3 × 1500 ms por si la base de datos está
+      // despertando), el error no aparece de inmediato…
+      expect(store.isLoading()).toBe(true);
+      expect(store.loadError()).toBeNull();
+
+      // …sino al agotar los reintentos.
+      await vi.advanceTimersByTimeAsync(4500);
+
+      expect(store.activeRestaurant()).toBeNull();
+      expect(store.isLoading()).toBe(false);
+      expect(store.loadError()).toBe('restaurantPos.layout.errors.loadRestaurants');
+      expect(store.hasNoRestaurants()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

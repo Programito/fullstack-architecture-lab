@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 import type { ModifierGroup } from '../../models/modifier-group.model';
-import { MenuApiService, type RestaurantProductDetailDto } from '../../services/menu-api.service';
+import { MenuApiService, type MenuData, type RestaurantProductDetailDto } from '../../services/menu-api.service';
 import { ProductImageUploadError, ProductImageUploadService } from '../../services/product-image-upload.service';
 import { ToastService } from '../../../../shared/ui/toast/toast';
 import { ProductEditorPage } from './product-editor-page';
@@ -62,9 +62,18 @@ const MOCK_MODIFIER_GROUPS: ModifierGroup[] = [
   },
 ];
 
+const MOCK_MENU_DATA: MenuData = {
+  menuId: 'menu-1',
+  categories: [],
+  products: [],
+  modifierGroups: [],
+  comboProductDefinitions: [],
+};
+
 describe('ProductEditorPage', () => {
   const uploadProductImage = vi.fn();
   const getProduct = vi.fn();
+  const getMenu = vi.fn();
   const listModifierGroups = vi.fn();
   const createProduct = vi.fn();
   const updateProduct = vi.fn();
@@ -84,7 +93,7 @@ describe('ProductEditorPage', () => {
         { provide: Router, useValue: { navigateByUrl } },
         {
           provide: MenuApiService,
-          useValue: { getProduct, listModifierGroups, createProduct, updateProduct },
+          useValue: { getProduct, getMenu, listModifierGroups, createProduct, updateProduct },
         },
         { provide: ProductImageUploadService, useValue: { uploadProductImage } },
         { provide: ToastService, useValue: { success: toastSuccess, danger: toastDanger } },
@@ -96,6 +105,7 @@ describe('ProductEditorPage', () => {
   beforeEach(() => {
     uploadProductImage.mockReset();
     getProduct.mockReset();
+    getMenu.mockReset().mockReturnValue(of(MOCK_MENU_DATA));
     listModifierGroups.mockReset().mockReturnValue(of(MOCK_MODIFIER_GROUPS));
     createProduct.mockReset();
     updateProduct.mockReset();

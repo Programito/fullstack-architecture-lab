@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { retry } from 'rxjs';
 
 import type { RestaurantSummaryDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
@@ -36,7 +37,12 @@ export class RestaurantContextStore {
     this._isLoading.set(true);
     this._loadError.set(null);
 
-    this.api.listRestaurants().subscribe({
+    this.api.listRestaurants().pipe(
+      // El backend o la base de datos pueden tardar en despertar (arranque en frío): reintentar
+      // unas veces con pausa antes de dar el error por definitivo. Sin esto, entrar directamente
+      // a una sección podía dejarla cargando para siempre si esta primera petición fallaba.
+      retry({ count: 3, delay: 1500 }),
+    ).subscribe({
       next: (restaurants) => {
         this._restaurants.set(restaurants);
         this._activeRestaurantId.set(restaurants.length === 1 ? restaurants[0]!.id : null);

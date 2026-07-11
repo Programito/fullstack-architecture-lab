@@ -1,9 +1,9 @@
-import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
+import { CurrencyPipe, LowerCasePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, filter, forkJoin, map, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, filter, forkJoin, map, of, retry, switchMap, type Observable } from 'rxjs';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
@@ -11,12 +11,14 @@ import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Input } from '../../../../shared/ui/input/input';
 import { NearEndDirective } from '../../../../shared/ui/near-end/near-end.directive';
+import { ReorderList, type ReorderListEvent, type ReorderListItem } from '../../../../shared/ui/reorder-list/reorder-list';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { MenuHealthPanel } from '../../components/menu-health-panel/menu-health-panel';
+import { MobileMenuPreview, type MobileMenuPreviewProductsReorder, type MobileMenuPreviewSection } from '../../components/mobile-menu-preview/mobile-menu-preview';
 import { ALLERGEN_VALUES } from '../../models/allergen.model';
 import type { MenuAuditFilter, MenuAuditWarningType } from '../../models/menu-audit.model';
 import { deriveModifierGroupDisplayType, type ModifierGroupDisplayType, type ModifierGroupType } from '../../models/modifier-group.model';
@@ -39,7 +41,7 @@ type PreparationRoute = Product['preparationPolicy']['route'];
 
 @Component({
   selector: 'app-menu-page',
-  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, MenuHealthPanel, ModifierGroupFormDialog, NearEndDirective, NgTemplateOutlet, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
+  imports: [Badge, Button, CurrencyPipe, Dialog, Icon, Input, LowerCasePipe, MenuHealthPanel, MobileMenuPreview, ModifierGroupFormDialog, NearEndDirective, NgTemplateOutlet, ReorderList, SearchInput, SegmentedControl, Spinner, Switch, TranslocoPipe],
   templateUrl: './menu-page.html',
 })
 export class MenuPage {
@@ -123,21 +125,43 @@ export class MenuPage {
           menuData: this.menuApi.getMenu(),
           catalogProducts: this.menuApi.listProducts(),
           sharedModifierGroups: this.menuApi.listModifierGroups('shared'),
-        }),
+        }).pipe(
+          // El backend/base de datos puede tardar en despertar (arranque en frío): reintentar
+          // unas veces con pausa antes de dar el error por definitivo.
+          retry({ count: 3, delay: 1500 }),
+          map((result) => ({ ok: true as const, result })),
+          // Capturar el error AQUÍ (dentro del switchMap) mantiene vivo el stream exterior:
+          // si llegara al subscribe, la suscripción moriría y "Reintentar" ya no funcionaría.
+          catchError((err: unknown) => of({ ok: false as const, err })),
+        ),
       ),
       takeUntilDestroyed(),
-    ).subscribe({
-      next: ({ menuData, catalogProducts, sharedModifierGroups }) => {
-        this._menuData.set(menuData);
-        this._catalogProducts.set(catalogProducts);
-        this._sharedModifierGroups.set(sharedModifierGroups);
-        this._menuLoading.set(false);
-      },
-      error: (err) => {
-        this._menuError.set(err);
-        this._menuLoading.set(false);
-      },
+    ).subscribe((outcome) => {
+      if (outcome.ok) {
+        this._menuError.set(null);
+        this._menuData.set(outcome.result.menuData);
+        this._catalogProducts.set(outcome.result.catalogProducts);
+        this._sharedModifierGroups.set(outcome.result.sharedModifierGroups);
+      } else {
+        this._menuError.set(outcome.err);
+      }
+      this._menuLoading.set(false);
     });
+  }
+
+  // Si la carga de restaurantes falló en el shell (p. ej. base de datos dormida al entrar
+  // directamente por URL), esta sección se quedaba con el spinner para siempre: nadie volvía a
+  // pedir los restaurantes y sin restaurante activo nunca se dispara la carga de la carta.
+  // Exponer ese error permite mostrar un estado de error con botón de reintento en vez del
+  // spinner. El `?.()` tolera los mocks de test del contexto que no definen `loadError`.
+  protected readonly contextLoadError = computed(() => this.restaurantContext.loadError?.() ?? null);
+
+  protected retryLoadMenu(): void {
+    this._menuError.set(null);
+    // Reintenta también la lista de restaurantes por si fue esa la petición que falló; cuando
+    // llegue el restaurante activo, el combineLatest del constructor recargará la carta.
+    this.restaurantContext.load();
+    this.reloadMenuData();
   }
 
   protected readonly createSectionOpen = signal(false);
@@ -162,7 +186,9 @@ export class MenuPage {
     { initialValue: false },
   );
   protected readonly showSideDetail = toSignal(
-    this.bp.observe('(min-width: 900px)').pipe(map((r) => r.matches)),
+    // 1024px en vez de 900px: en tablet el panel lateral de 24rem dejaba la rejilla en una
+    // columna estrecha; por debajo de lg se usa el diálogo de detalle, mucho más cómodo.
+    this.bp.observe('(min-width: 1024px)').pipe(map((r) => r.matches)),
     { initialValue: true },
   );
   protected readonly query = signal('');
@@ -181,7 +207,13 @@ export class MenuPage {
   protected readonly auditFilter = signal<MenuAuditFilter>('all');
   protected readonly reviewPanelOpen = signal(false);
   protected readonly reviewFilters = signal<ReviewFilter[]>([]);
-  protected readonly productViewMode = signal<ProductViewMode>('cards');
+  // En pantallas pequeñas la vista compacta es mucho más densa que las cards a una columna,
+  // así que es la predeterminada en móvil; el usuario puede cambiarla cuando quiera.
+  protected readonly productViewMode = signal<ProductViewMode>(
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
+      ? 'compact'
+      : 'cards',
+  );
   protected readonly activeTab = signal<MenuPageTab>('products');
   protected readonly selectedProductId = signal<string | null>(null);
   protected readonly selectedOptionIds = signal<string[]>([]);
@@ -286,6 +318,108 @@ export class MenuPage {
     this.visibleProductCount.set(MenuPage.PRODUCTS_PAGE_SIZE);
   }
 
+  // Modo "Ordenar": reordenar categorías (pestaña Categorías) y productos dentro de la categoría
+  // filtrada (pestaña Productos). El backend persiste el sortOrder vía los endpoints de reorder.
+  protected readonly reorderModeActive = signal(false);
+  protected readonly reorderSaving = signal(false);
+  protected readonly canReorderProducts = computed(() => this.categoryFilter() !== 'all');
+  protected readonly categoriesAsReorderItems = computed<ReorderListItem[]>(() =>
+    this.categories().map((category) => ({ id: category.id, label: category.name })),
+  );
+  protected readonly productsInActiveCategoryAsReorderItems = computed<ReorderListItem[]>(() => {
+    if (!this.canReorderProducts()) return [];
+    const categoryId = this.categoryFilter();
+    return this.products()
+      .filter((product) => product.categoryId === categoryId)
+      .map((product) => ({ id: product.id, label: product.name }));
+  });
+
+  // Vista previa de la carta tal y como la ve el cliente en la app móvil (pestaña Categorías):
+  // mismas secciones visibles y mismo orden que devuelve la API, para comprobar en vivo el
+  // resultado al reordenar categorías o productos.
+  protected readonly categoriesPreviewSections = computed<MobileMenuPreviewSection[]>(() =>
+    this.categories()
+      .filter((category) => category.isVisible !== false)
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        products: this.products()
+          .filter((product) => product.categoryId === category.id)
+          .map((product) => ({
+            id: product.id,
+            name: product.name,
+            description: product.description ?? null,
+            imageUrl: product.imageUrl ?? null,
+            priceEuros: product.basePrice,
+            available: product.available,
+            allergenLabels: (product.allergens ?? []).map((allergen) => this.toAllergenLabel(allergen)),
+          })),
+      })),
+  );
+
+  protected toggleReorderMode(): void {
+    this.reorderModeActive.update((active) => !active);
+    if (this.reorderModeActive()) {
+      this.selectionModeActive.set(false);
+      this.selectedProductIds.set(new Set<string>());
+    }
+  }
+
+  protected handleCategoriesReordered(event: ReorderListEvent): void {
+    const items = event.value.map((item, index) => ({ id: item.id, sortOrder: (index + 1) * 10 }));
+    this.persistReorder(this.menuApi.reorderSections(this.menuId(), items));
+  }
+
+  protected handleProductsReordered(event: ReorderListEvent): void {
+    const sectionId = this.categoryFilter();
+    if (sectionId === 'all') return;
+    const items = event.value.map((item, index) => ({ id: item.id, sortOrder: (index + 1) * 10 }));
+    this.persistReorder(this.menuApi.reorderSectionItems(this.menuId(), sectionId, items));
+  }
+
+  // Reordenación desde la propia vista previa del móvil (drag & drop sobre la pantalla simulada).
+  // Se aplica primero de forma optimista sobre _menuData para que la preview refleje el arrastre
+  // al instante; persistReorder recarga después del backend (confirmando o revirtiendo).
+  protected handlePreviewSectionsReordered(orderedIds: string[]): void {
+    const data = this._menuData();
+    if (!data) return;
+    const byId = new Map(data.categories.map((category) => [category.id, category]));
+    const reordered = orderedIds.map((id) => byId.get(id)).filter((category): category is MenuCategory => !!category);
+    const missing = data.categories.filter((category) => !orderedIds.includes(category.id));
+    this._menuData.set({ ...data, categories: [...reordered, ...missing] });
+    const items = orderedIds.map((id, index) => ({ id, sortOrder: (index + 1) * 10 }));
+    this.persistReorder(this.menuApi.reorderSections(this.menuId(), items));
+  }
+
+  protected handlePreviewProductsReordered(event: MobileMenuPreviewProductsReorder): void {
+    const data = this._menuData();
+    if (!data) return;
+    const inSection = data.products.filter((product) => product.categoryId === event.sectionId);
+    const others = data.products.filter((product) => product.categoryId !== event.sectionId);
+    const byId = new Map(inSection.map((product) => [product.id, product]));
+    const reordered = event.orderedProductIds.map((id) => byId.get(id)).filter((product): product is Product => !!product);
+    const missing = inSection.filter((product) => !event.orderedProductIds.includes(product.id));
+    this._menuData.set({ ...data, products: [...others, ...reordered, ...missing] });
+    const items = event.orderedProductIds.map((id, index) => ({ id, sortOrder: (index + 1) * 10 }));
+    this.persistReorder(this.menuApi.reorderSectionItems(this.menuId(), event.sectionId, items));
+  }
+
+  private persistReorder(request: Observable<void>): void {
+    this.reorderSaving.set(true);
+    request.subscribe({
+      next: () => {
+        this.reorderSaving.set(false);
+        this.toast.success({ title: this.translate('menu.page.reorderSaved') });
+        this.reloadMenuData();
+      },
+      error: () => {
+        this.reorderSaving.set(false);
+        this.toast.danger({ title: this.translate('menu.page.reorderFailed') });
+        this.reloadMenuData();
+      },
+    });
+  }
+
   protected readonly comboProducts = computed(() => this.products().filter((product) => product.type === 'combo'));
   protected readonly platterProducts = computed(() => this.products().filter((product) => product.type === 'platter'));
   protected readonly unavailableProducts = computed(() => this.products().filter((product) => !product.available));
@@ -362,6 +496,9 @@ export class MenuPage {
       this.activeTab.set(value);
       this.tabSearchQuery.set('');
       this.resetVisibleProductCount();
+      this.reorderModeActive.set(false);
+      this.selectionModeActive.set(false);
+      this.selectedProductIds.set(new Set<string>());
     }
   }
 
@@ -409,8 +546,221 @@ export class MenuPage {
   }
 
   protected handleProductClick(product: Product): void {
+    if (this.selectionModeActive()) {
+      this.toggleProductSelected(product);
+      return;
+    }
     this.selectProduct(product);
     if (!this.showSideDetail()) this.mobileDetailOpen.set(true);
+  }
+
+  // ── Modo selección / acciones en lote ─────────────────────────────────────
+  protected readonly selectionModeActive = signal(false);
+  protected readonly selectedProductIds = signal<ReadonlySet<string>>(new Set<string>());
+  protected readonly batchRunning = signal(false);
+  protected readonly batchMoveOpen = signal(false);
+  // Vista previa móvil de la pestaña Categorías como diálogo en pantallas < lg.
+  protected readonly previewDialogOpen = signal(false);
+  protected readonly selectedCount = computed(() => this.selectedProductIds().size);
+  private readonly selectedProducts = computed(() =>
+    this.products().filter((product) => this.selectedProductIds().has(product.id)),
+  );
+
+  protected toggleSelectionMode(): void {
+    const next = !this.selectionModeActive();
+    this.selectionModeActive.set(next);
+    this.selectedProductIds.set(new Set<string>());
+    this.batchMoveOpen.set(false);
+    if (next) this.reorderModeActive.set(false);
+  }
+
+  protected isProductSelected(product: Product): boolean {
+    return this.selectedProductIds().has(product.id);
+  }
+
+  protected toggleProductSelected(product: Product): void {
+    if (!product.restaurantProductId) return;
+    this.selectedProductIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(product.id)) {
+        next.delete(product.id);
+      } else {
+        next.add(product.id);
+      }
+      return next;
+    });
+  }
+
+  protected batchSetAvailability(available: boolean): void {
+    const targets = this.selectedProducts().filter(
+      (product) => !!product.restaurantProductId && product.available !== available,
+    );
+    if (this.batchRunning()) return;
+    if (!targets.length) {
+      // Nada que cambiar (ya estaban todos en ese estado): salir del modo sin llamadas.
+      this.finishBatch(this.selectedCount());
+      return;
+    }
+    this.batchRunning.set(true);
+    forkJoin(targets.map((product) => this.menuApi.toggleAvailability(product.restaurantProductId!, available))).subscribe({
+      next: () => this.finishBatch(targets.length),
+      error: () => this.failBatch(),
+    });
+  }
+
+  protected openBatchMove(): void {
+    if (this.selectedCount() > 0) this.batchMoveOpen.set(true);
+  }
+
+  protected closeBatchMove(): void {
+    this.batchMoveOpen.set(false);
+  }
+
+  protected confirmBatchMove(targetSectionId: string): void {
+    const targets = this.selectedProducts().filter((product) => !!product.restaurantProductId);
+    if (!targets.length || this.batchRunning()) return;
+    this.batchRunning.set(true);
+    this.batchMoveOpen.set(false);
+    const menuId = this.menuId();
+    const operations = targets.map((product) => {
+      if (product.categoryId === targetSectionId) return of(undefined);
+      const add$ = this.menuApi.addSectionItem(menuId, targetSectionId, product.restaurantProductId!);
+      const isInSection = this.categories().some((category) => category.id === product.categoryId);
+      // product.id es el id del ítem de sección (mapApiItemToProduct), que es lo que espera removeSectionItem.
+      return isInSection ? this.menuApi.removeSectionItem(menuId, product.categoryId, product.id).pipe(switchMap(() => add$)) : add$;
+    });
+    forkJoin(operations).subscribe({
+      next: () => this.finishBatch(targets.length),
+      error: () => this.failBatch(),
+    });
+  }
+
+  private finishBatch(count: number): void {
+    this.batchRunning.set(false);
+    this.selectionModeActive.set(false);
+    this.selectedProductIds.set(new Set<string>());
+    this.toast.success({ title: this.translate('menu.page.batchDone', { count }) });
+    this.reloadMenuData();
+  }
+
+  private failBatch(): void {
+    this.batchRunning.set(false);
+    this.toast.danger({ title: this.translate('menu.page.batchFailed') });
+    this.reloadMenuData();
+  }
+
+  // ── Duplicar producto (solo 'simple'; combos/platters tienen su propio flujo) ─
+  protected readonly duplicatingProductId = signal<string | null>(null);
+
+  protected canDuplicate(product: Product): boolean {
+    return product.type === 'simple' && !!product.restaurantProductId;
+  }
+
+  protected duplicateProduct(product: Product): void {
+    const originalId = product.restaurantProductId;
+    if (!originalId || this.duplicatingProductId()) return;
+    this.duplicatingProductId.set(product.id);
+
+    forkJoin({
+      detail: this.menuApi.getProduct(originalId),
+      productGroups: this.menuApi.listModifierGroups('product'),
+      sharedGroups: this.menuApi.listModifierGroups('shared'),
+    }).pipe(
+      switchMap(({ detail, productGroups, sharedGroups }) => {
+        // Los grupos compartidos se reutilizan por id; los privados (suplementos) se clonan
+        // después para que editar los de la copia no toque los del original.
+        const sharedIds = new Set(sharedGroups.map((group) => group.id));
+        const sharedOnly = detail.modifierGroupIds.filter((id) => sharedIds.has(id));
+        const ownedGroups = productGroups.filter((group) => group.ownerRestaurantProductId === originalId);
+        const description = detail.displayDescription ?? detail.description;
+        return this.menuApi.createProduct({
+          name: `${detail.displayName ?? detail.name} (copia)`,
+          ...(description ? { description } : {}),
+          imageUrl: detail.imageUrl,
+          modifierGroupIds: sharedOnly,
+          allergens: detail.allergens,
+          priceCents: detail.priceCents,
+          currency: detail.currency,
+          course: detail.course,
+          preparationRoute: detail.preparationRoute,
+        }).pipe(map((copy) => ({ copy, sharedOnly, ownedGroups })));
+      }),
+      switchMap(({ copy, sharedOnly, ownedGroups }) => {
+        if (!ownedGroups.length) return of(copy);
+        return forkJoin(
+          ownedGroups.map((group) =>
+            this.menuApi.createModifierGroup({
+              name: group.name,
+              selectionType: group.type === 'multiple' ? 'multiple' : 'single',
+              minSelections: group.minSelections,
+              maxSelections: group.maxSelections,
+              isRequired: group.required,
+              options: group.options.map((option) => ({
+                name: option.name,
+                priceDeltaCents: Math.round(option.priceDelta * 100),
+                ...(option.imageUrl ? { imageUrl: option.imageUrl } : {}),
+              })),
+              scope: 'product',
+              ownerRestaurantProductId: copy.id,
+            }),
+          ),
+        ).pipe(
+          switchMap((created) =>
+            this.menuApi.updateProduct(copy.id, { modifierGroupIds: [...sharedOnly, ...created.map((group) => group.id)] }),
+          ),
+          map(() => copy),
+        );
+      }),
+      switchMap((copy) => {
+        const sectionId = product.categoryId;
+        const isInSection = !!sectionId && this.categories().some((category) => category.id === sectionId);
+        if (!isInSection) return of(copy);
+        return this.menuApi.addSectionItem(this.menuId(), sectionId, copy.id).pipe(map(() => copy));
+      }),
+    ).subscribe({
+      next: (copy) => {
+        this.duplicatingProductId.set(null);
+        this.toast.success({ title: this.translate('menu.page.duplicateSuccess') });
+        // Directo al editor de la copia para retocar nombre/foto al momento.
+        this.router.navigateByUrl(`/restaurant-pos/menu/products/${copy.id}/edit`);
+      },
+      error: () => {
+        this.duplicatingProductId.set(null);
+        this.toast.danger({ title: this.translate('menu.page.duplicateFailed') });
+        this.reloadMenuData();
+      },
+    });
+  }
+
+  // ── Buscador con resultados agrupados (secciones y modificadores) ──────────
+  protected readonly searchMatchingCategories = computed(() => {
+    const q = this.normalize(this.query());
+    if (!q) return [];
+    return this.categories()
+      .filter((category) => this.normalize(category.name).includes(q))
+      .slice(0, 5);
+  });
+
+  protected readonly searchMatchingModifierGroups = computed(() => {
+    const q = this.normalize(this.query());
+    if (!q) return [];
+    return this.sharedModifierGroups()
+      .filter(
+        (group) =>
+          this.normalize(group.name).includes(q) ||
+          group.options.some((option) => this.normalize(option.name).includes(q)),
+      )
+      .slice(0, 5);
+  });
+
+  protected goToCategoryFromSearch(categoryId: string): void {
+    this.setCategoryFilter(categoryId);
+    this.updateQuery('');
+  }
+
+  protected goToModifierGroupFromSearch(groupName: string): void {
+    this.setActiveTab('modifiers');
+    this.updateTabSearchQuery(groupName);
   }
 
   protected closeMobileDetail(): void {
@@ -624,6 +974,9 @@ export class MenuPage {
   protected setCategoryFilter(value: string): void {
     this.categoryFilter.set(value);
     this.resetSelection();
+    if (value === 'all') {
+      this.reorderModeActive.set(false);
+    }
   }
 
   protected setAvailabilityFilter(value: string): void {

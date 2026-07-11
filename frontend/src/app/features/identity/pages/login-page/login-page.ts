@@ -124,6 +124,23 @@ export class LoginPage {
   protected readonly showDownBanner = computed(() => this.readinessStatus() === 'down');
 
   constructor() {
+    this.loadAuthConfig();
+
+    this.readiness.watch({ stopWhenReady: true })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        this.readinessStatus.set(result.status);
+        // Si entramos con la base de datos dormida, la carga inicial de la configuración
+        // pública (que trae los roles de demo) pudo fallar o llegar incompleta. Cuando el
+        // aviso de "despertando la base de datos" termina (status 'ready'), se reintenta
+        // para que la pestaña de demo aparezca sin tener que recargar la página.
+        if (result.status === 'ready' && !this.demoLoginEnabled()) {
+          this.loadAuthConfig();
+        }
+      });
+  }
+
+  private loadAuthConfig(): void {
     this.api.getAuthPublicConfig().subscribe({
       next: (config) => {
         this.demoLoginEnabled.set(config.demoLoginEnabled);
@@ -135,12 +152,6 @@ export class LoginPage {
         this.activeTab.set('credentials');
       },
     });
-
-    this.readiness.watch({ stopWhenReady: true })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result) => {
-        this.readinessStatus.set(result.status);
-      });
   }
 
   protected selectTab(value: string): void {

@@ -58,6 +58,7 @@ function makeMockMenuApi(overrides: Partial<{
   deleteSection: () => ReturnType<MenuApiService['deleteSection']>;
   listProducts: () => ReturnType<MenuApiService['listProducts']>;
   addSectionItem: () => ReturnType<MenuApiService['addSectionItem']>;
+  listModifierGroups: () => ReturnType<MenuApiService['listModifierGroups']>;
 }> = {}) {
   return {
     getMenu: overrides.getMenu ?? (() => of(buildMockMenuData())),
@@ -67,6 +68,7 @@ function makeMockMenuApi(overrides: Partial<{
     deleteSection: overrides.deleteSection ?? (() => of(undefined)),
     listProducts: overrides.listProducts ?? (() => of([])),
     addSectionItem: overrides.addSectionItem ?? (() => of(undefined)),
+    listModifierGroups: overrides.listModifierGroups ?? (() => of(localizeModifierGroups('es'))),
     removeSectionItem: () => of(undefined),
     getProduct: () => of(undefined),
     createProduct: () => of(undefined),
@@ -81,7 +83,7 @@ describe('MenuPage', () => {
   const renderPage = async (
     apiOverrides = {},
     locale: 'es' | 'en' | 'ca' = 'es',
-    breakpoints: Record<string, boolean> = { '(max-width: 1023px)': false, '(min-width: 900px)': true },
+    breakpoints: Record<string, boolean> = { '(max-width: 1023px)': false, '(min-width: 1024px)': true },
   ) => {
     navigateByUrl.mockClear();
     const i18n = provideI18nTesting(locale);
@@ -233,28 +235,33 @@ it('renders the menu health panel with actionable warning groups', async () => {
     listProducts: () => of([CATALOG_ONLY_PRODUCT]),
   });
 
-  fireEvent.click(screen.getByRole('button', { name: /Revisar menú/i }));
+  fireEvent.click(screen.getAllByRole('button', { name: /Revisar menú/i })[0]!);
   fixture.detectChanges();
 
-  const healthPanel = screen.getByLabelText('Revisión rápida del menú');
+  const healthPanel = screen.getByRole('region', { name: 'Revisión rápida del menú' });
   expect(within(healthPanel).getByRole('button', { name: /Sin imagen/i })).toBeTruthy();
   expect(within(healthPanel).getByRole('button', { name: /Sin sección/i })).toBeTruthy();
 });
 
-it('filters the current product list from a warning shortcut and closes the modal', async () => {
+it('filters the current product list from a warning shortcut and closes the modal on confirm', async () => {
   const { fixture } = await renderPage({
     listProducts: () => of([CATALOG_ONLY_PRODUCT]),
   });
 
-  fireEvent.click(screen.getByRole('button', { name: /Revisar menú/i }));
+  fireEvent.click(screen.getAllByRole('button', { name: /Revisar menú/i })[0]!);
   fixture.detectChanges();
 
-  const healthPanel = screen.getByLabelText('Revisión rápida del menú');
+  const healthPanel = screen.getByRole('region', { name: 'Revisión rápida del menú' });
   fireEvent.click(within(healthPanel).getByRole('button', { name: /Sin sección/i }));
   fixture.detectChanges();
 
   expect(screen.getAllByText('Agua mineral').length).toBeGreaterThan(0);
   expect(screen.queryByText('Hamburguesa craft')).toBeNull();
+  expect(screen.getByRole('region', { name: 'Revisión rápida del menú' })).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: /Ver \d+ productos/i }));
+  fixture.detectChanges();
+
   expect(screen.queryByLabelText('Revisión rápida del menú')).toBeNull();
 });
 
@@ -281,7 +288,7 @@ it('supports a compact review mode', async () => {
 it('combines operational review filters', async () => {
   const { fixture } = await renderPage();
 
-  fireEvent.click(screen.getByRole('button', { name: /Revisar menú/i }));
+  fireEvent.click(screen.getAllByRole('button', { name: /Revisar menú/i })[0]!);
   fixture.detectChanges();
 
   fireEvent.click(screen.getByRole('button', { name: 'Solo menús' }));
@@ -571,13 +578,12 @@ it('renders changeable extras summaries for customizable products', async () => 
   });
 
   it('shows a price badge for priced options and a warning badge for unused modifier groups', async () => {
-    const menuData = buildMockMenuData();
-    menuData.modifierGroups = [
-      ...menuData.modifierGroups,
+    const sharedModifierGroups = [
+      ...localizeModifierGroups('es'),
       {
         id: 'unused-group',
         name: 'Grupo sin usar',
-        type: 'multiple',
+        type: 'multiple' as const,
         required: false,
         minSelections: 0,
         maxSelections: 1,
@@ -585,7 +591,7 @@ it('renders changeable extras summaries for customizable products', async () => 
       },
     ];
 
-    const { fixture } = await renderPage({ getMenu: () => of(menuData) });
+    const { fixture } = await renderPage({ listModifierGroups: () => of(sharedModifierGroups) });
 
     fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
     fixture.detectChanges();
@@ -679,7 +685,7 @@ it('renders changeable extras summaries for customizable products', async () => 
 
     fireEvent.click(screen.getByRole('radio', { name: 'Categorías' }));
     fixture.detectChanges();
-    expect(screen.getByText('Hamburguesas')).toBeTruthy();
+    expect(screen.getAllByText('Hamburguesas').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Subcategorías/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));

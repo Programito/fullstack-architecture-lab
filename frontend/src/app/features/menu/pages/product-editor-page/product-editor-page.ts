@@ -1,8 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { map, of, switchMap, type Observable } from 'rxjs';
+import { filter, map, of, switchMap, take, type Observable } from 'rxjs';
 
 import { mapHttpError } from '../../../../core/errors/http-error.mapper';
 import { Button } from '../../../../shared/ui/button/button';
@@ -16,6 +16,7 @@ import { ImageDropzone } from '../../components/image-dropzone/image-dropzone';
 import { ALLERGEN_VALUES } from '../../models/allergen.model';
 import type { ModifierGroup } from '../../models/modifier-group.model';
 import type { Allergen, CreateProductInput, UpdateProductInput } from '../../models/product.model';
+import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 import { MenuApiService, type RestaurantProductDetailDto } from '../../services/menu-api.service';
 import { ProductImageUploadError, ProductImageUploadService } from '../../services/product-image-upload.service';
 
@@ -47,6 +48,7 @@ export class ProductEditorPage {
   private readonly menuApi = inject(MenuApiService);
   private readonly imageUpload = inject(ProductImageUploadService);
   private readonly toast = inject(ToastService);
+  private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
 
   private readonly productId = this.route.snapshot.paramMap.get('productId');
@@ -153,6 +155,19 @@ export class ProductEditorPage {
   });
 
   constructor() {
+    // En una entrada directa por URL (o F5) el contexto de restaurante puede no estar cargado
+    // todavía, y MenuApiService.restaurantId lanzaría al construir el componente, dejando la
+    // ruta en blanco. Se espera al primer restaurante activo antes de disparar las cargas.
+    toObservable(this.restaurantContext.activeRestaurant)
+      .pipe(
+        filter((restaurant) => restaurant !== null),
+        take(1),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.loadInitialData());
+  }
+
+  private loadInitialData(): void {
     // Solo grupos compartidos: los suplementos privados de otros productos (scope='product')
     // no deben aparecer como si fueran modificadores enlazables desde aquí.
     this.menuApi.listModifierGroups('shared').subscribe({

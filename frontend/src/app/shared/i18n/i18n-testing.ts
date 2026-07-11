@@ -1812,13 +1812,16 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.page.mobileFilters = 'Filtros';
   clones['es'].menu.page.reviewButton = 'Revisar menú';
   clones['es'].menu.page.reviewFilters = {
-    title: 'Atajos de revisión',
+    title: 'Filtros manuales',
+    description: 'Combínalos con los problemas detectados arriba para acotar la lista de productos.',
     comboOnly: 'Solo menús',
     customizableOnly: 'Solo personalizables',
     withImage: 'Con imagen',
     withoutImage: 'Sin imagen',
     noSection: 'Sin sección',
     missingDescription: 'Sin descripción',
+    clearAll: 'Limpiar filtros',
+    viewProducts: 'Ver {{count}} productos',
   };
   clones['es'].menu.page.viewModeLabel = 'Vista';
   clones['es'].menu.page.viewModes = { cards: 'Tarjetas', compact: 'Compacta' };
@@ -2021,13 +2024,16 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.page.mobileFilters = 'Filters';
   clones['en'].menu.page.reviewButton = 'Review menu';
   clones['en'].menu.page.reviewFilters = {
-    title: 'Review shortcuts',
+    title: 'Manual filters',
+    description: 'Combine these with the detected issues above to narrow down the product list.',
     comboOnly: 'Combos only',
     customizableOnly: 'Customizable only',
     withImage: 'With image',
     withoutImage: 'Without image',
     noSection: 'No section',
     missingDescription: 'Missing description',
+    clearAll: 'Clear filters',
+    viewProducts: 'View {{count}} products',
   };
   clones['en'].menu.page.viewModeLabel = 'View';
   clones['en'].menu.page.viewModes = { cards: 'Cards', compact: 'Compact' };
@@ -2229,13 +2235,16 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['ca'].menu.page.mobileFilters = 'Filtres';
   clones['ca'].menu.page.reviewButton = 'Revisar menú';
   clones['ca'].menu.page.reviewFilters = {
-    title: 'Dreceres de revisió',
+    title: 'Filtres manuals',
+    description: "Combina'ls amb els problemes detectats a dalt per acotar la llista de productes.",
     comboOnly: 'Només menús',
     customizableOnly: 'Només personalitzables',
     withImage: 'Amb imatge',
     withoutImage: 'Sense imatge',
     noSection: 'Sense secció',
     missingDescription: 'Sense descripció',
+    clearAll: 'Neteja els filtres',
+    viewProducts: 'Veure {{count}} productes',
   };
   clones['ca'].menu.page.viewModeLabel = 'Vista';
   clones['ca'].menu.page.viewModes = { cards: 'Targetes', compact: 'Compacta' };

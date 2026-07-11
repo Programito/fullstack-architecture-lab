@@ -12,13 +12,13 @@
     </div>
   </header>
 
-  <div class="mx-auto w-full max-w-5xl p-4 lg:p-6">
+  <div class="mx-auto w-full max-w-6xl p-4 lg:p-6">
     @if (loadingProduct()) {
       <div class="flex items-center justify-center py-16">
         <app-spinner size="lg" variant="primary" />
       </div>
     } @else {
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-stretch">
         <section class="theme-panel grid h-full content-start gap-3 rounded-lg border p-4 shadow-sm">
           <h2 class="theme-title flex items-center gap-2 text-sm font-semibold">
             <app-icon name="image" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
@@ -77,6 +77,7 @@
             (valueChange)="preparationRoute.set($event)"
           />
         </section>
+
 
         <!-- Secciones a ancho completo: en escritorio la columna derecha se queda estrecha
              para listas largas (modificadores, suplementos, alérgenos) -->
