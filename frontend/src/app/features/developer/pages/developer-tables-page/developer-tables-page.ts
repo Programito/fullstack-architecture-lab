@@ -10,11 +10,12 @@ import { Icon } from '../../../../shared/ui/icon/icon';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Table, type TableBadgeCell, type TableColumn, type TableRow, type TableSort } from '../../../../shared/ui/table/table';
+import { Tooltip } from '../../../../shared/ui/tooltip/tooltip';
 import { DEVELOPER_TABLE_SCHEMAS } from '../../schema/developer-schema.generated';
 
 @Component({
   selector: 'app-developer-tables-page',
-  imports: [RouterLink, TranslocoPipe, Button, Card, Dialog, Icon, SearchInput, Select, Table],
+  imports: [RouterLink, TranslocoPipe, Button, Card, Dialog, Icon, SearchInput, Select, Table, Tooltip],
   templateUrl: './developer-tables-page.html',
   styleUrl: './developer-tables-page.css',
 })
@@ -40,8 +41,10 @@ export class DeveloperTablesPage {
   protected readonly diagramSvg = signal<SafeHtml | null>(null);
   protected readonly diagramError = signal('');
   protected readonly mermaidSourceOpen = signal(false);
+  protected readonly filtersInfoOpen = signal(false);
   protected readonly diagramFullscreenOpen = signal(false);
   protected readonly diagramScale = signal(1);
+  protected readonly diagramDraftScale = signal(1);
   protected readonly diagramDragging = signal(false);
   private selectionOrigin: 'inventory' | 'diagram' | 'relation' | null = null;
   private lastQuerySignature = '';
@@ -156,6 +159,24 @@ export class DeveloperTablesPage {
         value: domain,
       })),
   ]);
+  protected readonly featureSummaries = computed(() =>
+    Array.from(new Set(this.schemas.map((schema) => schema.feature)))
+      .sort((left, right) => left.localeCompare(right))
+      .map((feature) => ({
+        key: feature,
+        label: feature,
+        description: describeFeature(feature),
+      })),
+  );
+  protected readonly domainSummaries = computed(() =>
+    Array.from(new Set(this.schemas.map((schema) => schema.domain)))
+      .sort((left, right) => left.localeCompare(right))
+      .map((domain) => ({
+        key: domain,
+        label: domain,
+        description: describeDomain(domain),
+      })),
+  );
 
   protected readonly filteredSchemas = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
@@ -264,7 +285,9 @@ export class DeveloperTablesPage {
     this.transloco.translate('developer.tables.summary.results', { count: this.sortedSchemas().length }),
   );
   protected readonly diagramZoomLabel = computed(() =>
-    this.transloco.translate('developer.tables.diagram.zoomLabel', { percent: Math.round(this.diagramScale() * 100) }),
+    this.transloco.translate('developer.tables.diagram.zoomLabel', {
+      percent: Math.round(this.diagramDraftScale() * 100),
+    }),
   );
   protected readonly hasActiveFilters = computed(() => this.activeFilterChips().length > 0);
   protected readonly summaryEmptyDescription = computed(() =>
@@ -482,16 +505,30 @@ export class DeveloperTablesPage {
     this.mermaidSourceOpen.set(false);
   }
 
+  protected openFiltersInfo(): void {
+    this.filtersInfoOpen.set(true);
+  }
+
+  protected closeFiltersInfo(): void {
+    this.filtersInfoOpen.set(false);
+  }
+
   protected openDiagramFullscreen(): void {
     if (!this.diagramRequested()) {
       this.requestDiagramRender();
     }
 
-    this.diagramScale.set(1);
+    this.diagramDraftScale.set(this.diagramScale());
     this.diagramFullscreenOpen.set(true);
   }
 
   protected closeDiagramFullscreen(): void {
+    this.diagramDraftScale.set(this.diagramScale());
+    this.diagramFullscreenOpen.set(false);
+  }
+
+  protected applyDiagramFullscreen(): void {
+    this.diagramScale.set(this.diagramDraftScale());
     this.diagramFullscreenOpen.set(false);
   }
 
@@ -502,15 +539,15 @@ export class DeveloperTablesPage {
   }
 
   protected zoomDiagramIn(): void {
-    this.diagramScale.update((value) => clampDiagramScale(value + 0.2));
+    this.diagramDraftScale.update((value) => clampDiagramScale(value + 0.2));
   }
 
   protected zoomDiagramOut(): void {
-    this.diagramScale.update((value) => clampDiagramScale(value - 0.2));
+    this.diagramDraftScale.update((value) => clampDiagramScale(value - 0.2));
   }
 
   protected resetDiagramZoom(): void {
-    this.diagramScale.set(1);
+    this.diagramDraftScale.set(1);
   }
 
   protected startDiagramPan(event: PointerEvent): void {
@@ -756,6 +793,48 @@ function extractTargetTableId(value: string): string {
 
 function clampDiagramScale(value: number): number {
   return Math.max(0.6, Math.min(2.2, Number(value.toFixed(2))));
+}
+
+function describeFeature(feature: string): string {
+  switch (feature) {
+    case 'auth':
+      return 'Permisos, roles, sesiones y piezas necesarias para autenticacion y control de acceso.';
+    case 'catalog':
+      return 'Carta, productos, modificadores, combos y reglas que definen la oferta comercial.';
+    case 'developer':
+      return 'Herramientas tecnicas, auditoria y eventos internos pensados para soporte y observabilidad.';
+    case 'orders':
+      return 'Pedidos, pagos y estados del servicio que mueven la operativa de venta.';
+    case 'platform':
+      return 'Entidades base compartidas por varias areas, como organizacion, clientes o tiempo.';
+    case 'restaurants':
+      return 'Configuracion operativa del restaurante, reservas, sala y recursos fisicos.';
+    case 'scheduling':
+      return 'Turnos, fichajes y solicitudes de cambio relacionadas con la planificacion.';
+    case 'users':
+      return 'Cuentas de usuario y datos principales de las personas que acceden al sistema.';
+    default:
+      return 'Conjunto funcional usado para agrupar tablas relacionadas dentro del producto.';
+  }
+}
+
+function describeDomain(domain: string): string {
+  switch (domain) {
+    case 'catalog':
+      return 'Modelo de datos de la carta y de lo que el cliente puede pedir o personalizar.';
+    case 'core':
+      return 'Base transversal del sistema con entidades comunes reutilizadas por varias features.';
+    case 'identity':
+      return 'Identidad, acceso y autorizacion de usuarios dentro de la plataforma.';
+    case 'operations':
+      return 'Operacion interna del restaurante: espacios, recursos fisicos y trabajo diario.';
+    case 'platform':
+      return 'Infraestructura tecnica y mecanismos internos de soporte del producto.';
+    case 'service':
+      return 'Flujo de servicio al cliente: reservas, pedidos, cobros y estados de atencion.';
+    default:
+      return 'Agrupacion conceptual usada para entender el area del negocio o del sistema.';
+  }
 }
 
 type DeveloperTablesQueryState = {

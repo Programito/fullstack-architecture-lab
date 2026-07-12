@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { render, screen, fireEvent, waitFor } from '@testing-library/angular';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/angular';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter, type NavigationExtras, type Params } from '@angular/router';
 import { vi } from 'vitest';
 
@@ -42,7 +42,8 @@ describe('DeveloperTablesPage', () => {
     expect(screen.getByRole('heading', { name: /Mapa de tablas/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /renderizar diagrama/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /ver source mermaid/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /abrir en grande/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /configurar/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /ver ayuda sobre features y dominios/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /vista compacta/i })).toBeTruthy();
     expect(screen.queryByText((content) => content.includes('flowchart LR'))).toBeNull();
     expect(screen.getAllByText('users').length).toBeGreaterThan(0);
@@ -229,6 +230,23 @@ describe('DeveloperTablesPage', () => {
     });
   });
 
+  it('opens the filters help dialog with feature and domain explanations', async () => {
+    const view = await renderPage();
+    const component = view.fixture.componentInstance as DeveloperTablesPage & {
+      openFiltersInfo(): void;
+    };
+
+    component.openFiltersInfo();
+    view.fixture.detectChanges();
+
+    await waitFor(() => {
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeTruthy();
+      expect(within(dialog).getByText('auth')).toBeTruthy();
+      expect(within(dialog).getByText('identity')).toBeTruthy();
+    });
+  });
+
   it('shows an actionable empty state when filters hide every table', async () => {
     await renderPage();
 
@@ -305,31 +323,66 @@ describe('DeveloperTablesPage', () => {
   it('opens the fullscreen diagram dialog', async () => {
     await renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /abrir en grande/i }));
+    fireEvent.click(screen.getByRole('button', { name: /configurar/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /diagrama de relaciones/i })).toBeTruthy();
-      expect(screen.getByRole('button', { name: /acercar/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /configurar diagrama/i })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '+' })).toBeTruthy();
       expect(screen.getByText(/zoom 100%/i)).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /ver source mermaid/i })).toBeTruthy();
     });
   });
 
-  it('updates the fullscreen zoom controls state', async () => {
+  it('applies zoom changes when accepting the fullscreen dialog', async () => {
     await renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /abrir en grande/i }));
+    fireEvent.click(screen.getByRole('button', { name: /configurar/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/zoom 100%/i)).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /acercar/i }));
+    fireEvent.click(screen.getByRole('button', { name: '+' }));
 
     await waitFor(() => {
       expect(screen.getByText(/zoom 120%/i)).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /reset zoom/i }));
+    fireEvent.click(screen.getByRole('button', { name: /aceptar/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /configurar diagrama/i })).toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /configurar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/zoom 120%/i)).toBeTruthy();
+    });
+  });
+
+  it('discards zoom changes when cancelling the fullscreen dialog', async () => {
+    await renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /configurar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/zoom 100%/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '+' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/zoom 120%/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /configurar diagrama/i })).toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /configurar/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/zoom 100%/i)).toBeTruthy();

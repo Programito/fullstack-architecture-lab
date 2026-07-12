@@ -15,6 +15,10 @@
   padding: 0.25rem 0 0.5rem;
 }
 
+.developer-tables-page__back-link {
+  align-self: center;
+}
+
 .developer-tables-page__eyebrow,
 .developer-tables-page__section-label {
   margin: 0 0 0.35rem;
@@ -82,6 +86,12 @@
   color: var(--ui-primary, #2563eb);
 }
 
+.developer-tables-page__filters-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .developer-tables-page__diagram-preview,
 .developer-tables-page__diagram-source,
 .developer-tables-page__diagram-empty {
@@ -123,6 +133,42 @@
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.developer-tables-page__filters-info {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.developer-tables-page__filters-info-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.developer-tables-page__filters-info-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.developer-tables-page__filters-info-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border-subtle, #d4d4d8) 82%, transparent);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ui-surface, #fff) 97%, #dbeafe 3%), var(--ui-surface, #fff));
+}
+
+.developer-tables-page__filters-info-item strong {
+  color: color-mix(in srgb, var(--ui-primary, #2563eb) 78%, black 22%);
+}
+
+.developer-tables-page__filters-info-item p {
+  margin: 0;
+  color: var(--ui-text-muted, #71717a);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .developer-tables-page__diagram-fullscreen {
@@ -181,6 +227,40 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(10rem, 0.7fr) minmax(10rem, 0.7fr) auto;
   align-items: end;
   padding: 0 0.1rem;
+}
+
+.developer-tables-page__filter-field {
+  min-width: 0;
+}
+
+.developer-tables-page__filter-field--with-info {
+  position: relative;
+}
+
+.developer-tables-page__filter-info-button {
+  position: absolute;
+  top: 0.1rem;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--ui-primary, #2563eb) 74%, black 26%);
+  cursor: help;
+}
+
+.developer-tables-page__filter-info-button:hover {
+  background: color-mix(in srgb, var(--ui-primary, #2563eb) 10%, transparent);
+}
+
+.developer-tables-page__filter-info-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary, #2563eb) 60%, white 40%);
+  outline-offset: 2px;
 }
 
 .developer-tables-page__overview-stats {
@@ -449,6 +529,10 @@
   }
 
   .developer-tables-page__overview-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .developer-tables-page__filters-info-grid {
     grid-template-columns: 1fr;
   }
 

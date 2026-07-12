@@ -6,7 +6,14 @@
       <p>{{ 'developer.tables.description' | transloco }}</p>
     </div>
 
-    <app-button variant="neutral" fill="outline" routerLink="/developer">
+    <app-button
+      class="developer-tables-page__back-link"
+      variant="neutral"
+      fill="clear"
+      appearance="minimal"
+      routerLink="/developer"
+    >
+      <app-icon name="arrow_back" size="sm" [decorative]="true" />
       {{ 'developer.tables.back' | transloco }}
     </app-button>
   </header>
@@ -16,15 +23,27 @@
       <section class="developer-tables-page__filters-card" aria-label="Filtros de tablas">
         <div class="developer-tables-page__filters-header">
           <h2>{{ 'developer.tables.filters.title' | transloco }}</h2>
-          <app-button
-            variant="neutral"
-            fill="clear"
-            shape="round"
-            [ariaLabel]="(filtersExpanded() ? 'developer.tables.filters.hide' : 'developer.tables.filters.show') | transloco"
-            (pressed)="toggleFilters()"
-          >
-            <app-icon [name]="filtersExpanded() ? 'visibility_off' : 'visibility'" />
-          </app-button>
+          <div class="developer-tables-page__filters-header-actions">
+            <app-button
+              variant="neutral"
+              fill="clear"
+              shape="round"
+              [ariaLabel]="'developer.tables.filters.infoAriaLabel' | transloco"
+              (pressed)="openFiltersInfo()"
+            >
+              <app-icon name="info" />
+            </app-button>
+
+            <app-button
+              variant="neutral"
+              fill="clear"
+              shape="round"
+              [ariaLabel]="(filtersExpanded() ? 'developer.tables.filters.hide' : 'developer.tables.filters.show') | transloco"
+              (pressed)="toggleFilters()"
+            >
+              <app-icon [name]="filtersExpanded() ? 'visibility_off' : 'visibility'" />
+            </app-button>
+          </div>
         </div>
 
         @if (filtersExpanded()) {
@@ -40,25 +59,52 @@
               (cleared)="searchQuery.set('')"
             />
 
-            <app-select
-              [label]="'developer.tables.filters.featureLabel' | transloco"
-              [value]="selectedFeature()"
-              [options]="featureOptions()"
-              appearance="minimal"
-              variant="neutral"
-              (valueChange)="selectedFeature.set($event)"
-            />
+            <div class="developer-tables-page__filter-field developer-tables-page__filter-field--with-info">
+              <app-select
+                [label]="'developer.tables.filters.featureLabel' | transloco"
+                [value]="selectedFeature()"
+                [options]="featureOptions()"
+                appearance="minimal"
+                variant="neutral"
+                (valueChange)="selectedFeature.set($event)"
+              />
+              <button
+                class="developer-tables-page__filter-info-button"
+                type="button"
+                [attr.aria-label]="'developer.tables.filters.featureInfoAriaLabel' | transloco"
+                [appTooltip]="'developer.tables.filters.featureHint' | transloco"
+                tooltipPosition="top"
+                tooltipAppearance="minimal"
+                [tooltipShowDelay]="0"
+              >
+                <app-icon name="info" size="sm" [decorative]="true" />
+              </button>
+            </div>
 
-            <app-select
-              [label]="'developer.tables.filters.domainLabel' | transloco"
-              [value]="selectedDomain()"
-              [options]="domainOptions()"
-              appearance="minimal"
-              variant="neutral"
-              (valueChange)="selectedDomain.set($event)"
-            />
+            <div class="developer-tables-page__filter-field developer-tables-page__filter-field--with-info">
+              <app-select
+                [label]="'developer.tables.filters.domainLabel' | transloco"
+                [value]="selectedDomain()"
+                [options]="domainOptions()"
+                appearance="minimal"
+                variant="neutral"
+                (valueChange)="selectedDomain.set($event)"
+              />
+              <button
+                class="developer-tables-page__filter-info-button"
+                type="button"
+                [attr.aria-label]="'developer.tables.filters.domainInfoAriaLabel' | transloco"
+                [appTooltip]="'developer.tables.filters.domainHint' | transloco"
+                tooltipPosition="top"
+                tooltipAppearance="minimal"
+                [tooltipShowDelay]="0"
+              >
+                <app-icon name="info" size="sm" [decorative]="true" />
+              </button>
+            </div>
 
             <app-button variant="neutral" fill="outline" (click)="clearFilters()">
+              <app-icon name="delete" size="sm" [decorative]="true" />
               {{ 'developer.tables.filters.reset' | transloco }}
             </app-button>
           </div>
@@ -98,6 +144,7 @@
               </app-button>
 
               <app-button variant="neutral" fill="outline" (click)="openDiagramFullscreen()">
+                <app-icon name="settings" size="sm" [decorative]="true" />
                 {{ 'developer.tables.diagram.fullscreenAction' | transloco }}
               </app-button>
             </div>
@@ -179,6 +226,7 @@
           <p class="developer-tables-page__section-description">{{ summaryEmptyDescription() }}</p>
           @if (hasActiveFilters()) {
             <app-button variant="neutral" fill="outline" (click)="clearFilters()">
+              <app-icon name="delete" size="sm" [decorative]="true" />
               {{ 'developer.tables.filters.reset' | transloco }}
             </app-button>
           }
@@ -290,6 +338,7 @@
           <p class="developer-tables-page__section-description">{{ detailEmptyDescription() }}</p>
           @if (hasActiveFilters()) {
             <app-button variant="neutral" fill="outline" (click)="clearFilters()">
+              <app-icon name="delete" size="sm" [decorative]="true" />
               {{ 'developer.tables.filters.reset' | transloco }}
             </app-button>
           }
@@ -297,6 +346,43 @@
       }
     </app-card>
   </section>
+
+  <app-dialog
+    [open]="filtersInfoOpen()"
+    [title]="'developer.tables.filters.infoTitle' | transloco"
+    [description]="'developer.tables.filters.infoDescription' | transloco"
+    size="lg"
+    appearance="minimal"
+    [showActions]="false"
+    [closeAriaLabel]="'developer.tables.filters.closeInfo' | transloco"
+    (closed)="closeFiltersInfo()"
+  >
+    <div class="developer-tables-page__filters-info">
+      <section class="developer-tables-page__filters-info-section">
+        <p class="developer-tables-page__section-label">{{ 'developer.tables.filters.featureLabel' | transloco }}</p>
+        <div class="developer-tables-page__filters-info-grid">
+          @for (feature of featureSummaries(); track feature.key) {
+            <article class="developer-tables-page__filters-info-item">
+              <strong>{{ feature.label }}</strong>
+              <p>{{ feature.description }}</p>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="developer-tables-page__filters-info-section">
+        <p class="developer-tables-page__section-label">{{ 'developer.tables.filters.domainLabel' | transloco }}</p>
+        <div class="developer-tables-page__filters-info-grid">
+          @for (domain of domainSummaries(); track domain.key) {
+            <article class="developer-tables-page__filters-info-item">
+              <strong>{{ domain.label }}</strong>
+              <p>{{ domain.description }}</p>
+            </article>
+          }
+        </div>
+      </section>
+    </div>
+  </app-dialog>
 
   <app-dialog
     [open]="mermaidSourceOpen()"
@@ -319,9 +405,13 @@
     [description]="'developer.tables.diagram.fullscreenDescription' | transloco"
     size="lg"
     appearance="minimal"
-    [showActions]="false"
+    [showActions]="true"
+    [cancelLabel]="'developer.tables.diagram.cancelAction' | transloco"
+    [confirmLabel]="'developer.tables.diagram.confirmAction' | transloco"
     [closeAriaLabel]="'developer.tables.diagram.closeFullscreen' | transloco"
     (closed)="closeDiagramFullscreen()"
+    (cancelled)="closeDiagramFullscreen()"
+    (confirmed)="applyDiagramFullscreen()"
   >
     <div class="developer-tables-page__diagram-fullscreen">
       <div class="developer-tables-page__diagram-actions">
@@ -340,14 +430,6 @@
             {{ 'developer.tables.diagram.resetZoomAction' | transloco }}
           </app-button>
         </div>
-
-        <app-button variant="neutral" fill="outline" (click)="requestDiagramRender()">
-          {{ 'developer.tables.diagram.rerenderAction' | transloco }}
-        </app-button>
-
-        <app-button variant="neutral" fill="outline" (click)="openMermaidSource()">
-          {{ 'developer.tables.diagram.sourceAction' | transloco }}
-        </app-button>
       </div>
 
       @if (diagramSvg(); as fullscreenSvg) {
@@ -363,7 +445,7 @@
         >
           <div
             class="developer-tables-page__diagram-scaled-content"
-            [style.--developer-diagram-scale]="diagramScale()"
+            [style.--developer-diagram-scale]="diagramDraftScale()"
             [innerHTML]="fullscreenSvg"
           ></div>
         </div>
