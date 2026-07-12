@@ -1,6 +1,7 @@
 package com.mesaflow.client.feature.cart
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,9 +44,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mesaflow.client.R
 import com.mesaflow.client.core.common.AppError
+import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.components.EmptyState
 import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.components.QuantityStepper
+import com.mesaflow.client.core.designsystem.expandedContentMaxWidth
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.OrderLineKitchenStatus
 import com.mesaflow.client.core.model.ServicePointOrderLine
@@ -56,6 +59,11 @@ import com.mesaflow.client.core.model.SubmittedOrder
  * Resumen del pedido: líneas editables (cantidad, borrar), total en vivo y
  * envío a cocina. Tras enviar con éxito muestra la confirmación; el cobro
  * llega en la Fase 7.
+ *
+ * **Tablet (`Expanded`):** el contenido se acota a un ancho máximo cómodo de
+ * lectura y se centra en vez de estirarse a todo el ancho de la tablet; en
+ * `Compact`/`Medium` no cambia nada respecto a antes. Ver
+ * docs/superpowers/plans/2026-07-12-tablet-adaptive-ui.md, Fase 2.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +80,7 @@ fun CartScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lines by viewModel.lines.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val windowWidthSizeClass = LocalWindowWidthSizeClass.current
 
     val errorMessage = uiState.submitError?.let { stringResource(it.toMessageRes()) }
     val retryLabel = stringResource(R.string.action_retry)
@@ -106,29 +115,40 @@ fun CartScreen(
             )
         },
     ) { innerPadding ->
-        val submitted = uiState.submitted
-        when {
-            submitted != null -> SubmittedContent(
-                totalCents = submitted.totalCents,
-                currency = submitted.currency,
-                orderStatus = uiState.orderStatus,
-                onBackToMenu = onBack,
-                onCheckout = { onCheckout(submitted, uiState.submittedLines, uiState.tableLabel) },
-                modifier = Modifier.padding(innerPadding),
-            )
+        // El ancho máximo/centrado se aplica aquí, envolviendo las tres variantes de contenido
+        // (enviado, vacío, con líneas) por igual — en Compact/Medium el Box no restringe nada
+        // (contentModifier === fillMaxWidth, igual que antes) y el Box en sí ya llena el hueco.
+        val contentModifier = Modifier.expandedContentMaxWidth(windowWidthSizeClass)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            val submitted = uiState.submitted
+            when {
+                submitted != null -> SubmittedContent(
+                    totalCents = submitted.totalCents,
+                    currency = submitted.currency,
+                    orderStatus = uiState.orderStatus,
+                    onBackToMenu = onBack,
+                    onCheckout = { onCheckout(submitted, uiState.submittedLines, uiState.tableLabel) },
+                    modifier = contentModifier,
+                )
 
-            lines.isEmpty() -> Column(Modifier.padding(innerPadding).padding(24.dp)) {
-                EmptyState(message = stringResource(R.string.cart_empty))
+                lines.isEmpty() -> Column(contentModifier.padding(24.dp)) {
+                    EmptyState(message = stringResource(R.string.cart_empty))
+                }
+
+                else -> CartContent(
+                    lines = lines,
+                    isSubmitting = uiState.isSubmitting,
+                    onQuantityChange = viewModel::onQuantityChange,
+                    onRemoveLine = viewModel::onRemoveLine,
+                    onSubmit = viewModel::onSubmit,
+                    modifier = contentModifier,
+                )
             }
-
-            else -> CartContent(
-                lines = lines,
-                isSubmitting = uiState.isSubmitting,
-                onQuantityChange = viewModel::onQuantityChange,
-                onRemoveLine = viewModel::onRemoveLine,
-                onSubmit = viewModel::onSubmit,
-                modifier = Modifier.padding(innerPadding),
-            )
         }
     }
 }

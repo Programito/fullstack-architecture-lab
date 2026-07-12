@@ -173,6 +173,15 @@ export class MenuPage {
   protected readonly sectionToDelete = signal<MenuCategory | null>(null);
   protected readonly deleteSectionOpen = signal(false);
 
+  // Editar nombre (ES/CA/EN) de una sección ya creada — antes solo se podía crear, nunca editar.
+  // Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md, Fase 2 Paso 3.
+  protected readonly editSectionOpen = signal(false);
+  protected readonly editSectionCategory = signal<MenuCategory | null>(null);
+  protected readonly editSectionName = signal('');
+  protected readonly editSectionNameCa = signal('');
+  protected readonly editSectionNameEn = signal('');
+  protected readonly editSectionLoading = signal(false);
+
   protected readonly productToDelete = signal<Product | null>(null);
   protected readonly deleteProductOpen = signal(false);
   protected readonly deleteProductLoading = signal(false);
@@ -181,6 +190,9 @@ export class MenuPage {
   protected readonly addToSectionLoading = signal(false);
   protected readonly modifierGroupFormOpen = signal(false);
   protected readonly modifierGroupFormLoading = signal(false);
+  // Grupo en edición (null = el diálogo está en modo creación). Ver nota de Fase 2 Paso 3 del
+  // plan multiidioma: antes el diálogo solo servía para crear, nunca para editar uno existente.
+  protected readonly modifierGroupToEdit = signal<ModifierGroup | null>(null);
   protected readonly modifierGroupToDelete = signal<ModifierGroup | null>(null);
   protected readonly deleteModifierGroupOpen = signal(false);
   protected readonly deleteModifierGroupLoading = signal(false);
@@ -821,6 +833,43 @@ export class MenuPage {
     });
   }
 
+  protected openEditSection(category: MenuCategory): void {
+    this.editSectionCategory.set(category);
+    this.editSectionName.set(category.name);
+    this.editSectionNameCa.set(category.nameI18n?.ca ?? '');
+    this.editSectionNameEn.set(category.nameI18n?.en ?? '');
+    this.editSectionOpen.set(true);
+  }
+
+  protected cancelEditSection(): void {
+    this.editSectionOpen.set(false);
+    this.editSectionCategory.set(null);
+  }
+
+  protected submitEditSection(): void {
+    const category = this.editSectionCategory();
+    const name = this.editSectionName().trim();
+    if (!category || !name || this.editSectionLoading()) return;
+    const ca = this.editSectionNameCa().trim();
+    const en = this.editSectionNameEn().trim();
+    const nameI18n = ca || en ? { ...(ca ? { ca } : {}), ...(en ? { en } : {}) } : undefined;
+
+    this.editSectionLoading.set(true);
+    this.menuApi.updateSection(this.menuId(), category.id, { name, nameI18n }).subscribe({
+      complete: () => {
+        this.editSectionLoading.set(false);
+        this.editSectionOpen.set(false);
+        this.editSectionCategory.set(null);
+        this.reloadMenuData();
+        this.toast.success({ title: this.translate('menu.page.sectionUpdated') });
+      },
+      error: () => {
+        this.editSectionLoading.set(false);
+        this.toast.danger({ title: this.translate('menu.page.sectionUpdateFailed') });
+      },
+    });
+  }
+
   protected toggleSectionVisibility(category: MenuCategory): void {
     this.menuApi.updateSection(this.menuId(), category.id, { isVisible: !category.isVisible }).subscribe({
       complete: () => this.reloadMenuData(),
@@ -932,17 +981,33 @@ export class MenuPage {
   }
 
   protected openCreateModifierGroup(): void {
+    this.modifierGroupToEdit.set(null);
     this.modifierGroupFormOpen.set(true);
   }
 
+  protected openEditModifierGroup(group: ModifierGroup): void {
+    this.modifierGroupToEdit.set(group);
+    this.modifierGroupFormOpen.set(true);
+  }
+
+  protected closeModifierGroupForm(): void {
+    this.modifierGroupFormOpen.set(false);
+    this.modifierGroupToEdit.set(null);
+  }
+
   protected submitModifierGroupForm(data: CreateModifierGroupRequest): void {
+    const editing = this.modifierGroupToEdit();
     this.modifierGroupFormLoading.set(true);
-    this.menuApi.createModifierGroup(data).subscribe({
+    const request$ = editing ? this.menuApi.updateModifierGroup(editing.id, data) : this.menuApi.createModifierGroup(data);
+    request$.subscribe({
       complete: () => {
         this.modifierGroupFormLoading.set(false);
         this.modifierGroupFormOpen.set(false);
+        this.modifierGroupToEdit.set(null);
         this.reloadMenuData();
-        this.toast.success({ title: this.translate('menu.modifierGroup.success.created') });
+        this.toast.success({
+          title: this.translate(editing ? 'menu.modifierGroup.success.updated' : 'menu.modifierGroup.success.created'),
+        });
       },
       error: () => {
         this.modifierGroupFormLoading.set(false);

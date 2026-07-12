@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,6 +45,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -67,6 +69,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.mesaflow.client.R
 import com.mesaflow.client.core.common.PriceFormatter
+import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
+import com.mesaflow.client.core.designsystem.WindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.components.CategoryChip
 import com.mesaflow.client.core.designsystem.components.EmptyState
 import com.mesaflow.client.core.designsystem.components.ErrorState
@@ -75,6 +79,7 @@ import com.mesaflow.client.core.designsystem.components.SkeletonBox
 import com.mesaflow.client.core.model.Allergen
 import com.mesaflow.client.core.model.MenuItem
 import com.mesaflow.client.core.model.MenuSection
+import com.mesaflow.client.feature.product.ProductConfiguratorPanel
 import com.mesaflow.client.feature.product.ProductConfiguratorSheet
 
 /**
@@ -87,6 +92,12 @@ import com.mesaflow.client.feature.product.ProductConfiguratorSheet
  * un banner aunque el cliente haya vuelto sin resolverlo desde el Carrito.
  * El filtro de alérgenos se basa en lo que declara el propio restaurante
  * (backend `Product.allergens`); ver KDoc de [MenuFilter].
+ *
+ * **Tablet (`WindowWidthSizeClass.Expanded`):** el configurador de producto se pinta como panel
+ * lateral fijo ([ProductConfiguratorPanel]) en vez de bottom sheet — patrón lista-detalle. En
+ * `Compact`/`Medium` el comportamiento es exactamente el mismo que antes de este cambio (bottom
+ * sheet a pantalla completa). Ver
+ * docs/superpowers/plans/2026-07-12-tablet-adaptive-ui.md, Fase 1.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +111,10 @@ fun MenuScreen(
     val cartSummary by viewModel.cartSummary.collectAsStateWithLifecycle()
     val hasPendingSubmissionIssue by viewModel.hasPendingSubmissionIssue.collectAsStateWithLifecycle()
     var showAllergenFilter by remember { mutableStateOf(false) }
+    val windowWidthSizeClass = LocalWindowWidthSizeClass.current
+    // Solo se usa el panel lateral cuando de verdad hay un producto en configuración; sin eso,
+    // la carta ocupa el ancho completo igual en Expanded que en Compact/Medium.
+    val showConfiguratorPanel = windowWidthSizeClass == WindowWidthSizeClass.Expanded && uiState.configuringItem != null
 
     // El refresco periódico decide con esto si aplicar una carta nueva en silencio
     // (pantalla tapada por Carrito/Ajustes) o avisar sin repintar (pantalla visible).
@@ -120,98 +135,46 @@ fun MenuScreen(
             }
         },
     ) { innerPadding ->
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .padding(innerPadding),
         ) {
-            MenuHeader(
-                menuName = (uiState.content as? MenuContentState.Ready)?.menu?.name.orEmpty(),
-                tableLabel = uiState.tableLabel,
+            MenuBody(
+                modifier = Modifier
+                    .then(if (showConfiguratorPanel) Modifier.weight(0.62f) else Modifier.weight(1f))
+                    .fillMaxHeight()
+                    .padding(horizontal = 16.dp),
+                uiState = uiState,
+                hasPendingSubmissionIssue = hasPendingSubmissionIssue,
+                cartSummary = cartSummary,
                 onSettingsClick = onSettingsClick,
+                onCartClick = onCartClick,
+                onAllergenFilterClick = { showAllergenFilter = true },
+                viewModel = viewModel,
             )
 
-            // Solo tiene sentido si de verdad hay algo pendiente en el carrito:
-            // si el usuario vació las líneas a mano, el aviso ya no aplica
-            // aunque el flag interno siga marcado hasta el próximo envío.
-            if (hasPendingSubmissionIssue && !cartSummary.isEmpty) {
-                PendingSubmissionBanner(onClick = onCartClick)
-                Spacer(Modifier.height(8.dp))
-            }
-
-            // El refresco periódico detectó cambios mientras el cliente miraba la carta:
-            // se avisa en vez de reordenar la lista bajo su dedo; tocar aplica la carta nueva.
-            if (uiState.updatedMenuNotice) {
-                MenuUpdatedBanner(onClick = viewModel::onMenuUpdatedNoticeClick)
-                Spacer(Modifier.height(8.dp))
-            }
-
-            when (val content = uiState.content) {
-                is MenuContentState.Loading -> MenuSkeleton()
-
-                is MenuContentState.Error -> ErrorState(
-                    message = stringResource(R.string.menu_error_load),
-                    onRetry = { viewModel.load(forceRefresh = true) },
+            if (showConfiguratorPanel) {
+                VerticalDivider()
+                ProductConfiguratorPanel(
+                    item = uiState.configuringItem!!,
+                    onDismiss = viewModel::onConfiguratorDismiss,
+                    onAddToCart = viewModel::onAddToCart,
+                    modifier = Modifier.weight(0.38f),
                 )
-
-                is MenuContentState.Ready -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = uiState.query,
-                            onValueChange = viewModel::onQueryChange,
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text(stringResource(R.string.menu_search_hint)) },
-                            singleLine = true,
-                            shape = MaterialTheme.shapes.large,
-                        )
-                        IconButton(onClick = { showAllergenFilter = true }) {
-                            Icon(
-                                imageVector = Icons.Default.FilterAlt,
-                                contentDescription = stringResource(R.string.menu_allergen_filter_open),
-                                tint = if (uiState.excludedAllergens.isEmpty()) {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                } else {
-                                    MaterialTheme.colorScheme.primary
-                                },
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item {
-                            CategoryChip(
-                                label = stringResource(R.string.menu_all_categories),
-                                selected = uiState.selectedSectionId == null,
-                                onClick = { viewModel.onSectionSelected(null) },
-                            )
-                        }
-                        items(content.menu.sections, key = { it.id }) { section ->
-                            CategoryChip(
-                                label = section.name,
-                                selected = uiState.selectedSectionId == section.id,
-                                onClick = { viewModel.onSectionSelected(section.id) },
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-
-                    val sections = uiState.filteredSections
-                    if (sections.isEmpty()) {
-                        EmptyState(message = stringResource(R.string.menu_empty_results))
-                    } else {
-                        MenuList(sections = sections, onItemClick = viewModel::onItemClick)
-                    }
-                }
             }
         }
 
-        uiState.configuringItem?.let { item ->
-            ProductConfiguratorSheet(
-                item = item,
-                onDismiss = viewModel::onConfiguratorDismiss,
-                onAddToCart = viewModel::onAddToCart,
-            )
+        // En Expanded el configurador ya se pinta arriba como panel lateral; el bottom sheet
+        // a pantalla completa solo aplica en Compact/Medium, igual que antes de este cambio.
+        if (!showConfiguratorPanel) {
+            uiState.configuringItem?.let { item ->
+                ProductConfiguratorSheet(
+                    item = item,
+                    onDismiss = viewModel::onConfiguratorDismiss,
+                    onAddToCart = viewModel::onAddToCart,
+                )
+            }
         }
 
         if (showAllergenFilter) {
@@ -220,6 +183,104 @@ fun MenuScreen(
                 onToggle = viewModel::onAllergenToggled,
                 onDismiss = { showAllergenFilter = false },
             )
+        }
+    }
+}
+
+/**
+ * Cuerpo principal de la carta (cabecera, buscador, chips de categoría y lista de productos):
+ * extraído para poder colocarlo en la columna izquierda del layout lista-detalle de tablet sin
+ * duplicar su contenido respecto al layout de móvil a ancho completo.
+ */
+@Composable
+private fun MenuBody(
+    modifier: Modifier,
+    uiState: MenuUiState,
+    hasPendingSubmissionIssue: Boolean,
+    cartSummary: CartSummary,
+    onSettingsClick: () -> Unit,
+    onCartClick: () -> Unit,
+    onAllergenFilterClick: () -> Unit,
+    viewModel: MenuViewModel,
+) {
+    Column(modifier = modifier) {
+        MenuHeader(
+            menuName = (uiState.content as? MenuContentState.Ready)?.menu?.name.orEmpty(),
+            tableLabel = uiState.tableLabel,
+            onSettingsClick = onSettingsClick,
+        )
+
+        // Solo tiene sentido si de verdad hay algo pendiente en el carrito:
+        // si el usuario vació las líneas a mano, el aviso ya no aplica
+        // aunque el flag interno siga marcado hasta el próximo envío.
+        if (hasPendingSubmissionIssue && !cartSummary.isEmpty) {
+            PendingSubmissionBanner(onClick = onCartClick)
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // El refresco periódico detectó cambios mientras el cliente miraba la carta:
+        // se avisa en vez de reordenar la lista bajo su dedo; tocar aplica la carta nueva.
+        if (uiState.updatedMenuNotice) {
+            MenuUpdatedBanner(onClick = viewModel::onMenuUpdatedNoticeClick)
+            Spacer(Modifier.height(8.dp))
+        }
+
+        when (val content = uiState.content) {
+            is MenuContentState.Loading -> MenuSkeleton()
+
+            is MenuContentState.Error -> ErrorState(
+                message = stringResource(R.string.menu_error_load),
+                onRetry = { viewModel.load(forceRefresh = true) },
+            )
+
+            is MenuContentState.Ready -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = uiState.query,
+                        onValueChange = viewModel::onQueryChange,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text(stringResource(R.string.menu_search_hint)) },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.large,
+                    )
+                    IconButton(onClick = onAllergenFilterClick) {
+                        Icon(
+                            imageVector = Icons.Default.FilterAlt,
+                            contentDescription = stringResource(R.string.menu_allergen_filter_open),
+                            tint = if (uiState.excludedAllergens.isEmpty()) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        CategoryChip(
+                            label = stringResource(R.string.menu_all_categories),
+                            selected = uiState.selectedSectionId == null,
+                            onClick = { viewModel.onSectionSelected(null) },
+                        )
+                    }
+                    items(content.menu.sections, key = { it.id }) { section ->
+                        CategoryChip(
+                            label = section.name,
+                            selected = uiState.selectedSectionId == section.id,
+                            onClick = { viewModel.onSectionSelected(section.id) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+
+                val sections = uiState.filteredSections
+                if (sections.isEmpty()) {
+                    EmptyState(message = stringResource(R.string.menu_empty_results))
+                } else {
+                    MenuList(sections = sections, onItemClick = viewModel::onItemClick)
+                }
+            }
         }
     }
 }

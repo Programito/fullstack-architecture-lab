@@ -27,6 +27,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_service_windows':
     case 'invalid_customer':
     case 'invalid_analytics_range':
+    case 'invalid_combo_slot_configuration':
+    case 'invalid_platter_component_configuration':
       return new BadRequestException(error.message);
 
     case 'user_not_found':
@@ -46,6 +48,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'menu_item_not_found':
     case 'customer_not_found':
     case 'modifier_group_not_found':
+    case 'combo_slot_not_found':
+    case 'platter_component_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':

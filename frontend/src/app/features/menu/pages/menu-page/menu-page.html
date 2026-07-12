@@ -804,14 +804,24 @@
                   />
                   <span class="theme-muted">{{ 'menu.page.sectionVisibilityLabel' | transloco }}</span>
                 </label>
-                <button
-                  type="button"
-                  class="theme-muted flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:text-red-500"
-                  [attr.aria-label]="'menu.page.deleteSectionLabel' | transloco"
-                  (click)="openDeleteSection(category)"
-                >
-                  <app-icon name="delete" size="sm" [decorative]="true" />
-                </button>
+                <span class="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    class="theme-muted flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:text-cyan-500"
+                    [attr.aria-label]="'menu.page.editSectionLabel' | transloco"
+                    (click)="openEditSection(category)"
+                  >
+                    <app-icon name="edit" size="sm" [decorative]="true" />
+                  </button>
+                  <button
+                    type="button"
+                    class="theme-muted flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:text-red-500"
+                    [attr.aria-label]="'menu.page.deleteSectionLabel' | transloco"
+                    (click)="openDeleteSection(category)"
+                  >
+                    <app-icon name="delete" size="sm" [decorative]="true" />
+                  </button>
+                </span>
               </div>
             </article>
           }
@@ -867,6 +877,46 @@
           {{ 'menu.page.deleteSectionConfirm' | transloco: { name: sectionToDelete()?.name ?? '' } }}
         </p>
       </app-dialog>
+
+      <app-dialog
+        [open]="editSectionOpen()"
+        [title]="'menu.page.editSectionTitle' | transloco"
+        [showActions]="true"
+        [confirmLabel]="'menu.page.saveSection' | transloco"
+        [confirmDisabled]="!editSectionName().trim()"
+        [confirmLoading]="editSectionLoading()"
+        [cancelLabel]="'menu.page.cancelSection' | transloco"
+        size="sm"
+        (confirmed)="submitEditSection()"
+        (closed)="cancelEditSection()"
+        (cancelled)="cancelEditSection()"
+      >
+        <div class="grid gap-3">
+          <app-input
+            [label]="'menu.page.sectionNameLabel' | transloco"
+            [placeholder]="'menu.page.sectionNamePlaceholder' | transloco"
+            [value]="editSectionName()"
+            [disabled]="editSectionLoading()"
+            (valueChange)="editSectionName.set($event)"
+          />
+          <div class="grid gap-3 sm:grid-cols-2">
+            <app-input
+              [label]="'menu.page.sectionNameCaLabel' | transloco"
+              [placeholder]="'menu.page.sectionNameI18nPlaceholder' | transloco"
+              [value]="editSectionNameCa()"
+              [disabled]="editSectionLoading()"
+              (valueChange)="editSectionNameCa.set($event)"
+            />
+            <app-input
+              [label]="'menu.page.sectionNameEnLabel' | transloco"
+              [placeholder]="'menu.page.sectionNameI18nPlaceholder' | transloco"
+              [value]="editSectionNameEn()"
+              [disabled]="editSectionLoading()"
+              (valueChange)="editSectionNameEn.set($event)"
+            />
+          </div>
+        </div>
+      </app-dialog>
     } @else if (activeTab() === 'modifiers') {
       <div class="grid gap-4">
         <div class="flex items-center justify-between gap-3">
@@ -906,6 +956,9 @@
                     <h3 class="theme-title text-base font-semibold">{{ group.name }}</h3>
                     <div class="flex items-center gap-2">
                       <app-badge variant="secondary" size="sm">{{ group.options.length }} {{ 'menu.page.options' | transloco }}</app-badge>
+                      <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'menu.page.editModifierGroupAriaLabel' | transloco" (pressed)="openEditModifierGroup(group)">
+                        <app-icon name="edit" size="sm" [decorative]="true" />
+                      </app-button>
                       <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'menu.page.deleteModifierGroupAriaLabel' | transloco" (pressed)="openDeleteModifierGroup(group)">
                         <app-icon name="delete" size="sm" [decorative]="true" />
                       </app-button>
@@ -939,7 +992,8 @@
         <app-modifier-group-form-dialog
           [open]="modifierGroupFormOpen()"
           [loading]="modifierGroupFormLoading()"
-          (closed)="modifierGroupFormOpen.set(false)"
+          [editingGroup]="modifierGroupToEdit()"
+          (closed)="closeModifierGroupForm()"
           (confirmed)="submitModifierGroupForm($event)"
         />
 

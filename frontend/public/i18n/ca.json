@@ -1413,7 +1413,12 @@
           "weak-combo-summary": "Resum de menú feble",
           "weak-customization-summary": "Extres poc clars"
         }
-      }
+      },
+      "editSectionLabel": "Editar secció",
+      "editSectionTitle": "Editar secció",
+      "sectionUpdated": "Secció actualitzada correctament.",
+      "sectionUpdateFailed": "No s'ha pogut actualitzar la secció.",
+      "editModifierGroupAriaLabel": "Editar grup de modificadors"
     },
     "customizer": {
       "title": "Personalitzar producte",
@@ -1488,7 +1493,35 @@
         "available": "Disponible",
         "create": "Crear producte",
         "save": "Guardar canvis",
-        "cancel": "Cancel·lar"
+        "cancel": "Cancel·lar",
+        "combo": {
+          "title": "Forats del combo",
+          "hint": "Cada forat defineix quins productes pot triar el client i si hi ha algun suplement de preu.",
+          "minSelections": "Mín. seleccions",
+          "maxSelections": "Màx. seleccions",
+          "required": "Obligatori",
+          "options": "Productes permesos",
+          "selectProduct": "Tria un producte",
+          "isDefault": "Per defecte",
+          "addOption": "Afegir producte",
+          "removeOption": "Treure producte",
+          "addSlot": "Afegir forat",
+          "removeSlot": "Treure forat",
+          "noSlots": "Aquest combo encara no té forats."
+        },
+        "platter": {
+          "title": "Components del plat combinat",
+          "hint": "Els ingredients que es poden treure o substituir en muntar el plat.",
+          "product": "Producte associat",
+          "keepProduct": "Sense canvis",
+          "quantity": "Quantitat",
+          "keepQuantity": "Sense canvis",
+          "removable": "Es pot treure",
+          "replaceable": "Es pot substituir",
+          "addComponent": "Afegir component",
+          "removeComponent": "Treure component",
+          "noComponents": "Aquest plat encara no té components."
+        }
       },
       "success": {
         "created": "Article creat correctament.",
@@ -1520,11 +1553,14 @@
         "optionName": "Nom de l'opció",
         "optionPrice": "Preu addicional (€)",
         "optionImage": "Imatge de l'opció",
-        "create": "Crear grup"
+        "create": "Crear grup",
+        "editTitle": "Editar grup de modificadors",
+        "save": "Desar canvis"
       },
       "success": {
         "created": "Grup de modificadors creat.",
-        "deleted": "Grup de modificadors eliminat."
+        "deleted": "Grup de modificadors eliminat.",
+        "updated": "Grup de modificadors actualitzat."
       },
       "errors": {
         "saveFailed": "No s'ha pogut desar el grup. Torna-ho a intentar.",

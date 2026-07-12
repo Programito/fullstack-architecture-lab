@@ -78,6 +78,18 @@ import { MODIFIER_GROUP_REPOSITORY } from './application/ports/modifier-group-re
 import { PrismaModifierGroupRepository } from './infrastructure/persistence/prisma-modifier-group.repository';
 import { RestaurantModifierGroupsController } from './presentation/rest/restaurant-modifier-groups.controller';
 import { RestaurantAnalyticsController } from './presentation/rest/restaurant-analytics.controller';
+import { CreateComboSlotUseCase } from './application/use-cases/create-combo-slot.use-case';
+import { UpdateComboSlotUseCase } from './application/use-cases/update-combo-slot.use-case';
+import { DeleteComboSlotUseCase } from './application/use-cases/delete-combo-slot.use-case';
+import { COMBO_SLOT_REPOSITORY } from './application/ports/combo-slot-repository.port';
+import { PrismaComboSlotRepository } from './infrastructure/persistence/prisma-combo-slot.repository';
+import { RestaurantComboSlotsController } from './presentation/rest/restaurant-combo-slots.controller';
+import { CreatePlatterComponentUseCase } from './application/use-cases/create-platter-component.use-case';
+import { UpdatePlatterComponentUseCase } from './application/use-cases/update-platter-component.use-case';
+import { DeletePlatterComponentUseCase } from './application/use-cases/delete-platter-component.use-case';
+import { PLATTER_COMPONENT_REPOSITORY } from './application/ports/platter-component-repository.port';
+import { PrismaPlatterComponentRepository } from './infrastructure/persistence/prisma-platter-component.repository';
+import { RestaurantPlatterComponentsController } from './presentation/rest/restaurant-platter-components.controller';
 
 @Module({
   imports: [forwardRef(() => IdentityModule)],
@@ -92,6 +104,8 @@ import { RestaurantAnalyticsController } from './presentation/rest/restaurant-an
     RestaurantServiceController,
     RestaurantModifierGroupsController,
     RestaurantAnalyticsController,
+    RestaurantComboSlotsController,
+    RestaurantPlatterComponentsController,
   ],
   providers: [
     ListRestaurantsUseCase,
@@ -154,6 +168,22 @@ import { RestaurantAnalyticsController } from './presentation/rest/restaurant-an
     {
       provide: MODIFIER_GROUP_REPOSITORY,
       useExisting: PrismaModifierGroupRepository,
+    },
+    CreateComboSlotUseCase,
+    UpdateComboSlotUseCase,
+    DeleteComboSlotUseCase,
+    PrismaComboSlotRepository,
+    {
+      provide: COMBO_SLOT_REPOSITORY,
+      useExisting: PrismaComboSlotRepository,
+    },
+    CreatePlatterComponentUseCase,
+    UpdatePlatterComponentUseCase,
+    DeletePlatterComponentUseCase,
+    PrismaPlatterComponentRepository,
+    {
+      provide: PLATTER_COMPONENT_REPOSITORY,
+      useExisting: PrismaPlatterComponentRepository,
     },
     {
       provide: CUSTOMER_REPOSITORY,

@@ -13,9 +13,8 @@ import type {
   RestaurantMenuSection,
 } from '../../../domain/restaurant-read.models';
 
-// Variantes de nombre por idioma (ES/CA/EN), aditivas y opcionales junto al
-// `name` canonico (castellano). Solo viajan las que existan; la resolucion de
-// idioma se hace siempre en el cliente, ver
+// Variantes de nombre por idioma (ES/CA/EN) que ya existan, junto al `name`
+// canonico en castellano de cada nodo. Ver
 // docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
 class NameI18nResponseDto {
   @ApiPropertyOptional({ example: 'Hamburguesa craft' }) es?: string;

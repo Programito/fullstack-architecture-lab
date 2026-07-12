@@ -2,15 +2,23 @@ import { inject, Injectable } from '@angular/core';
 import { map, type Observable } from 'rxjs';
 
 import type {
+  ComboSlotAdminDto,
+  CreateComboSlotRequest,
   CreateModifierGroupRequest,
+  CreatePlatterComponentRequest,
   CreateRestaurantProductRequest,
   MenuSectionAdminDto,
+  PlatterComponentAdminDto,
+  RestaurantMenuComboSlotDto,
   RestaurantMenuDto,
   RestaurantMenuItemDto,
   RestaurantMenuModifierGroupDto,
+  RestaurantMenuPlatterComponentDto,
   RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
+  UpdateComboSlotRequest,
   UpdateModifierGroupRequest,
+  UpdatePlatterComponentRequest,
   UpdateRestaurantProductRequest,
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
@@ -27,7 +35,34 @@ export type MenuData = {
   comboProductDefinitions: ComboProductDefinition[];
 };
 
-export type { CreateModifierGroupRequest, CreateRestaurantProductRequest, MenuSectionAdminDto, RestaurantMenuModifierGroupDto, RestaurantProductDetailDto, RestaurantProductSummaryDto, UpdateRestaurantProductRequest };
+export type {
+  ComboSlotAdminDto,
+  CreateComboSlotRequest,
+  CreateModifierGroupRequest,
+  CreatePlatterComponentRequest,
+  CreateRestaurantProductRequest,
+  MenuSectionAdminDto,
+  PlatterComponentAdminDto,
+  RestaurantMenuComboSlotDto,
+  RestaurantMenuModifierGroupDto,
+  RestaurantMenuPlatterComponentDto,
+  RestaurantProductDetailDto,
+  RestaurantProductSummaryDto,
+  UpdateComboSlotRequest,
+  UpdateRestaurantProductRequest,
+  UpdatePlatterComponentRequest,
+};
+
+// Datos crudos (combo slots / platter components) del producto tal y como los devuelve el
+// endpoint de lectura GET /restaurants/:id/menu — no hay endpoint admin de lectura dedicado
+// (ver docs/superpowers/plans/2026-07-12-combo-platter-admin.md, Fase 3), así que el editor
+// reutiliza este de solo-lectura para precargar. Ojo: `RestaurantMenuComboSlotOptionDto` no
+// incluye `isDefault` ni `RestaurantMenuPlatterComponentDto` incluye `componentProductId`/
+// `quantity` (no son necesarios para el carrito) — el editor no puede precargar esos campos.
+export type ComboOrPlatterMenuData = {
+  comboSlots: RestaurantMenuComboSlotDto[];
+  platterComponents: RestaurantMenuPlatterComponentDto[];
+};
 
 @Injectable({ providedIn: 'root' })
 export class MenuApiService {
@@ -110,6 +145,52 @@ export class MenuApiService {
 
   listModifierGroups(scope?: 'shared' | 'product'): Observable<ModifierGroup[]> {
     return this.api.listModifierGroups(this.restaurantId, scope).pipe(map((groups) => groups.map(mapModifierGroupDto)));
+  }
+
+  // ── Combo slots (admin) ─────────────────────────────────────────────────────
+
+  createComboSlot(productId: string, data: CreateComboSlotRequest): Observable<ComboSlotAdminDto> {
+    return this.api.createComboSlot(this.restaurantId, productId, data);
+  }
+
+  updateComboSlot(productId: string, slotId: string, data: UpdateComboSlotRequest): Observable<ComboSlotAdminDto> {
+    return this.api.updateComboSlot(this.restaurantId, productId, slotId, data);
+  }
+
+  deleteComboSlot(productId: string, slotId: string): Observable<void> {
+    return this.api.deleteComboSlot(this.restaurantId, productId, slotId);
+  }
+
+  // ── Platter components (admin) ──────────────────────────────────────────────
+
+  createPlatterComponent(productId: string, data: CreatePlatterComponentRequest): Observable<PlatterComponentAdminDto> {
+    return this.api.createPlatterComponent(this.restaurantId, productId, data);
+  }
+
+  updatePlatterComponent(productId: string, componentId: string, data: UpdatePlatterComponentRequest): Observable<PlatterComponentAdminDto> {
+    return this.api.updatePlatterComponent(this.restaurantId, productId, componentId, data);
+  }
+
+  deletePlatterComponent(productId: string, componentId: string): Observable<void> {
+    return this.api.deletePlatterComponent(this.restaurantId, productId, componentId);
+  }
+
+  /**
+   * Combo slots / platter components actuales de un producto, leídos del menú (solo lectura).
+   * Ver nota en `ComboOrPlatterMenuData` sobre los campos que no vienen en esta vía.
+   */
+  getComboOrPlatterData(restaurantProductId: string): Observable<ComboOrPlatterMenuData> {
+    return this.api.getRestaurantMenu(this.restaurantId).pipe(
+      map((dto) => {
+        const item = dto.sections
+          .flatMap((section) => section.items)
+          .find((candidate) => (candidate.restaurantProductId ?? candidate.id) === restaurantProductId);
+        return {
+          comboSlots: item?.comboDefinition?.slots ?? [],
+          platterComponents: item?.platterComponents ?? [],
+        };
+      }),
+    );
   }
 }
 

@@ -238,6 +238,212 @@
             </app-button>
           </details>
 
+          @if (isCombo()) {
+            <details open class="theme-panel grid gap-4 rounded-lg border p-4 shadow-sm">
+              <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
+                <span class="flex items-center gap-2">
+                  <app-icon name="restaurant_menu" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
+                  {{ 'menu.product.form.combo.title' | transloco }}
+                </span>
+                <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+              </summary>
+              <p class="theme-muted text-sm">{{ 'menu.product.form.combo.hint' | transloco }}</p>
+              @if (comboSlots().length) {
+                <div class="grid gap-3">
+                  @for (slot of comboSlots(); track $index; let slotIndex = $index) {
+                    <div class="grid content-start gap-3 rounded-lg border p-3 shadow-sm">
+                      <div class="flex flex-wrap items-start gap-2">
+                        <div class="grid min-w-36 flex-1 gap-2 sm:grid-cols-3">
+                          <app-input
+                            [placeholder]="'menu.product.form.name' | transloco"
+                            [value]="slot.name"
+                            (valueChange)="updateComboSlotField(slotIndex, 'name', $event)"
+                          />
+                          <app-input
+                            [placeholder]="'menu.product.form.nameCa' | transloco"
+                            [value]="slot.nameCa"
+                            (valueChange)="updateComboSlotField(slotIndex, 'nameCa', $event)"
+                          />
+                          <app-input
+                            [placeholder]="'menu.product.form.nameEn' | transloco"
+                            [value]="slot.nameEn"
+                            (valueChange)="updateComboSlotField(slotIndex, 'nameEn', $event)"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          class="theme-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors hover:text-red-500"
+                          [attr.aria-label]="'menu.product.form.combo.removeSlot' | transloco"
+                          (click)="removeComboSlot(slotIndex)"
+                        >
+                          <app-icon name="delete" size="sm" [decorative]="true" />
+                        </button>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-3">
+                        <app-input
+                          class="w-24"
+                          type="number"
+                          [min]="0"
+                          [label]="'menu.product.form.combo.minSelections' | transloco"
+                          [value]="slot.minSelections"
+                          (valueChange)="updateComboSlotField(slotIndex, 'minSelections', $event)"
+                        />
+                        <app-input
+                          class="w-24"
+                          type="number"
+                          [min]="0"
+                          [label]="'menu.product.form.combo.maxSelections' | transloco"
+                          [value]="slot.maxSelections"
+                          (valueChange)="updateComboSlotField(slotIndex, 'maxSelections', $event)"
+                        />
+                        <app-switch
+                          [label]="'menu.product.form.combo.required' | transloco"
+                          [checked]="slot.isRequired"
+                          (checkedChange)="toggleComboSlotRequired(slotIndex, $event)"
+                        />
+                      </div>
+
+                      <div class="theme-field grid gap-2 rounded-md border p-2">
+                        <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.product.form.combo.options' | transloco }}</p>
+                        @for (option of slot.options; track $index; let optionIndex = $index) {
+                          <div class="flex flex-wrap items-center gap-2">
+                            <app-select
+                              class="min-w-40 flex-1"
+                              [placeholder]="'menu.product.form.combo.selectProduct' | transloco"
+                              [options]="comboOptionProductChoices()"
+                              [value]="option.restaurantProductId"
+                              (valueChange)="updateComboSlotOptionProduct(slotIndex, optionIndex, $event)"
+                            />
+                            <app-input
+                              class="w-28"
+                              type="number"
+                              [min]="0"
+                              [step]="0.01"
+                              [placeholder]="'menu.product.form.supplementPricePlaceholder' | transloco"
+                              [value]="option.supplementPriceEuros"
+                              (valueChange)="updateComboSlotOptionPrice(slotIndex, optionIndex, $event)"
+                            />
+                            <label class="theme-muted flex cursor-pointer items-center gap-1 text-xs">
+                              <input
+                                type="radio"
+                                [name]="'combo-slot-default-' + slotIndex"
+                                [checked]="option.isDefault"
+                                (change)="setComboSlotOptionDefault(slotIndex, optionIndex)"
+                              />
+                              {{ 'menu.product.form.combo.isDefault' | transloco }}
+                            </label>
+                            <button
+                              type="button"
+                              class="theme-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors hover:text-red-500"
+                              [attr.aria-label]="'menu.product.form.combo.removeOption' | transloco"
+                              (click)="removeComboSlotOption(slotIndex, optionIndex)"
+                            >
+                              <app-icon name="delete" size="sm" [decorative]="true" />
+                            </button>
+                          </div>
+                        }
+                        <app-button size="sm" variant="neutral" fill="outline" (pressed)="addComboSlotOption(slotIndex)">
+                          <app-icon name="add" size="sm" [decorative]="true" />
+                          {{ 'menu.product.form.combo.addOption' | transloco }}
+                        </app-button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.product.form.combo.noSlots' | transloco }}</p>
+              }
+              <app-button size="sm" variant="neutral" fill="outline" (pressed)="addComboSlot()">
+                <app-icon name="add" size="sm" [decorative]="true" />
+                {{ 'menu.product.form.combo.addSlot' | transloco }}
+              </app-button>
+            </details>
+          }
+
+          @if (isPlatter()) {
+            <details open class="theme-panel grid gap-4 rounded-lg border p-4 shadow-sm">
+              <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
+                <span class="flex items-center gap-2">
+                  <app-icon name="tapas" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
+                  {{ 'menu.product.form.platter.title' | transloco }}
+                </span>
+                <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+              </summary>
+              <p class="theme-muted text-sm">{{ 'menu.product.form.platter.hint' | transloco }}</p>
+              @if (platterComponentDrafts().length) {
+                <div class="grid gap-3 xl:grid-cols-2">
+                  @for (component of platterComponentDrafts(); track $index) {
+                    <div class="grid content-start gap-2 rounded-lg border p-3 shadow-sm">
+                      <div class="grid gap-2 sm:grid-cols-3">
+                        <app-input
+                          [placeholder]="'menu.product.form.name' | transloco"
+                          [value]="component.name"
+                          (valueChange)="updatePlatterComponentField($index, 'name', $event)"
+                        />
+                        <app-input
+                          [placeholder]="'menu.product.form.nameCa' | transloco"
+                          [value]="component.nameCa"
+                          (valueChange)="updatePlatterComponentField($index, 'nameCa', $event)"
+                        />
+                        <app-input
+                          [placeholder]="'menu.product.form.nameEn' | transloco"
+                          [value]="component.nameEn"
+                          (valueChange)="updatePlatterComponentField($index, 'nameEn', $event)"
+                        />
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <app-select
+                          class="min-w-40 flex-1"
+                          [label]="'menu.product.form.platter.product' | transloco"
+                          [options]="platterComponentProductChoices()"
+                          [value]="component.componentProductId"
+                          (valueChange)="updatePlatterComponentField($index, 'componentProductId', $event)"
+                        />
+                        <app-input
+                          class="w-24"
+                          type="number"
+                          [min]="1"
+                          [label]="'menu.product.form.platter.quantity' | transloco"
+                          [placeholder]="'menu.product.form.platter.keepQuantity' | transloco"
+                          [value]="component.quantity"
+                          (valueChange)="updatePlatterComponentField($index, 'quantity', $event)"
+                        />
+                      </div>
+                      <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap gap-3">
+                          <app-switch
+                            [label]="'menu.product.form.platter.removable' | transloco"
+                            [checked]="component.isRemovable"
+                            (checkedChange)="togglePlatterComponentRemovable($index, $event)"
+                          />
+                          <app-switch
+                            [label]="'menu.product.form.platter.replaceable' | transloco"
+                            [checked]="component.isReplaceable"
+                            (checkedChange)="togglePlatterComponentReplaceable($index, $event)"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          class="theme-muted flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:text-red-500"
+                          [attr.aria-label]="'menu.product.form.platter.removeComponent' | transloco"
+                          (click)="removePlatterComponent($index)"
+                        >
+                          <app-icon name="delete" size="sm" [decorative]="true" />
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.product.form.platter.noComponents' | transloco }}</p>
+              }
+              <app-button size="sm" variant="neutral" fill="outline" (pressed)="addPlatterComponent()">
+                <app-icon name="add" size="sm" [decorative]="true" />
+                {{ 'menu.product.form.platter.addComponent' | transloco }}
+              </app-button>
+            </details>
+          }
+
           <details open class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
             <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
               <span class="flex items-center gap-2">

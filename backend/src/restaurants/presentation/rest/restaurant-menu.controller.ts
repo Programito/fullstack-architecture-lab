@@ -94,13 +94,7 @@ export class RestaurantMenuController {
     @Req() request: AuthenticatedRequest,
   ): Promise<MenuSectionResponseDto> {
     const section = unwrapResultOrThrow(
-      await this.createMenuSection.execute({
-        restaurantId: id,
-        menuId,
-        name: body.name,
-        nameI18n: body.nameI18n,
-        isVisible: body.isVisible,
-      }),
+      await this.createMenuSection.execute({ restaurantId: id, menuId, name: body.name, nameI18n: body.nameI18n, isVisible: body.isVisible }),
     );
     await this.audit.record({
       ...auditContext(request, id),
@@ -132,14 +126,7 @@ export class RestaurantMenuController {
     @Req() request: AuthenticatedRequest,
   ): Promise<MenuSectionResponseDto> {
     const section = unwrapResultOrThrow(
-      await this.updateMenuSection.execute({
-        restaurantId: id,
-        menuId,
-        sectionId,
-        name: body.name,
-        nameI18n: body.nameI18n,
-        isVisible: body.isVisible,
-      }),
+      await this.updateMenuSection.execute({ restaurantId: id, menuId, sectionId, name: body.name, nameI18n: body.nameI18n, isVisible: body.isVisible }),
     );
     await this.audit.record({
       ...auditContext(request, id),

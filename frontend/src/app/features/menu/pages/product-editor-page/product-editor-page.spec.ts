@@ -75,6 +75,7 @@ describe('ProductEditorPage', () => {
   const getProduct = vi.fn();
   const getMenu = vi.fn();
   const listModifierGroups = vi.fn();
+  const listProducts = vi.fn();
   const createProduct = vi.fn();
   const updateProduct = vi.fn();
   const navigateByUrl = vi.fn(async () => true);
@@ -93,7 +94,7 @@ describe('ProductEditorPage', () => {
         { provide: Router, useValue: { navigateByUrl } },
         {
           provide: MenuApiService,
-          useValue: { getProduct, getMenu, listModifierGroups, createProduct, updateProduct },
+          useValue: { getProduct, getMenu, listModifierGroups, listProducts, createProduct, updateProduct },
         },
         { provide: ProductImageUploadService, useValue: { uploadProductImage } },
         { provide: ToastService, useValue: { success: toastSuccess, danger: toastDanger } },
@@ -107,6 +108,7 @@ describe('ProductEditorPage', () => {
     getProduct.mockReset();
     getMenu.mockReset().mockReturnValue(of(MOCK_MENU_DATA));
     listModifierGroups.mockReset().mockReturnValue(of(MOCK_MODIFIER_GROUPS));
+    listProducts.mockReset().mockReturnValue(of([]));
     createProduct.mockReset();
     updateProduct.mockReset();
     navigateByUrl.mockClear();

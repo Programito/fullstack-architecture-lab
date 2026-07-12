@@ -1,3 +1,15 @@
+// Nombres multiidioma de la carta (ES/CA/EN), aditivos y opcionales junto al
+// nombre canonico en castellano (`name`). El backend siempre devuelve las
+// variantes que existan; la resolucion de que variante mostrar se hace
+// siempre en el cliente, nunca aqui (protege la cache ETag/304 de
+// GET /restaurants/:id/menu). Ver
+// docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+export type NameI18n = {
+  es?: string;
+  ca?: string;
+  en?: string;
+};
+
 export type RestaurantSummary = {
   id: string;
   organizationId: string;
@@ -6,16 +18,6 @@ export type RestaurantSummary = {
   timezone: string;
   currency: string;
   isActive: boolean;
-};
-
-// Variantes de nombre por idioma, aditivas y opcionales junto al `name`
-// canonico (castellano). El servidor solo persiste y devuelve las que
-// existan; la resolucion de idioma se hace siempre en el cliente (ver
-// docs/superpowers/plans/2026-07-11-menu-multilingual-names.md).
-export type NameI18n = {
-  es?: string;
-  ca?: string;
-  en?: string;
 };
 
 export type RestaurantMenuModifierOption = {

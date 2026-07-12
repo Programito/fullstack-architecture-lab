@@ -394,20 +394,23 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     update: { pricingMode: 'base_plus_supplements', basePriceCents: 1390 },
     create: { productId: comboProductId, pricingMode: 'base_plus_supplements', basePriceCents: 1390 },
   });
+  const comboBurgerSlotNameI18n = { es: 'Hamburguesa', ca: 'Hamburguesa', en: 'Burger' };
   const comboBurgerSlot = await prisma.comboSlot.upsert({
     where: { comboDefinitionId_name: { comboDefinitionId: comboDefinition.id, name: 'Hamburguesa' } },
-    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 1 },
-    create: { comboDefinitionId: comboDefinition.id, name: 'Hamburguesa', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 1 },
+    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 1, nameI18n: comboBurgerSlotNameI18n },
+    create: { comboDefinitionId: comboDefinition.id, name: 'Hamburguesa', nameI18n: comboBurgerSlotNameI18n, minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 1 },
   });
+  const comboDrinkSlotNameI18n = { es: 'Bebida', ca: 'Beguda', en: 'Drink' };
   const comboDrinkSlot = await prisma.comboSlot.upsert({
     where: { comboDefinitionId_name: { comboDefinitionId: comboDefinition.id, name: 'Bebida' } },
-    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 2 },
-    create: { comboDefinitionId: comboDefinition.id, name: 'Bebida', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 2 },
+    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 2, nameI18n: comboDrinkSlotNameI18n },
+    create: { comboDefinitionId: comboDefinition.id, name: 'Bebida', nameI18n: comboDrinkSlotNameI18n, minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 2 },
   });
+  const comboSideSlotNameI18n = { es: 'Acompañamiento', ca: 'Acompanyament', en: 'Side' };
   const comboSideSlot = await prisma.comboSlot.upsert({
     where: { comboDefinitionId_name: { comboDefinitionId: comboDefinition.id, name: 'Acompañamiento' } },
-    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3 },
-    create: { comboDefinitionId: comboDefinition.id, name: 'Acompañamiento', minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3 },
+    update: { minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3, nameI18n: comboSideSlotNameI18n },
+    create: { comboDefinitionId: comboDefinition.id, name: 'Acompañamiento', nameI18n: comboSideSlotNameI18n, minSelections: 1, maxSelections: 1, isRequired: true, sortOrder: 3 },
   });
 
   const comboSlotOptions = [
@@ -441,6 +444,15 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
   await prisma.comboSlotOption.createMany({ data: comboSlotOptions });
 
   // ── Platters ─────────────────────────────────────────────────────────────────
+
+  const platterComponentNameI18n: Record<string, { es: string; ca: string; en: string }> = {
+    Lomo: { es: 'Lomo', ca: 'Llom', en: 'Pork loin' },
+    Huevo: { es: 'Huevo', ca: 'Ou', en: 'Egg' },
+    'Patatas fritas': { es: 'Patatas fritas', ca: 'Patates fregides', en: 'French fries' },
+    Ensalada: { es: 'Ensalada', ca: 'Amanida', en: 'Salad' },
+    Pollo: { es: 'Pollo', ca: 'Pollastre', en: 'Chicken' },
+    'Verduras de temporada': { es: 'Verduras de temporada', ca: 'Verdures de temporada', en: 'Seasonal vegetables' },
+  };
 
   for (const platter of [
     {
@@ -480,10 +492,11 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     });
     for (const comp of platter.components) {
       const componentProductId = comp.productName ? (productIdByName.get(comp.productName) ?? null) : null;
+      const nameI18n = platterComponentNameI18n[comp.name];
       await prisma.platterComponent.upsert({
         where: { platterDefinitionId_sortOrder: { platterDefinitionId: platterDef.id, sortOrder: comp.sortOrder } },
-        update: { componentProductId, name: comp.name, quantity: comp.quantity, isRemovable: comp.isRemovable, isReplaceable: comp.isReplaceable },
-        create: { platterDefinitionId: platterDef.id, componentProductId, name: comp.name, quantity: comp.quantity, isRemovable: comp.isRemovable, isReplaceable: comp.isReplaceable, sortOrder: comp.sortOrder },
+        update: { componentProductId, name: comp.name, nameI18n, quantity: comp.quantity, isRemovable: comp.isRemovable, isReplaceable: comp.isReplaceable },
+        create: { platterDefinitionId: platterDef.id, componentProductId, name: comp.name, nameI18n, quantity: comp.quantity, isRemovable: comp.isRemovable, isReplaceable: comp.isReplaceable, sortOrder: comp.sortOrder },
       });
     }
   }

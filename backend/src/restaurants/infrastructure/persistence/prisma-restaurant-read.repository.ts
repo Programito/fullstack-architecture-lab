@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import { invalidReservationCreation, invalidReservationState } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { asNameI18n } from './name-i18n.mapper';
 import type { RestaurantReadRepository } from '../../application/ports/restaurant-read-repository.port';
 import type {
   CreateRestaurantReservationInput,
@@ -12,7 +13,6 @@ import type {
   RestaurantSummary,
 } from '../../domain/restaurant-read.models';
 import type { RestaurantOrderView } from '../../domain/restaurant-order.models';
-import { asNameI18n } from './name-i18n.mapper';
 import { deriveServicePhase, getServiceDurationMinutes } from '../../domain/service-phase';
 import type {
   ServiceFloorView,
@@ -128,9 +128,9 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
             item.displayNameOverride ??
             item.restaurantProduct.displayName ??
             item.restaurantProduct.product.name,
-          // `nameI18n` solo existe sobre el nombre canonico del producto: los
-          // overrides (displayNameOverride/displayName) se quedan en
-          // castellano por ahora, ver el plan de nombres multiidioma.
+          // `nameI18n` viene siempre del Product canonico, nunca de los overrides
+          // displayName/displayNameOverride (esos quedan en castellano por ahora,
+          // ver Fase 1 del plan multiidioma).
           nameI18n: asNameI18n(item.restaurantProduct.product.nameI18n),
           description: item.restaurantProduct.product.description ?? undefined,
           imageUrl: item.restaurantProduct.imageUrl,

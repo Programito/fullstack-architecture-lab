@@ -52,6 +52,8 @@
     <string name="configurator_remove_title">Personalitza els ingredients</string>
     <string name="configurator_without">Sense %1$s</string>
     <string name="configurator_add_for">Afegeix · %1$s</string>
+    <string name="configurator_panel_title">Personalitza el producte</string>
+    <string name="configurator_panel_close">Tanca el configurador</string>
     <string name="cart_fab_label">Mostra la comanda (%1$d) · %2$s</string>
     <string name="cart_title">La teva comanda</string>
     <string name="cart_back">Enrere</string>

@@ -1,13 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import type { ModifierGroupEntity, ModifierGroupOptionEntity } from '../../../application/ports/modifier-group-repository.port';
 import type { NameI18n } from '../../../domain/restaurant-read.models';
-import { NameI18nDto } from './name-i18n.dto';
+import type { ModifierGroupEntity, ModifierGroupOptionEntity } from '../../../application/ports/modifier-group-repository.port';
 
 export class ModifierGroupOptionResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
-  @ApiPropertyOptional({ type: NameI18nDto }) nameI18n?: NameI18n;
+  @ApiPropertyOptional() nameI18n?: NameI18n;
   @ApiProperty() priceDeltaCents!: number;
   @ApiPropertyOptional({ nullable: true }) imageUrl?: string | null;
   @ApiProperty() isAvailable!: boolean;
@@ -27,7 +26,7 @@ export class ModifierGroupOptionResponseDto {
 export class ModifierGroupResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
-  @ApiPropertyOptional({ type: NameI18nDto }) nameI18n?: NameI18n;
+  @ApiPropertyOptional() nameI18n?: NameI18n;
   @ApiProperty({ enum: ['single', 'multiple'] }) selectionType!: string;
   @ApiProperty() minSelections!: number;
   @ApiProperty() maxSelections!: number;

@@ -217,6 +217,54 @@ perder su configuración. El paso de `send-to-kitchen` es imprescindible: sin
 él las líneas quedan en `pending` y el panel de cocina no las ve nunca (ver
 `mobile/README.md` → *Flujo del pedido contra el backend*).
 
+## Soporte de tablet (WindowSizeClass)
+
+La app está pensada por defecto para móvil en vertical; en tablet (o móvil en
+horizontal) las pantallas existentes se adaptan sin crear pantallas nuevas ni
+tocar la navegación de fondo (`MesaFlowNavigation.kt`/`NavKeys.kt` sin
+cambios). Ver `docs/superpowers/plans/2026-07-12-tablet-adaptive-ui.md` para
+el histórico completo de fases.
+
+- **Cálculo del tamaño de ventana**: `core/designsystem/WindowSizeClass.kt`
+  define `WindowWidthSizeClass` (`Compact`/`Medium`/`Expanded`, mismos
+  breakpoints estándar de Material3: 600dp/840dp), calculado con
+  `rememberWindowWidthSizeClass()` a partir de
+  `LocalConfiguration.current.screenWidthDp` — **sin** depender de
+  `material3-window-size-class` ni `androidx.window` (evita una dependencia
+  nueva solo para esto; ambas librerías usan los mismos umbrales). Se calcula
+  una única vez en `MainActivity.setContent` y se propaga hacia abajo con el
+  `CompositionLocal` `LocalWindowWidthSizeClass` (valor por defecto
+  `Compact`, así que cualquier `@Preview`/test que no lo envuelva
+  explícitamente se comporta como móvil, igual que antes de este cambio).
+- **Carta + configurador (lista-detalle)**: en `Expanded` con un producto en
+  configuración, `MenuScreen` pinta `MenuBody` (carta, `weight(0.62f)`) y
+  `ProductConfiguratorPanel` (panel lateral nuevo, `weight(0.38f)`) lado a
+  lado con un `VerticalDivider`, en vez del `ModalBottomSheet` a pantalla
+  completa de móvil. `ProductConfiguratorSheet.kt` extrae el contenido
+  interior común (`ProductConfiguratorContent`) para no duplicar la UI entre
+  el bottom sheet (móvil/`Compact`/`Medium`) y el panel (tablet/`Expanded`).
+  El grid de productos sigue siendo una `LazyColumn` de una columna incluso
+  en `Expanded` (desviación documentada en el plan, Fase 1 Paso 3): convertir
+  `MenuList` a `LazyVerticalGrid` con agrupación por sección queda pendiente
+  si se quiere abordar aparte.
+- **Carrito, Cobro y Ajustes (ancho de contenido)**: `CartScreen`,
+  `CheckoutScreen` y `SettingsScreen` centran su contenido con
+  `Modifier.expandedContentMaxWidth(windowWidthSizeClass)` (mismo archivo
+  `WindowSizeClass.kt`) dentro de un `Box(contentAlignment =
+  Alignment.TopCenter)`: en `Expanded` acota el ancho a 640dp centrado, en
+  `Compact`/`Medium` hace `fillMaxWidth()` — comportamiento visual idéntico
+  al de antes del cambio.
+- **Tests**: no hay un test de Compose UI automatizado que fuerce
+  `Expanded` y verifique el layout lista-detalle — los tests instrumentados
+  existentes (`AllergenFilterFlowTest`, `DemoToOrderFlowTest`,
+  `PaymentFlowTest`) corren contra el tamaño real de pantalla del
+  emulador/dispositivo que los ejecuta y no hay infraestructura de
+  `DeviceConfigurationOverride` en el proyecto para simular otro tamaño de
+  ventana sobre `MainActivity`; añadirla es más invasivo de lo que cubre esta
+  fase. La verificación de `Expanded` es manual: emulador de tablet (p. ej.
+  "Pixel Tablet" API 34) comparado con uno de móvil, confirmando que el
+  comportamiento de `Compact`/`Medium` no cambió.
+
 ## Validación
 
 Diagramas verificados con el validador Mermaid del repo:

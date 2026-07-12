@@ -10,10 +10,7 @@ export class CreateModifierOptionDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiPropertyOptional({
-    type: NameI18nDto,
-    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
-  })
+  @ApiPropertyOptional({ type: NameI18nDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => NameI18nDto)
@@ -39,10 +36,7 @@ export class CreateModifierGroupDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiPropertyOptional({
-    type: NameI18nDto,
-    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
-  })
+  @ApiPropertyOptional({ type: NameI18nDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => NameI18nDto)
@@ -94,10 +88,7 @@ export class UpdateModifierGroupDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiPropertyOptional({
-    type: NameI18nDto,
-    description: 'Nombre traducido a catalán/inglés, opcional. El castellano de arriba sigue siendo el canónico.',
-  })
+  @ApiPropertyOptional({ type: NameI18nDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => NameI18nDto)

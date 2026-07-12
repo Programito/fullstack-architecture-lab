@@ -5,6 +5,8 @@ export type AuditEntityType =
   | 'product'
   | 'menu'
   | 'menu-section'
+  | 'combo-slot'
+  | 'platter-component'
   | 'reservation'
   | 'order';
 

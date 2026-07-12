@@ -1413,7 +1413,12 @@
           "weak-combo-summary": "Weak combo summary",
           "weak-customization-summary": "Unclear extras"
         }
-      }
+      },
+      "editSectionLabel": "Edit section",
+      "editSectionTitle": "Edit section",
+      "sectionUpdated": "Section updated successfully.",
+      "sectionUpdateFailed": "Could not update the section.",
+      "editModifierGroupAriaLabel": "Edit modifier group"
     },
     "customizer": {
       "title": "Customize product",
@@ -1488,7 +1493,35 @@
         "available": "Available",
         "create": "Create product",
         "save": "Save changes",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "combo": {
+          "title": "Combo slots",
+          "hint": "Each slot defines which products the customer can pick and any priced supplement.",
+          "minSelections": "Min. selections",
+          "maxSelections": "Max. selections",
+          "required": "Required",
+          "options": "Allowed products",
+          "selectProduct": "Pick a product",
+          "isDefault": "Default",
+          "addOption": "Add product",
+          "removeOption": "Remove product",
+          "addSlot": "Add slot",
+          "removeSlot": "Remove slot",
+          "noSlots": "This combo has no slots yet."
+        },
+        "platter": {
+          "title": "Platter components",
+          "hint": "The ingredients that can be removed or swapped when assembling the platter.",
+          "product": "Linked product",
+          "keepProduct": "No change",
+          "quantity": "Quantity",
+          "keepQuantity": "No change",
+          "removable": "Removable",
+          "replaceable": "Replaceable",
+          "addComponent": "Add component",
+          "removeComponent": "Remove component",
+          "noComponents": "This platter has no components yet."
+        }
       },
       "success": {
         "created": "Item created successfully.",
@@ -1520,11 +1553,14 @@
         "optionName": "Option name",
         "optionPrice": "Additional price (€)",
         "optionImage": "Option image",
-        "create": "Create group"
+        "create": "Create group",
+        "editTitle": "Edit modifier group",
+        "save": "Save changes"
       },
       "success": {
         "created": "Modifier group created.",
-        "deleted": "Modifier group deleted."
+        "deleted": "Modifier group deleted.",
+        "updated": "Modifier group updated."
       },
       "errors": {
         "saveFailed": "The group could not be saved. Please try again.",

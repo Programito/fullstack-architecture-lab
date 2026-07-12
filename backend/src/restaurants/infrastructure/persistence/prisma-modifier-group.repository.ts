@@ -44,7 +44,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
         data: {
           organizationId: data.organizationId,
           name: data.name,
-          nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
+          nameI18n: toNameI18nJson(data.nameI18n),
           selectionType: data.selectionType,
           minSelections: data.minSelections,
           maxSelections: data.maxSelections,
@@ -55,7 +55,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
             createMany: {
               data: data.options.map((opt, i) => ({
                 name: opt.name,
-                nameI18n: toNameI18nJson(opt.nameI18n) ?? Prisma.JsonNull,
+                nameI18n: toNameI18nJson(opt.nameI18n),
                 priceDeltaCents: opt.priceDeltaCents,
                 imageUrl: opt.imageUrl ?? null,
                 sortOrder: i + 1,
@@ -82,7 +82,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
           where: { id: data.groupId },
           data: {
             name: data.name,
-            nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
+            nameI18n: toNameI18nJson(data.nameI18n),
             selectionType: data.selectionType,
             minSelections: data.minSelections,
             maxSelections: data.maxSelections,
@@ -91,7 +91,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
               createMany: {
                 data: data.options.map((opt, i) => ({
                   name: opt.name,
-                  nameI18n: toNameI18nJson(opt.nameI18n) ?? Prisma.JsonNull,
+                  nameI18n: toNameI18nJson(opt.nameI18n),
                   priceDeltaCents: opt.priceDeltaCents,
                   imageUrl: opt.imageUrl ?? null,
                   sortOrder: i + 1,

@@ -33,7 +33,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
         data: {
           menuId,
           name: data.name,
-          nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
+          nameI18n: toNameI18nJson(data.nameI18n),
           sortOrder: count,
           isVisible: data.isVisible,
         },
@@ -59,7 +59,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
         where: { id: sectionId },
         data: {
           ...(data.name !== undefined && { name: data.name }),
-          ...(data.nameI18n !== undefined && { nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull }),
+          ...(data.nameI18n !== undefined && { nameI18n: toNameI18nJson(data.nameI18n) }),
           ...(data.isVisible !== undefined && { isVisible: data.isVisible }),
         },
       });
@@ -196,8 +196,6 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       id: rp.id,
       productId: rp.productId,
       name: rp.displayName ?? rp.product.name,
-      // El override de restaurante no tiene traduccion propia todavia: la
-      // traduccion solo aplica al nombre canonico del producto.
       nameI18n: asNameI18n(rp.product.nameI18n),
       displayName: rp.displayName,
       imageUrl: rp.imageUrl,
@@ -242,7 +240,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           data: {
             organizationId: restaurant.organizationId,
             name: data.name,
-            nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull,
+            nameI18n: toNameI18nJson(data.nameI18n),
             description: data.description ?? null,
             productType: 'simple',
             defaultCourse: data.course,
@@ -303,19 +301,12 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           throw new ApplicationErrorException(applicationError('restaurant_product_not_found', `Restaurant product "${productId}" was not found.`, { productId }));
         }
 
-        if (
-          data.name !== undefined ||
-          data.nameI18n !== undefined ||
-          data.description !== undefined ||
-          data.course !== undefined ||
-          data.preparationRoute !== undefined ||
-          data.allergens !== undefined
-        ) {
+        if (data.name !== undefined || data.nameI18n !== undefined || data.description !== undefined || data.course !== undefined || data.preparationRoute !== undefined || data.allergens !== undefined) {
           await tx.product.update({
             where: { id: existing.productId },
             data: {
               ...(data.name !== undefined && { name: data.name }),
-              ...(data.nameI18n !== undefined && { nameI18n: toNameI18nJson(data.nameI18n) ?? Prisma.JsonNull }),
+              ...(data.nameI18n !== undefined && { nameI18n: toNameI18nJson(data.nameI18n) }),
               ...(data.description !== undefined && { description: data.description }),
               ...(data.course !== undefined && { defaultCourse: data.course }),
               ...(data.preparationRoute !== undefined && { defaultPreparationRoute: data.preparationRoute }),

@@ -1418,7 +1418,12 @@
           "weak-combo-summary": "Resumen de menú débil",
           "weak-customization-summary": "Extras poco claros"
         }
-      }
+      },
+      "editSectionLabel": "Editar sección",
+      "editSectionTitle": "Editar sección",
+      "sectionUpdated": "Sección actualizada correctamente.",
+      "sectionUpdateFailed": "No se pudo actualizar la sección.",
+      "editModifierGroupAriaLabel": "Editar grupo de modificadores"
     },
     "customizer": {
       "title": "Personalizar producto",
@@ -1493,7 +1498,35 @@
         "available": "Disponible",
         "create": "Crear producto",
         "save": "Guardar cambios",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "combo": {
+          "title": "Huecos del combo",
+          "hint": "Cada hueco define qué productos puede elegir el cliente y si hay algún suplemento de precio.",
+          "minSelections": "Mín. selecciones",
+          "maxSelections": "Máx. selecciones",
+          "required": "Obligatorio",
+          "options": "Productos permitidos",
+          "selectProduct": "Elige un producto",
+          "isDefault": "Por defecto",
+          "addOption": "Añadir producto",
+          "removeOption": "Quitar producto",
+          "addSlot": "Añadir hueco",
+          "removeSlot": "Quitar hueco",
+          "noSlots": "Este combo todavía no tiene huecos."
+        },
+        "platter": {
+          "title": "Componentes del plato combinado",
+          "hint": "Los ingredientes que se pueden quitar o sustituir al montar el plato.",
+          "product": "Producto asociado",
+          "keepProduct": "Sin cambios",
+          "quantity": "Cantidad",
+          "keepQuantity": "Sin cambios",
+          "removable": "Se puede quitar",
+          "replaceable": "Se puede sustituir",
+          "addComponent": "Añadir componente",
+          "removeComponent": "Quitar componente",
+          "noComponents": "Este plato todavía no tiene componentes."
+        }
       },
       "success": {
         "created": "Artículo creado correctamente.",
@@ -1525,11 +1558,14 @@
         "optionName": "Nombre de la opción",
         "optionPrice": "Precio adicional (€)",
         "optionImage": "Imagen de la opción",
-        "create": "Crear grupo"
+        "create": "Crear grupo",
+        "editTitle": "Editar grupo de modificadores",
+        "save": "Guardar cambios"
       },
       "success": {
         "created": "Grupo de modificadores creado.",
-        "deleted": "Grupo de modificadores eliminado."
+        "deleted": "Grupo de modificadores eliminado.",
+        "updated": "Grupo de modificadores actualizado."
       },
       "errors": {
         "saveFailed": "No se pudo guardar el grupo. Inténtalo de nuevo.",

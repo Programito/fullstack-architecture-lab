@@ -6,19 +6,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -43,10 +49,15 @@ import com.mesaflow.client.core.model.ModifierGroup
 import com.mesaflow.client.core.model.PlatterComponent
 
 /**
- * Configurador de producto: bottom sheet con grupos de extras (única/múltiple),
- * slots de combo con suplemento e ingredientes quitables ("sin cebolla").
- * El botón de añadir muestra el total dinámico y se deshabilita hasta que la
- * configuración cumple los mínimos requeridos.
+ * Configurador de producto: bottom sheet (móvil/tablet en vertical) o panel lateral fijo
+ * (tablet en `Expanded`, ver [ProductConfiguratorPanel]) con grupos de extras (única/múltiple),
+ * slots de combo con suplemento e ingredientes quitables ("sin cebolla"). El botón de añadir
+ * muestra el total dinámico y se deshabilita hasta que la configuración cumple los mínimos
+ * requeridos.
+ *
+ * El contenido en sí vive en [ProductConfiguratorContent] (sin el `ModalBottomSheet`
+ * envolvente) para poder reutilizarlo tal cual en el panel lateral de tablet — ver
+ * docs/superpowers/plans/2026-07-12-tablet-adaptive-ui.md, Fase 1 Paso 1.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,81 +70,152 @@ fun ProductConfiguratorSheet(
     var config by remember(item.id) { mutableStateOf(ProductConfig(item)) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp),
-        ) {
-            Text(item.name, style = MaterialTheme.typography.headlineSmall)
-            if (!item.description.isNullOrBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        ProductConfiguratorContent(
+            item = item,
+            config = config,
+            onConfigChange = { config = it },
+            onAddToCart = onAddToCart,
+        )
+    }
+}
 
-            item.comboDefinition?.slots.orEmpty().forEach { slot ->
-                ComboSlotSection(
-                    slot = slot,
-                    currency = item.currency,
-                    selected = config.optionsBySlot[slot.id].orEmpty(),
-                    onToggle = { config = config.toggleComboOption(slot, it) },
-                )
-            }
+/**
+ * Variante del configurador para el panel lateral fijo en tablet (`Expanded`): mismo contenido
+ * que [ProductConfiguratorSheet] pero sin `ModalBottomSheet` — se pinta directamente dentro de
+ * la columna derecha de [com.mesaflow.client.feature.menu.MenuScreen]. Incluye una cabecera con
+ * botón de cerrar explícito, ya que no hay gesto de "deslizar hacia abajo" como en el bottom
+ * sheet. Gestiona su propio estado de [ProductConfig] igual que la variante de bottom sheet.
+ */
+@Composable
+fun ProductConfiguratorPanel(
+    item: MenuItem,
+    onDismiss: () -> Unit,
+    onAddToCart: (CartLine) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var config by remember(item.id) { mutableStateOf(ProductConfig(item)) }
 
-            item.modifierGroups.forEach { group ->
-                ModifierGroupSection(
-                    group = group,
-                    currency = item.currency,
-                    selected = config.optionsByGroup[group.id].orEmpty(),
-                    onToggle = { config = config.toggleModifier(group, it) },
-                )
-            }
-
-            val removable = item.platterComponents.filter { it.removable }
-            if (removable.isNotEmpty()) {
-                RemovableComponentsSection(
-                    components = removable,
-                    removedIds = config.removedComponentIds,
-                    onToggle = { config = config.toggleRemovedComponent(it) },
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
+    Surface(
+        modifier = modifier.fillMaxHeight(),
+        tonalElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxHeight()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 8.dp, end = 8.dp),
             ) {
-                QuantityStepper(
-                    quantity = config.quantity,
-                    onQuantityChange = { config = config.withQuantity(it) },
-                    max = ProductConfig.MAX_QUANTITY,
+                Text(
+                    text = stringResource(R.string.configurator_panel_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
                 )
-                Button(
-                    onClick = { onAddToCart(config.toCartLine()) },
-                    enabled = config.isValid,
-                ) {
-                    Text(
-                        stringResource(
-                            R.string.configurator_add_for,
-                            PriceFormatter.format(config.totalCents, item.currency),
-                        ),
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.configurator_panel_close),
                     )
                 }
             }
-            if (!config.isValid) {
-                Spacer(Modifier.height(8.dp))
+            ProductConfiguratorContent(
+                item = item,
+                config = config,
+                onConfigChange = { config = it },
+                onAddToCart = onAddToCart,
+            )
+        }
+    }
+}
+
+/**
+ * Contenido puro del configurador (sin `ModalBottomSheet` ni `Surface` envolvente): nombre,
+ * descripción, secciones de combo/modificadores/ingredientes quitables y la barra de cantidad +
+ * botón de añadir. Reutilizado tanto por [ProductConfiguratorSheet] (bottom sheet, móvil) como
+ * por [ProductConfiguratorPanel] (panel lateral, tablet en `Expanded`).
+ */
+@Composable
+fun ProductConfiguratorContent(
+    item: MenuItem,
+    config: ProductConfig,
+    onConfigChange: (ProductConfig) -> Unit,
+    onAddToCart: (CartLine) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp),
+    ) {
+        Text(item.name, style = MaterialTheme.typography.headlineSmall)
+        if (!item.description.isNullOrBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = item.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        item.comboDefinition?.slots.orEmpty().forEach { slot ->
+            ComboSlotSection(
+                slot = slot,
+                currency = item.currency,
+                selected = config.optionsBySlot[slot.id].orEmpty(),
+                onToggle = { onConfigChange(config.toggleComboOption(slot, it)) },
+            )
+        }
+
+        item.modifierGroups.forEach { group ->
+            ModifierGroupSection(
+                group = group,
+                currency = item.currency,
+                selected = config.optionsByGroup[group.id].orEmpty(),
+                onToggle = { onConfigChange(config.toggleModifier(group, it)) },
+            )
+        }
+
+        val removable = item.platterComponents.filter { it.removable }
+        if (removable.isNotEmpty()) {
+            RemovableComponentsSection(
+                components = removable,
+                removedIds = config.removedComponentIds,
+                onToggle = { onConfigChange(config.toggleRemovedComponent(it)) },
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            QuantityStepper(
+                quantity = config.quantity,
+                onQuantityChange = { onConfigChange(config.withQuantity(it)) },
+                max = ProductConfig.MAX_QUANTITY,
+            )
+            Button(
+                onClick = { onAddToCart(config.toCartLine()) },
+                enabled = config.isValid,
+            ) {
                 Text(
-                    text = stringResource(R.string.configurator_required_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(
+                        R.string.configurator_add_for,
+                        PriceFormatter.format(config.totalCents, item.currency),
+                    ),
                 )
             }
+        }
+        if (!config.isValid) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.configurator_required_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

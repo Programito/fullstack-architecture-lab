@@ -3,6 +3,7 @@ package com.mesaflow.client.feature.checkout
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -53,8 +54,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mesaflow.client.R
 import com.mesaflow.client.core.common.AppError
+import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.components.ExitTableConfirmDialog
 import com.mesaflow.client.core.designsystem.components.PriceText
+import com.mesaflow.client.core.designsystem.expandedContentMaxWidth
 import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.model.PaymentResult
@@ -69,6 +72,12 @@ import kotlinx.serialization.json.Json
  * retardo simulado). Al aceptarse, pantalla de pago aceptado con el ticket
  * detallado (líneas de [linesJson], número de pedido, mesa, hora y método)
  * y dos salidas: seguir pidiendo o salir de la mesa.
+ *
+ * **Tablet (`Expanded`):** el formulario de cobro y el ticket de pago
+ * aceptado se acotan a un ancho máximo cómodo y se centran, igual que
+ * [com.mesaflow.client.feature.cart.CartScreen]; en `Compact`/`Medium` no
+ * cambia nada. Ver docs/superpowers/plans/2026-07-12-tablet-adaptive-ui.md,
+ * Fase 2.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +96,7 @@ fun CheckoutScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val windowWidthSizeClass = LocalWindowWidthSizeClass.current
 
     // "Salir de la mesa" desde la pantalla de éxito: el ViewModel hace logout y
     // emite exitTable; la navegación (este callback) vacía el stack hasta Entry.
@@ -135,34 +145,42 @@ fun CheckoutScreen(
             }
         },
     ) { innerPadding ->
-        val result = uiState.result
-        if (result != null) {
-            PaymentAcceptedContent(
-                result = result,
-                // Foto de las líneas enviada por navegación: el carrito real ya está vacío.
-                // Defensivo ante JSON corrupto: sin líneas el ticket se muestra igualmente.
-                lines = remember(linesJson) {
-                    runCatching { Json.decodeFromString<List<CartLine>>(linesJson) }
-                        .getOrDefault(emptyList())
-                },
-                method = uiState.method,
-                dailyNumber = dailyNumber,
-                tableLabel = tableLabel,
-                paidAtMillis = uiState.paidAtMillis,
-                onKeepOrdering = onDone,
-                onExitTableConfirmed = viewModel::onExitTableRequested,
-                modifier = Modifier.padding(innerPadding),
-            )
-        } else {
-            CheckoutContent(
-                totalCents = totalCents,
-                currency = currency,
-                selectedMethod = uiState.method,
-                isProcessing = uiState.isProcessing,
-                onMethodSelected = viewModel::onMethodSelected,
-                onPay = { viewModel.onPay(orderId, totalCents) },
-                modifier = Modifier.padding(innerPadding),
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            val contentModifier = Modifier.expandedContentMaxWidth(windowWidthSizeClass)
+            val result = uiState.result
+            if (result != null) {
+                PaymentAcceptedContent(
+                    result = result,
+                    // Foto de las líneas enviada por navegación: el carrito real ya está vacío.
+                    // Defensivo ante JSON corrupto: sin líneas el ticket se muestra igualmente.
+                    lines = remember(linesJson) {
+                        runCatching { Json.decodeFromString<List<CartLine>>(linesJson) }
+                            .getOrDefault(emptyList())
+                    },
+                    method = uiState.method,
+                    dailyNumber = dailyNumber,
+                    tableLabel = tableLabel,
+                    paidAtMillis = uiState.paidAtMillis,
+                    onKeepOrdering = onDone,
+                    onExitTableConfirmed = viewModel::onExitTableRequested,
+                    modifier = contentModifier,
+                )
+            } else {
+                CheckoutContent(
+                    totalCents = totalCents,
+                    currency = currency,
+                    selectedMethod = uiState.method,
+                    isProcessing = uiState.isProcessing,
+                    onMethodSelected = viewModel::onMethodSelected,
+                    onPay = { viewModel.onPay(orderId, totalCents) },
+                    modifier = contentModifier,
+                )
+            }
         }
     }
 }

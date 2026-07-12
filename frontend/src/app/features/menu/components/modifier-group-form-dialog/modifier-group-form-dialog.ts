@@ -7,6 +7,7 @@ import { Input } from '../../../../shared/ui/input/input';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { ImageDropzone } from '../image-dropzone/image-dropzone';
+import type { ModifierGroup } from '../../models/modifier-group.model';
 import type { CreateModifierGroupRequest } from '../../services/menu-api.service';
 import {
   ProductImageUploadError,
@@ -39,16 +40,26 @@ function emptyOption(): ModifierGroupOptionDraft {
 export class ModifierGroupFormDialog {
   readonly open = input(false, { transform: booleanAttribute });
   readonly loading = input(false, { transform: booleanAttribute });
+  // Grupo a editar (null = modo creación). Al abrir con un valor no nulo, el effect() de abajo
+  // precarga todos los campos desde ese grupo en vez de resetearlos a vacío — ver
+  // docs/superpowers/plans/2026-07-11-menu-multilingual-names.md, Fase 2 Paso 3 (hueco resuelto).
+  readonly editingGroup = input<ModifierGroup | null>(null);
   readonly closed = output<void>();
   readonly confirmed = output<CreateModifierGroupRequest>();
 
   private readonly transloco = inject(TranslocoService);
   private readonly imageUpload = inject(ProductImageUploadService);
 
+  protected readonly isEdit = computed(() => this.editingGroup() !== null);
+  protected readonly dialogTitle = computed(() =>
+    this.transloco.translate(this.isEdit() ? 'menu.modifierGroup.form.editTitle' : 'menu.modifierGroup.form.createTitle'),
+  );
+  protected readonly confirmButtonLabel = computed(() =>
+    this.transloco.translate(this.isEdit() ? 'menu.modifierGroup.form.save' : 'menu.modifierGroup.form.create'),
+  );
+
   protected readonly name = signal('');
-  // CA/EN opcionales junto al nombre canonico en castellano (name). Nota: este dialogo solo
-  // soporta creacion hoy (el effect() de abajo resetea todos los campos al abrir, sin
-  // precargar ningun valor existente) — hueco preexistente no introducido por esta feature.
+  // CA/EN opcionales junto al nombre canonico en castellano (name).
   protected readonly nameCa = signal('');
   protected readonly nameEn = signal('');
   protected readonly selectionType = signal<'single' | 'multiple'>('single');
@@ -72,14 +83,38 @@ export class ModifierGroupFormDialog {
 
   constructor() {
     effect(() => {
-      if (this.open()) {
+      if (!this.open()) return;
+      const editing = this.editingGroup();
+      this.pendingRetryFiles.clear();
+
+      if (editing) {
+        this.name.set(editing.name);
+        this.nameCa.set(editing.nameI18n?.ca ?? '');
+        this.nameEn.set(editing.nameI18n?.en ?? '');
+        // El diálogo solo distingue single/multiple; un grupo 'remove' (fuera del alcance de
+        // creación de este diálogo) se trata como 'multiple' si alguna vez llega aquí a editar.
+        this.selectionType.set(editing.type === 'single' ? 'single' : 'multiple');
+        this.isRequired.set(editing.required);
+        this.options.set(
+          editing.options.length > 0
+            ? editing.options.map((option) => ({
+                name: option.name,
+                nameCa: option.nameI18n?.ca ?? '',
+                nameEn: option.nameI18n?.en ?? '',
+                priceDeltaCents: Math.round(option.priceDelta * 100),
+                imageUrl: option.imageUrl ?? null,
+                uploadStatus: 'idle' as OptionUploadStatus,
+                imageErrorMessage: null,
+              }))
+            : [emptyOption()],
+        );
+      } else {
         this.name.set('');
         this.nameCa.set('');
         this.nameEn.set('');
         this.selectionType.set('single');
         this.isRequired.set(false);
         this.options.set([emptyOption()]);
-        this.pendingRetryFiles.clear();
       }
     });
   }

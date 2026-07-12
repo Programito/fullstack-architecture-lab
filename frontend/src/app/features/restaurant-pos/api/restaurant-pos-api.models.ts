@@ -682,3 +682,72 @@ export type UpdateModifierGroupRequest = {
   isRequired: boolean;
   options: CreateModifierGroupOptionRequest[];
 };
+
+// ── Combo slots (admin) ───────────────────────────────────────────────────────
+// Ver docs/superpowers/plans/2026-07-12-combo-platter-admin.md.
+
+export type ComboSlotOptionRequestDto = {
+  restaurantProductId: string;
+  supplementPriceCents: number;
+  isDefault?: boolean;
+};
+
+export type CreateComboSlotRequest = {
+  name: string;
+  nameI18n?: NameI18n;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  options: ComboSlotOptionRequestDto[];
+};
+
+export type UpdateComboSlotRequest = Partial<CreateComboSlotRequest>;
+
+export type ComboSlotOptionAdminDto = {
+  id: string;
+  restaurantProductId: string;
+  name: string;
+  supplementPriceCents: number;
+  isDefault: boolean;
+  isAvailable: boolean;
+  sortOrder: number;
+};
+
+export type ComboSlotAdminDto = {
+  id: string;
+  comboDefinitionId: string;
+  name: string;
+  nameI18n?: NameI18n;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  sortOrder: number;
+  options: ComboSlotOptionAdminDto[];
+};
+
+// ── Platter components (admin) ────────────────────────────────────────────────
+
+export type CreatePlatterComponentRequest = {
+  name: string;
+  nameI18n?: NameI18n;
+  // Referencia a Product.id (catalogo de organizacion), no a RestaurantProduct.id
+  // — asi lo define el schema (PlatterComponent.componentProductId -> Product).
+  componentProductId?: string | null;
+  quantity?: number | null;
+  isRemovable: boolean;
+  isReplaceable: boolean;
+};
+
+export type UpdatePlatterComponentRequest = Partial<CreatePlatterComponentRequest>;
+
+export type PlatterComponentAdminDto = {
+  id: string;
+  platterDefinitionId: string;
+  name: string;
+  nameI18n?: NameI18n;
+  componentProductId: string | null;
+  quantity: number | null;
+  isRemovable: boolean;
+  isReplaceable: boolean;
+  sortOrder: number;
+};

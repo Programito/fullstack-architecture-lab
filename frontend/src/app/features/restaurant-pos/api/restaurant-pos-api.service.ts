@@ -48,6 +48,12 @@ import type {
   UpdateModifierGroupRequest,
   ReviewTimeEntryChangeRequest,
   RestaurantMenuModifierGroupDto,
+  CreateComboSlotRequest,
+  UpdateComboSlotRequest,
+  ComboSlotAdminDto,
+  CreatePlatterComponentRequest,
+  UpdatePlatterComponentRequest,
+  PlatterComponentAdminDto,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -365,5 +371,33 @@ export class RestaurantPosApiService {
 
   createCustomer(restaurantId: string, body: CreateCustomerRequest): Observable<CustomerSummaryDto> {
     return this.http.post<CustomerSummaryDto>(`${this.restaurantsUrl}/${restaurantId}/customers`, body);
+  }
+
+  // ── Combo slots (admin) ─────────────────────────────────────────────────────
+
+  createComboSlot(restaurantId: string, productId: string, body: CreateComboSlotRequest): Observable<ComboSlotAdminDto> {
+    return this.http.post<ComboSlotAdminDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/combo-slots`, body);
+  }
+
+  updateComboSlot(restaurantId: string, productId: string, slotId: string, body: UpdateComboSlotRequest): Observable<ComboSlotAdminDto> {
+    return this.http.patch<ComboSlotAdminDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/combo-slots/${slotId}`, body);
+  }
+
+  deleteComboSlot(restaurantId: string, productId: string, slotId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/combo-slots/${slotId}`);
+  }
+
+  // ── Platter components (admin) ──────────────────────────────────────────────
+
+  createPlatterComponent(restaurantId: string, productId: string, body: CreatePlatterComponentRequest): Observable<PlatterComponentAdminDto> {
+    return this.http.post<PlatterComponentAdminDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/platter-components`, body);
+  }
+
+  updatePlatterComponent(restaurantId: string, productId: string, componentId: string, body: UpdatePlatterComponentRequest): Observable<PlatterComponentAdminDto> {
+    return this.http.patch<PlatterComponentAdminDto>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/platter-components/${componentId}`, body);
+  }
+
+  deletePlatterComponent(restaurantId: string, productId: string, componentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/platter-components/${componentId}`);
   }
 }

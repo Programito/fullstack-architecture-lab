@@ -1,8 +1,8 @@
 <app-dialog
   [open]="open()"
-  [title]="'menu.modifierGroup.form.createTitle' | transloco"
+  [title]="dialogTitle()"
   [showActions]="true"
-  [confirmLabel]="'menu.modifierGroup.form.create' | transloco"
+  [confirmLabel]="confirmButtonLabel()"
   [confirmDisabled]="!isValid()"
   [confirmLoading]="loading()"
   [cancelLabel]="'menu.product.form.cancel' | transloco"

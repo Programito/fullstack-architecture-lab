@@ -43,6 +43,10 @@ export type ApplicationErrorCode =
   | 'modifier_group_not_found'
   | 'modifier_group_name_taken'
   | 'modifier_group_in_use'
+  | 'combo_slot_not_found'
+  | 'invalid_combo_slot_configuration'
+  | 'platter_component_not_found'
+  | 'invalid_platter_component_configuration'
   | 'invalid_analytics_range'
   | 'time_entry_already_open'
   | 'time_entry_not_open'
@@ -183,6 +187,22 @@ export function modifierGroupNameTaken(name: string): ApplicationError {
 
 export function modifierGroupInUse(groupId: string): ApplicationError {
   return applicationError('modifier_group_in_use', `Modifier group "${groupId}" is assigned to products and cannot be deleted.`, { groupId });
+}
+
+export function comboSlotNotFound(slotId: string): ApplicationError {
+  return applicationError('combo_slot_not_found', `Combo slot "${slotId}" was not found.`, { slotId });
+}
+
+export function invalidComboSlotConfiguration(reason: string, details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_combo_slot_configuration', `Combo slot configuration is invalid: ${reason}`, details);
+}
+
+export function platterComponentNotFound(componentId: string): ApplicationError {
+  return applicationError('platter_component_not_found', `Platter component "${componentId}" was not found.`, { componentId });
+}
+
+export function invalidPlatterComponentConfiguration(reason: string, details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_platter_component_configuration', `Platter component configuration is invalid: ${reason}`, details);
 }
 
 export function invalidAnalyticsRange(from: string, to: string): ApplicationError {

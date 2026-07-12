@@ -1,14 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import type { NameI18n, RestaurantProductDetail } from '../../../domain/restaurant-read.models';
-import { NameI18nDto } from './name-i18n.dto';
 
 export class RestaurantProductDetailResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() productId: string;
   @ApiProperty() organizationId: string;
   @ApiProperty() name: string;
-  @ApiPropertyOptional({ type: NameI18nDto }) nameI18n?: NameI18n;
+  @ApiPropertyOptional() nameI18n?: NameI18n;
   @ApiProperty({ nullable: true }) displayName: string | null;
   @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty({ nullable: true }) displayDescription: string | null;

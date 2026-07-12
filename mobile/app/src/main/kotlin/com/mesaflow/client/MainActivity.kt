@@ -6,12 +6,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mesaflow.client.core.datastore.SettingsStore
+import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.MesaFlowTheme
+import com.mesaflow.client.core.designsystem.rememberWindowWidthSizeClass
 import com.mesaflow.client.core.model.AppLanguage
 import com.mesaflow.client.core.model.ThemeMode
 import com.mesaflow.client.navigation.MesaFlowNavigation
@@ -45,14 +48,21 @@ class MainActivity : ComponentActivity() {
                 AppCompatDelegate.setApplicationLocales(locales)
             }
 
-            MesaFlowTheme(
-                darkTheme = when (themeMode) {
-                    ThemeMode.SYSTEM -> isSystemInDarkTheme()
-                    ThemeMode.LIGHT -> false
-                    ThemeMode.DARK -> true
-                },
-            ) {
-                MesaFlowNavigation()
+            // Calculado una unica vez aqui y propagado por CompositionLocal (no por parametro de
+            // pantalla en pantalla) para no tocar MesaFlowNavigation/NavKeys ni los ViewModels.
+            // Ver docs/superpowers/plans/2026-07-12-tablet-adaptive-ui.md, Fase 0.
+            val windowWidthSizeClass = rememberWindowWidthSizeClass()
+
+            CompositionLocalProvider(LocalWindowWidthSizeClass provides windowWidthSizeClass) {
+                MesaFlowTheme(
+                    darkTheme = when (themeMode) {
+                        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                        ThemeMode.LIGHT -> false
+                        ThemeMode.DARK -> true
+                    },
+                ) {
+                    MesaFlowNavigation()
+                }
             }
         }
     }

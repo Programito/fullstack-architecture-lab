@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MesaFlow</string>
+    <string name="app_name" translatable="false">MesaFlow</string>
     <string name="entry_tagline">Pide desde tu mesa</string>
     <string name="entry_scan_qr">Escanear QR de la mesa</string>
     <string name="entry_demo_mode">Entrar en modo demo</string>
@@ -53,6 +53,8 @@
     <string name="configurator_remove_title">Personaliza los ingredientes</string>
     <string name="configurator_without">Sin %1$s</string>
     <string name="configurator_add_for">Añadir · %1$s</string>
+    <string name="configurator_panel_title">Personalizar producto</string>
+    <string name="configurator_panel_close">Cerrar configurador</string>
     <string name="cart_fab_label">Ver pedido (%1$d) · %2$s</string>
     <string name="cart_title">Tu pedido</string>
     <string name="cart_back">Volver</string>

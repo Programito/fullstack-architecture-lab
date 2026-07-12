@@ -236,10 +236,9 @@ model Product {
   id                      String           @id @default(uuid())
   organizationId          String
   name                    String
-  // Nombre/descripcion canonico en castellano. `nameI18n` es aditivo y opcional
-  // ({ es?, ca?, en? }): el cliente resuelve el idioma, el servidor solo
-  // persiste y devuelve las variantes que existan. Ver
-  // docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name` (canonico,
+  // castellano). Aditivo, sin backfill. Resolucion de idioma siempre en
+  // cliente. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
   nameI18n                Json?
   description             String?
   productType             ProductType
@@ -309,7 +308,7 @@ model MenuSection {
   id         String       @id @default(uuid())
   menuId     String
   name       String
-  // Ver nota en Product.nameI18n.
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
   nameI18n   Json?
   sortOrder  Int
   isVisible  Boolean      @default(true)
@@ -341,7 +340,7 @@ model ModifierGroup {
   id             String                 @id @default(uuid())
   organizationId String
   name           String
-  // Ver nota en Product.nameI18n.
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
   nameI18n       Json?
   selectionType  ModifierSelectionType
   minSelections  Int
@@ -365,7 +364,7 @@ model ModifierOption {
   id             String        @id @default(uuid())
   modifierGroupId String
   name           String
-  // Ver nota en Product.nameI18n.
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
   nameI18n       Json?
   priceDeltaCents Int          @default(0)
   imageUrl       String?
@@ -406,7 +405,7 @@ model ComboSlot {
   id                String          @id @default(uuid())
   comboDefinitionId String
   name              String
-  // Ver nota en Product.nameI18n.
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
   nameI18n          Json?
   minSelections     Int
   maxSelections     Int
@@ -450,7 +449,7 @@ model PlatterComponent {
   platterDefinitionId String
   componentProductId String?
   name               String
-  // Ver nota en Product.nameI18n.
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
   nameI18n           Json?
   quantity           Int?
   isRemovable        Boolean           @default(false)
