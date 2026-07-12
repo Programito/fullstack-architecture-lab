@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/angular';
+import { Component, signal } from '@angular/core';
 import { Combobox, type ComboboxOption } from './combobox';
 
 const options: ComboboxOption[] = [
@@ -62,6 +63,30 @@ describe('Combobox', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar seleccion' }));
 
     expect(valueChange).toHaveBeenCalledWith('');
+  });
+
+  it('clears the visible label when parent state resets the selected value', async () => {
+    @Component({
+      selector: 'app-combobox-host',
+      imports: [Combobox],
+      template: `
+        <app-combobox label="Categoria" [options]="options" [value]="value()" (valueChange)="value.set($event)" />
+        <button type="button" (click)="value.set('')">Reset</button>
+      `,
+    })
+    class HostComponent {
+      readonly options = options;
+      readonly value = signal('product');
+    }
+
+    await render(HostComponent);
+
+    const input = screen.getByRole('combobox', { name: 'Categoria' }) as HTMLInputElement;
+    expect(input.value).toBe('Producto');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+
+    expect(input.value).toBe('');
   });
 
   it('sets combobox aria attributes', async () => {

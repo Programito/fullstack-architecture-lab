@@ -5,30 +5,52 @@
       <h1>{{ 'developer.logs.title' | transloco }}</h1>
       <p>{{ 'developer.logs.description' | transloco }}</p>
     </div>
-    <app-button variant="neutral" fill="outline" routerLink="/developer">
-      {{ 'developer.logs.back' | transloco }}
-    </app-button>
+    <app-back-link [label]="'developer.logs.back' | transloco" routerLink="/developer" />
   </header>
 
   <app-card variant="outlined">
     <section class="developer-logs-page__filters" aria-label="Filtros de logs">
       <div class="developer-logs-page__filters-header">
         <h2>{{ 'developer.logs.filters.title' | transloco }}</h2>
-        <app-button
-          variant="neutral"
-          fill="clear"
-          shape="round"
-          [ariaLabel]="(filtersExpanded() ? 'developer.logs.filters.hide' : 'developer.logs.filters.show') | transloco"
-          (pressed)="toggleFilters()"
-        >
-          <app-icon [name]="filtersExpanded() ? 'visibility_off' : 'visibility'" />
-        </app-button>
+        <div class="developer-logs-page__filters-header-actions">
+          <app-button
+            variant="neutral"
+            fill="clear"
+            shape="round"
+            [ariaLabel]="'developer.logs.filters.infoAriaLabel' | transloco"
+            (pressed)="openFiltersInfo()"
+          >
+            <app-icon name="info" />
+          </app-button>
+          <app-button
+            variant="neutral"
+            fill="clear"
+            shape="round"
+            [ariaLabel]="(filtersExpanded() ? 'developer.logs.filters.hide' : 'developer.logs.filters.show') | transloco"
+            (pressed)="toggleFilters()"
+          >
+            <app-icon [name]="filtersExpanded() ? 'visibility_off' : 'visibility'" />
+          </app-button>
+        </div>
       </div>
 
       @if (filtersExpanded()) {
         <div class="developer-logs-page__filter-groups">
           <div class="developer-logs-page__filter-group">
-            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.view' | transloco }}</p>
+            <div class="developer-logs-page__label-with-info">
+              <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.view' | transloco }}</p>
+              <button
+                class="developer-logs-page__info-button"
+                type="button"
+                [attr.aria-label]="'developer.logs.filters.viewInfoAriaLabel' | transloco"
+                [appTooltip]="'developer.logs.filters.viewHint' | transloco"
+                tooltipPosition="top"
+                tooltipAppearance="minimal"
+                [tooltipShowDelay]="0"
+              >
+                <app-icon name="info" size="sm" [decorative]="true" />
+              </button>
+            </div>
             <div class="developer-logs-page__segmented">
               <app-button [variant]="view() === 'all' ? 'primary' : 'neutral'" [fill]="view() === 'all' ? 'solid' : 'outline'" (pressed)="setView('all')">
                 {{ 'developer.logs.views.all' | transloco }}
@@ -43,7 +65,20 @@
           </div>
 
           <div class="developer-logs-page__filter-group">
-            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.from' | transloco }} / {{ 'developer.logs.filters.to' | transloco }}</p>
+            <div class="developer-logs-page__label-with-info">
+              <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.rangeLabel' | transloco }}</p>
+              <button
+                class="developer-logs-page__info-button"
+                type="button"
+                [attr.aria-label]="'developer.logs.filters.rangeInfoAriaLabel' | transloco"
+                [appTooltip]="'developer.logs.filters.rangeHint' | transloco"
+                tooltipPosition="top"
+                tooltipAppearance="minimal"
+                [tooltipShowDelay]="0"
+              >
+                <app-icon name="info" size="sm" [decorative]="true" />
+              </button>
+            </div>
             <div class="developer-logs-page__quick-range">
               <app-button [variant]="quickRange() === '1h' ? 'secondary' : 'neutral'" [fill]="quickRange() === '1h' ? 'solid' : 'outline'" (pressed)="setQuickRange('1h')">
                 {{ 'developer.logs.ranges.1h' | transloco }}
@@ -64,7 +99,20 @@
           </div>
 
           <div class="developer-logs-page__filter-group">
-            <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.clientOrigin' | transloco }}</p>
+            <div class="developer-logs-page__label-with-info">
+              <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.clientOrigin' | transloco }}</p>
+              <button
+                class="developer-logs-page__info-button"
+                type="button"
+                [attr.aria-label]="'developer.logs.filters.clientOriginInfoAriaLabel' | transloco"
+                [appTooltip]="'developer.logs.filters.clientOriginHint' | transloco"
+                tooltipPosition="top"
+                tooltipAppearance="minimal"
+                [tooltipShowDelay]="0"
+              >
+                <app-icon name="info" size="sm" [decorative]="true" />
+              </button>
+            </div>
             <div class="developer-logs-page__origin-chips">
               @for (origin of clientOriginOptions; track origin) {
                 <app-button
@@ -97,7 +145,20 @@
                   <input type="datetime-local" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
                 </label>
                 <label>
-                  <span>{{ 'developer.logs.filters.level' | transloco }}</span>
+                  <span class="developer-logs-page__label-with-info">
+                    <span>{{ 'developer.logs.filters.level' | transloco }}</span>
+                    <button
+                      class="developer-logs-page__info-button"
+                      type="button"
+                      [attr.aria-label]="'developer.logs.filters.levelInfoAriaLabel' | transloco"
+                      [appTooltip]="'developer.logs.filters.levelHint' | transloco"
+                      tooltipPosition="top"
+                      tooltipAppearance="minimal"
+                      [tooltipShowDelay]="0"
+                    >
+                      <app-icon name="info" size="sm" [decorative]="true" />
+                    </button>
+                  </span>
                   <select [ngModel]="filters().level" (ngModelChange)="setFilter('level', $event)">
                     <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
                     <option value="info">info</option>
@@ -106,7 +167,20 @@
                   </select>
                 </label>
                 <label class="developer-logs-page__field-span-2">
-                  <span>{{ 'developer.logs.filters.path' | transloco }}</span>
+                  <span class="developer-logs-page__label-with-info">
+                    <span>{{ 'developer.logs.filters.path' | transloco }}</span>
+                    <button
+                      class="developer-logs-page__info-button"
+                      type="button"
+                      [attr.aria-label]="'developer.logs.filters.pathInfoAriaLabel' | transloco"
+                      [appTooltip]="'developer.logs.filters.pathHint' | transloco"
+                      tooltipPosition="top"
+                      tooltipAppearance="minimal"
+                      [tooltipShowDelay]="0"
+                    >
+                      <app-icon name="info" size="sm" [decorative]="true" />
+                    </button>
+                  </span>
                   <select [ngModel]="filters().path" (ngModelChange)="setFilter('path', $event)">
                     <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
                     @for (group of pathGroupOptions; track group.value) {
@@ -115,7 +189,20 @@
                   </select>
                 </label>
                 <label class="developer-logs-page__field-span-2">
-                  <span>{{ 'developer.logs.filters.search' | transloco }}</span>
+                  <span class="developer-logs-page__label-with-info">
+                    <span>{{ 'developer.logs.filters.search' | transloco }}</span>
+                    <button
+                      class="developer-logs-page__info-button"
+                      type="button"
+                      [attr.aria-label]="'developer.logs.filters.searchInfoAriaLabel' | transloco"
+                      [appTooltip]="'developer.logs.filters.searchHint' | transloco"
+                      tooltipPosition="top"
+                      tooltipAppearance="minimal"
+                      [tooltipShowDelay]="0"
+                    >
+                      <app-icon name="info" size="sm" [decorative]="true" />
+                    </button>
+                  </span>
                   <input type="search" [ngModel]="filters().search" (ngModelChange)="setFilter('search', $event)" />
                 </label>
               </div>
@@ -144,7 +231,20 @@
                   (valueChange)="setFilter('actorUserId', $event)"
                 />
                 <label>
-                  <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
+                  <span class="developer-logs-page__label-with-info">
+                    <span>{{ 'developer.logs.filters.entityType' | transloco }}</span>
+                    <button
+                      class="developer-logs-page__info-button"
+                      type="button"
+                      [attr.aria-label]="'developer.logs.filters.entityTypeInfoAriaLabel' | transloco"
+                      [appTooltip]="'developer.logs.filters.entityTypeHint' | transloco"
+                      tooltipPosition="top"
+                      tooltipAppearance="minimal"
+                      [tooltipShowDelay]="0"
+                    >
+                      <app-icon name="info" size="sm" [decorative]="true" />
+                    </button>
+                  </span>
                   <select [ngModel]="filters().entityType" (ngModelChange)="setFilter('entityType', $event)">
                     <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
                     @for (entityType of entityTypeOptions; track entityType) {
@@ -160,7 +260,20 @@
                   (valueChange)="setFilter('entityId', $event)"
                 />
                 <label>
-                  <span>{{ 'developer.logs.filters.result' | transloco }}</span>
+                  <span class="developer-logs-page__label-with-info">
+                    <span>{{ 'developer.logs.filters.result' | transloco }}</span>
+                    <button
+                      class="developer-logs-page__info-button"
+                      type="button"
+                      [attr.aria-label]="'developer.logs.filters.resultInfoAriaLabel' | transloco"
+                      [appTooltip]="'developer.logs.filters.resultHint' | transloco"
+                      tooltipPosition="top"
+                      tooltipAppearance="minimal"
+                      [tooltipShowDelay]="0"
+                    >
+                      <app-icon name="info" size="sm" [decorative]="true" />
+                    </button>
+                  </span>
                   <select [ngModel]="filters().result" (ngModelChange)="setFilter('result', $event)">
                     <option value="">{{ 'developer.logs.filters.all' | transloco }}</option>
                     <option value="attempted">attempted</option>
@@ -192,7 +305,10 @@
         }
         <div class="developer-logs-page__actions">
           <app-button variant="primary" (pressed)="applyFilters()">{{ 'developer.logs.filters.apply' | transloco }}</app-button>
-          <app-button variant="neutral" fill="outline" (pressed)="resetFilters()">{{ 'developer.logs.filters.reset' | transloco }}</app-button>
+          <app-button variant="neutral" fill="outline" (pressed)="clearFilters()">
+            <app-icon name="delete" size="sm" [decorative]="true" />
+            {{ 'developer.logs.filters.reset' | transloco }}
+          </app-button>
         </div>
       }
     </section>
@@ -240,7 +356,18 @@
 
       <section class="developer-logs-page__dashboard-kpis">
         <section class="developer-logs-page__summary-cards developer-logs-page__summary-cards--compact">
-          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--metric" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-info-button"
+              [attr.aria-label]="'developer.logs.metrics.requestsInfoAriaLabel' | transloco"
+              [appTooltip]="'developer.logs.metrics.requestsHint' | transloco"
+              tooltipPosition="top"
+              tooltipAppearance="minimal"
+              [tooltipShowDelay]="0"
+            >
+              <app-icon name="info" size="sm" [decorative]="true" />
+            </button>
             <button
               type="button"
               class="developer-logs-page__metric-button"
@@ -254,7 +381,18 @@
               </p>
             </button>
           </app-card>
-          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--metric" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-info-button"
+              [attr.aria-label]="'developer.logs.metrics.errorsInfoAriaLabel' | transloco"
+              [appTooltip]="'developer.logs.metrics.errorsHint' | transloco"
+              tooltipPosition="top"
+              tooltipAppearance="minimal"
+              [tooltipShowDelay]="0"
+            >
+              <app-icon name="info" size="sm" [decorative]="true" />
+            </button>
             <button
               type="button"
               class="developer-logs-page__metric-button"
@@ -268,14 +406,38 @@
               </p>
             </button>
           </app-card>
-          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
-            <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errorRate' | transloco }}</p>
-            <strong>{{ summary()?.errorRate ?? 0 }}%</strong>
-            <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorRate') === 'good'" [class.bad]="comparisonTone('errorRate') === 'bad'">
-              {{ comparisonLabel('errorRate', 'percent') }}
-            </p>
+          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--metric" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-info-button"
+              [attr.aria-label]="'developer.logs.metrics.errorRateInfoAriaLabel' | transloco"
+              [appTooltip]="'developer.logs.metrics.errorRateHint' | transloco"
+              tooltipPosition="top"
+              tooltipAppearance="minimal"
+              [tooltipShowDelay]="0"
+            >
+              <app-icon name="info" size="sm" [decorative]="true" />
+            </button>
+            <div class="developer-logs-page__metric-static">
+              <p class="developer-logs-page__metric-label">{{ 'developer.logs.metrics.errorRate' | transloco }}</p>
+              <strong>{{ summary()?.errorRate ?? 0 }}%</strong>
+              <p class="developer-logs-page__metric-comparison" [class.good]="comparisonTone('errorRate') === 'good'" [class.bad]="comparisonTone('errorRate') === 'bad'">
+                {{ comparisonLabel('errorRate', 'percent') }}
+              </p>
+            </div>
           </app-card>
-          <app-card variant="outlined" class="developer-logs-page__summary-card" [stretch]="true">
+          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--metric" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-info-button"
+              [attr.aria-label]="'developer.logs.metrics.auditInfoAriaLabel' | transloco"
+              [appTooltip]="'developer.logs.metrics.auditHint' | transloco"
+              tooltipPosition="top"
+              tooltipAppearance="minimal"
+              [tooltipShowDelay]="0"
+            >
+              <app-icon name="info" size="sm" [decorative]="true" />
+            </button>
             <button
               type="button"
               class="developer-logs-page__metric-button"
@@ -289,7 +451,18 @@
               </p>
             </button>
           </app-card>
-          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--wide" [stretch]="true">
+          <app-card variant="outlined" class="developer-logs-page__summary-card developer-logs-page__summary-card--metric developer-logs-page__summary-card--wide" [stretch]="true">
+            <button
+              type="button"
+              class="developer-logs-page__metric-info-button"
+              [attr.aria-label]="'developer.logs.metrics.latencyInfoAriaLabel' | transloco"
+              [appTooltip]="'developer.logs.metrics.latencyHint' | transloco"
+              tooltipPosition="top"
+              tooltipAppearance="minimal"
+              [tooltipShowDelay]="0"
+            >
+              <app-icon name="info" size="sm" [decorative]="true" />
+            </button>
             <button
               type="button"
               class="developer-logs-page__metric-button"
@@ -351,6 +524,55 @@
       }
     }
   </section>
+
+  <app-dialog
+    [open]="filtersInfoOpen()"
+    [title]="'developer.logs.filters.infoTitle' | transloco"
+    [description]="'developer.logs.filters.infoDescription' | transloco"
+    size="lg"
+    appearance="minimal"
+    [showActions]="false"
+    [closeAriaLabel]="'developer.logs.filters.closeInfo' | transloco"
+    (closed)="closeFiltersInfo()"
+  >
+    <div class="developer-logs-page__help-dialog">
+      <section class="developer-logs-page__help-section">
+        <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.title' | transloco }}</p>
+        <div class="developer-logs-page__help-grid">
+          @for (item of filterHelpItems; track item.labelKey) {
+            <article class="developer-logs-page__help-item">
+              <strong>{{ item.labelKey | transloco }}</strong>
+              <p>{{ item.descriptionKey | transloco }}</p>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="developer-logs-page__help-section">
+        <p class="developer-logs-page__group-title">{{ 'developer.logs.filters.clientOrigin' | transloco }}</p>
+        <div class="developer-logs-page__help-grid">
+          @for (item of originHelpItems; track item.labelKey) {
+            <article class="developer-logs-page__help-item">
+              <strong>{{ item.labelKey | transloco }}</strong>
+              <p>{{ item.descriptionKey | transloco }}</p>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="developer-logs-page__help-section">
+        <p class="developer-logs-page__group-title">KPI</p>
+        <div class="developer-logs-page__help-grid">
+          @for (item of kpiHelpItems; track item.labelKey) {
+            <article class="developer-logs-page__help-item">
+              <strong>{{ item.labelKey | transloco }}</strong>
+              <p>{{ item.descriptionKey | transloco }}</p>
+            </article>
+          }
+        </div>
+      </section>
+    </div>
+  </app-dialog>
 
   @if (topSlowPaths().length || topErrorEvents().length) {
     <section class="developer-logs-page__insights">

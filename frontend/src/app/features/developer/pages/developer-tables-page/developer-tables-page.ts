@@ -1,8 +1,9 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
+import { BackLink } from '../../../../shared/ui/back-link/back-link';
 import { Button } from '../../../../shared/ui/button/button';
 import { Card } from '../../../../shared/ui/card/card';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
@@ -15,7 +16,7 @@ import { DEVELOPER_TABLE_SCHEMAS } from '../../schema/developer-schema.generated
 
 @Component({
   selector: 'app-developer-tables-page',
-  imports: [RouterLink, TranslocoPipe, Button, Card, Dialog, Icon, SearchInput, Select, Table, Tooltip],
+  imports: [TranslocoPipe, BackLink, Button, Card, Dialog, Icon, SearchInput, Select, Table, Tooltip],
   templateUrl: './developer-tables-page.html',
   styleUrl: './developer-tables-page.css',
 })

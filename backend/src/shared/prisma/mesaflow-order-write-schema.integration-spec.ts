@@ -138,6 +138,9 @@ describe('MesaFlow order write schema', () => {
 
     const order = await prisma.order.create({
       data: {
+        // Ver comentario en activeOrderData() sobre Order.dailyNumber: no es clave de negocio ni
+        // tiene restriccion de unicidad, se fija a 1 igual que en el resto de fixtures del repo.
+        dailyNumber: 1,
         restaurantId,
         tableId,
         openedByUserId: userId,
@@ -266,6 +269,10 @@ describe('MesaFlow order write schema', () => {
 
 function activeOrderData(restaurantId: string, tableId: string, openedByUserId: string) {
   return {
+    // Contador diario, no es clave de negocio (ver comentario en schema.prisma sobre Order.dailyNumber)
+    // ni tiene restriccion de unicidad; se fija a 1 aqui igual que en el resto de fixtures del
+    // repo (grep dailyNumber: 1 en use-cases/*.spec.ts).
+    dailyNumber: 1,
     restaurantId,
     tableId,
     openedByUserId,

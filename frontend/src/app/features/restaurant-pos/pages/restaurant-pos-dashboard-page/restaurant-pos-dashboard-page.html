@@ -20,11 +20,20 @@
           <app-button
             variant="neutral"
             fill="outline"
-            shape="round"
             [ariaLabel]="'restaurantPos.dashboard.filters.reset' | transloco"
             (pressed)="resetFilters()"
           >
-            <app-icon name="delete" />
+            <app-icon name="delete" size="sm" [decorative]="true" />
+            {{ 'restaurantPos.dashboard.filters.reset' | transloco }}
+          </app-button>
+          <app-button
+            variant="neutral"
+            fill="clear"
+            shape="round"
+            [ariaLabel]="'restaurantPos.dashboard.filters.infoAriaLabel' | transloco"
+            (pressed)="openFiltersInfo()"
+          >
+            <app-icon name="info" />
           </app-button>
           <app-button
             variant="neutral"
@@ -63,19 +72,19 @@
 
       @if (filtersExpanded()) {
         <div class="restaurant-pos-dashboard-page__filters-grid">
-          <div class="theme-panel rounded-2xl border px-4 py-3 shadow-sm">
+          <div class="theme-panel restaurant-pos-dashboard-page__filter-panel rounded-2xl border px-4 py-3 shadow-sm">
             <span class="theme-muted mb-2 block text-xs font-semibold uppercase tracking-[0.18em]">
-              {{ 'restaurantPos.dashboard.filters.rangeLabel' | transloco }}
+              {{ 'restaurantPos.dashboard.filters.rangeQuickLabel' | transloco }}
             </span>
             <app-segmented-control
               class="restaurant-pos-dashboard-page__range-segmented"
               [options]="quickRangeOptions()"
               [value]="quickRange()"
-              [ariaLabel]="'restaurantPos.dashboard.filters.rangeLabel' | transloco"
+              [ariaLabel]="'restaurantPos.dashboard.filters.rangeQuickLabel' | transloco"
               (valueChange)="setQuickRange($event)"
             />
           </div>
-          <div class="theme-panel restaurant-pos-dashboard-page__date-picker-panel rounded-2xl border px-4 py-3 shadow-sm">
+          <div class="theme-panel restaurant-pos-dashboard-page__filter-panel restaurant-pos-dashboard-page__date-picker-panel rounded-2xl border px-4 py-3 shadow-sm">
             <app-date-picker
               mode="range"
               [label]="'restaurantPos.dashboard.filters.rangeLabel' | transloco"
@@ -90,6 +99,43 @@
       }
     </div>
   </section>
+
+  <app-dialog
+    [open]="filtersInfoOpen()"
+    [title]="'restaurantPos.dashboard.filters.infoTitle' | transloco"
+    [description]="'restaurantPos.dashboard.filters.infoDescription' | transloco"
+    size="lg"
+    appearance="minimal"
+    [showActions]="false"
+    [closeAriaLabel]="'restaurantPos.dashboard.filters.closeInfo' | transloco"
+    (closed)="closeFiltersInfo()"
+  >
+    <div class="restaurant-pos-dashboard-page__help-dialog">
+      <section class="restaurant-pos-dashboard-page__help-section">
+        <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.dashboard.filters.title' | transloco }}</p>
+        <div class="restaurant-pos-dashboard-page__help-grid">
+          @for (item of filterHelpItems; track item.labelKey) {
+            <article class="restaurant-pos-dashboard-page__help-item">
+              <strong>{{ item.labelKey | transloco }}</strong>
+              <p>{{ item.descriptionKey | transloco }}</p>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="restaurant-pos-dashboard-page__help-section">
+        <p class="theme-title text-sm font-semibold">KPI</p>
+        <div class="restaurant-pos-dashboard-page__help-grid">
+          @for (item of metricHelpItems; track item.labelKey) {
+            <article class="restaurant-pos-dashboard-page__help-item">
+              <strong>{{ item.labelKey | transloco }}</strong>
+              <p>{{ item.descriptionKey | transloco }}</p>
+            </article>
+          }
+        </div>
+      </section>
+    </div>
+  </app-dialog>
 
   @if (rangeClamped()) {
     <p class="theme-muted mx-auto w-full max-w-7xl px-4 pt-2 text-xs lg:px-6">

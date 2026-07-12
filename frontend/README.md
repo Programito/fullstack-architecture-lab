@@ -42,6 +42,24 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+### Storybook
+
+To browse the component library with live reload, run:
+
+```bash
+pnpm storybook
+```
+
+This starts Storybook in dev mode (default port `6006`), rebuilding automatically as you edit components and stories.
+
+The backend also serves a **prebuilt, static** copy of Storybook at `http://localhost:3000/developer/storybook/` (see `backend/src/main.ts`). That copy is a snapshot of whatever was last built — it does **not** update automatically when you edit stories or components. After changing anything under `frontend/src/app/shared/ui/**` (or any other story), rebuild it with:
+
+```bash
+pnpm build-storybook
+```
+
+This regenerates `frontend/storybook-static/`. Reload `http://localhost:3000/developer/storybook/` afterwards (no backend restart needed) to see the changes.
+
 ### Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
@@ -103,6 +121,24 @@ ng build
 ```
 
 Esto compila el proyecto y guarda los artefactos en el directorio `dist/`. Por defecto, el build de producción optimiza la aplicación para rendimiento y velocidad.
+
+### Storybook
+
+Para navegar la librería de componentes con recarga en vivo, ejecuta:
+
+```bash
+pnpm storybook
+```
+
+Esto arranca Storybook en modo desarrollo (puerto por defecto `6006`), reconstruyendo automáticamente al editar componentes e historias.
+
+El backend también sirve una copia **estática y precompilada** de Storybook en `http://localhost:3000/developer/storybook/` (ver `backend/src/main.ts`). Esa copia es una foto fija del último build realizado — **no** se actualiza sola al modificar historias o componentes. Tras cambiar algo en `frontend/src/app/shared/ui/**` (o cualquier otra historia), reconstrúyela con:
+
+```bash
+pnpm build-storybook
+```
+
+Esto regenera `frontend/storybook-static/`. Recarga después `http://localhost:3000/developer/storybook/` (no hace falta reiniciar el backend) para ver los cambios.
 
 ### Tests unitarios
 

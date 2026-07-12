@@ -36,32 +36,33 @@ describe('ColorModeMenu', () => {
   it('renders a direct switch to dark mode when the active mode is light', async () => {
     await renderMenu();
 
-    const trigger = screen.getByRole('button', { name: 'Cambiar a modo oscuro' });
+    const trigger = screen.getByRole('switch', { name: 'Cambiar a modo oscuro' });
 
     expect(trigger).toBeTruthy();
     expect(trigger.textContent).toContain('light_mode');
-    expect(trigger.textContent).not.toContain('Tema');
+    expect(trigger.textContent).toContain('dark_mode');
+    expect(trigger.getAttribute('aria-checked')).toBe('false');
   });
 
   it('toggles between explicit dark and light preferences through the color mode service', async () => {
     const { fixture } = await renderMenu();
     const service = fixture.debugElement.injector.get(ColorModeService);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cambiar a modo oscuro' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Cambiar a modo oscuro' }));
     fixture.detectChanges();
 
     expect(service.preference()).toBe('dark');
     expect(document.documentElement.dataset['theme']).toBe('dark');
-    const darkTrigger = screen.getByRole('button', { name: 'Cambiar a modo claro' });
+    const darkTrigger = screen.getByRole('switch', { name: 'Cambiar a modo claro' });
 
     expect(darkTrigger).toBeTruthy();
-    expect(darkTrigger.textContent).toContain('dark_mode');
+    expect(darkTrigger.getAttribute('aria-checked')).toBe('true');
 
     fireEvent.click(darkTrigger);
     fixture.detectChanges();
 
     expect(service.preference()).toBe('light');
     expect(document.documentElement.dataset['theme']).toBe('light');
-    expect(screen.getByRole('button', { name: 'Cambiar a modo oscuro' }).textContent).toContain('light_mode');
+    expect(screen.getByRole('switch', { name: 'Cambiar a modo oscuro' }).getAttribute('aria-checked')).toBe('false');
   });
 });

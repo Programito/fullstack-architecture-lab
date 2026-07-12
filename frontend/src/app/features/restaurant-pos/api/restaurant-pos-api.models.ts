@@ -482,6 +482,7 @@ export type RestaurantMenuItemDto = {
   name: string;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   imageUrl?: string | null;
   productType: 'simple' | 'combo' | 'platter';
   priceCents: number;
@@ -558,6 +559,7 @@ export type RestaurantProductDetailDto = {
   displayName: string | null;
   imageUrl: string | null;
   description: string | null;
+  descriptionI18n?: NameI18n;
   displayDescription: string | null;
   modifierGroupIds: string[];
   productType: 'simple' | 'combo' | 'platter';
@@ -575,6 +577,7 @@ export type CreateRestaurantProductRequest = {
   name: string;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: AllergenDto[];
@@ -588,6 +591,7 @@ export type UpdateRestaurantProductRequest = {
   name?: string;
   nameI18n?: NameI18n;
   description?: string | null;
+  descriptionI18n?: NameI18n;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: AllergenDto[];

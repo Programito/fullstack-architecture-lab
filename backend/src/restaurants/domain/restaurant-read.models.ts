@@ -78,6 +78,7 @@ export type RestaurantMenuItem = {
   name: string;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   imageUrl: string | null;
   productType: 'simple' | 'combo' | 'platter';
   priceCents: number;
@@ -156,6 +157,7 @@ export type RestaurantProductDetail = {
   nameI18n?: NameI18n;
   displayName: string | null;
   description: string | null;
+  descriptionI18n?: NameI18n;
   displayDescription: string | null;
   imageUrl: string | null;
   modifierGroupIds: string[];

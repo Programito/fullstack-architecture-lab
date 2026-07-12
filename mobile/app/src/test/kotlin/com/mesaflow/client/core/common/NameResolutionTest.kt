@@ -51,4 +51,26 @@ class NameResolutionTest {
         assertEquals("en", AppLanguage.EN.resolveLocaleTag())
         assertEquals("es", AppLanguage.ES.resolveLocaleTag())
     }
+
+    @Test
+    fun `resolveDescription con las tres variantes, resuelve la del idioma activo`() {
+        val descriptionI18n = NameI18n(es = "Con queso", ca = "Amb formatge", en = "With cheese")
+
+        assertEquals("Con queso", resolveDescription(descriptionI18n, fallback = "Con queso", localeTag = "es"))
+        assertEquals("Amb formatge", resolveDescription(descriptionI18n, fallback = "Con queso", localeTag = "ca"))
+        assertEquals("With cheese", resolveDescription(descriptionI18n, fallback = "Con queso", localeTag = "en"))
+    }
+
+    @Test
+    fun `resolveDescription con descriptionI18n nulo, devuelve el fallback (que puede ser null)`() {
+        assertEquals("Con queso", resolveDescription(descriptionI18n = null, fallback = "Con queso", localeTag = "en"))
+        assertEquals(null, resolveDescription(descriptionI18n = null, fallback = null, localeTag = "en"))
+    }
+
+    @Test
+    fun `resolveDescription con variante en blanco no reemplaza al fallback`() {
+        val descriptionI18n = NameI18n(es = "Con queso", en = "   ")
+
+        assertEquals("Con queso", resolveDescription(descriptionI18n, fallback = "Con queso", localeTag = "en"))
+    }
 }

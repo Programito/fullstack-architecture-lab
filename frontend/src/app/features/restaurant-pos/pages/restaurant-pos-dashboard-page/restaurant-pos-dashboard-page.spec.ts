@@ -240,7 +240,35 @@ describe('RestaurantPosDashboardPage', () => {
     const actions = view.container.querySelector('.restaurant-pos-dashboard-page__filters-actions');
 
     expect(actions).toBeTruthy();
-    expect(actions?.querySelectorAll('app-button').length).toBe(2);
+    expect(actions?.querySelectorAll('app-button').length).toBe(3);
+    expect(actions?.textContent).toContain('Limpiar filtros');
+  });
+
+  it('opens the analytics help dialog from the filters header', async () => {
+    const i18n = provideI18nTesting();
+    const restaurantContext = createRestaurantContextMock();
+    const routeHarness = createRouteHarness();
+    const api = { getReport: vi.fn(() => of(createReport())) };
+
+    const view = await render(RestaurantPosDashboardPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+        { provide: RestaurantAnalyticsApiService, useValue: api },
+      ],
+    });
+
+    const component = view.fixture.componentInstance as RestaurantPosDashboardPage & {
+      openFiltersInfo(): void;
+    };
+
+    component.openFiltersInfo();
+    view.fixture.detectChanges();
+
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(view.container.querySelectorAll('.restaurant-pos-dashboard-page__help-item').length).toBe(6);
   });
 
   it('shows loading spinners in the KPI cards while the report is still loading', async () => {
@@ -703,7 +731,6 @@ describe('RestaurantPosDashboardPage', () => {
     expect(screen.getByText('Desde: 2026-06-01')).toBeTruthy();
     expect(screen.getByText('Hasta: 2026-06-07')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeTruthy();
-    expect(screen.queryByText('Limpiar filtros')).toBeNull();
   });
 
   it('removes only the selected custom filter chip when clicked', async () => {

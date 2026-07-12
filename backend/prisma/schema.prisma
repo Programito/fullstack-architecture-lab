@@ -241,6 +241,10 @@ model Product {
   // cliente. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
   nameI18n                Json?
   description             String?
+  // Descripciones multiidioma (ES/CA/EN) opcionales junto a `description`
+  // (canonico, castellano). Mismo patron aditivo que `nameI18n`, sin
+  // backfill. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  descriptionI18n         Json?
   productType             ProductType
   defaultCourse           ProductCourse
   defaultPreparationRoute PreparationRoute

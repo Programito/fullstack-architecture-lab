@@ -18,10 +18,13 @@ type OptionUploadStatus = 'idle' | 'uploading' | 'failed';
 
 export type ModifierGroupOptionDraft = {
   name: string;
-  // CA/EN opcionales junto al nombre canonico en castellano (name). Ver
+  // CA/EN/ES opcionales junto al nombre canonico (name), que actua como
+  // identificador interno/global. nameEs es el texto en castellano que ve el
+  // comensal en la app; si falta, la app cae a `name`. Ver
   // docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
   nameCa: string;
   nameEn: string;
+  nameEs: string;
   priceDeltaCents: number;
   imageUrl: string | null;
   uploadStatus: OptionUploadStatus;
@@ -29,7 +32,7 @@ export type ModifierGroupOptionDraft = {
 };
 
 function emptyOption(): ModifierGroupOptionDraft {
-  return { name: '', nameCa: '', nameEn: '', priceDeltaCents: 0, imageUrl: null, uploadStatus: 'idle', imageErrorMessage: null };
+  return { name: '', nameCa: '', nameEn: '', nameEs: '', priceDeltaCents: 0, imageUrl: null, uploadStatus: 'idle', imageErrorMessage: null };
 }
 
 @Component({
@@ -59,9 +62,12 @@ export class ModifierGroupFormDialog {
   );
 
   protected readonly name = signal('');
-  // CA/EN opcionales junto al nombre canonico en castellano (name).
+  // CA/EN/ES opcionales junto al nombre canonico (name), que actua como
+  // identificador interno/global. nameEs es el texto en castellano que ve el
+  // comensal en la app.
   protected readonly nameCa = signal('');
   protected readonly nameEn = signal('');
+  protected readonly nameEs = signal('');
   protected readonly selectionType = signal<'single' | 'multiple'>('single');
   protected readonly isRequired = signal(false);
   protected readonly options = signal<ModifierGroupOptionDraft[]>([emptyOption()]);
@@ -91,6 +97,7 @@ export class ModifierGroupFormDialog {
         this.name.set(editing.name);
         this.nameCa.set(editing.nameI18n?.ca ?? '');
         this.nameEn.set(editing.nameI18n?.en ?? '');
+        this.nameEs.set(editing.nameI18n?.es ?? '');
         // El diálogo solo distingue single/multiple; un grupo 'remove' (fuera del alcance de
         // creación de este diálogo) se trata como 'multiple' si alguna vez llega aquí a editar.
         this.selectionType.set(editing.type === 'single' ? 'single' : 'multiple');
@@ -101,6 +108,7 @@ export class ModifierGroupFormDialog {
                 name: option.name,
                 nameCa: option.nameI18n?.ca ?? '',
                 nameEn: option.nameI18n?.en ?? '',
+                nameEs: option.nameI18n?.es ?? '',
                 priceDeltaCents: Math.round(option.priceDelta * 100),
                 imageUrl: option.imageUrl ?? null,
                 uploadStatus: 'idle' as OptionUploadStatus,
@@ -112,6 +120,7 @@ export class ModifierGroupFormDialog {
         this.name.set('');
         this.nameCa.set('');
         this.nameEn.set('');
+        this.nameEs.set('');
         this.selectionType.set('single');
         this.isRequired.set(false);
         this.options.set([emptyOption()]);
@@ -152,6 +161,10 @@ export class ModifierGroupFormDialog {
 
   protected updateOptionNameEn(index: number, value: string): void {
     this.options.update((opts) => opts.map((opt, i) => (i === index ? { ...opt, nameEn: value } : opt)));
+  }
+
+  protected updateOptionNameEs(index: number, value: string): void {
+    this.options.update((opts) => opts.map((opt, i) => (i === index ? { ...opt, nameEs: value } : opt)));
   }
 
   protected updateOptionPrice(index: number, raw: string): void {
@@ -205,11 +218,16 @@ export class ModifierGroupFormDialog {
     });
   }
 
-  private buildNameI18n(ca: string, en: string): { ca?: string; en?: string } | undefined {
+  private buildNameI18n(ca: string, en: string, es: string): { ca?: string; en?: string; es?: string } | undefined {
     const trimmedCa = ca.trim();
     const trimmedEn = en.trim();
-    if (!trimmedCa && !trimmedEn) return undefined;
-    return { ...(trimmedCa ? { ca: trimmedCa } : {}), ...(trimmedEn ? { en: trimmedEn } : {}) };
+    const trimmedEs = es.trim();
+    if (!trimmedCa && !trimmedEn && !trimmedEs) return undefined;
+    return {
+      ...(trimmedCa ? { ca: trimmedCa } : {}),
+      ...(trimmedEn ? { en: trimmedEn } : {}),
+      ...(trimmedEs ? { es: trimmedEs } : {}),
+    };
   }
 
   protected handleConfirm(): void {
@@ -217,14 +235,14 @@ export class ModifierGroupFormDialog {
     const type = this.selectionType();
     this.confirmed.emit({
       name: this.name().trim(),
-      nameI18n: this.buildNameI18n(this.nameCa(), this.nameEn()),
+      nameI18n: this.buildNameI18n(this.nameCa(), this.nameEn(), this.nameEs()),
       selectionType: type,
       minSelections: this.isRequired() ? 1 : 0,
       maxSelections: type === 'single' ? 1 : this.options().length,
       isRequired: this.isRequired(),
       options: this.options().map((o) => ({
         name: o.name.trim(),
-        nameI18n: this.buildNameI18n(o.nameCa, o.nameEn),
+        nameI18n: this.buildNameI18n(o.nameCa, o.nameEn, o.nameEs),
         priceDeltaCents: o.priceDeltaCents,
         ...(o.imageUrl ? { imageUrl: o.imageUrl } : {}),
       })),

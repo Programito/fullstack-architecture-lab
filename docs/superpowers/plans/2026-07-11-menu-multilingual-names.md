@@ -117,13 +117,64 @@
 
 ---
 
+## Fase 5 — Extensión (2026-07-12/13): descripción de producto, complementos, segment de idioma y unificación de `nameEs`
+
+Iteración sobre el admin web, posterior al cierre de las Fases 1-4. Añade traducción de la **descripción** de producto (no solo el nombre), lleva `nameI18n` a los **complementos/extras** (suplementos propios del producto), sustituye las rejillas fijas de 3 columnas ES/CA/EN por un **segment de idioma** reutilizable, y resuelve una inconsistencia de convención: si el `nameEs`/`descriptionEs` explícito de Producto (con `name` tratado como interno) debía quitarse para igualar a ModifierGroup/ModifierOption, o extenderse a esas dos entidades. **Decisión del usuario:** extenderlo — `name` es el identificador interno/global en las seis entidades, y el texto en castellano que ve el comensal vive en un campo `nameEs`/`descriptionEs` explícito, igual que ya hacía Producto.
+
+**Archivos:**
+- Backend: `backend/prisma/schema.prisma` — añadido `descriptionI18n Json?` a `Product` (migración `20260712170000_add_product_description_i18n`, mismo patrón aditivo que `nameI18n`). `NameI18nDto` (`{ es?, ca?, en? }`) ya cubría `es` desde el origen — sin cambios de tipos ni DTOs en esta fase, todo lo demás era puramente frontend.
+- Frontend: `frontend/src/app/features/menu/pages/product-editor-page/product-editor-page.ts`/`.html` — descripción en 3 idiomas, complementos en 3 idiomas, combo slots y platter components con `nameEs` + segment de idioma (en vez de las rejillas CA/EN fijas).
+- Frontend: `frontend/src/app/features/menu/components/modifier-group-form-dialog/modifier-group-form-dialog.ts`/`.html` — `nameEs` añadido a nivel de grupo y de cada opción dinámica.
+- Tests: `product-editor-page.spec.ts`, `modifier-group-form-dialog.spec.ts` actualizados/ampliados.
+- Backend: `mesaflow-order-write-schema.integration-spec.ts` — fix no relacionado encontrado de paso (`Order.dailyNumber`, campo obligatorio sin default desde la migración `20260711100000_add_order_daily_number`, faltaba en dos fixtures de este archivo).
+
+**Tareas:**
+
+- [x] **Paso 1 — Descripción de producto en 3 idiomas:** `descriptionI18n Json?` en `Product` (schema + migración aplicada por el usuario con `pnpm prisma:generate`/`pnpm prisma:migrate` contra Neon dev). Backend de restaurantes ya estaba conectado end-to-end (use-cases/DTOs/repositorios) sin cambios adicionales. Frontend: `descriptionCa/En/Es` en `product-editor-page.ts`, textarea de descripción canónica + variante activa en el segment.
+- [x] **Paso 2 — Segment de idioma:** sustituidas las dos rejillas de 3 columnas (nombre y descripción) por una única caja con `app-segmented-control` (reutiliza `languageSelect.languages.{ca,en,es}`) + un `app-input`/`app-textarea` que lee/escribe la señal del idioma activo (`activeContentLocale`). Patrón de setter tipado (`setActiveContentLocale`/`isProductContentLocale`) igual que `isMenuPageTab`/`setActiveTab` en `menu-page.ts`, para no perder el tipado estricto del `valueChange: string` genérico del segment.
+- [x] **Paso 3 — Complementos/extras en 3 idiomas:** `nameCa`/`nameEn`/`nameEs` en `SupplementOptionDraft` (los suplementos son `ModifierOption` con `scope='product'` por debajo). UI con 3 columnas (ES/CA/EN) por fila, ya que aquí sí conviene ver los tres a la vez al ser una lista corta de opciones con precio.
+- [x] **Paso 4 — Unificación `nameEs`:** decisión tomada explícitamente por el usuario ("tiene que existir name y después los names de cada idioma" → confirmado como "name es el global y nameEs es el que se muestra en la app"). Aplicado a:
+  - `ModifierGroup` y `ModifierOption` (`modifier-group-form-dialog.ts`/`.html`): añadido `nameEs` a nivel de grupo y de cada opción, mismo patrón que Producto.
+  - `ComboSlot` y `PlatterComponent` (`product-editor-page.ts`/`.html`): añadido `nameEs`, y de paso migrados del patrón antiguo (3 inputs sueltos nombre+CA+EN por fila) al mismo segment de idioma global que ya usa el nombre/descripción del producto — cada fila muestra el nombre canónico + un único campo de "variante activa" (placeholder indica el idioma seleccionado), controlado por el segment de la cabecera del formulario.
+  - `MenuSection` **no se tocó** en esta pasada — sigue con el patrón antiguo (solo `nameI18n` sin `nameEs` explícito propio, en el diálogo de creación/edición de sección en `menu-page.ts`). Si se quiere unificar también, es un paso pendiente idéntico a los anteriores.
+- [x] **Paso 5:** **Confirmado por el usuario:** `pnpm test` en `frontend/` (112 archivos, 1010 tests) y `pnpm test`/`pnpm test:integration` en `backend/` (82 archivos/328 tests unitarios; 7/7 archivos e integración, 31/31 tests) en verde, incluyendo el fix de `Order.dailyNumber` en los fixtures de `mesaflow-order-write-schema.integration-spec.ts` (bug preexistente, no introducido por esta fase, encontrado al correr `pnpm test:integration`).
+
+**Fase 5 (admin web) cerrada.** Backend confirmado en verde con migración real aplicada; frontend confirmado en verde con la suite completa.
+
+> **Nota histórica:** al cerrar la Fase 5 quedó pendiente la app Android (`descriptionI18n` y el resolutor de descripción no existían todavía en Kotlin). Se resolvió en la Fase 6, justo debajo.
+
+---
+
+## Fase 6 — App Android: extender a `descriptionI18n`
+
+Cierra el pendiente que dejó la Fase 5: llevar la descripción de producto en 3 idiomas a Kotlin, siguiendo el mismo patrón que la Fase 3 usó para el nombre. `nameEs` no requirió ningún cambio en la app: `NameI18n`/`resolveName` ya trataban `es` como una variante más desde el origen, así que el resolutor ya era correcto para la nueva convención de la Fase 5 sin tocar código.
+
+**Archivos:**
+- `mobile/app/src/main/kotlin/com/mesaflow/client/core/model/Menu.kt` — `MenuItem.descriptionI18n: NameI18n? = null` (reutiliza el mismo tipo `{es, ca, en}` que `nameI18n`).
+- `mobile/app/src/main/kotlin/com/mesaflow/client/core/network/dto/MenuDtos.kt` — espejo `MenuItemDto.descriptionI18n: NameI18nDto?`.
+- `mobile/app/src/main/kotlin/com/mesaflow/client/core/data/MenuMappers.kt` — mapeo DTO→dominio de `descriptionI18n` (sin resolver, igual que `nameI18n`).
+- `mobile/app/src/main/kotlin/com/mesaflow/client/core/common/NameResolution.kt` — nueva función `resolveDescription` (como `resolveName` pero con fallback nulo, porque `description: String?`), y `MenuItem.withResolvedNames` ahora también resuelve `description`. No hizo falta tocar `MenuViewModel.kt`, `MenuScreen.kt` ni `ProductConfiguratorSheet.kt`: todos ya leen `item.description` sin saber de i18n, y les llega resuelto desde `withResolvedNames`, igual que ya pasaba con `item.name`.
+- Tests: `NameResolutionTest.kt` (tres variantes, `descriptionI18n` nulo, variante en blanco) y `MenuMappersTest.kt` (mapeo con/sin `descriptionI18n`).
+
+**Tareas:**
+
+- [x] **Paso 1:** DTO/modelo de dominio extendidos con `descriptionI18n`, mapeo DTO→dominio actualizado.
+- [x] **Paso 2:** `resolveDescription` + `MenuItem.withResolvedNames` resolviendo también la descripción, sin tocar los puntos de consumo (ya leían `item.description` genérico).
+- [x] **Paso 3:** Tests unitarios nuevos para `resolveDescription` y el mapeo de `descriptionI18n`.
+- [x] **Paso 4:** **Confirmado por el usuario:** `./gradlew test` en `mobile/` — `BUILD SUCCESSFUL`, `testDebugUnitTest` en verde (23s), sin fallos.
+
+**Fase 6 cerrada.** Con esto, `descriptionI18n` y la unificación de `nameEs` de la Fase 5 quedan cubiertos en las tres capas (backend, admin web, app Android).
+
+---
+
 ## Apéndice — Auditoría de traducciones de la app (qué falta y qué cambia)
 
 La parte de UI de la app ya está completa: strings es/en/ca, selector de idioma por-app, formato de moneda por locale, alérgenos traducidos y errores mapeados a `AppError` sin fugas técnicas (ver Fase 8 en `docs/plan-mobile-app-cliente.md`). Lo que falta es **contenido que hoy solo existe en castellano y viene del servidor**, y es exactamente lo que resuelve este plan:
 
-- **Nombres y descripciones de la carta** (producto, sección) — cubierto por Fases 1–3 arriba.
+- **Nombres de la carta** (producto, sección, modificadores, combo, platter) — cubierto por Fases 1–3.
 - **Modificadores** (nombre de grupo, nombre de opción, "Sin X" como nombre de componente de platter marcado `removable`) — cubierto por Fases 1–3.
 - **Re-resolución al cambiar de idioma** sin ir a red — cubierto por Fase 3, Paso 4.
+- **Descripción de producto** (`descriptionI18n`, añadida en la Fase 5 sobre el admin web) — cubierto en la app por la Fase 6.
 
 Qué se queda igual a propósito (no son bugs, son decisiones ya tomadas):
 

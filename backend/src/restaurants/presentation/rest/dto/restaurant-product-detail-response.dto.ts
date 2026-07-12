@@ -10,6 +10,7 @@ export class RestaurantProductDetailResponseDto {
   @ApiPropertyOptional() nameI18n?: NameI18n;
   @ApiProperty({ nullable: true }) displayName: string | null;
   @ApiProperty({ nullable: true }) description: string | null;
+  @ApiPropertyOptional() descriptionI18n?: NameI18n;
   @ApiProperty({ nullable: true }) displayDescription: string | null;
   @ApiProperty({ nullable: true }) imageUrl: string | null;
   @ApiProperty({ type: [String] }) modifierGroupIds: string[];
@@ -32,6 +33,7 @@ export class RestaurantProductDetailResponseDto {
       nameI18n: detail.nameI18n,
       displayName: detail.displayName,
       description: detail.description,
+      descriptionI18n: detail.descriptionI18n,
       displayDescription: detail.displayDescription,
       imageUrl: detail.imageUrl,
       modifierGroupIds: detail.modifierGroupIds,

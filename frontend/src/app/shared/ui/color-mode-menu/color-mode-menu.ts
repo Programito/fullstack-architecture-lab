@@ -30,9 +30,10 @@ export class ColorModeMenu {
     ].join(' '),
   );
 
-  protected readonly triggerAriaLabel = computed(() => this.translate(this.colorMode.mode() === 'dark' ? 'colorMode.switchToLight' : 'colorMode.switchToDark'));
-
-  protected readonly triggerIcon = computed(() => (this.colorMode.mode() === 'dark' ? 'dark_mode' : 'light_mode'));
+  protected readonly isDarkMode = computed(() => this.colorMode.mode() === 'dark');
+  protected readonly triggerAriaLabel = computed(() => this.translate(this.isDarkMode() ? 'colorMode.switchToLight' : 'colorMode.switchToDark'));
+  protected readonly lightLabel = computed(() => this.translate('colorMode.options.light.label'));
+  protected readonly darkLabel = computed(() => this.translate('colorMode.options.dark.label'));
 
   protected toggle(): void {
     if (!this.disabled()) {

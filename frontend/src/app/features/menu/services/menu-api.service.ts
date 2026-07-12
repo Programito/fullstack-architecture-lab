@@ -293,6 +293,7 @@ function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): P
     name: item.name,
     nameI18n: item.nameI18n,
     ...(item.description ? { description: item.description } : {}),
+    ...(item.descriptionI18n ? { descriptionI18n: item.descriptionI18n } : {}),
     imageUrl: item.imageUrl ?? null,
     categoryId,
     basePrice: item.priceCents / 100,

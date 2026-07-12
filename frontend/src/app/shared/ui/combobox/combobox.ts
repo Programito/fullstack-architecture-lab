@@ -52,9 +52,16 @@ export class Combobox {
   constructor() {
     effect(() => {
       const selected = this.selectedOption();
+      const query = this.query();
 
-      if (selected && this.query() !== selected.label) {
+      if (selected && query !== selected.label) {
         this.query.set(selected.label);
+        return;
+      }
+
+      // When parent state clears the selected value, also clear the visible label.
+      if (!this.value() && query && this.options().some((option) => option.label === query)) {
+        this.query.set('');
       }
     });
   }

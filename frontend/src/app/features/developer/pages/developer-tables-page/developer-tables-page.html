@@ -6,16 +6,7 @@
       <p>{{ 'developer.tables.description' | transloco }}</p>
     </div>
 
-    <app-button
-      class="developer-tables-page__back-link"
-      variant="neutral"
-      fill="clear"
-      appearance="minimal"
-      routerLink="/developer"
-    >
-      <app-icon name="arrow_back" size="sm" [decorative]="true" />
-      {{ 'developer.tables.back' | transloco }}
-    </app-button>
+    <app-back-link [label]="'developer.tables.back' | transloco" routerLink="/developer" />
   </header>
 
   <section class="developer-tables-page__hero">

@@ -8,7 +8,7 @@ type ColorModeMenuStoryArgs = {
 };
 
 const meta: Meta<ColorModeMenuStoryArgs> = {
-  title: 'Shared UI/Color Mode Menu',
+  title: 'Shared UI/Theme Toggle',
   component: ColorModeMenu,
   tags: ['autodocs'],
   argTypes: {
@@ -29,7 +29,7 @@ const meta: Meta<ColorModeMenuStoryArgs> = {
   render: (args) => ({
     props: args,
     template: `
-      <div class="inline-flex">
+      <div class="inline-flex rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <app-color-mode-menu [appearance]="appearance" [size]="size" [disabled]="disabled" />
       </div>
     `,
@@ -58,4 +58,20 @@ export const Disabled: Story = {
   args: {
     disabled: true,
   },
+};
+
+export const Showcase: Story = {
+  render: () => ({
+    template: `
+      <div class="grid gap-4">
+        <div class="inline-flex rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <app-color-mode-menu appearance="minimal" size="sm" />
+        </div>
+
+        <div class="inline-flex rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <app-color-mode-menu appearance="default" size="md" />
+        </div>
+      </div>
+    `,
+  }),
 };

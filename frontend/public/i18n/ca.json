@@ -1333,6 +1333,16 @@
         "remove": "Treure",
         "choose": "Triar"
       },
+      "modifierTypeLabels": {
+        "single": "Selecció única",
+        "multiple": "Selecció múltiple",
+        "remove": "Treure ingredients"
+      },
+      "modifierGroupLabels": {
+        "add": "Afegir {{name}}",
+        "choose": "Triar {{name}}",
+        "remove": "{{name}}"
+      },
       "modifierUsage": "Utilitzat en {{count}} productes",
       "modifierLimits": {
         "choose": "Tria {{count}}",
@@ -1445,13 +1455,23 @@
       "form": {
         "createTitle": "Nou producte",
         "editTitle": "Editar producte",
-        "name": "Nom",
+        "name": "Nom principal",
         "namePlaceholder": "Nom del producte",
+        "nameHint": "Ús intern: cuina, TPV i cerca a l'admin. Pot ser llarg o descriptiu.",
         "nameCa": "Nom (català)",
         "nameEn": "Nom (anglès)",
+        "nameEs": "Nom (castellà)",
         "nameI18nPlaceholder": "Opcional",
+        "nameI18nHint": "El que veu el comensal a l'app segons el seu idioma. Si el deixes buit, s'usa el nom principal.",
         "description": "Descripció",
         "descriptionPlaceholder": "Descripció opcional",
+        "descriptionCa": "Descripció (català)",
+        "descriptionEn": "Descripció (anglès)",
+        "descriptionEs": "Descripció (castellà)",
+        "descriptionI18nPlaceholder": "Opcional",
+        "descriptionI18nHint": "El que veu el comensal a l'app segons el seu idioma. Si la deixes buida, s'usa la descripció principal.",
+        "translationsTitle": "Traduccions",
+        "translationsLocaleLabel": "Idioma de la traducció",
         "image": "Imatge",
         "noImage": "Sense imatge",
         "dropImageHint": "Arrossega una imatge aquí o obre el selector",

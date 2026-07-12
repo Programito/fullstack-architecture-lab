@@ -1,14 +1,17 @@
 <main class="min-h-dvh pb-24">
   <header class="theme-header sticky top-0 z-30 border-b px-4 py-2 shadow-sm backdrop-blur lg:px-6 lg:py-3">
-    <div class="mx-auto flex w-full max-w-5xl items-center gap-3">
-      <app-button variant="neutral" appearance="minimal" size="sm" (pressed)="cancel()">
-        <app-icon name="arrow_back" size="sm" [decorative]="true" />
-        {{ 'menu.product.editor.back' | transloco }}
-      </app-button>
-      <div class="flex min-w-0 items-center gap-2">
-        <app-icon [name]="isEdit() ? 'edit' : 'add_circle'" size="sm" class="theme-muted shrink-0" [decorative]="true" />
-        <h1 class="theme-title truncate text-xl font-semibold lg:text-2xl">{{ pageTitle() }}</h1>
+    <div class="mx-auto grid w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div class="flex items-center justify-start">
+        <app-button variant="neutral" fill="outline" size="sm" (pressed)="cancel()">
+          <app-icon name="arrow_back" size="sm" [decorative]="true" />
+          {{ 'menu.product.editor.back' | transloco }}
+        </app-button>
       </div>
+      <div class="flex min-w-0 items-center justify-center gap-2">
+        <h1 class="theme-title truncate text-center text-xl font-semibold lg:text-2xl">{{ pageTitle() }}</h1>
+        <app-icon [name]="isEdit() ? 'edit' : 'add_circle'" size="sm" class="theme-muted shrink-0" [decorative]="true" />
+      </div>
+      <div aria-hidden="true"></div>
     </div>
   </header>
 
@@ -44,30 +47,45 @@
           <app-input
             [label]="'menu.product.form.name' | transloco"
             [placeholder]="'menu.product.form.namePlaceholder' | transloco"
+            [hint]="'menu.product.form.nameHint' | transloco"
             [value]="name()"
             required
             (valueChange)="name.set($event)"
           />
-          <div class="grid gap-3 sm:grid-cols-2">
-            <app-input
-              [label]="'menu.product.form.nameCa' | transloco"
-              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-              [value]="nameCa()"
-              (valueChange)="nameCa.set($event)"
-            />
-            <app-input
-              [label]="'menu.product.form.nameEn' | transloco"
-              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-              [value]="nameEn()"
-              (valueChange)="nameEn.set($event)"
-            />
-          </div>
-          <app-input
+          <app-textarea
             [label]="'menu.product.form.description' | transloco"
             [placeholder]="'menu.product.form.descriptionPlaceholder' | transloco"
             [value]="description()"
+            [rows]="3"
             (valueChange)="description.set($event)"
           />
+          <div class="grid gap-2 rounded-lg border p-3 shadow-sm">
+            <div class="flex items-center justify-between gap-2">
+              <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.product.form.translationsTitle' | transloco }}</p>
+              <app-segmented-control
+                size="sm"
+                [ariaLabel]="'menu.product.form.translationsLocaleLabel' | transloco"
+                [options]="contentLocaleOptions()"
+                [value]="activeContentLocale()"
+                (valueChange)="setActiveContentLocale($event)"
+              />
+            </div>
+            <app-input
+              [label]="activeVariantNameLabel()"
+              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+              [hint]="'menu.product.form.nameI18nHint' | transloco"
+              [value]="activeVariantName()"
+              (valueChange)="updateActiveVariantName($event)"
+            />
+            <app-textarea
+              [label]="activeVariantDescriptionLabel()"
+              [placeholder]="'menu.product.form.descriptionI18nPlaceholder' | transloco"
+              [hint]="'menu.product.form.descriptionI18nHint' | transloco"
+              [value]="activeVariantDescription()"
+              [rows]="3"
+              (valueChange)="updateActiveVariantDescription($event)"
+            />
+          </div>
           <div class="grid gap-3 sm:grid-cols-2">
             <app-input
               [label]="'menu.product.form.price' | transloco"
@@ -96,27 +114,38 @@
         <!-- Secciones a ancho completo: en escritorio la columna derecha se queda estrecha
              para listas largas (modificadores, suplementos, alérgenos) -->
         <div class="grid gap-4 lg:col-span-2">
-          <details open class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+          <details open class="theme-panel group grid gap-3 rounded-lg border p-4 shadow-sm">
             <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
               <span class="flex items-center gap-2">
                 <app-icon name="tune" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
                 {{ 'menu.page.modifiers' | transloco }}
               </span>
-              <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+              <app-icon
+                name="expand_more"
+                size="sm"
+                [decorative]="true"
+                class="theme-muted transition-transform duration-200 group-open:rotate-180 group-open:text-cyan-500 dark:group-open:text-cyan-400"
+              />
             </summary>
             <p class="theme-muted text-xs">{{ 'menu.product.form.modifierGroupsHint' | transloco }}</p>
-            @if (sortedModifierGroups().length) {
+            @if (loadingModifierGroups()) {
+              <div class="flex items-center justify-center py-6">
+                <app-spinner size="md" variant="primary" />
+              </div>
+            } @else if (sortedModifierGroups().length) {
               <div class="grid max-h-72 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
                 @for (group of sortedModifierGroups(); track group.id) {
-                  <label class="theme-field flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm">
+                  <label class="theme-field flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm">
                     <input
+                      class="h-4 w-4 shrink-0 self-center"
+                      style="accent-color: var(--ui-primary);"
                       type="checkbox"
                       [checked]="selectedModifierGroupIds().includes(group.id)"
                       [disabled]="saving()"
                       (change)="toggleModifierGroup(group.id, $any($event.target).checked)"
                     />
                     <span class="grid gap-1">
-                      <span class="theme-title font-medium">{{ group.name }}</span>
+                      <span class="theme-title font-medium">{{ getModifierGroupDisplayName(group) }}</span>
                       <span class="theme-muted text-xs">{{ group.minSelections }}-{{ group.maxSelections }}</span>
                     </span>
                   </label>
@@ -130,7 +159,7 @@
                 <p class="theme-muted text-xs font-semibold uppercase">{{ 'menu.product.form.selectedGroupsOrder' | transloco }}</p>
                 @for (group of selectedGroupsInOrder(); track group.id) {
                   <div class="theme-field flex items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-sm">
-                    <span class="theme-title min-w-0 truncate font-medium">{{ $index + 1 }}. {{ group.name }}</span>
+                    <span class="theme-title min-w-0 truncate font-medium">{{ $index + 1 }}. {{ getModifierGroupDisplayName(group) }}</span>
                     <span class="flex shrink-0 gap-1">
                       <button
                         type="button"
@@ -157,39 +186,42 @@
             }
           </details>
 
-          <details open class="theme-panel grid gap-4 rounded-lg border p-4 shadow-sm">
+          <details open class="theme-panel group grid gap-5 rounded-lg border p-5 shadow-sm">
             <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
               <span class="flex items-center gap-2">
                 <app-icon name="add_circle" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
                 {{ 'menu.product.form.supplementsTitle' | transloco }}
               </span>
-              <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+              <app-icon
+                name="expand_more"
+                size="sm"
+                [decorative]="true"
+                class="theme-muted transition-transform duration-200 group-open:rotate-180 group-open:text-cyan-500 dark:group-open:text-cyan-400"
+              />
             </summary>
             <p class="theme-muted text-sm">{{ 'menu.product.form.supplementsHint' | transloco }}</p>
             @if (supplementOptions().length) {
-              <div class="grid gap-3 xl:grid-cols-2">
+              <div class="grid gap-4">
                 @for (option of supplementOptions(); track $index) {
-                  <div class="grid content-start gap-3 rounded-lg border p-3 shadow-sm">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <app-input
-                        class="min-w-36 flex-1"
-                        [placeholder]="'menu.product.form.supplementNamePlaceholder' | transloco"
-                        [value]="option.name"
-                        (valueChange)="updateSupplementOptionName($index, $event)"
-                      />
-                      <app-input
-                        class="w-28"
-                        type="number"
-                        [min]="0"
-                        [step]="0.01"
-                        [placeholder]="'menu.product.form.supplementPricePlaceholder' | transloco"
-                        [value]="option.priceEuros"
-                        (valueChange)="updateSupplementOptionPrice($index, $event)"
-                      />
-                      <span class="ml-auto flex shrink-0 gap-1">
+                  <div class="theme-panel overflow-hidden rounded-xl border shadow-sm sm:rounded-2xl">
+                    <div class="flex flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-5">
+                      <div class="grid min-w-0 gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <p class="theme-title truncate text-base font-semibold">
+                            {{ option.name || ('menu.product.form.supplementNamePlaceholder' | transloco) }}
+                          </p>
+                          <span class="rounded-full border px-2.5 py-1 text-xs font-semibold text-cyan-500 dark:text-cyan-300">
+                            {{ option.priceEuros || '0' }} EUR
+                          </span>
+                        </div>
+                        <p class="theme-muted text-sm">
+                          {{ 'menu.product.form.supplementsHint' | transloco }}
+                        </p>
+                      </div>
+                      <div class="flex shrink-0 items-center gap-1">
                         <button
                           type="button"
-                          class="theme-muted flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:text-cyan-500 disabled:pointer-events-none disabled:opacity-30"
+                          class="theme-field theme-muted flex h-9 w-9 items-center justify-center rounded-md border transition-colors hover:border-cyan-500 hover:text-cyan-500 disabled:pointer-events-none disabled:opacity-30"
                           [attr.aria-label]="'menu.product.form.moveUp' | transloco"
                           [disabled]="$index === 0"
                           (click)="moveSupplementOption($index, -1)"
@@ -198,7 +230,7 @@
                         </button>
                         <button
                           type="button"
-                          class="theme-muted flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:text-cyan-500 disabled:pointer-events-none disabled:opacity-30"
+                          class="theme-field theme-muted flex h-9 w-9 items-center justify-center rounded-md border transition-colors hover:border-cyan-500 hover:text-cyan-500 disabled:pointer-events-none disabled:opacity-30"
                           [attr.aria-label]="'menu.product.form.moveDown' | transloco"
                           [disabled]="$index === supplementOptions().length - 1"
                           (click)="moveSupplementOption($index, 1)"
@@ -207,45 +239,104 @@
                         </button>
                         <button
                           type="button"
-                          class="theme-muted flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:text-red-500"
+                          class="theme-field theme-muted flex h-9 w-9 items-center justify-center rounded-md border transition-colors hover:border-red-500 hover:text-red-500"
                           [attr.aria-label]="'menu.product.form.removeSupplementLabel' | transloco"
                           (click)="removeSupplementOption($index)"
                         >
                           <app-icon name="delete" size="sm" [decorative]="true" />
                         </button>
-                      </span>
+                      </div>
                     </div>
-                    <app-image-dropzone
-                      size="compact"
-                      [imageUrl]="option.imageUrl"
-                      [previewAlt]="option.name || ('menu.product.form.supplementNamePlaceholder' | transloco)"
-                      [uploadStatus]="option.uploadStatus"
-                      [errorMessage]="option.imageErrorMessage"
-                      [disabled]="saving()"
-                      (fileSelected)="handleSupplementFileSelected($index, $event)"
-                      (removeRequested)="handleSupplementRemoveImage($index)"
-                      (retryRequested)="handleSupplementRetryUpload($index)"
-                    />
+
+                    <div class="grid gap-4 p-4 sm:p-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+                      <div class="grid content-start gap-3">
+                        <div class="theme-soft-panel grid gap-3 rounded-lg border p-4">
+                          <div class="flex items-center justify-between gap-2">
+                            <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.product.form.supplementsTitle' | transloco }}</p>
+                            <span class="theme-muted text-xs">{{ $index + 1 }}</span>
+                          </div>
+                          <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+                            <app-input
+                              [label]="'menu.product.form.name' | transloco"
+                              [placeholder]="'menu.product.form.supplementNamePlaceholder' | transloco"
+                              [value]="option.name"
+                              (valueChange)="updateSupplementOptionName($index, $event)"
+                            />
+                            <app-input
+                              [label]="'menu.product.form.price' | transloco"
+                              type="number"
+                              [min]="0"
+                              [step]="0.01"
+                              [placeholder]="'menu.product.form.supplementPricePlaceholder' | transloco"
+                              [value]="option.priceEuros"
+                              (valueChange)="updateSupplementOptionPrice($index, $event)"
+                            />
+                          </div>
+                        </div>
+
+                        <div class="theme-soft-panel grid gap-3 rounded-lg border p-4">
+                          <div class="flex items-center justify-between gap-2">
+                            <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.product.form.translationsTitle' | transloco }}</p>
+                            <app-segmented-control
+                              size="sm"
+                              [ariaLabel]="'menu.product.form.translationsLocaleLabel' | transloco"
+                              [options]="supplementLocaleOptions()"
+                              [value]="activeSupplementLocale()"
+                              (valueChange)="setActiveSupplementLocale($event)"
+                            />
+                          </div>
+                          <p class="theme-muted text-sm">
+                            {{ 'menu.product.form.nameI18nHint' | transloco }}
+                          </p>
+                          <app-input
+                            [label]="supplementVariantLabel()"
+                            [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+                            [value]="supplementVariantName(option)"
+                            (valueChange)="updateActiveSupplementVariantName($index, $event)"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="theme-soft-panel grid content-start gap-3 rounded-lg border p-4">
+                        <app-image-dropzone
+                          [imageUrl]="option.imageUrl"
+                          [previewAlt]="option.name || ('menu.product.form.supplementNamePlaceholder' | transloco)"
+                          [uploadStatus]="option.uploadStatus"
+                          [errorMessage]="option.imageErrorMessage"
+                          [disabled]="saving()"
+                          (fileSelected)="handleSupplementFileSelected($index, $event)"
+                          (removeRequested)="handleSupplementRemoveImage($index)"
+                          (retryRequested)="handleSupplementRetryUpload($index)"
+                        />
+                      </div>
+                    </div>
                   </div>
                 }
               </div>
             } @else {
-              <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-sm">{{ 'menu.product.form.noSupplements' | transloco }}</p>
+              <p class="theme-muted mt-2 rounded-md border border-dashed px-4 py-7 text-sm">{{ 'menu.product.form.noSupplements' | transloco }}</p>
             }
-            <app-button size="sm" variant="neutral" fill="outline" (pressed)="addSupplementOption()">
-              <app-icon name="add" size="sm" [decorative]="true" />
-              {{ 'menu.product.form.addSupplement' | transloco }}
-            </app-button>
+            <div class="pt-3">
+              <app-button size="sm" variant="neutral" fill="outline" (pressed)="addSupplementOption()">
+                <app-icon name="add" size="sm" [decorative]="true" />
+                {{ 'menu.product.form.addSupplement' | transloco }}
+              </app-button>
+            </div>
           </details>
 
           @if (isCombo()) {
-            <details open class="theme-panel grid gap-4 rounded-lg border p-4 shadow-sm">
+            <details open class="theme-panel group grid gap-4 rounded-lg border p-4 shadow-sm">
               <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
                 <span class="flex items-center gap-2">
                   <app-icon name="restaurant_menu" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
                   {{ 'menu.product.form.combo.title' | transloco }}
                 </span>
-                <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+                <app-icon
+                  name="expand_more"
+                  size="sm"
+                  [decorative]="true"
+                  class="theme-muted transition-transform duration-200 group-open:rotate-180 group-open:text-cyan-500 dark:group-open:text-cyan-400"
+                />
               </summary>
               <p class="theme-muted text-sm">{{ 'menu.product.form.combo.hint' | transloco }}</p>
               @if (comboSlots().length) {
@@ -253,21 +344,16 @@
                   @for (slot of comboSlots(); track $index; let slotIndex = $index) {
                     <div class="grid content-start gap-3 rounded-lg border p-3 shadow-sm">
                       <div class="flex flex-wrap items-start gap-2">
-                        <div class="grid min-w-36 flex-1 gap-2 sm:grid-cols-3">
+                        <div class="grid min-w-36 flex-1 gap-2 sm:grid-cols-2">
                           <app-input
                             [placeholder]="'menu.product.form.name' | transloco"
                             [value]="slot.name"
                             (valueChange)="updateComboSlotField(slotIndex, 'name', $event)"
                           />
                           <app-input
-                            [placeholder]="'menu.product.form.nameCa' | transloco"
-                            [value]="slot.nameCa"
-                            (valueChange)="updateComboSlotField(slotIndex, 'nameCa', $event)"
-                          />
-                          <app-input
-                            [placeholder]="'menu.product.form.nameEn' | transloco"
-                            [value]="slot.nameEn"
-                            (valueChange)="updateComboSlotField(slotIndex, 'nameEn', $event)"
+                            [placeholder]="activeVariantNameLabel()"
+                            [value]="comboSlotVariantName(slot)"
+                            (valueChange)="updateComboSlotVariantName(slotIndex, $event)"
                           />
                         </div>
                         <button
@@ -361,34 +447,34 @@
           }
 
           @if (isPlatter()) {
-            <details open class="theme-panel grid gap-4 rounded-lg border p-4 shadow-sm">
+            <details open class="theme-panel group grid gap-4 rounded-lg border p-4 shadow-sm">
               <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
                 <span class="flex items-center gap-2">
                   <app-icon name="tapas" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
                   {{ 'menu.product.form.platter.title' | transloco }}
                 </span>
-                <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+                <app-icon
+                  name="expand_more"
+                  size="sm"
+                  [decorative]="true"
+                  class="theme-muted transition-transform duration-200 group-open:rotate-180 group-open:text-cyan-500 dark:group-open:text-cyan-400"
+                />
               </summary>
               <p class="theme-muted text-sm">{{ 'menu.product.form.platter.hint' | transloco }}</p>
               @if (platterComponentDrafts().length) {
                 <div class="grid gap-3 xl:grid-cols-2">
                   @for (component of platterComponentDrafts(); track $index) {
                     <div class="grid content-start gap-2 rounded-lg border p-3 shadow-sm">
-                      <div class="grid gap-2 sm:grid-cols-3">
+                      <div class="grid gap-2 sm:grid-cols-2">
                         <app-input
                           [placeholder]="'menu.product.form.name' | transloco"
                           [value]="component.name"
                           (valueChange)="updatePlatterComponentField($index, 'name', $event)"
                         />
                         <app-input
-                          [placeholder]="'menu.product.form.nameCa' | transloco"
-                          [value]="component.nameCa"
-                          (valueChange)="updatePlatterComponentField($index, 'nameCa', $event)"
-                        />
-                        <app-input
-                          [placeholder]="'menu.product.form.nameEn' | transloco"
-                          [value]="component.nameEn"
-                          (valueChange)="updatePlatterComponentField($index, 'nameEn', $event)"
+                          [placeholder]="activeVariantNameLabel()"
+                          [value]="platterComponentVariantName(component)"
+                          (valueChange)="updatePlatterComponentVariantName($index, $event)"
                         />
                       </div>
                       <div class="flex flex-wrap items-center gap-2">
@@ -444,13 +530,18 @@
             </details>
           }
 
-          <details open class="theme-panel grid gap-3 rounded-lg border p-4 shadow-sm">
+          <details open class="theme-panel group grid gap-3 rounded-lg border p-4 shadow-sm">
             <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
               <span class="flex items-center gap-2">
                 <app-icon name="health_and_safety" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
                 {{ (isEdit() ? 'menu.product.form.allergensAndAvailability' : 'menu.product.form.allergens') | transloco }}
               </span>
-              <app-icon name="expand_more" size="sm" [decorative]="true" class="theme-muted" />
+              <app-icon
+                name="expand_more"
+                size="sm"
+                [decorative]="true"
+                class="theme-muted transition-transform duration-200 group-open:rotate-180 group-open:text-cyan-500 dark:group-open:text-cyan-400"
+              />
             </summary>
             <div class="grid gap-2">
               <p class="theme-muted text-xs">{{ 'menu.product.form.allergensHint' | transloco }}</p>

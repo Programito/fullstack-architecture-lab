@@ -1,6 +1,11 @@
 .restaurant-pos-dashboard-page__filters-card {
   display: grid;
   gap: 1.25rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface, #fff) 96%, #eff6ff 4%),
+    var(--ui-surface, #fff)
+  );
 }
 
 .restaurant-pos-dashboard-page__filters-header {
@@ -9,11 +14,16 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+  margin: -0.75rem -1rem 0 -1rem;
+  padding: 0.85rem 1rem;
+  background: color-mix(in srgb, var(--ui-primary, #2563eb) 10%, var(--ui-bg, #fff));
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-primary, #2563eb) 20%, transparent);
+  border-radius: 1rem 1rem 0 0;
 }
 
 .restaurant-pos-dashboard-page__filters-actions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: flex-start;
   justify-content: flex-end;
@@ -23,8 +33,9 @@
   flex: 0 0 auto;
 }
 
-.restaurant-pos-dashboard-page__filters-actions app-button:last-child {
-  flex: 0 0 auto;
+.restaurant-pos-dashboard-page__filter-panel {
+  background: color-mix(in srgb, var(--ui-surface, #fff) 92%, var(--ui-primary, #2563eb) 8%);
+  border-color: color-mix(in srgb, var(--ui-border, #d4d4d8) 75%, transparent);
 }
 
 .restaurant-pos-dashboard-page__period-summary {
@@ -96,6 +107,33 @@
 .restaurant-pos-dashboard-page__filters-grid {
   display: grid;
   gap: 1.25rem;
+}
+
+.restaurant-pos-dashboard-page__help-dialog,
+.restaurant-pos-dashboard-page__help-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.restaurant-pos-dashboard-page__help-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.restaurant-pos-dashboard-page__help-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border, #d4d4d8) 75%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--ui-surface, #fff) 94%, var(--ui-primary, #2563eb) 6%);
+}
+
+.restaurant-pos-dashboard-page__help-item p {
+  margin: 0;
+  color: var(--ui-text-muted, #71717a);
+  line-height: 1.5;
 }
 
 .restaurant-pos-dashboard-page__date-picker-panel {
@@ -237,6 +275,10 @@
 
   .restaurant-pos-dashboard-page__filters-actions app-button:first-child {
     flex: 1 1 auto;
+  }
+
+  .restaurant-pos-dashboard-page__help-grid {
+    grid-template-columns: 1fr;
   }
 }
 

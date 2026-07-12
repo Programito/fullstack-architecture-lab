@@ -61,6 +61,7 @@ export interface CreateProductInput {
   name: string;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: Allergen[];
@@ -74,6 +75,7 @@ export interface UpdateProductInput {
   name?: string;
   nameI18n?: NameI18n;
   description?: string | null;
+  descriptionI18n?: NameI18n;
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: Allergen[];
@@ -99,6 +101,7 @@ export interface Product {
   name: ProductName;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   imageUrl?: string | null;
   categoryId: string;
   basePrice: Money;

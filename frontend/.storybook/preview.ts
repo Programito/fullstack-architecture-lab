@@ -112,6 +112,22 @@ const applyCanvasTheme = (mode: ResolvedColorMode): void => {
   document.body.style.color = 'var(--ui-fg)';
 };
 
+const applyCanvasThemePreference = (preference: StorybookColorMode): void => {
+  document.documentElement.dataset['themePreference'] = preference;
+  document.body.dataset['themePreference'] = preference;
+
+  try {
+    if (preference === 'system') {
+      globalThis.localStorage?.removeItem('color-mode');
+      return;
+    }
+
+    globalThis.localStorage?.setItem('color-mode', preference);
+  } catch {
+    // Storybook can run in restricted browser contexts; dataset updates still keep the preview aligned.
+  }
+};
+
 const resolveStorybookLocale = (locale: unknown): AppLocale => {
   if (typeof locale === 'string') {
     return normalizeLocale(locale) ?? DEFAULT_LOCALE;
@@ -238,8 +254,7 @@ const preview: Preview = {
       const fontFamily = resolveStorybookFontFamily(context.globals['fontFamily']);
       const locale = resolveStorybookLocale(context.globals['locale']);
 
-      document.documentElement.dataset['themePreference'] = preference;
-      document.body.dataset['themePreference'] = preference;
+      applyCanvasThemePreference(preference);
       applyCanvasTheme(mode);
       applyCanvasFontFamily(fontFamily);
       applyCanvasLocale(locale);

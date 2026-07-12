@@ -19,7 +19,14 @@
       (valueChange)="name.set($event)"
     />
 
-    <div class="grid gap-3 sm:grid-cols-2">
+    <div class="grid gap-3 sm:grid-cols-3">
+      <app-input
+        [label]="'menu.product.form.nameEs' | transloco"
+        [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+        [value]="nameEs()"
+        [disabled]="loading()"
+        (valueChange)="nameEs.set($event)"
+      />
       <app-input
         [label]="'menu.product.form.nameCa' | transloco"
         [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
@@ -109,7 +116,14 @@
             }
           </div>
 
-          <div class="grid gap-2 sm:grid-cols-2">
+          <div class="grid gap-2 sm:grid-cols-3">
+            <app-input
+              [label]="$index === 0 ? ('menu.product.form.nameEs' | transloco) : ''"
+              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+              [value]="option.nameEs"
+              [disabled]="loading()"
+              (valueChange)="updateOptionNameEs($index, $event)"
+            />
             <app-input
               [label]="$index === 0 ? ('menu.product.form.nameCa' | transloco) : ''"
               [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"

@@ -2,15 +2,17 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { filter, forkJoin, map, of, switchMap, take, type Observable } from 'rxjs';
+import { filter, forkJoin, fromEvent, map, of, startWith, switchMap, take, type Observable } from 'rxjs';
 
 import { mapHttpError } from '../../../../core/errors/http-error.mapper';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Input } from '../../../../shared/ui/input/input';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { Switch } from '../../../../shared/ui/switch/switch';
+import { Textarea } from '../../../../shared/ui/textarea/textarea';
 import { ToastService } from '../../../../shared/ui/toast/toast';
 import { ImageDropzone } from '../../components/image-dropzone/image-dropzone';
 import { ALLERGEN_VALUES } from '../../models/allergen.model';
@@ -32,16 +34,39 @@ const MENU_URL = '/restaurant-pos/menu';
 
 type UploadStatus = 'idle' | 'uploading' | 'failed';
 
+const DEMO_MODIFIER_GROUP_NAME_FALLBACKS: Record<string, Partial<Record<ProductContentLocale, string>>> = {
+  'Extras de hamburguesa': { en: 'Burger extras', ca: "Extres d'hamburguesa" },
+  'Quitar ingredientes hamburguesa': { en: 'Remove burger ingredients', ca: "Treure ingredients d'hamburguesa" },
+  'Punto de la carne': { en: 'Burger point', ca: 'Punt de la carn' },
+  'Tamaño de bebida': { en: 'Drink size', ca: 'Mida de beguda' },
+  'Opciones de café': { en: 'Coffee options', ca: 'Opcions de cafè' },
+  'Quitar ingredientes plato': { en: 'Remove platter ingredients', ca: 'Treure ingredients del plat' },
+  'Extras de plato combinado': { en: 'Platter extras', ca: 'Extres de plat combinat' },
+};
+
+// Idiomas editables via el segment de traducciones (nombre + descripcion). El castellano no
+// entra aqui: vive en los campos canonicos `name`/`description`, siempre visibles.
+type ProductContentLocale = 'ca' | 'en' | 'es';
+
 export type SupplementOptionDraft = {
   name: string;
+  // CA/EN/ES opcionales junto al nombre canonico (name), mismo patron que las opciones de
+  // ModifierGroup (modifier-group-form-dialog.ts) — los suplementos son ModifierOption por debajo
+  // (scope='product'). `name` es el identificador interno/global; `nameEs` es el texto en
+  // castellano que ve el comensal en la app (si falta, la app cae a `name`).
+  nameCa: string;
+  nameEn: string;
+  nameEs: string;
   priceEuros: string;
   imageUrl: string | null;
   uploadStatus: UploadStatus;
   imageErrorMessage: string | null;
 };
 
+type SupplementContentLocale = 'ca' | 'en' | 'es';
+
 function emptySupplementOption(): SupplementOptionDraft {
-  return { name: '', priceEuros: '', imageUrl: null, uploadStatus: 'idle', imageErrorMessage: null };
+  return { name: '', nameCa: '', nameEn: '', nameEs: '', priceEuros: '', imageUrl: null, uploadStatus: 'idle', imageErrorMessage: null };
 }
 
 // Combo (huecos con productos permitidos) y platter (ingredientes) solo son editables cuando el
@@ -56,8 +81,12 @@ export type ComboSlotOptionDraft = {
 export type ComboSlotDraft = {
   id?: string; // ausente = slot nuevo
   name: string;
+  // CA/EN/ES opcionales junto al nombre canonico (name), mismo patron que producto/suplementos.
+  // El segment de traducciones de arriba (activeContentLocale) es el que decide cual de los tres
+  // se edita en cada momento — no hay un segment por fila.
   nameCa: string;
   nameEn: string;
+  nameEs: string;
   minSelections: string;
   maxSelections: string;
   isRequired: boolean;
@@ -69,14 +98,18 @@ function emptyComboSlotOption(): ComboSlotOptionDraft {
 }
 
 function emptyComboSlot(): ComboSlotDraft {
-  return { name: '', nameCa: '', nameEn: '', minSelections: '0', maxSelections: '1', isRequired: false, options: [emptyComboSlotOption()] };
+  return { name: '', nameCa: '', nameEn: '', nameEs: '', minSelections: '0', maxSelections: '1', isRequired: false, options: [emptyComboSlotOption()] };
 }
 
 export type PlatterComponentDraft = {
   id?: string; // ausente = componente nuevo
   name: string;
+  // CA/EN/ES opcionales junto al nombre canonico (name), mismo patron que producto/suplementos.
+  // El segment de traducciones de arriba (activeContentLocale) es el que decide cual de los tres
+  // se edita en cada momento — no hay un segment por fila.
   nameCa: string;
   nameEn: string;
+  nameEs: string;
   // '' = no se toca al guardar (no se puede precargar desde el menú de lectura); ver
   // ComboOrPlatterMenuData en menu-api.service.ts.
   componentProductId: string;
@@ -86,12 +119,12 @@ export type PlatterComponentDraft = {
 };
 
 function emptyPlatterComponent(): PlatterComponentDraft {
-  return { name: '', nameCa: '', nameEn: '', componentProductId: '', quantity: '', isRemovable: true, isReplaceable: false };
+  return { name: '', nameCa: '', nameEn: '', nameEs: '', componentProductId: '', quantity: '', isRemovable: true, isReplaceable: false };
 }
 
 @Component({
   selector: 'app-product-editor-page',
-  imports: [Button, Icon, ImageDropzone, Input, Select, Spinner, Switch, TranslocoPipe],
+  imports: [Button, Icon, ImageDropzone, Input, Select, SegmentedControl, Spinner, Switch, Textarea, TranslocoPipe],
   templateUrl: './product-editor-page.html',
 })
 export class ProductEditorPage {
@@ -108,6 +141,7 @@ export class ProductEditorPage {
   protected readonly isEdit = computed(() => this.productId !== null);
 
   protected readonly loadingProduct = signal(this.isEdit());
+  protected readonly loadingModifierGroups = signal(true);
   protected readonly saving = signal(false);
   protected readonly existingProduct = signal<RestaurantProductDetailDto | null>(null);
   protected readonly modifierGroups = signal<ModifierGroup[]>([]);
@@ -146,12 +180,24 @@ export class ProductEditorPage {
     ];
   });
 
+  // `name`: nombre principal, de uso interno (cocina y TPV). Obligatorio.
+  // nameCa/nameEn/nameEs: nombres opcionales por idioma que ve el comensal en la app; si faltan,
+  // el resolutor de la app usa `name` como fallback. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
   protected readonly name = signal('');
-  // Nombres opcionales en catalan/ingles, junto al `name` canonico en castellano.
-  // Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
   protected readonly nameCa = signal('');
   protected readonly nameEn = signal('');
+  protected readonly nameEs = signal('');
+  // description: descripcion principal, canonica en castellano. descriptionCa/descriptionEn/
+  // descriptionEs: variantes opcionales por idioma, mismo patron aditivo que nameCa/nameEn/nameEs
+  // (si faltan, el resolutor de la app usa `description` como fallback).
   protected readonly description = signal('');
+  protected readonly descriptionCa = signal('');
+  protected readonly descriptionEn = signal('');
+  protected readonly descriptionEs = signal('');
+  // Segment de idioma: en vez de mostrar las 3 columnas CA/EN/ES de nombre y las 3 de
+  // descripcion a la vez (6 campos, textareas muy apretados), se elige un idioma activo y se
+  // muestra un unico par nombre+descripcion que lee/escribe en la señal de ese idioma.
+  protected readonly activeContentLocale = signal<ProductContentLocale>('es');
   protected readonly imageUrl = signal<string | null>(null);
   protected readonly priceEuros = signal('');
   protected readonly course = signal('main');
@@ -161,7 +207,125 @@ export class ProductEditorPage {
   protected readonly selectedAllergens = signal<Allergen[]>([]);
   protected readonly uploadStatus = signal<UploadStatus>('idle');
   protected readonly imageErrorMessage = signal<string | null>(null);
+  protected readonly activeSupplementLocale = signal<SupplementContentLocale>('es');
   private readonly pendingRetryFile = signal<File | null>(null);
+  private readonly compactTranslationSegments = toSignal(
+    typeof window === 'undefined'
+      ? of(false)
+      : fromEvent(window, 'resize').pipe(
+          startWith(null),
+          map(() => window.innerWidth < 640),
+        ),
+    { initialValue: typeof window !== 'undefined' ? window.innerWidth < 640 : false },
+  );
+
+  // Reutiliza los nombres nativos de idioma ya usados en el selector de idioma de la interfaz
+  // (languageSelect.languages.*: "Català"/"English"/"Español"), en vez de duplicar traducciones.
+  protected readonly contentLocaleOptions = computed<SegmentedControlOption[]>(() => {
+    this.activeLang();
+    const compact = this.compactTranslationSegments();
+    const order: ProductContentLocale[] = compact ? ['ca', 'es', 'en'] : ['es', 'en', 'ca'];
+    return order.map((locale) => ({ label: this.translationSegmentLabel(locale, compact), value: locale }));
+  });
+
+  protected readonly supplementLocaleOptions = computed<SegmentedControlOption[]>(() => {
+    this.activeLang();
+    const compact = this.compactTranslationSegments();
+    const order: SupplementContentLocale[] = compact ? ['ca', 'es', 'en'] : ['es', 'en', 'ca'];
+    return order.map((locale) => ({ label: this.translationSegmentLabel(locale, compact), value: locale }));
+  });
+
+  protected readonly activeVariantName = computed(() => {
+    switch (this.activeContentLocale()) {
+      case 'ca':
+        return this.nameCa();
+      case 'en':
+        return this.nameEn();
+      case 'es':
+        return this.nameEs();
+    }
+  });
+
+  protected readonly activeVariantDescription = computed(() => {
+    switch (this.activeContentLocale()) {
+      case 'ca':
+        return this.descriptionCa();
+      case 'en':
+        return this.descriptionEn();
+      case 'es':
+        return this.descriptionEs();
+    }
+  });
+
+  protected readonly activeVariantNameLabel = computed(() => {
+    this.activeLang();
+    const key = { ca: 'nameCa', en: 'nameEn', es: 'nameEs' }[this.activeContentLocale()];
+    return this.transloco.translate(`menu.product.form.${key}`);
+  });
+
+  protected readonly activeVariantDescriptionLabel = computed(() => {
+    this.activeLang();
+    const key = { ca: 'descriptionCa', en: 'descriptionEn', es: 'descriptionEs' }[this.activeContentLocale()];
+    return this.transloco.translate(`menu.product.form.${key}`);
+  });
+
+  protected updateActiveVariantName(value: string): void {
+    switch (this.activeContentLocale()) {
+      case 'ca':
+        this.nameCa.set(value);
+        break;
+      case 'en':
+        this.nameEn.set(value);
+        break;
+      case 'es':
+        this.nameEs.set(value);
+        break;
+    }
+  }
+
+  protected updateActiveVariantDescription(value: string): void {
+    switch (this.activeContentLocale()) {
+      case 'ca':
+        this.descriptionCa.set(value);
+        break;
+      case 'en':
+        this.descriptionEn.set(value);
+        break;
+      case 'es':
+        this.descriptionEs.set(value);
+        break;
+    }
+  }
+
+  protected supplementVariantName(option: SupplementOptionDraft): string {
+    switch (this.activeSupplementLocale()) {
+      case 'ca':
+        return option.nameCa;
+      case 'en':
+        return option.nameEn;
+      case 'es':
+        return option.nameEs;
+    }
+  }
+
+  protected supplementVariantLabel(): string {
+    const key = ({ ca: 'nameCa', en: 'nameEn', es: 'nameEs' } as const)[this.activeSupplementLocale()];
+    return this.transloco.translate(`menu.product.form.${key}`);
+  }
+
+  protected updateActiveSupplementVariantName(index: number, value: string): void {
+    switch (this.activeSupplementLocale()) {
+      case 'ca':
+        this.updateSupplementOptionNameCa(index, value);
+        break;
+      case 'en':
+        this.updateSupplementOptionNameEn(index, value);
+        break;
+      case 'es':
+        this.updateSupplementOptionNameEs(index, value);
+        break;
+    }
+  }
 
   protected readonly isValid = computed(() => this.name().trim().length > 0);
   protected readonly saveDisabled = computed(
@@ -202,7 +366,7 @@ export class ProductEditorPage {
   });
 
   protected readonly sortedModifierGroups = computed(() =>
-    [...this.modifierGroups()].sort((left, right) => left.name.localeCompare(right.name)),
+    [...this.modifierGroups()].sort((left, right) => this.getModifierGroupDisplayName(left).localeCompare(this.getModifierGroupDisplayName(right))),
   );
 
   // Grupos seleccionados en el orden en que se enviarán (= orden en que aparecen al vender).
@@ -257,7 +421,11 @@ export class ProductEditorPage {
     // Solo grupos compartidos: los suplementos privados de otros productos (scope='product')
     // no deben aparecer como si fueran modificadores enlazables desde aquí.
     this.menuApi.listModifierGroups('shared').subscribe({
-      next: (groups) => this.modifierGroups.set(groups),
+      next: (groups) => {
+        this.modifierGroups.set(groups);
+        this.loadingModifierGroups.set(false);
+      },
+      error: () => this.loadingModifierGroups.set(false),
     });
 
     this.menuApi.listProducts().subscribe({
@@ -281,6 +449,7 @@ export class ProductEditorPage {
                     name: slot.name,
                     nameCa: slot.nameI18n?.ca ?? '',
                     nameEn: slot.nameI18n?.en ?? '',
+                    nameEs: slot.nameI18n?.es ?? '',
                     minSelections: String(slot.minSelections),
                     maxSelections: String(slot.maxSelections),
                     isRequired: slot.isRequired,
@@ -298,6 +467,7 @@ export class ProductEditorPage {
                     name: component.name,
                     nameCa: component.nameI18n?.ca ?? '',
                     nameEn: component.nameI18n?.en ?? '',
+                    nameEs: component.nameI18n?.es ?? '',
                     componentProductId: '',
                     quantity: '',
                     isRemovable: component.removable,
@@ -323,6 +493,9 @@ export class ProductEditorPage {
             this.supplementOptions.set(
               owned.options.map((option) => ({
                 name: option.name,
+                nameCa: option.nameI18n?.ca ?? '',
+                nameEn: option.nameI18n?.en ?? '',
+                nameEs: option.nameI18n?.es ?? '',
                 priceEuros: option.priceDelta.toFixed(2),
                 imageUrl: option.imageUrl ?? null,
                 uploadStatus: 'idle' as UploadStatus,
@@ -346,6 +519,18 @@ export class ProductEditorPage {
 
   protected updateSupplementOptionName(index: number, value: string): void {
     this.supplementOptions.update((options) => options.map((option, i) => (i === index ? { ...option, name: value } : option)));
+  }
+
+  protected updateSupplementOptionNameCa(index: number, value: string): void {
+    this.supplementOptions.update((options) => options.map((option, i) => (i === index ? { ...option, nameCa: value } : option)));
+  }
+
+  protected updateSupplementOptionNameEn(index: number, value: string): void {
+    this.supplementOptions.update((options) => options.map((option, i) => (i === index ? { ...option, nameEn: value } : option)));
+  }
+
+  protected updateSupplementOptionNameEs(index: number, value: string): void {
+    this.supplementOptions.update((options) => options.map((option, i) => (i === index ? { ...option, nameEs: value } : option)));
   }
 
   protected updateSupplementOptionPrice(index: number, value: string): void {
@@ -431,8 +616,26 @@ export class ProductEditorPage {
     this.comboSlots.update((slots) => slots.filter((_, i) => i !== index));
   }
 
-  protected updateComboSlotField(index: number, field: 'name' | 'nameCa' | 'nameEn' | 'minSelections' | 'maxSelections', value: string): void {
+  protected updateComboSlotField(index: number, field: 'name' | 'minSelections' | 'maxSelections', value: string): void {
     this.comboSlots.update((slots) => slots.map((slot, i) => (i === index ? { ...slot, [field]: value } : slot)));
+  }
+
+  // El nombre traducido de cada slot se edita a traves del mismo segment de idioma que
+  // nombre/descripcion del producto (activeContentLocale) — no hay un segment por fila.
+  protected comboSlotVariantName(slot: ComboSlotDraft): string {
+    switch (this.activeContentLocale()) {
+      case 'ca':
+        return slot.nameCa;
+      case 'en':
+        return slot.nameEn;
+      case 'es':
+        return slot.nameEs;
+    }
+  }
+
+  protected updateComboSlotVariantName(slotIndex: number, value: string): void {
+    const key = ({ ca: 'nameCa', en: 'nameEn', es: 'nameEs' } as const)[this.activeContentLocale()];
+    this.comboSlots.update((slots) => slots.map((slot, i) => (i === slotIndex ? { ...slot, [key]: value } : slot)));
   }
 
   protected toggleComboSlotRequired(index: number, checked: boolean): void {
@@ -495,10 +698,28 @@ export class ProductEditorPage {
 
   protected updatePlatterComponentField(
     index: number,
-    field: 'name' | 'nameCa' | 'nameEn' | 'componentProductId' | 'quantity',
+    field: 'name' | 'componentProductId' | 'quantity',
     value: string,
   ): void {
     this.platterComponentDrafts.update((components) => components.map((component, i) => (i === index ? { ...component, [field]: value } : component)));
+  }
+
+  // El nombre traducido de cada componente se edita a traves del mismo segment de idioma que
+  // nombre/descripcion del producto (activeContentLocale) — no hay un segment por fila.
+  protected platterComponentVariantName(component: PlatterComponentDraft): string {
+    switch (this.activeContentLocale()) {
+      case 'ca':
+        return component.nameCa;
+      case 'en':
+        return component.nameEn;
+      case 'es':
+        return component.nameEs;
+    }
+  }
+
+  protected updatePlatterComponentVariantName(index: number, value: string): void {
+    const key = ({ ca: 'nameCa', en: 'nameEn', es: 'nameEs' } as const)[this.activeContentLocale()];
+    this.platterComponentDrafts.update((components) => components.map((component, i) => (i === index ? { ...component, [key]: value } : component)));
   }
 
   protected togglePlatterComponentRemovable(index: number, checked: boolean): void {
@@ -513,7 +734,11 @@ export class ProductEditorPage {
     this.name.set(product.name);
     this.nameCa.set(product.nameI18n?.ca ?? '');
     this.nameEn.set(product.nameI18n?.en ?? '');
+    this.nameEs.set(product.nameI18n?.es ?? '');
     this.description.set(product.description ?? '');
+    this.descriptionCa.set(product.descriptionI18n?.ca ?? '');
+    this.descriptionEn.set(product.descriptionI18n?.en ?? '');
+    this.descriptionEs.set(product.descriptionI18n?.es ?? '');
     this.imageUrl.set(product.imageUrl ?? null);
     this.priceEuros.set((product.priceCents / 100).toFixed(2));
     this.course.set(product.course);
@@ -564,6 +789,11 @@ export class ProductEditorPage {
     });
   }
 
+  protected getModifierGroupDisplayName(group: ModifierGroup): string {
+    const locale = this.toSupportedLocale(this.activeLang());
+    return group.nameI18n?.[locale] ?? group.name;
+  }
+
   private uploadSelectedFile(file: File): void {
     this.uploadStatus.set('uploading');
     this.imageErrorMessage.set(null);
@@ -585,13 +815,24 @@ export class ProductEditorPage {
     this.router.navigateByUrl(MENU_URL);
   }
 
-  // `name` (castellano) sigue siendo obligatorio y canonico; CA/EN son opcionales y solo se
-  // envian si hay algun valor, para no mandar `nameI18n: {}` cuando no se ha rellenado nada.
-  private buildNameI18n(): { ca?: string; en?: string } | undefined {
+  // `name` sigue siendo obligatorio (nombre principal, uso interno); CA/EN/ES son opcionales y
+  // solo se envian si hay algun valor, para no mandar `nameI18n: {}` cuando no se ha rellenado nada.
+  private buildNameI18n(): { ca?: string; en?: string; es?: string } | undefined {
     const ca = this.nameCa().trim();
     const en = this.nameEn().trim();
-    if (!ca && !en) return undefined;
-    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}) };
+    const es = this.nameEs().trim();
+    if (!ca && !en && !es) return undefined;
+    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}), ...(es ? { es } : {}) };
+  }
+
+  // Mismo patron aditivo que buildNameI18n: solo se envia si hay algun valor, para no mandar
+  // `descriptionI18n: {}` cuando no se ha rellenado nada.
+  private buildDescriptionI18n(): { ca?: string; en?: string; es?: string } | undefined {
+    const ca = this.descriptionCa().trim();
+    const en = this.descriptionEn().trim();
+    const es = this.descriptionEs().trim();
+    if (!ca && !en && !es) return undefined;
+    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}), ...(es ? { es } : {}) };
   }
 
   protected save(): void {
@@ -600,6 +841,7 @@ export class ProductEditorPage {
     if (!name) return;
     const priceCents = Math.round(parseFloat(this.priceEuros().replace(',', '.') || '0') * 100);
     const nameI18n = this.buildNameI18n();
+    const descriptionI18n = this.buildDescriptionI18n();
 
     this.saving.set(true);
     const existing = this.existingProduct();
@@ -611,6 +853,7 @@ export class ProductEditorPage {
               name,
               nameI18n,
               description: this.description().trim() || null,
+              descriptionI18n,
               imageUrl: this.imageUrl(),
               modifierGroupIds: this.mergeSupplementGroupId(supplementGroupId),
               allergens: this.selectedAllergens(),
@@ -627,6 +870,7 @@ export class ProductEditorPage {
             name,
             nameI18n,
             description: this.description().trim() || undefined,
+            descriptionI18n,
             imageUrl: this.imageUrl(),
             modifierGroupIds: this.selectedModifierGroupIds(),
             allergens: this.selectedAllergens(),
@@ -738,18 +982,28 @@ export class ProductEditorPage {
     return calls.length > 0 ? forkJoin(calls) : of(undefined);
   }
 
-  private buildSlotNameI18n(slot: ComboSlotDraft): { ca?: string; en?: string } | undefined {
+  private buildSlotNameI18n(slot: ComboSlotDraft): { ca?: string; en?: string; es?: string } | undefined {
     const ca = slot.nameCa.trim();
     const en = slot.nameEn.trim();
-    if (!ca && !en) return undefined;
-    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}) };
+    const es = slot.nameEs.trim();
+    if (!ca && !en && !es) return undefined;
+    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}), ...(es ? { es } : {}) };
   }
 
-  private buildComponentNameI18n(component: PlatterComponentDraft): { ca?: string; en?: string } | undefined {
+  private buildComponentNameI18n(component: PlatterComponentDraft): { ca?: string; en?: string; es?: string } | undefined {
     const ca = component.nameCa.trim();
     const en = component.nameEn.trim();
-    if (!ca && !en) return undefined;
-    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}) };
+    const es = component.nameEs.trim();
+    if (!ca && !en && !es) return undefined;
+    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}), ...(es ? { es } : {}) };
+  }
+
+  private buildSupplementOptionNameI18n(option: SupplementOptionDraft): { ca?: string; en?: string; es?: string } | undefined {
+    const ca = option.nameCa.trim();
+    const en = option.nameEn.trim();
+    const es = option.nameEs.trim();
+    if (!ca && !en && !es) return undefined;
+    return { ...(ca ? { ca } : {}), ...(en ? { en } : {}), ...(es ? { es } : {}) };
   }
 
   private mergeSupplementGroupId(supplementGroupId: string | null): string[] {
@@ -779,6 +1033,7 @@ export class ProductEditorPage {
       isRequired: false,
       options: validOptions.map((option) => ({
         name: option.name.trim(),
+        nameI18n: this.buildSupplementOptionNameI18n(option),
         priceDeltaCents: Math.round(parseFloat(option.priceEuros.replace(',', '.') || '0') * 100),
         ...(option.imageUrl ? { imageUrl: option.imageUrl } : {}),
       })),
@@ -808,5 +1063,39 @@ export class ProductEditorPage {
       default:
         return this.transloco.translate('menu.product.form.uploadFailed');
     }
+  }
+
+  // app-segmented-control emite valueChange como string generico; se estrecha aqui antes de
+  // asignarlo a la señal tipada (mismo patron que isMenuPageTab en menu-page.ts).
+  protected setActiveContentLocale(value: string): void {
+    if (this.isProductContentLocale(value)) {
+      this.activeContentLocale.set(value);
+    }
+  }
+
+  protected setActiveSupplementLocale(value: string): void {
+    if (this.isSupplementContentLocale(value)) {
+      this.activeSupplementLocale.set(value);
+    }
+  }
+
+  private isProductContentLocale(value: string): value is ProductContentLocale {
+    return value === 'ca' || value === 'en' || value === 'es';
+  }
+
+  private isSupplementContentLocale(value: string): value is SupplementContentLocale {
+    return value === 'ca' || value === 'en' || value === 'es';
+  }
+
+  private toSupportedLocale(value: string): ProductContentLocale {
+    return value === 'ca' || value === 'en' || value === 'es' ? value : 'es';
+  }
+
+  private translationSegmentLabel(locale: ProductContentLocale | SupplementContentLocale, compact: boolean): string {
+    if (compact) {
+      return locale;
+    }
+
+    return this.transloco.translate(`languageSelect.languages.${locale}`);
   }
 }

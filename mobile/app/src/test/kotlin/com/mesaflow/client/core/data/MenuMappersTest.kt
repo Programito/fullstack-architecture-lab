@@ -120,4 +120,47 @@ class MenuMappersTest {
         assertNull(menu.sections.single().nameI18n)
         assertNull(menu.sections.single().items.single().nameI18n)
     }
+
+    @Test
+    fun `mapea descriptionI18n de producto cuando el backend lo envia`() {
+        val dto = RestaurantMenuDto(
+            id = "menu-1",
+            restaurantId = "rest-1",
+            name = "Carta",
+            isActive = true,
+            sections = listOf(
+                MenuSectionDto(
+                    id = "sec-1",
+                    name = "Principales",
+                    sortOrder = 0,
+                    isVisible = true,
+                    items = listOf(
+                        MenuItemDto(
+                            id = "item-1",
+                            name = "Hamburguesa",
+                            description = "Con queso",
+                            descriptionI18n = NameI18nDto(ca = "Amb formatge", en = "With cheese"),
+                            priceCents = 1000,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val menu = dto.toDomain()
+        val item = menu.sections.single().items.single()
+
+        assertEquals("Con queso", item.description)
+        assertEquals(
+            NameI18n(es = null, ca = "Amb formatge", en = "With cheese"),
+            item.descriptionI18n,
+        )
+    }
+
+    @Test
+    fun `sin descriptionI18n en el DTO, el dominio lo mapea a null`() {
+        val menu = menuWithAllergens(emptyList()).toDomain()
+
+        assertNull(menu.sections.single().items.single().descriptionI18n)
+    }
 }

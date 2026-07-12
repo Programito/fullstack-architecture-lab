@@ -8,6 +8,7 @@ export type CreateProductData = {
   name: string;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   course: ProductCourse;
   preparationRoute: PreparationRoute;
   priceCents: number;
@@ -21,6 +22,7 @@ export type UpdateProductData = {
   name?: string;
   nameI18n?: NameI18n;
   description?: string | null;
+  descriptionI18n?: NameI18n;
   course?: ProductCourse;
   preparationRoute?: PreparationRoute;
   priceCents?: number;

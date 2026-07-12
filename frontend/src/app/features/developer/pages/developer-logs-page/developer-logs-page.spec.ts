@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/angular';
+import { fireEvent, render, screen, waitFor } from '@testing-library/angular';
 import { ActivatedRoute, Router, convertToParamMap, type Params } from '@angular/router';
 import { Component, input, output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -334,6 +334,84 @@ describe('DeveloperLogsPage', () => {
     expect(container.textContent).toContain('+150 developer.logs.metrics.vsPrevious');
   });
 
+  it('renders contextual help icons for filters and kpis', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 20,
+        errorCount: 4,
+        errorRate: 20,
+        auditEvents: 8,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const { container } = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    expect(container.querySelectorAll('.developer-logs-page__info-button').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.developer-logs-page__metric-info-button').length).toBe(5);
+  });
+
+  it('opens the filters and kpis help dialog', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness();
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 20,
+        errorCount: 4,
+        errorRate: 20,
+        auditEvents: 8,
+        p95DurationMs: 300,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const view = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    const component = view.fixture.componentInstance as DeveloperLogsPage & {
+      openFiltersInfo(): void;
+    };
+
+    component.openFiltersInfo();
+    view.fixture.detectChanges();
+
+    await screen.findByRole('dialog');
+    expect(document.querySelectorAll('.developer-logs-page__help-item').length).toBe(18);
+    expect(document.body.textContent).toContain('developer.logs.origins.web-admin');
+    expect(document.body.textContent).toContain('developer.logs.origins.web-pos');
+    expect(document.body.textContent).toContain('developer.logs.origins.backend');
+  });
+
   it('renders a mixed insight band with overview, alert, and current focus', async () => {
     const i18n = provideI18nTesting();
     const routeHarness = createRouteHarness();
@@ -656,7 +734,7 @@ describe('DeveloperLogsPage', () => {
       })),
     };
 
-    await render(DeveloperLogsPage, {
+    const view = await render(DeveloperLogsPage, {
       imports: [...i18n.imports],
       providers: [
         ...i18n.providers,
@@ -665,17 +743,21 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const pathSelect = screen.getByLabelText('developer.logs.filters.path') as HTMLSelectElement;
-    pathSelect.value = '/orders';
-    pathSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    const component = view.fixture.componentInstance as DeveloperLogsPage & {
+      setFilter(key: 'path', value: string): void;
+    };
+    component.setFilter('path', '/orders');
+    view.fixture.detectChanges();
 
     screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
 
     const expectedFilter = expect.objectContaining({ path: '/orders' });
-    expect(api.getSummary).toHaveBeenLastCalledWith(expectedFilter);
-    expect(api.getTimeline).toHaveBeenLastCalledWith(expectedFilter);
-    expect(api.getBreakdown).toHaveBeenLastCalledWith(expectedFilter);
-    expect(api.getEvents).toHaveBeenLastCalledWith(expectedFilter, 1, 20);
+    await waitFor(() => {
+      expect(api.getSummary).toHaveBeenLastCalledWith(expectedFilter);
+      expect(api.getTimeline).toHaveBeenLastCalledWith(expectedFilter);
+      expect(api.getBreakdown).toHaveBeenLastCalledWith(expectedFilter);
+      expect(api.getEvents).toHaveBeenLastCalledWith(expectedFilter, 1, 20);
+    });
   });
 
   it('applies a restaurant filter to all dashboard requests', async () => {
@@ -718,6 +800,56 @@ describe('DeveloperLogsPage', () => {
     expect(api.getTimeline).toHaveBeenLastCalledWith(expectedFilter);
     expect(api.getBreakdown).toHaveBeenLastCalledWith(expectedFilter);
     expect(api.getEvents).toHaveBeenLastCalledWith(expectedFilter, 1, 20);
+  });
+
+  it('clears filters back to the default all view and first page', async () => {
+    const i18n = provideI18nTesting();
+    const routeHarness = createRouteHarness({ view: 'audit', category: 'audit', clientOrigin: 'web-admin', page: 3 });
+    const api = {
+      ...pickerApiMocks(),
+      getSummary: vi.fn(() => of({
+        totalRequests: 30,
+        errorCount: 1,
+        errorRate: 3.3,
+        auditEvents: 5,
+        p95DurationMs: 210,
+        authByOrigin: [],
+        topSlowPaths: [],
+        topErrorEvents: [],
+      })),
+      getTimeline: vi.fn(() => of([])),
+      getBreakdown: vi.fn(() => of({ levels: [], categories: [], origins: [] })),
+      getEvents: vi.fn(() => of({ total: 0, items: [] })),
+      getErrorTrendsByPath: vi.fn(() => of([])),
+    };
+
+    const view = await render(DeveloperLogsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        ...routeHarness.providers,
+        { provide: DeveloperLogsApiService, useValue: api },
+      ],
+    });
+
+    const component = view.fixture.componentInstance as DeveloperLogsPage & {
+      clearFilters(): void;
+      view(): string;
+      page(): number;
+      filters(): { clientOrigin: string; category: string; path: string; search: string };
+    };
+
+    component.clearFilters();
+    view.fixture.detectChanges();
+
+    await waitFor(() => {
+      expect(component.view()).toBe('all');
+      expect(component.page()).toBe(1);
+      expect(component.filters().clientOrigin).toBe('');
+      expect(component.filters().category).toBe('');
+      expect(component.filters().path).toBe('');
+      expect(component.filters().search).toBe('');
+    });
   });
 
   it('applies audit-specific filters to all dashboard requests', async () => {
@@ -770,7 +902,7 @@ describe('DeveloperLogsPage', () => {
       })),
     };
 
-    await render(DeveloperLogsPage, {
+    const view = await render(DeveloperLogsPage, {
       imports: [...i18n.imports],
       providers: [
         ...i18n.providers,
@@ -779,21 +911,14 @@ describe('DeveloperLogsPage', () => {
       ],
     });
 
-    const entityTypeSelect = screen.getByLabelText('developer.logs.filters.entityType') as HTMLSelectElement;
-    entityTypeSelect.value = 'auth';
-    entityTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-    const entityIdCombobox = screen.getByRole('combobox', { name: 'developer.logs.filters.entityId' });
-    fireEvent.focus(entityIdCombobox);
-    fireEvent.click(screen.getByRole('option', { name: /developer@mesaflow.demo/i }));
-
-    const actorUserIdCombobox = screen.getByRole('combobox', { name: 'developer.logs.filters.actorUserId' });
-    fireEvent.focus(actorUserIdCombobox);
-    fireEvent.click(screen.getByRole('option', { name: /developer@mesaflow.demo/i }));
-
-    const resultSelect = screen.getByLabelText('developer.logs.filters.result') as HTMLSelectElement;
-    resultSelect.value = 'succeeded';
-    resultSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    const component = view.fixture.componentInstance as DeveloperLogsPage & {
+      setFilter(key: 'entityType' | 'entityId' | 'actorUserId' | 'result', value: string): void;
+    };
+    component.setFilter('entityType', 'auth');
+    component.setFilter('entityId', 'user-1');
+    component.setFilter('actorUserId', 'user-1');
+    component.setFilter('result', 'succeeded');
+    view.fixture.detectChanges();
 
     screen.getByRole('button', { name: 'developer.logs.filters.apply' }).click();
 
@@ -803,10 +928,12 @@ describe('DeveloperLogsPage', () => {
       entityId: 'user-1',
       result: 'succeeded',
     });
-    expect(api.getSummary).toHaveBeenLastCalledWith(expectedFilter);
-    expect(api.getTimeline).toHaveBeenLastCalledWith(expectedFilter);
-    expect(api.getBreakdown).toHaveBeenLastCalledWith(expectedFilter);
-    expect(api.getEvents).toHaveBeenLastCalledWith(expectedFilter, 1, 20);
+    await waitFor(() => {
+      expect(api.getSummary).toHaveBeenLastCalledWith(expectedFilter);
+      expect(api.getTimeline).toHaveBeenLastCalledWith(expectedFilter);
+      expect(api.getBreakdown).toHaveBeenLastCalledWith(expectedFilter);
+      expect(api.getEvents).toHaveBeenLastCalledWith(expectedFilter, 1, 20);
+    });
   });
 
   it('hydrates filters from query params on first load', async () => {

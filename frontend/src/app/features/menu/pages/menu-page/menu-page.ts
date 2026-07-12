@@ -1204,11 +1204,15 @@ export class MenuPage {
   }
 
   protected modifierSectionLabel(group: ModifierGroup): string {
-    if (this.modifierDisplayType(group) === 'remove') {
-      return group.name;
-    }
+    const displayType = this.modifierDisplayType(group);
+    const labelKey =
+      displayType === 'remove'
+        ? 'menu.page.modifierGroupLabels.remove'
+        : displayType === 'add'
+          ? 'menu.page.modifierGroupLabels.add'
+          : 'menu.page.modifierGroupLabels.choose';
 
-    return `${this.modifierActionLabel(group)} ${group.name}`;
+    return this.translate(labelKey, { name: group.name });
   }
 
   protected modifierLimitLabel(group: ModifierGroup): string {
@@ -1234,7 +1238,9 @@ export class MenuPage {
   }
 
   protected modifierUpgradeLabel(group: ModifierGroup, optionName: string): string {
-    return this.modifierDisplayType(group) === 'add' ? `${this.modifierActionLabel(group)} ${optionName}` : optionName;
+    return this.modifierDisplayType(group) === 'add'
+      ? this.translate('menu.page.modifierGroupLabels.add', { name: optionName })
+      : optionName;
   }
 
   protected detailUpgradeItems(product: Product): Array<{ label: string; priceDelta: number }> {

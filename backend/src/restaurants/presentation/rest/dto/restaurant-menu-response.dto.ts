@@ -80,6 +80,7 @@ class RestaurantMenuItemResponseDto {
   @ApiProperty({ example: 'Hamburguesa craft' }) name!: string;
   @ApiPropertyOptional({ type: NameI18nResponseDto }) nameI18n?: NameI18n;
   @ApiProperty({ example: 'Hamburguesa de 200g con queso cheddar', required: false }) description?: string;
+  @ApiPropertyOptional({ type: NameI18nResponseDto }) descriptionI18n?: NameI18n;
   @ApiProperty({ nullable: true, required: false }) imageUrl?: string | null;
   @ApiProperty({ enum: ['simple', 'combo', 'platter'], example: 'simple' }) productType!: RestaurantMenuItem['productType'];
   @ApiProperty({ example: 1250 }) priceCents!: number;
@@ -139,6 +140,7 @@ function mapItem(item: RestaurantMenuItem): RestaurantMenuItemResponseDto {
     name: item.name,
     nameI18n: item.nameI18n,
     description: item.description,
+    descriptionI18n: item.descriptionI18n,
     imageUrl: item.imageUrl,
     productType: item.productType,
     priceCents: item.priceCents,

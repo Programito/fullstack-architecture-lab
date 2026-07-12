@@ -2,17 +2,20 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { forkJoin, of } from 'rxjs';
 
+import { BackLink } from '../../../../shared/ui/back-link/back-link';
 import { Badge } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
 import { Card } from '../../../../shared/ui/card/card';
 import { Chart, type ChartPointSelection, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { Combobox, type ComboboxOption } from '../../../../shared/ui/combobox/combobox';
+import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Table, type TableAction, type TableBadgeCell, type TableColumn, type TableRow } from '../../../../shared/ui/table/table';
+import { Tooltip } from '../../../../shared/ui/tooltip/tooltip';
 import { DeveloperLogsApiService } from '../../api/developer-logs-api.service';
 import { AUDIT_ENTITY_TYPES, CLIENT_ORIGIN_OPTIONS, KNOWN_LOG_PATH_GROUPS } from '../../api/developer-logs.models';
 import type {
@@ -28,7 +31,7 @@ import type {
 
 @Component({
   selector: 'app-developer-logs-page',
-  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, Badge, Button, Card, Chart, Combobox, Icon, Table],
+  imports: [DatePipe, FormsModule, TranslocoPipe, BackLink, Badge, Button, Card, Chart, Combobox, Dialog, Icon, Table, Tooltip],
   templateUrl: './developer-logs-page.html',
   styleUrl: './developer-logs-page.css',
 })
@@ -61,9 +64,34 @@ export class DeveloperLogsPage {
   protected readonly quickRange = signal<DeveloperLogsQuickRange>('custom');
   protected readonly selectedEvent = signal<DeveloperLogEventDto | null>(null);
   protected readonly filtersExpanded = signal(true);
+  protected readonly filtersInfoOpen = signal(false);
   protected readonly showOperationsFilters = computed(() => this.view() !== 'audit');
   protected readonly showAuditFilters = computed(() => this.view() !== 'operations');
   protected readonly showSplitFilterSections = computed(() => this.showOperationsFilters() && this.showAuditFilters());
+  protected readonly filterHelpItems = [
+    { labelKey: 'developer.logs.filters.view', descriptionKey: 'developer.logs.filters.viewHint' },
+    { labelKey: 'developer.logs.filters.rangeLabel', descriptionKey: 'developer.logs.filters.rangeHint' },
+    { labelKey: 'developer.logs.filters.clientOrigin', descriptionKey: 'developer.logs.filters.clientOriginHint' },
+    { labelKey: 'developer.logs.filters.level', descriptionKey: 'developer.logs.filters.levelHint' },
+    { labelKey: 'developer.logs.filters.path', descriptionKey: 'developer.logs.filters.pathHint' },
+    { labelKey: 'developer.logs.filters.search', descriptionKey: 'developer.logs.filters.searchHint' },
+    { labelKey: 'developer.logs.filters.entityType', descriptionKey: 'developer.logs.filters.entityTypeHint' },
+    { labelKey: 'developer.logs.filters.result', descriptionKey: 'developer.logs.filters.resultHint' },
+  ] as const;
+  protected readonly kpiHelpItems = [
+    { labelKey: 'developer.logs.metrics.requests', descriptionKey: 'developer.logs.metrics.requestsHint' },
+    { labelKey: 'developer.logs.metrics.errors', descriptionKey: 'developer.logs.metrics.errorsHint' },
+    { labelKey: 'developer.logs.metrics.errorRate', descriptionKey: 'developer.logs.metrics.errorRateHint' },
+    { labelKey: 'developer.logs.metrics.audit', descriptionKey: 'developer.logs.metrics.auditHint' },
+    { labelKey: 'developer.logs.metrics.latency', descriptionKey: 'developer.logs.metrics.latencyHint' },
+  ] as const;
+  protected readonly originHelpItems = [
+    { labelKey: 'developer.logs.origins.web-admin', descriptionKey: 'developer.logs.filters.originDescriptions.web-admin' },
+    { labelKey: 'developer.logs.origins.web-demo', descriptionKey: 'developer.logs.filters.originDescriptions.web-demo' },
+    { labelKey: 'developer.logs.origins.web-pos', descriptionKey: 'developer.logs.filters.originDescriptions.web-pos' },
+    { labelKey: 'developer.logs.origins.apk-customer', descriptionKey: 'developer.logs.filters.originDescriptions.apk-customer' },
+    { labelKey: 'developer.logs.origins.backend', descriptionKey: 'developer.logs.filters.originDescriptions.backend' },
+  ] as const;
   protected readonly insightCards = computed<DeveloperLogInsightCardVm[]>(() => buildInsightCards({
     view: this.view(),
     filters: this.filters(),
@@ -330,6 +358,14 @@ export class DeveloperLogsPage {
     this.filtersExpanded.update((expanded) => !expanded);
   }
 
+  protected openFiltersInfo(): void {
+    this.filtersInfoOpen.set(true);
+  }
+
+  protected closeFiltersInfo(): void {
+    this.filtersInfoOpen.set(false);
+  }
+
   protected isClientOriginSelected(origin: DeveloperLogFilters['clientOrigin']): boolean {
     return this.filters().clientOrigin === origin;
   }
@@ -351,9 +387,10 @@ export class DeveloperLogsPage {
     this.applyFilterState({ path: '' }, this.view());
   }
 
-  protected resetFilters(): void {
+  protected clearFilters(): void {
     const defaults = defaultFilters();
     this.filters.set(defaults);
+    this.page.set(1);
     this.view.set('all');
     this.quickRange.set(detectQuickRange(defaults.from, defaults.to));
     this.selectedEvent.set(null);

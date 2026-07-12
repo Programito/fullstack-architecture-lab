@@ -2,10 +2,22 @@
   <button
     class="color-mode-menu__trigger"
     type="button"
+    role="switch"
     [disabled]="disabled()"
+    [attr.aria-checked]="isDarkMode()"
     [attr.aria-label]="triggerAriaLabel()"
     (click)="toggle()"
   >
-    <app-icon [name]="triggerIcon()" size="sm" />
+    <span class="color-mode-menu__track" aria-hidden="true">
+      <span class="color-mode-menu__option color-mode-menu__option--light">
+        <app-icon name="light_mode" size="sm" />
+        <span class="color-mode-menu__label">{{ lightLabel() }}</span>
+      </span>
+      <span class="color-mode-menu__option color-mode-menu__option--dark">
+        <app-icon name="dark_mode" size="sm" />
+        <span class="color-mode-menu__label">{{ darkLabel() }}</span>
+      </span>
+      <span class="color-mode-menu__thumb"></span>
+    </span>
   </button>
 </div>

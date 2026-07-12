@@ -285,18 +285,18 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
 
   const burgerExtrasGroup = await prisma.modifierGroup.upsert({
     where: { organizationId_name: { organizationId: organization.id, name: 'Extras de hamburguesa' } },
-    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
-    create: { organizationId: organization.id, name: 'Extras de hamburguesa', selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false, nameI18n: { es: 'Extras de hamburguesa', ca: "Extres d'hamburguesa", en: 'Burger extras' } },
+    create: { organizationId: organization.id, name: 'Extras de hamburguesa', nameI18n: { es: 'Extras de hamburguesa', ca: "Extres d'hamburguesa", en: 'Burger extras' }, selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
   });
   const burgerRemoveGroup = await prisma.modifierGroup.upsert({
     where: { organizationId_name: { organizationId: organization.id, name: 'Quitar ingredientes hamburguesa' } },
-    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
-    create: { organizationId: organization.id, name: 'Quitar ingredientes hamburguesa', selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
+    update: { selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false, nameI18n: { es: 'Quitar ingredientes hamburguesa', ca: "Treure ingredients d'hamburguesa", en: 'Remove burger ingredients' } },
+    create: { organizationId: organization.id, name: 'Quitar ingredientes hamburguesa', nameI18n: { es: 'Quitar ingredientes hamburguesa', ca: "Treure ingredients d'hamburguesa", en: 'Remove burger ingredients' }, selectionType: 'multiple', minSelections: 0, maxSelections: 3, isRequired: false },
   });
   const burgerPointGroup = await prisma.modifierGroup.upsert({
     where: { organizationId_name: { organizationId: organization.id, name: 'Punto de la carne' } },
-    update: { selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
-    create: { organizationId: organization.id, name: 'Punto de la carne', selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
+    update: { selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true, nameI18n: { es: 'Punto de la carne', ca: 'Punt de la carn', en: 'Burger point' } },
+    create: { organizationId: organization.id, name: 'Punto de la carne', nameI18n: { es: 'Punto de la carne', ca: 'Punt de la carn', en: 'Burger point' }, selectionType: 'single', minSelections: 1, maxSelections: 1, isRequired: true },
   });
   const drinkSizeGroup = await prisma.modifierGroup.upsert({
     where: { organizationId_name: { organizationId: organization.id, name: 'Tamaño de bebida' } },
@@ -320,6 +320,21 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
   });
 
   // ── Modifier options ─────────────────────────────────────────────────────────
+
+  for (const group of [
+    { id: burgerExtrasGroup.id, nameI18n: { es: 'Extras de hamburguesa', ca: "Extres d'hamburguesa", en: 'Burger extras' } },
+    { id: burgerRemoveGroup.id, nameI18n: { es: 'Quitar ingredientes hamburguesa', ca: "Treure ingredients d'hamburguesa", en: 'Remove burger ingredients' } },
+    { id: burgerPointGroup.id, nameI18n: { es: 'Punto de la carne', ca: 'Punt de la carn', en: 'Burger point' } },
+    { id: drinkSizeGroup.id, nameI18n: { es: 'Tamaño de bebida', ca: 'Mida de beguda', en: 'Drink size' } },
+    { id: coffeeOptionsGroup.id, nameI18n: { es: 'Opciones de café', ca: 'Opcions de cafè', en: 'Coffee options' } },
+    { id: platterRemoveGroup.id, nameI18n: { es: 'Quitar ingredientes plato', ca: 'Treure ingredients del plat', en: 'Remove platter ingredients' } },
+    { id: platterExtrasGroup.id, nameI18n: { es: 'Extras de plato combinado', ca: 'Extres de plat combinat', en: 'Platter extras' } },
+  ]) {
+    await prisma.modifierGroup.update({
+      where: { id: group.id },
+      data: { nameI18n: group.nameI18n },
+    });
+  }
 
   for (const option of [
     { groupId: burgerExtrasGroup.id, name: 'Bacon', priceDeltaCents: 150, sortOrder: 1 },

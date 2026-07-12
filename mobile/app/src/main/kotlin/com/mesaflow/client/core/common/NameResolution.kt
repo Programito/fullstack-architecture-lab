@@ -19,9 +19,12 @@ import java.util.Locale
  * y es esta app la que decide cual pintar, para poder cambiar de idioma sin
  * red (ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md).
  *
- * [fallback] es siempre el `name` canonico (castellano) que ya viene del
- * backend: se usa si no hay `nameI18n`, si no hay variante para [localeTag],
- * o si esa variante esta vacia/en blanco.
+ * [fallback] es siempre el `name` canonico (identificador interno/global,
+ * ver Fase 5 del plan) que ya viene del backend: se usa si no hay
+ * `nameI18n`, si no hay variante para [localeTag], o si esa variante esta
+ * vacia/en blanco — incluido el propio castellano (`es`), que desde la Fase
+ * 5 tambien es una variante mas dentro de [NameI18n] en vez de asumirse
+ * igual al fallback.
  */
 fun resolveName(nameI18n: NameI18n?, fallback: String, localeTag: String): String {
     if (nameI18n == null) return fallback
@@ -29,6 +32,22 @@ fun resolveName(nameI18n: NameI18n?, fallback: String, localeTag: String): Strin
         "ca" -> nameI18n.ca
         "en" -> nameI18n.en
         "es" -> nameI18n.es
+        else -> null
+    }
+    return candidate?.takeIf { it.isNotBlank() } ?: fallback
+}
+
+/**
+ * Igual que [resolveName] pero para campos de descripcion, que a diferencia
+ * del nombre pueden no existir en absoluto (`description: String?`). Se usa
+ * para [MenuItem.descriptionI18n] (Fase 5/6 del plan multiidioma).
+ */
+fun resolveDescription(descriptionI18n: NameI18n?, fallback: String?, localeTag: String): String? {
+    if (descriptionI18n == null) return fallback
+    val candidate = when (localeTag) {
+        "ca" -> descriptionI18n.ca
+        "en" -> descriptionI18n.en
+        "es" -> descriptionI18n.es
         else -> null
     }
     return candidate?.takeIf { it.isNotBlank() } ?: fallback
@@ -43,12 +62,13 @@ fun resolveName(nameI18n: NameI18n?, fallback: String, localeTag: String): Strin
 fun AppLanguage.resolveLocaleTag(): String = tag ?: Locale.getDefault().language
 
 /**
- * Devuelve una copia de la carta con cada nombre resuelto al idioma
- * [localeTag], sustituyendo el campo `name` de cada nodo (producto, seccion,
- * grupo/opcion de modificador, slot de combo, componente de platter) por su
- * variante en ese idioma (o el original si no hay traduccion). Se aplica en
- * memoria sobre la carta ya cargada — cambiar de idioma nunca dispara una
- * peticion de red nueva, solo re-mapea los datos que ya estan en RAM/cache.
+ * Devuelve una copia de la carta con cada nombre (y, en el producto, tambien
+ * la descripcion) resuelto al idioma [localeTag], sustituyendo el campo
+ * `name`/`description` de cada nodo (producto, seccion, grupo/opcion de
+ * modificador, slot de combo, componente de platter) por su variante en ese
+ * idioma (o el original si no hay traduccion). Se aplica en memoria sobre la
+ * carta ya cargada — cambiar de idioma nunca dispara una peticion de red
+ * nueva, solo re-mapea los datos que ya estan en RAM/cache.
  *
  * `ComboSlotOption` no se resuelve aqui: su nombre de display viene del
  * producto asociado, no de un campo propio (ver nota en Menu.kt/MenuDtos.kt).
@@ -64,6 +84,7 @@ private fun MenuSection.withResolvedNames(localeTag: String): MenuSection = copy
 
 private fun MenuItem.withResolvedNames(localeTag: String): MenuItem = copy(
     name = resolveName(nameI18n, name, localeTag),
+    description = resolveDescription(descriptionI18n, description, localeTag),
     modifierGroups = modifierGroups.map { it.withResolvedNames(localeTag) },
     comboDefinition = comboDefinition?.withResolvedNames(localeTag),
     platterComponents = platterComponents.map { it.withResolvedNames(localeTag) },

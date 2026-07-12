@@ -28,6 +28,12 @@ export class UpdateRestaurantProductDto {
   @IsOptional()
   description?: string | null;
 
+  @ApiPropertyOptional({ type: NameI18nDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NameI18nDto)
+  descriptionI18n?: NameI18nDto;
+
   @ApiPropertyOptional({ example: 1490, description: 'Price in cents' })
   @IsInt()
   @Min(0)

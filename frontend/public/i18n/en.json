@@ -1333,6 +1333,16 @@
         "remove": "Remove",
         "choose": "Choose"
       },
+      "modifierTypeLabels": {
+        "single": "Single choice",
+        "multiple": "Multiple choice",
+        "remove": "Remove ingredients"
+      },
+      "modifierGroupLabels": {
+        "add": "Add {{name}}",
+        "choose": "Choose {{name}}",
+        "remove": "{{name}}"
+      },
       "modifierUsage": "Used in {{count}} products",
       "modifierLimits": {
         "choose": "Choose {{count}}",
@@ -1445,13 +1455,23 @@
       "form": {
         "createTitle": "New product",
         "editTitle": "Edit product",
-        "name": "Name",
+        "name": "Main name",
         "namePlaceholder": "Product name",
+        "nameHint": "Internal use: kitchen, POS, and admin search. Can be long or descriptive.",
         "nameCa": "Name (Catalan)",
         "nameEn": "Name (English)",
+        "nameEs": "Name (Spanish)",
         "nameI18nPlaceholder": "Optional",
+        "nameI18nHint": "What the diner sees in the app for their language. Leave blank to use the main name.",
         "description": "Description",
         "descriptionPlaceholder": "Optional description",
+        "descriptionCa": "Description (Catalan)",
+        "descriptionEn": "Description (English)",
+        "descriptionEs": "Description (Spanish)",
+        "descriptionI18nPlaceholder": "Optional",
+        "descriptionI18nHint": "What the diner sees in the app for their language. Leave blank to use the main description.",
+        "translationsTitle": "Translations",
+        "translationsLocaleLabel": "Translation language",
         "image": "Image",
         "noImage": "No image",
         "dropImageHint": "Drag an image here or open the picker",

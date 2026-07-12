@@ -36,6 +36,7 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                         name = item.name,
                         nameI18n = item.nameI18n.toDomain(),
                         description = item.description,
+                        descriptionI18n = item.descriptionI18n.toDomain(),
                         imageUrl = item.imageUrl,
                         productType = when (item.productType.lowercase()) {
                             "combo" -> ProductType.COMBO

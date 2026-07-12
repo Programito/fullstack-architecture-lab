@@ -18,6 +18,9 @@ data class RestaurantMenuDto(
  * nombre canonico en castellano (`name`). Espejo de NameI18nResponseDto en
  * backend/.../restaurant-menu-response.dto.ts. Ver
  * docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+ *
+ * Mismo tipo reutilizado para `descriptionI18n` en [MenuItemDto] (misma
+ * forma `{es, ca, en}`, ver Fase 5/6 del plan).
  */
 @Serializable
 data class NameI18nDto(
@@ -44,6 +47,8 @@ data class MenuItemDto(
     val name: String,
     val nameI18n: NameI18nDto? = null,
     val description: String? = null,
+    // Espejo de Product.descriptionI18n en backend (Fase 5 del plan multiidioma).
+    val descriptionI18n: NameI18nDto? = null,
     val imageUrl: String? = null,
     val productType: String = "simple",
     val priceCents: Long = 0,

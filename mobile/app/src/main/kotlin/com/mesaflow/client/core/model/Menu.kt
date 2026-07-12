@@ -15,6 +15,11 @@ data class Menu(
  * idioma activo (ver [com.mesaflow.client.core.common.resolveName]) — nunca
  * se resuelve en el servidor, para no perder la cache ETag/304 de la carta.
  * Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+ *
+ * El mismo tipo se reutiliza para `descriptionI18n` en [MenuItem] (misma
+ * forma `{es, ca, en}`, solo cambia que envuelve la descripcion en vez del
+ * nombre) — ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md,
+ * Fase 5/6.
  */
 data class NameI18n(
     val es: String? = null,
@@ -64,6 +69,10 @@ data class MenuItem(
     val name: String,
     val nameI18n: NameI18n? = null,
     val description: String?,
+    // Variantes de descripcion por idioma (ES/CA/EN), mismo patron aditivo
+    // que nameI18n. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md,
+    // Fase 5 (admin web) / Fase 6 (esta).
+    val descriptionI18n: NameI18n? = null,
     val imageUrl: String?,
     val productType: ProductType,
     val priceCents: Long,

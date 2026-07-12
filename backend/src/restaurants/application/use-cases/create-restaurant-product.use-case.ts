@@ -11,6 +11,7 @@ export type CreateRestaurantProductCommand = {
   name: string;
   nameI18n?: NameI18n;
   description?: string;
+  descriptionI18n?: NameI18n;
   course: ProductCourse;
   preparationRoute: PreparationRoute;
   priceCents: number;
@@ -32,6 +33,7 @@ export class CreateRestaurantProductUseCase {
         name: command.name,
         nameI18n: command.nameI18n,
         description: command.description,
+        descriptionI18n: command.descriptionI18n,
         course: command.course,
         preparationRoute: command.preparationRoute,
         priceCents: command.priceCents,

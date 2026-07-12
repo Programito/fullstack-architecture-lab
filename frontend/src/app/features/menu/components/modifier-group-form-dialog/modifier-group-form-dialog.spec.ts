@@ -79,4 +79,35 @@ describe('ModifierGroupFormDialog', () => {
 
     expect(closed).toHaveBeenCalled();
   });
+
+  it('includes nameEs in nameI18n for the group and its options', async () => {
+    const confirmed = vi.fn();
+    const { fixture } = await renderDialog({ confirmed });
+
+    fireEvent.input(screen.getByPlaceholderText('Nombre del grupo'), { target: { value: 'Extras' } });
+    fireEvent.input(screen.getByPlaceholderText('Nombre de la opción'), { target: { value: 'Queso extra' } });
+
+    // Con una sola opción visible, hay dos campos "Nombre (castellano)": el del grupo y el de
+    // la opción (el label de la opción solo se muestra en la fila $index === 0).
+    const [groupNameEsInput, optionNameEsInput] = screen.getAllByLabelText('Nombre (castellano)') as HTMLInputElement[];
+    fireEvent.input(groupNameEsInput, { target: { value: 'Extras (ES)' } });
+    fireEvent.input(optionNameEsInput, { target: { value: 'Queso extra (ES)' } });
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: /crear grupo/i }));
+    fixture.detectChanges();
+
+    expect(confirmed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Extras',
+        nameI18n: expect.objectContaining({ es: 'Extras (ES)' }),
+        options: [
+          expect.objectContaining({
+            name: 'Queso extra',
+            nameI18n: expect.objectContaining({ es: 'Queso extra (ES)' }),
+          }),
+        ],
+      }),
+    );
+  });
 });

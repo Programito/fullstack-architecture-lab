@@ -10,6 +10,7 @@ import { Badge, type BadgeVariant } from '../../../../shared/ui/badge/badge';
 import { Button } from '../../../../shared/ui/button/button';
 import { Chart, type ChartSeries } from '../../../../shared/ui/chart/chart';
 import { DatePicker, type DateRangeValue } from '../../../../shared/ui/date-picker/date-picker';
+import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '../../../../shared/ui/dropdown-menu/dropdown-menu';
 import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
 import { Icon } from '../../../../shared/ui/icon/icon';
@@ -49,7 +50,7 @@ const VIEW_MODE_STORAGE_KEY = 'restaurantPos.dashboard.viewMode';
 
 @Component({
   selector: 'app-restaurant-pos-dashboard-page',
-  imports: [TranslocoPipe, Alert, Badge, Button, Chart, DatePicker, DropdownMenu, EmptyState, Icon, SegmentedControl, Skeleton, Spinner, Table],
+  imports: [TranslocoPipe, Alert, Badge, Button, Chart, DatePicker, Dialog, DropdownMenu, EmptyState, Icon, SegmentedControl, Skeleton, Spinner, Table],
   templateUrl: './restaurant-pos-dashboard-page.html',
   styleUrl: './restaurant-pos-dashboard-page.css',
 })
@@ -72,6 +73,17 @@ export class RestaurantPosDashboardPage {
   protected readonly filtersExpanded: ReturnType<typeof signal<boolean>>;
   protected readonly quickRange: ReturnType<typeof signal<QuickRange>>;
   protected readonly dateInputs: ReturnType<typeof signal<DateInputs>>;
+  protected readonly filtersInfoOpen = signal(false);
+  protected readonly filterHelpItems = [
+    { labelKey: 'restaurantPos.dashboard.filters.rangeQuickLabel', descriptionKey: 'restaurantPos.dashboard.filters.rangeQuickHint' },
+    { labelKey: 'restaurantPos.dashboard.filters.rangeLabel', descriptionKey: 'restaurantPos.dashboard.filters.rangeHint' },
+  ] as const;
+  protected readonly metricHelpItems = [
+    { labelKey: 'restaurantPos.dashboard.metrics.revenue', descriptionKey: 'restaurantPos.dashboard.metrics.revenueHint' },
+    { labelKey: 'restaurantPos.dashboard.metrics.orders', descriptionKey: 'restaurantPos.dashboard.metrics.ordersHint' },
+    { labelKey: 'restaurantPos.dashboard.metrics.averageTicket', descriptionKey: 'restaurantPos.dashboard.metrics.averageTicketHint' },
+    { labelKey: 'restaurantPos.dashboard.metrics.dominantPayment', descriptionKey: 'restaurantPos.dashboard.metrics.dominantPaymentHint' },
+  ] as const;
 
   protected readonly hasData = computed(() => (this.report()?.summary.ordersCount ?? 0) > 0);
 
@@ -444,6 +456,14 @@ export class RestaurantPosDashboardPage {
     const next = !this.filtersExpanded();
     this.filtersExpanded.set(next);
     this.updateUrl({ filters: next ? 'open' : 'closed' });
+  }
+
+  protected openFiltersInfo(): void {
+    this.filtersInfoOpen.set(true);
+  }
+
+  protected closeFiltersInfo(): void {
+    this.filtersInfoOpen.set(false);
   }
 
   protected resetFilters(): void {

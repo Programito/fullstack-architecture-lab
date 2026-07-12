@@ -133,6 +133,10 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
           // ver Fase 1 del plan multiidioma).
           nameI18n: asNameI18n(item.restaurantProduct.product.nameI18n),
           description: item.restaurantProduct.product.description ?? undefined,
+          // Mismo criterio que `nameI18n`: siempre del Product canonico, nunca de
+          // displayDescription/displayDescription override (fuera de alcance por
+          // ahora, ver plan multiidioma).
+          descriptionI18n: asNameI18n(item.restaurantProduct.product.descriptionI18n),
           imageUrl: item.restaurantProduct.imageUrl,
           productType: item.restaurantProduct.product.productType as 'simple' | 'combo' | 'platter',
           priceCents: item.priceOverrideCents ?? item.restaurantProduct.priceCents,
