@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { RestaurantOrderCatalogRepository } from '../../application/ports/restaurant-order-catalog-repository.port';
+import { applyDemoMenuTranslationFallback } from './demo-menu-translation-fallback';
+import { asNameI18n } from './name-i18n.mapper';
 import type {
   RestaurantMenu,
   RestaurantMenuComboDefinition,
@@ -10,11 +12,12 @@ import type {
   RestaurantMenuPlatterComponent,
 } from '../../domain/restaurant-read.models';
 
-type RawModifierOption = { id: string; name: string; priceDeltaCents: number; isAvailable: boolean };
+type RawModifierOption = { id: string; name: string; nameI18n?: unknown; priceDeltaCents: number; isAvailable: boolean };
 type RawModifierGroup = {
   modifierGroup: {
     id: string;
     name: string;
+    nameI18n?: unknown;
     selectionType: string;
     minSelections: number;
     maxSelections: number;
@@ -32,13 +35,14 @@ type RawComboSlotOption = {
 type RawComboSlot = {
   id: string;
   name: string;
+  nameI18n?: unknown;
   minSelections: number;
   maxSelections: number;
   isRequired: boolean;
   options: RawComboSlotOption[];
 };
 type RawComboDefinition = { id: string; slots: RawComboSlot[] };
-type RawPlatterComponent = { id: string; name: string; isRemovable: boolean; isReplaceable: boolean; sortOrder: number };
+type RawPlatterComponent = { id: string; name: string; nameI18n?: unknown; isRemovable: boolean; isReplaceable: boolean; sortOrder: number };
 type RawMenuItem = {
   id: string;
   displayNameOverride: string | null;
@@ -54,7 +58,9 @@ type RawMenuItem = {
     product: {
       id: string;
       name: string;
+      nameI18n?: unknown;
       description: string | null;
+      descriptionI18n?: unknown;
       productType: string;
       defaultCourse: string | null;
       defaultPreparationRoute: string | null;
@@ -131,19 +137,22 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
 
     if (!menu) return null;
 
-    return {
+    const mappedMenu = {
       id: menu.id,
       restaurantId: menu.restaurantId,
       name: menu.name,
       isActive: menu.isActive,
-      sections: menu.sections.map((section) => ({
-        id: section.id,
-        name: section.name,
-        sortOrder: section.sortOrder,
-        isVisible: section.isVisible,
-        items: (section.items as unknown as RawMenuItem[]).map(mapMenuItem),
+        sections: menu.sections.map((section) => ({
+          id: section.id,
+          name: section.name,
+          nameI18n: asNameI18n(section.nameI18n),
+          sortOrder: section.sortOrder,
+          isVisible: section.isVisible,
+          items: (section.items as unknown as RawMenuItem[]).map(mapMenuItem),
       })),
     };
+
+    return applyDemoMenuTranslationFallback(mappedMenu);
   }
 }
 
@@ -155,7 +164,9 @@ function mapMenuItem(item: RawMenuItem) {
     restaurantProductId: rp.id,
     productId: product.id,
     name: item.displayNameOverride ?? rp.displayName ?? product.name,
+    nameI18n: asNameI18n(product.nameI18n),
     description: product.description ?? undefined,
+    descriptionI18n: asNameI18n(product.descriptionI18n),
     imageUrl: rp.imageUrl,
     productType: product.productType as 'simple' | 'combo' | 'platter',
     priceCents: item.priceOverrideCents ?? rp.priceCents,
@@ -177,6 +188,7 @@ function mapModifierGroup(rpMg: RawModifierGroup): RestaurantMenuModifierGroup {
   return {
     id: mg.id,
     name: mg.name,
+    nameI18n: asNameI18n(mg.nameI18n),
     selectionType: (mg.selectionType === 'single' ? 'single' : 'multiple') as 'single' | 'multiple',
     minSelections: mg.minSelections,
     maxSelections: mg.maxSelections,
@@ -184,6 +196,7 @@ function mapModifierGroup(rpMg: RawModifierGroup): RestaurantMenuModifierGroup {
     options: mg.options.map((opt) => ({
       id: opt.id,
       name: opt.name,
+      nameI18n: asNameI18n(opt.nameI18n),
       priceDeltaCents: opt.priceDeltaCents,
       isAvailable: opt.isAvailable,
     })),
@@ -196,6 +209,7 @@ function mapComboDefinition(combo: RawComboDefinition): RestaurantMenuComboDefin
     slots: combo.slots.map((slot) => ({
       id: slot.id,
       name: slot.name,
+      nameI18n: asNameI18n(slot.nameI18n),
       minSelections: slot.minSelections,
       maxSelections: slot.maxSelections,
       isRequired: slot.isRequired,
@@ -214,6 +228,7 @@ function mapPlatterComponent(component: RawPlatterComponent): RestaurantMenuPlat
   return {
     id: component.id,
     name: component.name,
+    nameI18n: asNameI18n(component.nameI18n),
     removable: component.isRemovable,
     replaceable: component.isReplaceable,
     sortOrder: component.sortOrder,

@@ -73,18 +73,21 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                         backStack.clear()
                         backStack.add(MenuKey)
                     },
+                    onSettingsClick = { backStack.add(SettingsKey(fromEntry = true)) },
                 )
             }
             entry<MenuKey> {
                 MenuScreen(
                     onCartClick = { backStack.add(CartKey) },
-                    onSettingsClick = { backStack.add(SettingsKey) },
+                    onSettingsClick = { backStack.add(SettingsKey()) },
                 )
             }
             entry<CartKey> {
                 CartScreen(
                     onBack = { backStack.removeLastOrNull() },
+                    onSettingsClick = { backStack.add(SettingsKey()) },
                     onCheckout = { submitted, lines, tableLabel ->
+                        backStack.removeLastOrNull()
                         backStack.add(
                             CheckoutKey(
                                 orderId = submitted.orderId,
@@ -98,13 +101,14 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                     },
                 )
             }
-            entry<SettingsKey> {
+            entry<SettingsKey> { key ->
                 SettingsScreen(
                     onBack = { backStack.removeLastOrNull() },
-                    onExitTable = {
-                        // Igual que sessionExpired: vaciar el stack para que atrás no vuelva a la mesa anterior.
-                        backStack.clear()
-                        backStack.add(EntryKey)
+                    onExitTable = if (key.fromEntry) null else {
+                        {
+                            backStack.clear()
+                            backStack.add(EntryKey)
+                        }
                     },
                 )
             }
@@ -117,6 +121,7 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                     dailyNumber = key.dailyNumber,
                     tableLabel = key.tableLabel,
                     onBack = { backStack.removeLastOrNull() },
+                    onSettingsClick = { backStack.add(SettingsKey()) },
                     onDone = {
                         // Pago aceptado: vuelta limpia a la carta (sin carrito ni cobro detrás).
                         backStack.clear()

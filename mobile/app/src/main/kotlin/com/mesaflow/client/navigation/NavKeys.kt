@@ -14,9 +14,11 @@ data object MenuKey : NavKey
 @Serializable
 data object CartKey : NavKey
 
-/** Ajustes de apariencia (tema e idioma); accesible desde la Carta. */
+/** Ajustes de apariencia (tema e idioma); accesible desde la Carta y desde Entry. */
 @Serializable
-data object SettingsKey : NavKey
+data class SettingsKey(
+    val fromEntry: Boolean = false,
+) : NavKey
 
 /**
  * Cobro del pedido recién enviado; lleva lo mínimo para no depender de red.

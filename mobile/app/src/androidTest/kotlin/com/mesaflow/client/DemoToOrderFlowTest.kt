@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.mesaflow.client.core.data.CartRepository
@@ -104,6 +105,45 @@ class DemoToOrderFlowTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText(activity.getString(R.string.cart_go_to_checkout)).assertExists()
+    }
+
+    @Test
+    fun pedidoEnviado_noMuestraElEstadoPreparingEnLaConfirmacion() {
+        val activity = composeRule.activity
+        FakeBackend.enqueueDemoLoginAndMenu(server)
+
+        composeRule.onNodeWithText(activity.getString(R.string.entry_demo_mode)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(FakeBackend.PRODUCT_NAME).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(FakeBackend.PRODUCT_NAME).performClick()
+
+        val addLabel = activity.getString(R.string.configurator_add_for).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(addLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(addLabel, substring = true)[0].performClick()
+
+        val cartFabLabel = activity.getString(R.string.cart_fab_label).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(cartFabLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(cartFabLabel, substring = true)[0].performClick()
+
+        FakeBackend.enqueueSubmitOrder(server)
+        FakeBackend.enqueueServicePointOrderStatus(server)
+        composeRule.onNodeWithText(activity.getString(R.string.cart_submit)).performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(activity.getString(R.string.cart_submitted_title))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(activity.getString(R.string.cart_kitchen_progress_title))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithText(activity.getString(R.string.order_line_status_preparing)).assertDoesNotExist()
     }
 
     /**

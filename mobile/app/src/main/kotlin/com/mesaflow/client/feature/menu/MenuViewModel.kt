@@ -131,14 +131,15 @@ class MenuViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init {
+        observeLanguage()
         load()
         startMenuPolling()
-        observeLanguage()
     }
 
     fun load(forceRefresh: Boolean = false) {
         _uiState.update { it.copy(content = MenuContentState.Loading) }
         viewModelScope.launch {
+            currentLocaleTag = settingsStore.language.first().resolveLocaleTag()
             val table = sessionStore.tableContext.first()
             if (table == null) {
                 _uiState.update { it.copy(content = MenuContentState.Error(AppError.Unknown(null))) }
@@ -168,9 +169,26 @@ class MenuViewModel @Inject constructor(
             settingsStore.language.collect { language ->
                 currentLocaleTag = language.resolveLocaleTag()
                 rawMenu?.let { menu ->
-                    _uiState.update { it.copy(content = MenuContentState.Ready(menu.withResolvedNames(currentLocaleTag))) }
+                    publishResolvedMenu(menu, _uiState.value.updatedMenuNotice)
+                    refreshMenuTranslations()
                 }
             }
+        }
+    }
+
+    /**
+     * Aunque la app resuelve `nameI18n` en memoria, al cambiar de idioma puede
+     * interesar refrescar la carta real del backend para recoger traducciones
+     * que no estuvieran presentes en una respuesta antigua/cacheada del mismo
+     * proceso (por ejemplo, tras reseed o cambios recientes en demo/admin).
+     * No mostramos loading: si falla, se mantiene la carta actual.
+     */
+    private fun refreshMenuTranslations() {
+        viewModelScope.launch {
+            val table = sessionStore.tableContext.first() ?: return@launch
+            val result = menuRepository.getMenu(table.restaurantId, forceRefresh = true)
+            val fresh = (result as? AppResult.Success)?.data ?: return@launch
+            applyMenu(fresh, notice = false)
         }
     }
 
@@ -223,13 +241,21 @@ class MenuViewModel @Inject constructor(
     private fun applyMenu(menu: Menu, notice: Boolean) {
         pendingMenu = null
         rawMenu = menu
+        publishResolvedMenu(menu, notice)
+    }
+
+    private fun publishResolvedMenu(menu: Menu, updatedMenuNotice: Boolean) {
         val resolved = menu.withResolvedNames(currentLocaleTag)
         _uiState.update { state ->
             val sectionStillExists = resolved.sections.any { it.id == state.selectedSectionId }
+            val resolvedConfiguringItem = state.configuringItem?.let { configuringItem ->
+                resolved.findItemById(configuringItem.id)
+            }
             state.copy(
                 content = MenuContentState.Ready(resolved),
                 selectedSectionId = state.selectedSectionId?.takeIf { sectionStillExists },
-                updatedMenuNotice = notice,
+                configuringItem = resolvedConfiguringItem,
+                updatedMenuNotice = updatedMenuNotice,
             )
         }
     }
@@ -287,3 +313,9 @@ class MenuViewModel @Inject constructor(
         private val MENU_POLL_INTERVAL = 3.minutes
     }
 }
+
+private fun Menu.findItemById(itemId: String): MenuItem? =
+    sections
+        .asSequence()
+        .flatMap { it.items.asSequence() }
+        .firstOrNull { it.id == itemId }

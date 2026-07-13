@@ -2,24 +2,31 @@ package com.mesaflow.client.core.data
 
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
-import com.mesaflow.client.core.common.safeApiCall
 import com.mesaflow.client.core.common.map
+import com.mesaflow.client.core.common.safeApiCall
+import com.mesaflow.client.core.model.CartSelections
 import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.PaidOrderLine
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.model.PaymentResult
+import com.mesaflow.client.core.model.RemovedComponent
+import com.mesaflow.client.core.model.SelectedComboOption
+import com.mesaflow.client.core.model.SelectedModifier
 import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.model.SubmittedOrder
 import com.mesaflow.client.core.network.OrdersApi
 import com.mesaflow.client.core.network.dto.OpenOrderRequestDto
+import com.mesaflow.client.core.network.dto.OrderLineDto
 import com.mesaflow.client.core.network.dto.OrderSummaryDto
 import com.mesaflow.client.core.network.dto.RegisterPaymentRequestDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Envío del carrito como pedido real: abre (o recupera) el pedido activo de
- * la mesa y añade las líneas una a una. El carrito solo se vacía si TODO se
- * envió bien; ante cualquier fallo se conserva para reintentar sin perder la
+ * Prepara el pedido de la mesa en backend: abre (o recupera) el pedido activo
+ * y añade las líneas una a una. La comanda no se envía todavía a cocina; eso
+ * ocurre al completar el pago. El carrito solo se vacía si todo este paso va
+ * bien; ante cualquier fallo se conserva para reintentar sin perder la
  * configuración del cliente.
  */
 @Singleton
@@ -63,17 +70,9 @@ class OrderRepository @Inject constructor(
         }
         val summary = lastSummary ?: return AppResult.Error(AppError.Unknown(null))
 
-        // Sin este disparo las líneas se quedan en "pending" y cocina no las ve.
-        // Si falla, conservamos el carrito para reintentar (igual que con las líneas).
-        when (val sent = safeApiCall { ordersApi.sendToKitchen(restaurantId, tableId) }) {
-            is AppResult.Success -> Unit
-            is AppResult.Error -> {
-                cartRepository.markSubmissionFailed(restaurantId)
-                return sent
-            }
-        }
-
-        // Éxito total: limpia tanto el carrito como cualquier aviso de fallo previo.
+        // Éxito total de la preparación del pedido: limpia tanto el carrito
+        // como cualquier aviso de fallo previo. El envío a cocina queda
+        // delegado al flujo de pago en backend.
         cartRepository.clear(restaurantId)
         return AppResult.Success(
             SubmittedOrder(
@@ -112,6 +111,7 @@ class OrderRepository @Inject constructor(
                 paidCents = response.order.paidCents,
                 balanceCents = response.order.balanceCents,
                 currency = response.order.currency,
+                lines = response.lines.map { it.toPaidOrderLine(response.order.currency) },
             )
         }
     }
@@ -127,4 +127,41 @@ class OrderRepository @Inject constructor(
     ): AppResult<ServicePointOrderStatus> =
         safeApiCall { ordersApi.getServicePointOrder(restaurantId, tableId) }
             .map { it.toServicePointOrderStatus() }
+
+    private fun OrderLineDto.toPaidOrderLine(currency: String): PaidOrderLine =
+        PaidOrderLine(
+            name = productName,
+            quantity = quantity,
+            totalCents = subtotalCents,
+            currency = currency,
+            selections = CartSelections(
+                modifiers = modifiers.mapIndexed { index, modifier ->
+                    SelectedModifier(
+                        groupId = "payment-group-$index",
+                        groupName = "",
+                        optionId = "payment-modifier-$index",
+                        optionName = modifier.optionName,
+                        priceDeltaCents = 0,
+                    )
+                },
+                comboOptions = comboSlots.mapIndexed { index, slot ->
+                    SelectedComboOption(
+                        slotId = "payment-slot-$index",
+                        slotName = "",
+                        optionId = "payment-option-$index",
+                        restaurantProductId = restaurantProductId ?: id,
+                        optionName = slot.selectedProductName,
+                        supplementPriceCents = 0,
+                    )
+                },
+                removedComponents = platterComponents
+                    .filter { it.removed }
+                    .mapIndexed { index, component ->
+                        RemovedComponent(
+                            componentId = "payment-removed-$index",
+                            name = component.componentName,
+                        )
+                    },
+            ),
+        )
 }

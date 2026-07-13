@@ -675,6 +675,12 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
 
       const newBalance = balanceCents - command.amountCents;
       const newStatus: OrderStatus = newBalance === 0 ? 'paid' : 'pending_payment';
+      if (newBalance === 0) {
+        await tx.orderLine.updateMany({
+          where: { orderId: command.orderId, status: 'pending' },
+          data: { status: 'preparing' },
+        });
+      }
       await tx.order.update({
         where: { id: command.orderId },
         data: { status: newStatus, closedAt: newBalance === 0 ? now : null },

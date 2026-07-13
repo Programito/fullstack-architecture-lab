@@ -58,7 +58,7 @@ import com.mesaflow.client.core.model.ThemeMode
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onExitTable: () -> Unit,
+    onExitTable: (() -> Unit)?,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = viewModel(),
 ) {
@@ -66,7 +66,8 @@ fun SettingsScreen(
     var showExitTableConfirm by remember { mutableStateOf(false) }
     val windowWidthSizeClass = LocalWindowWidthSizeClass.current
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(onExitTable) {
+        if (onExitTable == null) return@LaunchedEffect
         viewModel.exitTable.collect { onExitTable() }
     }
 
@@ -138,27 +139,29 @@ fun SettingsScreen(
                     )
                 }
 
-                SettingsSection(title = stringResource(R.string.settings_table_title)) {
-                    Text(
-                        text = stringResource(R.string.settings_exit_table_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { showExitTableConfirm = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.settings_exit_table_button))
+                if (onExitTable != null) {
+                    SettingsSection(title = stringResource(R.string.settings_table_title)) {
+                        Text(
+                            text = stringResource(R.string.settings_exit_table_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = { showExitTableConfirm = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.settings_exit_table_button))
+                        }
+                        Spacer(Modifier.height(12.dp))
                     }
-                    Spacer(Modifier.height(12.dp))
                 }
             }
         }
     }
 
-    if (showExitTableConfirm) {
+    if (showExitTableConfirm && onExitTable != null) {
         ExitTableConfirmDialog(
             onDismiss = { showExitTableConfirm = false },
             onConfirm = {

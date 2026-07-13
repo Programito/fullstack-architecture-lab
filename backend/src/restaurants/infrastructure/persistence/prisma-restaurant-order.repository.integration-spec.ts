@@ -133,4 +133,50 @@ describe('PrismaRestaurantOrderRepository (integration)', () => {
     expect(found?.order.id).toBe(opened.order.id);
     expect(found?.order.guestCount).toBe(4);
   });
+
+  it('marks pending lines as preparing when the order is fully paid', async () => {
+    const order = await prisma.order.create({
+      data: {
+        dailyNumber: 1,
+        restaurantId,
+        tableId,
+        openedByUserId: userId,
+        status: 'open',
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 1100,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 1100,
+      },
+    });
+
+    await prisma.orderLine.create({
+      data: {
+        orderId: order.id,
+        productNameSnapshot: 'Coca-Cola',
+        productTypeSnapshot: 'simple',
+        courseSnapshot: 'drink',
+        preparationRouteSnapshot: 'bar',
+        basePriceCentsSnapshot: 1100,
+        unitPriceCents: 1100,
+        quantity: 1,
+        subtotalCents: 1100,
+        taxCents: 0,
+        status: 'pending',
+        configurationSignature: 'coke::medium',
+      },
+    });
+
+    const paid = await repository.registerPayment({
+      restaurantId,
+      orderId: order.id,
+      amountCents: 1100,
+      method: 'card',
+    });
+
+    expect(paid.order.status).toBe('paid');
+    expect(paid.lines).toHaveLength(1);
+    expect(paid.lines[0]?.status).toBe('preparing');
+  });
 });

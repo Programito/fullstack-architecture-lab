@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,6 +60,7 @@ import com.mesaflow.client.core.designsystem.components.ExitTableConfirmDialog
 import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.expandedContentMaxWidth
 import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.PaidOrderLine
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.model.PaymentResult
 import java.time.Instant
@@ -89,6 +91,7 @@ fun CheckoutScreen(
     dailyNumber: Int,
     tableLabel: String,
     onBack: () -> Unit,
+    onSettingsClick: () -> Unit,
     onDone: () -> Unit,
     onExitTable: () -> Unit,
     modifier: Modifier = Modifier,
@@ -130,19 +133,27 @@ fun CheckoutScreen(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (uiState.result == null) {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.checkout_title)) },
-                    navigationIcon = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.checkout_title)) },
+                navigationIcon = {
+                    if (uiState.result == null) {
                         IconButton(onClick = onBack, enabled = !uiState.isProcessing) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.cart_back),
                             )
                         }
-                    },
-                )
-            }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_open),
+                        )
+                    }
+                },
+            )
         },
     ) { innerPadding ->
         Box(
@@ -153,14 +164,16 @@ fun CheckoutScreen(
         ) {
             val contentModifier = Modifier.expandedContentMaxWidth(windowWidthSizeClass)
             val result = uiState.result
+            val snapshotLines = remember(linesJson) {
+                runCatching { Json.decodeFromString<List<CartLine>>(linesJson) }
+                    .getOrDefault(emptyList())
+                    .map(CartLine::toPaidOrderLine)
+            }
             if (result != null) {
                 PaymentAcceptedContent(
                     result = result,
-                    // Foto de las líneas enviada por navegación: el carrito real ya está vacío.
-                    // Defensivo ante JSON corrupto: sin líneas el ticket se muestra igualmente.
-                    lines = remember(linesJson) {
-                        runCatching { Json.decodeFromString<List<CartLine>>(linesJson) }
-                            .getOrDefault(emptyList())
+                    lines = remember(result.lines, snapshotLines) {
+                        if (snapshotLines.isNotEmpty()) snapshotLines else result.lines
                     },
                     method = uiState.method,
                     dailyNumber = dailyNumber,
@@ -255,7 +268,6 @@ private fun CheckoutContent(
         Spacer(Modifier.weight(1f))
         Button(
             onClick = onPay,
-            enabled = !isProcessing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (isProcessing) {
@@ -302,7 +314,7 @@ private fun PaymentMethodRow(
 @Composable
 private fun PaymentAcceptedContent(
     result: PaymentResult,
-    lines: List<CartLine>,
+    lines: List<PaidOrderLine>,
     method: PaymentMethod,
     dailyNumber: Int,
     tableLabel: String,
@@ -312,6 +324,10 @@ private fun PaymentAcceptedContent(
     modifier: Modifier = Modifier,
 ) {
     var showExitConfirm by remember { mutableStateOf(false) }
+    val displayedSubtotalCents = remember(lines) { lines.sumOf { it.totalCents } }
+    val previousBalancePaidCents = remember(result.paidCents, displayedSubtotalCents) {
+        (result.paidCents - displayedSubtotalCents).coerceAtLeast(0L)
+    }
 
     // Accesibilidad: con TalkBack, al llegar aquí el foco salta al título para
     // que el lector anuncie el éxito sin que el usuario tenga que explorar.
@@ -396,6 +412,27 @@ private fun PaymentAcceptedContent(
                 }
 
                 HorizontalDivider()
+                if (previousBalancePaidCents > 0L) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.checkout_previous_balance_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        PriceText(
+                            amountCents = previousBalancePaidCents,
+                            currencyCode = result.currency,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                }
                 Spacer(Modifier.height(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -477,7 +514,7 @@ private fun PaymentAcceptedContent(
 
 /** Línea del ticket: cantidad, nombre, detalle de selecciones y precio final. */
 @Composable
-private fun TicketLineRow(line: CartLine) {
+private fun TicketLineRow(line: PaidOrderLine) {
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -503,6 +540,15 @@ private fun TicketLineRow(line: CartLine) {
         }
     }
 }
+
+private fun CartLine.toPaidOrderLine(): PaidOrderLine =
+    PaidOrderLine(
+        name = name,
+        quantity = quantity,
+        totalCents = totalCents,
+        currency = currency,
+        selections = selections,
+    )
 
 @Composable
 private fun paymentMethodLabel(method: PaymentMethod): String = stringResource(

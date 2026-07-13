@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import { invalidReservationCreation, invalidReservationState } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { applyDemoMenuTranslationFallback } from './demo-menu-translation-fallback';
 import { asNameI18n } from './name-i18n.mapper';
 import type { RestaurantReadRepository } from '../../application/ports/restaurant-read-repository.port';
 import type {
@@ -109,7 +110,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
       return null;
     }
 
-    return {
+    const mappedMenu = {
       id: menu.id,
       restaurantId: menu.restaurantId,
       name: menu.name,
@@ -203,6 +204,8 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         })),
       })),
     };
+
+    return applyDemoMenuTranslationFallback(mappedMenu);
   }
 
   async findFloorsByRestaurantId(restaurantId: string): Promise<RestaurantFloors | null> {

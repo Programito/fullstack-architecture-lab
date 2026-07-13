@@ -69,6 +69,37 @@ data class OrderSummaryDto(
 @Serializable
 data class OrderResponseDto(
     val order: OrderSummaryDto,
+    val lines: List<OrderLineDto> = emptyList(),
+)
+
+@Serializable
+data class OrderLineModifierDto(
+    val optionName: String,
+)
+
+@Serializable
+data class OrderLineComboSlotDto(
+    val selectedProductName: String,
+)
+
+@Serializable
+data class OrderLinePlatterComponentDto(
+    val componentName: String,
+    val removed: Boolean,
+    val replacementName: String? = null,
+)
+
+@Serializable
+data class OrderLineDto(
+    val id: String,
+    val restaurantProductId: String? = null,
+    val productName: String,
+    val basePriceCents: Long = 0,
+    val quantity: Int = 1,
+    val subtotalCents: Long = 0,
+    val modifiers: List<OrderLineModifierDto> = emptyList(),
+    val comboSlots: List<OrderLineComboSlotDto> = emptyList(),
+    val platterComponents: List<OrderLinePlatterComponentDto> = emptyList(),
 )
 
 /**

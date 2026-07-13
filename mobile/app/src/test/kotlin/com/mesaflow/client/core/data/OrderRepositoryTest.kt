@@ -10,6 +10,10 @@ import com.mesaflow.client.core.model.OrderLineKitchenStatus
 import com.mesaflow.client.core.network.OrdersApi
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.network.dto.AddOrderLineRequestDto
+import com.mesaflow.client.core.network.dto.OrderLineComboSlotDto
+import com.mesaflow.client.core.network.dto.OrderLineDto
+import com.mesaflow.client.core.network.dto.OrderLineModifierDto
+import com.mesaflow.client.core.network.dto.OrderLinePlatterComponentDto
 import com.mesaflow.client.core.network.dto.OpenOrderRequestDto
 import com.mesaflow.client.core.network.dto.OrderResponseDto
 import com.mesaflow.client.core.network.dto.OrderSummaryDto
@@ -113,6 +117,25 @@ private class FakeOrdersApi : OrdersApi {
                 paidCents = body.amountCents,
                 balanceCents = 0,
             ),
+            lines = listOf(
+                OrderLineDto(
+                    id = "line-1",
+                    restaurantProductId = "prod-item-1",
+                    productName = "Coca-Cola",
+                    quantity = 1,
+                    subtotalCents = 320,
+                    modifiers = listOf(OrderLineModifierDto(optionName = "Mediana")),
+                ),
+                OrderLineDto(
+                    id = "line-2",
+                    restaurantProductId = "prod-item-2",
+                    productName = "Plato combinado de lomo",
+                    quantity = 1,
+                    subtotalCents = 1490,
+                    comboSlots = listOf(OrderLineComboSlotDto(selectedProductName = "Huevo extra")),
+                    platterComponents = listOf(OrderLinePlatterComponentDto(componentName = "Salsa", removed = true)),
+                ),
+            ),
         )
     }
 
@@ -156,7 +179,7 @@ class OrderRepositoryTest {
     )
 
     @Test
-    fun `envia todas las lineas y vacia el carrito`() = runTest {
+    fun `prepara todas las lineas y vacia el carrito sin enviarlo aun a cocina`() = runTest {
         cartRepository.add("rest-1", cartLine("item-1", quantity = 2))
         cartRepository.add("rest-1", cartLine("item-2"))
         val lines = cartRepository.cart("rest-1").first()
@@ -168,7 +191,7 @@ class OrderRepositoryTest {
         assertEquals(1, api.openCalls)
         assertEquals(2, api.addedLines.size)
         assertEquals(2, api.addedLines.first().quantity)
-        assertEquals(listOf("mesa-1"), api.kitchenCalls)
+        assertTrue(api.kitchenCalls.isEmpty())
         assertTrue(cartRepository.cart("rest-1").first().isEmpty())
         assertFalse(cartRepository.hasFailedSubmission("rest-1").first())
     }
@@ -187,17 +210,17 @@ class OrderRepositoryTest {
     }
 
     @Test
-    fun `si falla el envio a cocina el carrito se conserva para reintentar`() = runTest {
+    fun `submitCart no intenta enviar a cocina todavia`() = runTest {
         cartRepository.add("rest-1", cartLine("item-1"))
         val lines = cartRepository.cart("rest-1").first()
         api.failOnSendToKitchen = true
 
         val result = repository.submitCart("rest-1", "mesa-1", lines)
 
-        assertTrue(result is AppResult.Error)
-        assertEquals(AppError.Network, (result as AppResult.Error).error)
-        assertEquals(1, cartRepository.cart("rest-1").first().size)
-        assertTrue(cartRepository.hasFailedSubmission("rest-1").first())
+        assertTrue(result is AppResult.Success)
+        assertTrue(api.kitchenCalls.isEmpty())
+        assertTrue(cartRepository.cart("rest-1").first().isEmpty())
+        assertFalse(cartRepository.hasFailedSubmission("rest-1").first())
     }
 
     @Test
@@ -233,6 +256,11 @@ class OrderRepositoryTest {
         assertEquals("paid", payment.status)
         assertEquals(2500, payment.paidCents)
         assertEquals(0, payment.balanceCents)
+        assertEquals(2, payment.lines.size)
+        assertEquals(320, payment.lines[0].totalCents)
+        assertEquals("Mediana", payment.lines[0].selections.modifiers.single().optionName)
+        assertEquals("Huevo extra", payment.lines[1].selections.comboOptions.single().optionName)
+        assertEquals("Salsa", payment.lines[1].selections.removedComponents.single().name)
         assertEquals("bizum", api.payments.single().method)
         assertEquals(2500, api.payments.single().amountCents)
     }

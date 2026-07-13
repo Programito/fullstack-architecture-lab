@@ -3,6 +3,37 @@ import { describe, expect, it } from 'vitest';
 import { DemoRestaurantReadRepository } from './demo-restaurant-read.repository';
 
 describe('DemoRestaurantReadRepository', () => {
+  it('returns multilingual menu content for customer-facing demo items and modifiers', async () => {
+    const repository = new DemoRestaurantReadRepository();
+
+    const menu = await repository.findMenuByRestaurantId('restaurant-mesaflow-centro');
+
+    const drinksSection = menu?.sections.find((section) => section.id === 'menu-section-drinks');
+    const coke = drinksSection?.items.find((item) => item.id === 'menu-item-coke');
+    const drinkSizeGroup = coke?.modifierGroups?.find((group) => group.name === 'Tamaño de bebida');
+
+    expect(drinksSection?.nameI18n).toEqual({
+      es: 'Bebidas',
+      ca: 'Begudes',
+      en: 'Drinks',
+    });
+    expect(coke?.nameI18n).toEqual({
+      es: 'Coca-Cola',
+      ca: 'Coca-Cola',
+      en: 'Coke',
+    });
+    expect(drinkSizeGroup?.nameI18n).toEqual({
+      es: 'Tamaño de bebida',
+      ca: 'Mida de beguda',
+      en: 'Drink size',
+    });
+    expect(drinkSizeGroup?.options.map((option) => option.nameI18n)).toEqual([
+      { es: 'Mediana', ca: 'Mitjana', en: 'Medium' },
+      { es: 'Grande', ca: 'Gran', en: 'Large' },
+      { es: 'XL', ca: 'XL', en: 'XL' },
+    ]);
+  });
+
   it('returns nothing when the caller has no restaurant or organization scope', async () => {
     const repository = new DemoRestaurantReadRepository();
 

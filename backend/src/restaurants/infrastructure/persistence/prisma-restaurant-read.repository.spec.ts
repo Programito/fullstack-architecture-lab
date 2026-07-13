@@ -22,6 +22,7 @@ describe('PrismaRestaurantReadRepository', () => {
             {
               id: 'section-burgers',
               name: 'Hamburguesas',
+              nameI18n: { es: 'Hamburguesas', ca: 'Hamburgueses', en: 'Burgers' },
               sortOrder: 3,
               isVisible: true,
               items: [
@@ -40,14 +41,37 @@ describe('PrismaRestaurantReadRepository', () => {
                     product: {
                       id: 'product-burger',
                       name: 'Hamburguesa craft',
+                      nameI18n: { es: 'Hamburguesa craft', ca: 'Hamburguesa craft', en: 'Craft burger' },
                       description: 'Carne madurada',
+                      descriptionI18n: { es: 'Carne madurada', ca: 'Carn madurada', en: 'Aged beef' },
                       productType: 'simple',
                       defaultCourse: 'main',
                       defaultPreparationRoute: 'kitchen',
                       comboDefinition: null,
                       platterDefinition: null,
                     },
-                    modifierGroups: [],
+                    modifierGroups: [
+                      {
+                        modifierGroup: {
+                          id: 'group-burger-point',
+                          name: 'Punto de la carne',
+                          nameI18n: { es: 'Punto de la carne', ca: 'Punt de la carn', en: 'Burger point' },
+                          selectionType: 'single',
+                          minSelections: 1,
+                          maxSelections: 1,
+                          isRequired: true,
+                          options: [
+                            {
+                              id: 'option-medium',
+                              name: 'Al punto',
+                              nameI18n: { es: 'Al punto', ca: 'Al punt', en: 'Medium' },
+                              priceDeltaCents: 0,
+                              isAvailable: true,
+                            },
+                          ],
+                        },
+                      },
+                    ],
                   },
                 },
               ],
@@ -73,7 +97,9 @@ describe('PrismaRestaurantReadRepository', () => {
                     product: {
                       id: 'product-combo',
                       name: 'Menu Classic Burger',
+                      nameI18n: { es: 'Menu Classic Burger', ca: 'Menu Classic Burger', en: 'Classic Burger Menu' },
                       description: null,
+                      descriptionI18n: null,
                       productType: 'combo',
                       defaultCourse: 'main',
                       defaultPreparationRoute: 'kitchen',
@@ -102,19 +128,144 @@ describe('PrismaRestaurantReadRepository', () => {
       isActive: true,
     });
     expect(menu?.sections.map((section) => section.name)).toEqual(['Hamburguesas', 'Menus']);
+    expect(menu?.sections[0]?.nameI18n).toEqual({
+      es: 'Hamburguesas',
+      ca: 'Hamburgueses',
+      en: 'Burgers',
+    });
     expect(menu?.sections[0]?.items[0]).toMatchObject({
       restaurantProductId: 'rp-burger',
       productId: 'product-burger',
       name: 'Hamburguesa craft',
+      nameI18n: { es: 'Hamburguesa craft', ca: 'Hamburguesa craft', en: 'Craft burger' },
+      descriptionI18n: { es: 'Carne madurada', ca: 'Carn madurada', en: 'Aged beef' },
       productType: 'simple',
       imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
     });
+    expect(menu?.sections[0]?.items[0]?.modifierGroups).toEqual([
+      expect.objectContaining({
+        name: 'Punto de la carne',
+        nameI18n: { es: 'Punto de la carne', ca: 'Punt de la carn', en: 'Burger point' },
+        options: [
+          expect.objectContaining({
+            name: 'Al punto',
+            nameI18n: { es: 'Al punto', ca: 'Al punt', en: 'Medium' },
+          }),
+        ],
+      }),
+    ]);
     expect(menu?.sections[1]?.items[0]).toMatchObject({
       name: 'Menu Classic Burger',
+      nameI18n: { es: 'Menu Classic Burger', ca: 'Menu Classic Burger', en: 'Classic Burger Menu' },
       productType: 'combo',
       imageUrl: null,
       comboDefinition: { id: 'combo-1', slots: [] },
     });
+  });
+
+  it('backfills demo menu translations when the active Prisma data has no i18n payloads', async () => {
+    process.env.DATABASE_URL = 'postgresql://demo';
+
+    const repository = new PrismaRestaurantReadRepository({
+      restaurantMenu: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'menu-main',
+          restaurantId: 'restaurant-mesaflow-centro',
+          name: 'Carta principal',
+          isActive: true,
+          sections: [
+            {
+              id: 'section-drinks',
+              name: 'Bebidas',
+              nameI18n: null,
+              sortOrder: 1,
+              isVisible: true,
+              items: [
+                {
+                  id: 'menu-item-coke',
+                  displayNameOverride: null,
+                  priceOverrideCents: null,
+                  isVisible: true,
+                  restaurantProduct: {
+                    id: 'rp-coke',
+                    displayName: null,
+                    priceCents: 320,
+                    currency: 'EUR',
+                    isAvailable: true,
+                    imageUrl: null,
+                    product: {
+                      id: 'product-coke',
+                      name: 'Coca-Cola',
+                      nameI18n: null,
+                      description: null,
+                      descriptionI18n: null,
+                      productType: 'simple',
+                      defaultCourse: 'drinks',
+                      defaultPreparationRoute: 'bar',
+                      comboDefinition: null,
+                      platterDefinition: null,
+                    },
+                    modifierGroups: [
+                      {
+                        modifierGroup: {
+                          id: 'group-drink-size',
+                          name: 'Tamaño de bebida',
+                          nameI18n: null,
+                          selectionType: 'single',
+                          minSelections: 1,
+                          maxSelections: 1,
+                          isRequired: true,
+                          options: [
+                            {
+                              id: 'option-medium',
+                              name: 'Mediana',
+                              nameI18n: null,
+                              priceDeltaCents: 0,
+                              isAvailable: true,
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    } as never);
+
+    const menu = await repository.findMenuByRestaurantId('restaurant-mesaflow-centro');
+
+    expect(menu?.sections[0]?.nameI18n).toEqual({
+      es: 'Bebidas',
+      ca: 'Begudes',
+      en: 'Drinks',
+    });
+    expect(menu?.sections[0]?.items[0]?.nameI18n).toEqual({
+      es: 'Coca-Cola',
+      ca: 'Coca-Cola',
+      en: 'Coke',
+    });
+    expect(menu?.sections[0]?.items[0]?.modifierGroups).toEqual([
+      expect.objectContaining({
+        nameI18n: {
+          es: 'Tamaño de bebida',
+          ca: 'Mida de beguda',
+          en: 'Drink size',
+        },
+        options: [
+          expect.objectContaining({
+            nameI18n: {
+              es: 'Mediana',
+              ca: 'Mitjana',
+              en: 'Medium',
+            },
+          }),
+        ],
+      }),
+    ]);
   });
 
   it('loads floors and tables from Prisma when a database URL is configured', async () => {

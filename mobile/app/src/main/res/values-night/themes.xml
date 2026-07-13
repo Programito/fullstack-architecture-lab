@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Alineado con BackgroundDark/SurfaceDark para evitar el flash claro al recrear la Activity. -->
+    <style name="Theme.MesaFlow" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">#111414</item>
+    </style>
+</resources>

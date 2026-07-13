@@ -17,6 +17,14 @@ enum class PaymentMethod(val apiValue: String) {
     BIZUM("bizum"),
 }
 
+data class PaidOrderLine(
+    val name: String,
+    val quantity: Int,
+    val totalCents: Long,
+    val currency: String,
+    val selections: CartSelections = CartSelections(),
+)
+
 /** Resultado de registrar el pago del pedido. */
 data class PaymentResult(
     val orderId: String,
@@ -26,6 +34,7 @@ data class PaymentResult(
     val paidCents: Long,
     val balanceCents: Long,
     val currency: String,
+    val lines: List<PaidOrderLine> = emptyList(),
 )
 
 /**

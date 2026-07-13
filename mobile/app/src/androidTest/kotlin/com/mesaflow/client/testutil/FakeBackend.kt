@@ -6,9 +6,9 @@ import okhttp3.mockwebserver.MockWebServer
 /**
  * Fixtures del backend para los tests instrumentados de extremo a extremo.
  * En vez de un [okhttp3.mockwebserver.Dispatcher] que rutea por path, las
- * respuestas se encolan en el mismo orden en que la app las dispara — no hay
- * llamadas concurrentes en ninguno de los dos flujos críticos (demo → carta →
- * configurar → pedir; pedir → pagar → aceptado), así que un simple `enqueue`
+ * respuestas se encolan en el mismo orden en que la app las dispara; no hay
+ * llamadas concurrentes en ninguno de los dos flujos criticos (demo -> carta ->
+ * configurar -> pedir; pedir -> pagar -> aceptado), asi que un simple `enqueue`
  * por llamada basta y mantiene los tests legibles.
  */
 object FakeBackend {
@@ -21,7 +21,7 @@ object FakeBackend {
     const val PRICE_CENTS = 1050L
     const val CURRENCY = "EUR"
 
-    /** Número de ticket que devuelve el pedido falso; se asevera en el ticket de pago aceptado. */
+    /** Numero de ticket que devuelve el pedido falso; se asevera en el ticket de pago aceptado. */
     const val DAILY_NUMBER = 1
 
     fun start(): MockWebServer = MockWebServer().apply { start() }
@@ -32,29 +32,61 @@ object FakeBackend {
         server.enqueue(menuResponse())
     }
 
-    /** Encola abrir pedido + añadir línea + disparo a cocina (submitCart completo). */
+    /** Encola abrir pedido + anadir linea + disparo a cocina (submitCart completo). */
     fun enqueueSubmitOrder(server: MockWebServer) {
         server.enqueue(orderResponse(status = "sent_to_kitchen"))
         server.enqueue(orderResponse(status = "sent_to_kitchen"))
         server.enqueue(sendToKitchenResponse())
     }
 
-    /** Encola el registro de pago (Checkout → pago aceptado). */
+    /** Encola el pedido activo para poblar la tarjeta de progreso en cocina. */
+    fun enqueueServicePointOrderStatus(server: MockWebServer) {
+        server.enqueue(
+            jsonResponse(
+                200,
+                """
+                {
+                  "order": {
+                    "id": "$ORDER_ID",
+                    "tableId": "$TABLE_ID",
+                    "status": "sent_to_kitchen",
+                    "openedAt": "2026-07-13T18:00:00.000Z",
+                    "updatedAt": "2026-07-13T18:01:00.000Z",
+                    "subtotalCents": $PRICE_CENTS,
+                    "taxCents": 0,
+                    "totalCents": $PRICE_CENTS,
+                    "currency": "$CURRENCY"
+                  },
+                  "lines": [
+                    {
+                      "id": "line-1",
+                      "productName": "$PRODUCT_NAME",
+                      "quantity": 1,
+                      "status": "preparing"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    /** Encola el registro de pago (Checkout -> pago aceptado). */
     fun enqueuePayment(server: MockWebServer) {
         server.enqueue(orderResponse(status = "paid", paidCents = PRICE_CENTS))
     }
 
     /**
      * Encola el logout de "Salir de la mesa". [com.mesaflow.client.core.data.AuthRepository.logout]
-     * ignora fallos de red, pero sin respuesta encolada la llamada esperaría el
-     * timeout completo de OkHttp y alargaría el test sin motivo.
+     * ignora fallos de red, pero sin respuesta encolada la llamada esperaria el
+     * timeout completo de OkHttp y alargaria el test sin motivo.
      */
     fun enqueueLogout(server: MockWebServer) {
         server.enqueue(jsonResponse(200, "{}"))
     }
 
     /**
-     * Encola un único 500: sirve para simular que la primera llamada de un
+     * Encola un unico 500: sirve para simular que la primera llamada de un
      * flujo (abrir pedido, registrar pago...) falla en el servidor, sin
      * llegar a consumir las respuestas ya encoladas para el reintento.
      */

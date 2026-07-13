@@ -21,6 +21,7 @@ describe('seedMesaFlowDemo', () => {
     );
     const restaurantMenuUpsert = vi.fn().mockResolvedValue({ id: 'menu-main' });
     const menuSectionUpsert = vi.fn().mockImplementation(async () => ({ id: `section-${++sectionSeq}` }));
+    const menuSectionUpdate = vi.fn().mockResolvedValue(undefined);
     const menuItemDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
     const menuItemCreate = vi.fn().mockResolvedValue(undefined);
     const modifierGroupUpsert = vi.fn().mockImplementation(async () => ({ id: `group-${++modifierGroupSeq}` }));
@@ -40,7 +41,7 @@ describe('seedMesaFlowDemo', () => {
       product: { upsert: productUpsert },
       restaurantProduct: { upsert: restaurantProductUpsert },
       restaurantMenu: { upsert: restaurantMenuUpsert },
-      menuSection: { upsert: menuSectionUpsert },
+      menuSection: { upsert: menuSectionUpsert, update: menuSectionUpdate },
       menuItem: { deleteMany: menuItemDeleteMany, create: menuItemCreate },
       modifierGroup: { upsert: modifierGroupUpsert, update: modifierGroupUpdate },
       modifierOption: { upsert: modifierOptionUpsert },
@@ -105,6 +106,24 @@ describe('seedMesaFlowDemo', () => {
 
     // 8 menu sections
     expect(menuSectionUpsert).toHaveBeenCalledTimes(8);
+    expect(menuSectionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { menuId_name: { menuId: 'menu-main', name: 'Bebidas' } },
+        update: expect.objectContaining({
+          nameI18n: { es: 'Bebidas', ca: 'Begudes', en: 'Drinks' },
+        }),
+        create: expect.objectContaining({
+          nameI18n: { es: 'Bebidas', ca: 'Begudes', en: 'Drinks' },
+        }),
+      }),
+    );
+    expect(menuSectionUpdate).toHaveBeenCalledTimes(8);
+    expect(menuSectionUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'section-1' },
+        data: { nameI18n: { es: 'Bebidas', ca: 'Begudes', en: 'Drinks' } },
+      }),
+    );
     expect(menuItemDeleteMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -146,6 +165,17 @@ describe('seedMesaFlowDemo', () => {
       }),
     );
     expect(modifierOptionUpsert).toHaveBeenCalledTimes(21);
+    expect(modifierOptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { modifierGroupId_name: { modifierGroupId: 'group-4', name: 'Mediana' } },
+        update: expect.objectContaining({
+          nameI18n: { es: 'Mediana', ca: 'Mitjana', en: 'Medium' },
+        }),
+        create: expect.objectContaining({
+          nameI18n: { es: 'Mediana', ca: 'Mitjana', en: 'Medium' },
+        }),
+      }),
+    );
 
     // burger × 4 products × 3 groups + drink-size × 3 products + coffee × 2 products + platter × 2 products × 2 groups
     expect(restaurantProductModifierGroupUpsert).toHaveBeenCalledTimes(21);

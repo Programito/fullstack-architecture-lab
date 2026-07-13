@@ -1,5 +1,4 @@
 package com.mesaflow.client.feature.settings
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.data.AuthRepository

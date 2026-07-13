@@ -21,6 +21,11 @@ type DemoAllergen =
 
 type DemoProductDefinition = {
   name: string;
+  nameI18n?: {
+    es?: string;
+    ca?: string;
+    en?: string;
+  };
   description?: string;
   productType: 'simple' | 'combo' | 'platter';
   defaultCourse: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
@@ -113,6 +118,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
         },
       },
       update: {
+        nameI18n: product.nameI18n ?? undefined,
         description: product.description ?? null,
         productType: product.productType,
         defaultCourse: product.defaultCourse,
@@ -124,6 +130,7 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
       create: {
         organizationId: organization.id,
         name: product.name,
+        nameI18n: product.nameI18n,
         description: product.description ?? null,
         productType: product.productType,
         defaultCourse: product.defaultCourse,
@@ -195,33 +202,33 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
 
   const drinksSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Bebidas' } },
-    update: { sortOrder: 1, isVisible: true },
-    create: { menuId: menu.id, name: 'Bebidas', sortOrder: 1, isVisible: true },
+    update: { sortOrder: 1, isVisible: true, nameI18n: { es: 'Bebidas', ca: 'Begudes', en: 'Drinks' } },
+    create: { menuId: menu.id, name: 'Bebidas', nameI18n: { es: 'Bebidas', ca: 'Begudes', en: 'Drinks' }, sortOrder: 1, isVisible: true },
   });
   const tapasSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Tapas' } },
-    update: { sortOrder: 2, isVisible: true },
-    create: { menuId: menu.id, name: 'Tapas', sortOrder: 2, isVisible: true },
+    update: { sortOrder: 2, isVisible: true, nameI18n: { es: 'Tapas', ca: 'Tapes', en: 'Tapas' } },
+    create: { menuId: menu.id, name: 'Tapas', nameI18n: { es: 'Tapas', ca: 'Tapes', en: 'Tapas' }, sortOrder: 2, isVisible: true },
   });
   const burgersSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Hamburguesas' } },
-    update: { sortOrder: 3, isVisible: true },
-    create: { menuId: menu.id, name: 'Hamburguesas', sortOrder: 3, isVisible: true },
+    update: { sortOrder: 3, isVisible: true, nameI18n: { es: 'Hamburguesas', ca: 'Hamburgueses', en: 'Burgers' } },
+    create: { menuId: menu.id, name: 'Hamburguesas', nameI18n: { es: 'Hamburguesas', ca: 'Hamburgueses', en: 'Burgers' }, sortOrder: 3, isVisible: true },
   });
   const saladsSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Ensaladas' } },
-    update: { sortOrder: 4, isVisible: true },
-    create: { menuId: menu.id, name: 'Ensaladas', sortOrder: 4, isVisible: true },
+    update: { sortOrder: 4, isVisible: true, nameI18n: { es: 'Ensaladas', ca: 'Amanides', en: 'Salads' } },
+    create: { menuId: menu.id, name: 'Ensaladas', nameI18n: { es: 'Ensaladas', ca: 'Amanides', en: 'Salads' }, sortOrder: 4, isVisible: true },
   });
   const plattersSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Platos combinados' } },
-    update: { sortOrder: 5, isVisible: true },
-    create: { menuId: menu.id, name: 'Platos combinados', sortOrder: 5, isVisible: true },
+    update: { sortOrder: 5, isVisible: true, nameI18n: { es: 'Platos combinados', ca: 'Plats combinats', en: 'Platters' } },
+    create: { menuId: menu.id, name: 'Platos combinados', nameI18n: { es: 'Platos combinados', ca: 'Plats combinats', en: 'Platters' }, sortOrder: 5, isVisible: true },
   });
   const dessertsSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Postres' } },
-    update: { sortOrder: 6, isVisible: true },
-    create: { menuId: menu.id, name: 'Postres', sortOrder: 6, isVisible: true },
+    update: { sortOrder: 6, isVisible: true, nameI18n: { es: 'Postres', ca: 'Postres', en: 'Desserts' } },
+    create: { menuId: menu.id, name: 'Postres', nameI18n: { es: 'Postres', ca: 'Postres', en: 'Desserts' }, sortOrder: 6, isVisible: true },
   });
   const coffeeSection = await prisma.menuSection.upsert({
     where: { menuId_name: { menuId: menu.id, name: 'Café' } },
@@ -233,6 +240,22 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
     update: { sortOrder: 8, isVisible: true },
     create: { menuId: menu.id, name: 'Menús', sortOrder: 8, isVisible: true },
   });
+
+  for (const section of [
+    { id: drinksSection.id, nameI18n: { es: 'Bebidas', ca: 'Begudes', en: 'Drinks' } },
+    { id: tapasSection.id, nameI18n: { es: 'Tapas', ca: 'Tapes', en: 'Tapas' } },
+    { id: burgersSection.id, nameI18n: { es: 'Hamburguesas', ca: 'Hamburgueses', en: 'Burgers' } },
+    { id: saladsSection.id, nameI18n: { es: 'Ensaladas', ca: 'Amanides', en: 'Salads' } },
+    { id: plattersSection.id, nameI18n: { es: 'Platos combinados', ca: 'Plats combinats', en: 'Platters' } },
+    { id: dessertsSection.id, nameI18n: { es: 'Postres', ca: 'Postres', en: 'Desserts' } },
+    { id: coffeeSection.id, nameI18n: { es: 'Caf\u00e9', ca: 'Caf\u00e8', en: 'Coffee' } },
+    { id: menusSection.id, nameI18n: { es: 'Men\u00fas', ca: 'Men\u00fas', en: 'Menus' } },
+  ]) {
+    await prisma.menuSection.update({
+      where: { id: section.id },
+      data: { nameI18n: section.nameI18n },
+    });
+  }
 
   const menuItems = [
     { sectionId: drinksSection.id, productName: 'Coca-Cola', sortOrder: 1 },
@@ -337,32 +360,32 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
   }
 
   for (const option of [
-    { groupId: burgerExtrasGroup.id, name: 'Bacon', priceDeltaCents: 150, sortOrder: 1 },
-    { groupId: burgerExtrasGroup.id, name: 'Queso extra', priceDeltaCents: 100, sortOrder: 2 },
-    { groupId: burgerExtrasGroup.id, name: 'Huevo', priceDeltaCents: 120, sortOrder: 3 },
-    { groupId: burgerRemoveGroup.id, name: 'Sin cebolla', priceDeltaCents: 0, sortOrder: 1 },
-    { groupId: burgerRemoveGroup.id, name: 'Sin pepinillos', priceDeltaCents: 0, sortOrder: 2 },
-    { groupId: burgerRemoveGroup.id, name: 'Sin salsa', priceDeltaCents: 0, sortOrder: 3 },
-    { groupId: burgerPointGroup.id, name: 'Poco hecha', priceDeltaCents: 0, sortOrder: 1 },
-    { groupId: burgerPointGroup.id, name: 'Al punto', priceDeltaCents: 0, sortOrder: 2 },
-    { groupId: burgerPointGroup.id, name: 'Muy hecha', priceDeltaCents: 0, sortOrder: 3 },
-    { groupId: drinkSizeGroup.id, name: 'Mediana', priceDeltaCents: 0, sortOrder: 1 },
-    { groupId: drinkSizeGroup.id, name: 'Grande', priceDeltaCents: 80, sortOrder: 2 },
-    { groupId: drinkSizeGroup.id, name: 'XL', priceDeltaCents: 120, sortOrder: 3 },
-    { groupId: coffeeOptionsGroup.id, name: 'Carga extra', priceDeltaCents: 70, sortOrder: 1 },
-    { groupId: coffeeOptionsGroup.id, name: 'Bebida de avena', priceDeltaCents: 50, sortOrder: 2 },
-    { groupId: coffeeOptionsGroup.id, name: 'Descafeinado', priceDeltaCents: 0, sortOrder: 3 },
-    { groupId: platterRemoveGroup.id, name: 'Sin huevo', priceDeltaCents: 0, sortOrder: 1 },
-    { groupId: platterRemoveGroup.id, name: 'Sin patatas', priceDeltaCents: 0, sortOrder: 2 },
-    { groupId: platterRemoveGroup.id, name: 'Sin ensalada', priceDeltaCents: 0, sortOrder: 3 },
-    { groupId: platterExtrasGroup.id, name: 'Huevo extra', priceDeltaCents: 120, sortOrder: 1 },
-    { groupId: platterExtrasGroup.id, name: 'Patatas extra', priceDeltaCents: 150, sortOrder: 2 },
-    { groupId: platterExtrasGroup.id, name: 'Salsa extra', priceDeltaCents: 80, sortOrder: 3 },
+    { groupId: burgerExtrasGroup.id, name: 'Bacon', nameI18n: { es: 'Bacon', ca: 'Bacon', en: 'Bacon' }, priceDeltaCents: 150, sortOrder: 1 },
+    { groupId: burgerExtrasGroup.id, name: 'Queso extra', nameI18n: { es: 'Queso extra', ca: 'Formatge extra', en: 'Extra cheese' }, priceDeltaCents: 100, sortOrder: 2 },
+    { groupId: burgerExtrasGroup.id, name: 'Huevo', nameI18n: { es: 'Huevo', ca: 'Ou', en: 'Egg' }, priceDeltaCents: 120, sortOrder: 3 },
+    { groupId: burgerRemoveGroup.id, name: 'Sin cebolla', nameI18n: { es: 'Sin cebolla', ca: 'Sense ceba', en: 'No onion' }, priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: burgerRemoveGroup.id, name: 'Sin pepinillos', nameI18n: { es: 'Sin pepinillos', ca: 'Sense cogombrets', en: 'No pickles' }, priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: burgerRemoveGroup.id, name: 'Sin salsa', nameI18n: { es: 'Sin salsa', ca: 'Sense salsa', en: 'No sauce' }, priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: burgerPointGroup.id, name: 'Poco hecha', nameI18n: { es: 'Poco hecha', ca: 'Poc feta', en: 'Rare' }, priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: burgerPointGroup.id, name: 'Al punto', nameI18n: { es: 'Al punto', ca: 'Al punt', en: 'Medium' }, priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: burgerPointGroup.id, name: 'Muy hecha', nameI18n: { es: 'Muy hecha', ca: 'Molt feta', en: 'Well done' }, priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: drinkSizeGroup.id, name: 'Mediana', nameI18n: { es: 'Mediana', ca: 'Mitjana', en: 'Medium' }, priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: drinkSizeGroup.id, name: 'Grande', nameI18n: { es: 'Grande', ca: 'Gran', en: 'Large' }, priceDeltaCents: 80, sortOrder: 2 },
+    { groupId: drinkSizeGroup.id, name: 'XL', nameI18n: { es: 'XL', ca: 'XL', en: 'XL' }, priceDeltaCents: 120, sortOrder: 3 },
+    { groupId: coffeeOptionsGroup.id, name: 'Carga extra', nameI18n: { es: 'Carga extra', ca: 'Càrrega extra', en: 'Extra shot' }, priceDeltaCents: 70, sortOrder: 1 },
+    { groupId: coffeeOptionsGroup.id, name: 'Bebida de avena', nameI18n: { es: 'Bebida de avena', ca: 'Beguda de civada', en: 'Oat drink' }, priceDeltaCents: 50, sortOrder: 2 },
+    { groupId: coffeeOptionsGroup.id, name: 'Descafeinado', nameI18n: { es: 'Descafeinado', ca: 'Descafeïnat', en: 'Decaf' }, priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: platterRemoveGroup.id, name: 'Sin huevo', nameI18n: { es: 'Sin huevo', ca: 'Sense ou', en: 'No egg' }, priceDeltaCents: 0, sortOrder: 1 },
+    { groupId: platterRemoveGroup.id, name: 'Sin patatas', nameI18n: { es: 'Sin patatas', ca: 'Sense patates', en: 'No fries' }, priceDeltaCents: 0, sortOrder: 2 },
+    { groupId: platterRemoveGroup.id, name: 'Sin ensalada', nameI18n: { es: 'Sin ensalada', ca: 'Sense amanida', en: 'No salad' }, priceDeltaCents: 0, sortOrder: 3 },
+    { groupId: platterExtrasGroup.id, name: 'Huevo extra', nameI18n: { es: 'Huevo extra', ca: 'Ou extra', en: 'Extra egg' }, priceDeltaCents: 120, sortOrder: 1 },
+    { groupId: platterExtrasGroup.id, name: 'Patatas extra', nameI18n: { es: 'Patatas extra', ca: 'Patates extra', en: 'Extra fries' }, priceDeltaCents: 150, sortOrder: 2 },
+    { groupId: platterExtrasGroup.id, name: 'Salsa extra', nameI18n: { es: 'Salsa extra', ca: 'Salsa extra', en: 'Extra sauce' }, priceDeltaCents: 80, sortOrder: 3 },
   ]) {
     await prisma.modifierOption.upsert({
       where: { modifierGroupId_name: { modifierGroupId: option.groupId, name: option.name } },
-      update: { priceDeltaCents: option.priceDeltaCents, isAvailable: true, sortOrder: option.sortOrder },
-      create: { modifierGroupId: option.groupId, name: option.name, priceDeltaCents: option.priceDeltaCents, isAvailable: true, sortOrder: option.sortOrder },
+      update: { nameI18n: option.nameI18n, priceDeltaCents: option.priceDeltaCents, isAvailable: true, sortOrder: option.sortOrder },
+      create: { modifierGroupId: option.groupId, name: option.name, nameI18n: option.nameI18n, priceDeltaCents: option.priceDeltaCents, isAvailable: true, sortOrder: option.sortOrder },
     });
   }
 
@@ -519,9 +542,9 @@ export async function seedMesaFlowDemo(prisma: PrismaClient): Promise<void> {
 
 function demoProducts(): DemoProductDefinition[] {
   return [
-    { name: 'Coca-Cola', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
-    { name: 'Agua mineral', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'direct', taxName: 'VAT 0%' },
-    { name: 'Cerveza', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
+    { name: 'Coca-Cola', nameI18n: { es: 'Coca-Cola', ca: 'Coca-Cola', en: 'Coke' }, productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
+    { name: 'Agua mineral', nameI18n: { es: 'Agua mineral', ca: 'Aigua mineral', en: 'Mineral water' }, productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'direct', taxName: 'VAT 0%' },
+    { name: 'Cerveza', nameI18n: { es: 'Cerveza', ca: 'Cervesa', en: 'Beer' }, productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
     { name: 'Limonada con gas', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
     { name: 'Vino tinto copa', productType: 'simple', defaultCourse: 'drinks', defaultPreparationRoute: 'bar', taxName: 'IVA General' },
     {
