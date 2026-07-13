@@ -65,9 +65,11 @@ fun ProductConfiguratorSheet(
     item: MenuItem,
     onDismiss: () -> Unit,
     onAddToCart: (CartLine) -> Unit,
+    initialConfig: ProductConfig = ProductConfig(item),
+    isEditing: Boolean = false,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var config by remember(item.id) { mutableStateOf(ProductConfig(item)) }
+    var config by remember(item.id) { mutableStateOf(initialConfig) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         ProductConfiguratorContent(
@@ -75,6 +77,7 @@ fun ProductConfiguratorSheet(
             config = config,
             onConfigChange = { config = it },
             onAddToCart = onAddToCart,
+            isEditing = isEditing,
         )
     }
 }
@@ -92,8 +95,10 @@ fun ProductConfiguratorPanel(
     onDismiss: () -> Unit,
     onAddToCart: (CartLine) -> Unit,
     modifier: Modifier = Modifier,
+    initialConfig: ProductConfig = ProductConfig(item),
+    isEditing: Boolean = false,
 ) {
-    var config by remember(item.id) { mutableStateOf(ProductConfig(item)) }
+    var config by remember(item.id) { mutableStateOf(initialConfig) }
 
     Surface(
         modifier = modifier.fillMaxHeight(),
@@ -123,6 +128,7 @@ fun ProductConfiguratorPanel(
                 config = config,
                 onConfigChange = { config = it },
                 onAddToCart = onAddToCart,
+                isEditing = isEditing,
             )
         }
     }
@@ -141,6 +147,7 @@ fun ProductConfiguratorContent(
     onConfigChange: (ProductConfig) -> Unit,
     onAddToCart: (CartLine) -> Unit,
     modifier: Modifier = Modifier,
+    isEditing: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -203,7 +210,7 @@ fun ProductConfiguratorContent(
             ) {
                 Text(
                     stringResource(
-                        R.string.configurator_add_for,
+                        if (isEditing) R.string.configurator_save_for else R.string.configurator_add_for,
                         PriceFormatter.format(config.totalCents, item.currency),
                     ),
                 )

@@ -79,6 +79,32 @@ class CartRepository @Inject constructor(
         }
     }
 
+    /**
+     * Guarda una edición de la línea [lineId] (nuevo tamaño/extras/combo/cantidad desde el
+     * configurador). Misma regla que [add]: si la nueva configuración coincide con otra línea
+     * ya existente en el carrito, se fusionan cantidades en esa línea y [lineId] desaparece —
+     * en vez de dejar dos líneas iguales.
+     */
+    suspend fun updateLine(restaurantId: String, lineId: Long, updated: CartLine) {
+        val selectionsJson = json.encodeToString(CartSelections.serializer(), updated.selections)
+        val existing = cartDao.findIdenticalExcluding(restaurantId, updated.menuItemId, selectionsJson, lineId)
+        if (existing != null) {
+            val merged = (existing.quantity + updated.quantity).coerceAtMost(MAX_QUANTITY)
+            cartDao.updateQuantity(existing.id, merged)
+            cartDao.delete(lineId)
+        } else {
+            cartDao.updateLineDetails(
+                id = lineId,
+                name = updated.name,
+                imageUrl = updated.imageUrl,
+                basePriceCents = updated.basePriceCents,
+                currency = updated.currency,
+                selectionsJson = selectionsJson,
+                quantity = updated.quantity.coerceAtMost(MAX_QUANTITY),
+            )
+        }
+    }
+
     suspend fun remove(lineId: Long) = cartDao.delete(lineId)
 
     suspend fun clear(restaurantId: String) {

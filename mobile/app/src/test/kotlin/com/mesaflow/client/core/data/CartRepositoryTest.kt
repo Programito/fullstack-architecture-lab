@@ -39,8 +39,43 @@ private class FakeCartDao : CartDao {
         return id
     }
 
+    override suspend fun findIdenticalExcluding(
+        restaurantId: String,
+        menuItemId: String,
+        selectionsJson: String,
+        excludeId: Long,
+    ): CartLineEntity? = lines.value.firstOrNull {
+        it.restaurantId == restaurantId && it.menuItemId == menuItemId &&
+            it.selectionsJson == selectionsJson && it.id != excludeId
+    }
+
     override suspend fun updateQuantity(id: Long, quantity: Int) {
         lines.value = lines.value.map { if (it.id == id) it.copy(quantity = quantity) else it }
+    }
+
+    override suspend fun updateLineDetails(
+        id: Long,
+        name: String,
+        imageUrl: String?,
+        basePriceCents: Long,
+        currency: String,
+        selectionsJson: String,
+        quantity: Int,
+    ) {
+        lines.value = lines.value.map {
+            if (it.id == id) {
+                it.copy(
+                    name = name,
+                    imageUrl = imageUrl,
+                    basePriceCents = basePriceCents,
+                    currency = currency,
+                    selectionsJson = selectionsJson,
+                    quantity = quantity,
+                )
+            } else {
+                it
+            }
+        }
     }
 
     override suspend fun delete(id: Long) {
@@ -142,5 +177,50 @@ class CartRepositoryTest {
 
         assertTrue(repository.hasFailedSubmission("rest-1").first())
         assertFalse(repository.hasFailedSubmission("rest-2").first())
+    }
+
+    @Test
+    fun `editar una linea sin colision actualiza sus datos in place`() = runTest {
+        repository.add("rest-1", line(quantity = 1))
+        val id = repository.cart("rest-1").first().first().id
+
+        repository.updateLine("rest-1", id, line(quantity = 2, selections = withBacon))
+
+        val cart = repository.cart("rest-1").first()
+        assertEquals(1, cart.size)
+        assertEquals(id, cart.first().id)
+        assertEquals(2, cart.first().quantity)
+        assertEquals(withBacon, cart.first().selections)
+    }
+
+    @Test
+    fun `editar hasta coincidir con otra linea fusiona cantidades y borra la editada`() = runTest {
+        // Coca-Cola Grande (sin selecciones) x1 y Coca-Cola XL (con bacon simula el tamaño) x1.
+        repository.add("rest-1", line(quantity = 1))
+        repository.add("rest-1", line(quantity = 1, selections = withBacon))
+        val cart = repository.cart("rest-1").first()
+        val grandeId = cart.first { it.selections.isEmpty }.id
+        val xlId = cart.first { !it.selections.isEmpty }.id
+
+        // Edita la "Grande" para que pase a tener la misma config que la "XL".
+        repository.updateLine("rest-1", grandeId, line(quantity = 1, selections = withBacon))
+
+        val result = repository.cart("rest-1").first()
+        assertEquals(1, result.size)
+        assertEquals(xlId, result.first().id)
+        assertEquals(2, result.first().quantity)
+    }
+
+    @Test
+    fun `editar respeta el tope maximo de cantidad al fusionar`() = runTest {
+        repository.add("rest-1", line(quantity = 98))
+        repository.add("rest-1", line(quantity = 50, selections = withBacon))
+        val editedId = repository.cart("rest-1").first().first { it.selections.isEmpty }.id
+
+        repository.updateLine("rest-1", editedId, line(quantity = 50, selections = withBacon))
+
+        val result = repository.cart("rest-1").first()
+        assertEquals(1, result.size)
+        assertEquals(99, result.first().quantity)
     }
 }

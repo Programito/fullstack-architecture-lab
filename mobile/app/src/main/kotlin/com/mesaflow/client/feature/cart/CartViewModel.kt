@@ -5,10 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.data.CartRepository
+import com.mesaflow.client.core.data.MenuRepository
 import com.mesaflow.client.core.data.OrderRepository
 import com.mesaflow.client.core.datastore.SessionStore
 import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.MenuItem
 import com.mesaflow.client.core.model.SubmittedOrder
+import com.mesaflow.client.core.model.isConfigurable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -35,6 +39,10 @@ data class CartUiState(
     val submittedLines: List<CartLine> = emptyList(),
     /** Mesa del pedido enviado, para mostrarla en el ticket (mismo valor que usa la Carta). */
     val tableLabel: String = "",
+    /** Línea que se está editando (null = configurador cerrado). */
+    val editingLine: CartLine? = null,
+    /** Producto de la carta correspondiente a [editingLine], para reabrir el configurador. */
+    val editingItem: MenuItem? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -43,6 +51,7 @@ class CartViewModel @Inject constructor(
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val sessionStore: SessionStore,
+    private val menuRepository: MenuRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CartUiState())
@@ -53,6 +62,20 @@ class CartViewModel @Inject constructor(
         .filterNotNull()
         .flatMapLatest { table -> cartRepository.cart(table.restaurantId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * id de MenuItem -> MenuItem de la carta actual (misma cache en memoria que usa la Carta,
+     * vía [MenuRepository]). Se usa para saber, por línea, si hay algo que editar (tamaño,
+     * extras, combo...) y para reabrir el configurador con los datos frescos del producto.
+     */
+    // Publico (no private) y con collectAsStateWithLifecycle en CartScreen: asi la UI
+    // recompone en cuanto la carta termina de cargar. Ademas Eagerly (no WhileSubscribed):
+    // arranca solo, sin depender de que algo lo suscriba.
+    val menuItemsById: StateFlow<Map<String, MenuItem>> = sessionStore.tableContext
+        .filterNotNull()
+        .map { table -> (menuRepository.getMenu(table.restaurantId) as? AppResult.Success)?.data }
+        .map { menu -> menu?.sections.orEmpty().flatMap { it.items }.associateBy { it.id } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     init {
         viewModelScope.launch {
@@ -78,6 +101,26 @@ class CartViewModel @Inject constructor(
         viewModelScope.launch {
             val table = sessionStore.tableContext.first() ?: return@launch
             cartRepository.clear(table.restaurantId)
+        }
+    }
+
+    /** Abre el configurador para editar [line]; no hace nada si el producto ya no está en la carta. */
+    fun onEditLine(line: CartLine) {
+        val item = menuItemsById.value[line.menuItemId] ?: return
+        _uiState.update { it.copy(editingLine = line, editingItem = item) }
+    }
+
+    fun onEditDismiss() {
+        _uiState.update { it.copy(editingLine = null, editingItem = null) }
+    }
+
+    /** Guarda la nueva configuración de [CartUiState.editingLine] (fusiona si coincide con otra línea). */
+    fun onEditConfirm(updated: CartLine) {
+        val lineId = _uiState.value.editingLine?.id ?: return
+        viewModelScope.launch {
+            val table = sessionStore.tableContext.first() ?: return@launch
+            cartRepository.updateLine(table.restaurantId, lineId, updated)
+            _uiState.update { it.copy(editingLine = null, editingItem = null) }
         }
     }
 

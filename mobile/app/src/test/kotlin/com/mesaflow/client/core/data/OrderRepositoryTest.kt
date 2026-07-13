@@ -48,6 +48,13 @@ private class InMemoryCartDao : CartDao {
         selectionsJson: String,
     ): CartLineEntity? = null
 
+    override suspend fun findIdenticalExcluding(
+        restaurantId: String,
+        menuItemId: String,
+        selectionsJson: String,
+        excludeId: Long,
+    ): CartLineEntity? = null
+
     override suspend fun insert(line: CartLineEntity): Long {
         val id = nextId++
         lines.value += line.copy(id = id)
@@ -55,6 +62,16 @@ private class InMemoryCartDao : CartDao {
     }
 
     override suspend fun updateQuantity(id: Long, quantity: Int) = Unit
+
+    override suspend fun updateLineDetails(
+        id: Long,
+        name: String,
+        imageUrl: String?,
+        basePriceCents: Long,
+        currency: String,
+        selectionsJson: String,
+        quantity: Int,
+    ) = Unit
 
     override suspend fun delete(id: Long) {
         lines.value = lines.value.filterNot { it.id == id }

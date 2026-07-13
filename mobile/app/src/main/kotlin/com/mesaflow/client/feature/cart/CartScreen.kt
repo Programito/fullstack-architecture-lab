@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -64,6 +65,9 @@ import com.mesaflow.client.core.model.OrderLineKitchenStatus
 import com.mesaflow.client.core.model.ServicePointOrderLine
 import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.model.SubmittedOrder
+import com.mesaflow.client.core.model.isConfigurable
+import com.mesaflow.client.feature.product.ProductConfig
+import com.mesaflow.client.feature.product.ProductConfiguratorSheet
 
 /**
  * Order summary: editable lines (quantity, remove), live total and kitchen
@@ -90,6 +94,7 @@ fun CartScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lines by viewModel.lines.collectAsStateWithLifecycle()
+    val menuItemsById by viewModel.menuItemsById.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val windowWidthSizeClass = LocalWindowWidthSizeClass.current
 
@@ -171,7 +176,22 @@ fun CartScreen(
                     onQuantityChange = viewModel::onQuantityChange,
                     onRemoveLine = viewModel::onRemoveLine,
                     onSubmit = viewModel::onSubmit,
+                    isLineEditable = { line -> menuItemsById[line.menuItemId]?.isConfigurable == true },
+                    onEditLine = viewModel::onEditLine,
                     modifier = contentModifier,
+                )
+            }
+        }
+
+        uiState.editingItem?.let { item ->
+            val editingLine = uiState.editingLine
+            if (editingLine != null) {
+                ProductConfiguratorSheet(
+                    item = item,
+                    initialConfig = ProductConfig.fromCartLine(item, editingLine),
+                    isEditing = true,
+                    onDismiss = viewModel::onEditDismiss,
+                    onAddToCart = viewModel::onEditConfirm,
                 )
             }
         }
@@ -185,6 +205,8 @@ private fun CartContent(
     onQuantityChange: (Long, Int) -> Unit,
     onRemoveLine: (Long) -> Unit,
     onSubmit: () -> Unit,
+    isLineEditable: (CartLine) -> Boolean,
+    onEditLine: (CartLine) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val totalCents = lines.sumOf { it.totalCents }
@@ -201,6 +223,7 @@ private fun CartContent(
                     line = line,
                     onQuantityChange = { onQuantityChange(line.id, it) },
                     onRemove = { onRemoveLine(line.id) },
+                    onEdit = if (isLineEditable(line)) { { onEditLine(line) } } else null,
                 )
             }
             item { Spacer(Modifier.height(8.dp)) }
@@ -247,6 +270,7 @@ private fun CartLineCard(
     line: CartLine,
     onQuantityChange: (Int) -> Unit,
     onRemove: () -> Unit,
+    onEdit: (() -> Unit)?,
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -296,12 +320,22 @@ private fun CartLineCard(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     QuantityStepper(quantity = line.quantity, onQuantityChange = onQuantityChange)
-                    IconButton(onClick = onRemove) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.cart_remove_line),
-                            tint = MaterialTheme.colorScheme.error,
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (onEdit != null) {
+                            IconButton(onClick = onEdit) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(R.string.cart_edit_line),
+                                )
+                            }
+                        }
+                        IconButton(onClick = onRemove) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.cart_remove_line),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 }
             }

@@ -19,6 +19,7 @@ import com.mesaflow.client.core.model.CartLine
 import com.mesaflow.client.core.model.Menu
 import com.mesaflow.client.core.model.MenuItem
 import com.mesaflow.client.core.model.MenuSection
+import com.mesaflow.client.core.model.findItemById
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -313,8 +314,3 @@ class MenuViewModel @Inject constructor(
     }
 }
 
-private fun Menu.findItemById(itemId: String): MenuItem? =
-    sections
-        .asSequence()
-        .flatMap { it.items.asSequence() }
-        .firstOrNull { it.id == itemId }

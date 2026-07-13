@@ -139,5 +139,32 @@ data class ProductConfig(
 
     companion object {
         const val MAX_QUANTITY = 99
+
+        /**
+         * Reconstruye la configuración de una línea ya en el carrito para poder editarla:
+         * inversa de [toCartLine]. Usa el [item] actual (no una foto congelada), así que si el
+         * restaurante cambió precios desde que se añadió, el editor ya parte del precio al día.
+         */
+        fun fromCartLine(item: MenuItem, line: CartLine): ProductConfig = ProductConfig(
+            item = item,
+            quantity = line.quantity,
+            optionsByGroup = item.modifierGroups
+                .associate { group ->
+                    group.id to line.selections.modifiers
+                        .filter { it.groupId == group.id }
+                        .map { it.optionId }
+                        .toSet()
+                }
+                .filterValues { it.isNotEmpty() },
+            optionsBySlot = item.comboDefinition?.slots.orEmpty()
+                .associate { slot ->
+                    slot.id to line.selections.comboOptions
+                        .filter { it.slotId == slot.id }
+                        .map { it.optionId }
+                        .toSet()
+                }
+                .filterValues { it.isNotEmpty() },
+            removedComponentIds = line.selections.removedComponents.map { it.componentId }.toSet(),
+        )
     }
 }

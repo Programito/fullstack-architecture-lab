@@ -55,6 +55,7 @@
     <string name="configurator_remove_title">Personalitza els ingredients</string>
     <string name="configurator_without">Sense %1$s</string>
     <string name="configurator_add_for">Afegeix · %1$s</string>
+    <string name="configurator_save_for">Desa · %1$s</string>
     <string name="configurator_panel_title">Personalitza el producte</string>
     <string name="configurator_panel_close">Tanca el configurador</string>
     <string name="cart_fab_label">Mostra la comanda (%1$d) · %2$s</string>
@@ -64,6 +65,7 @@
     <string name="cart_total">Total</string>
     <string name="cart_submit">Continua al pagament</string>
     <string name="cart_remove_line">Elimina el producte</string>
+    <string name="cart_edit_line">Edita el producte</string>
     <string name="cart_clear">Buida la comanda</string>
     <string name="cart_error_submit">No s\'ha pogut enviar la comanda. Torna-ho a provar.</string>
     <string name="cart_error_server">No hem pogut connectar amb el restaurant. La teva comanda continua al carret; torna-ho a provar en uns segons.</string>

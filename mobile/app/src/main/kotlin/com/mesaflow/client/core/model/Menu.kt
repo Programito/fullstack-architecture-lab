@@ -139,3 +139,16 @@ data class PlatterComponent(
     val replaceable: Boolean,
     val sortOrder: Int,
 )
+
+/** Tiene algo configurable (tamaño/variantes, extras, combo o ingredientes quitables). */
+val MenuItem.isConfigurable: Boolean
+    get() = modifierGroups.isNotEmpty() ||
+        comboDefinition?.slots.orEmpty().isNotEmpty() ||
+        platterComponents.any { it.removable }
+
+/** Busca un producto de la carta por id; usado al reabrir el configurador (Carta/Carrito). */
+fun Menu.findItemById(itemId: String): MenuItem? =
+    sections
+        .asSequence()
+        .flatMap { it.items.asSequence() }
+        .firstOrNull { it.id == itemId }

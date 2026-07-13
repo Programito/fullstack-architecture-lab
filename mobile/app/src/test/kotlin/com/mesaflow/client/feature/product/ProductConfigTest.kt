@@ -8,6 +8,7 @@ import com.mesaflow.client.core.model.ModifierGroup
 import com.mesaflow.client.core.model.ModifierOption
 import com.mesaflow.client.core.model.PlatterComponent
 import com.mesaflow.client.core.model.ProductType
+import com.mesaflow.client.core.model.isConfigurable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -161,5 +162,68 @@ class ProductConfigTest {
         val config = ProductConfig(item())
         assertEquals(1, config.withQuantity(0).quantity)
         assertEquals(ProductConfig.MAX_QUANTITY, config.withQuantity(500).quantity)
+    }
+
+    @Test
+    fun `fromCartLine reconstruye la configuracion desde toCartLine (round-trip)`() {
+        val combo = ComboDefinition(id = "combo-1", slots = listOf(drinkSlot))
+        val platter = listOf(
+            PlatterComponent("pc-onion", "Cebolla", removable = true, replaceable = false, sortOrder = 0),
+        )
+        val original = ProductConfig(item(groups = listOf(extrasGroup), combo = combo, platter = platter))
+            .toggleModifier(extrasGroup, "o-bacon")
+            .toggleModifier(extrasGroup, "o-queso")
+            .toggleComboOption(drinkSlot, "c-cola")
+            .toggleRemovedComponent("pc-onion")
+            .withQuantity(4)
+
+        val restored = ProductConfig.fromCartLine(original.item, original.toCartLine())
+
+        assertEquals(original.optionsByGroup["g-extras"], restored.optionsByGroup["g-extras"])
+        assertEquals(original.optionsBySlot["s-drink"], restored.optionsBySlot["s-drink"])
+        assertEquals(original.removedComponentIds, restored.removedComponentIds)
+        assertEquals(original.quantity, restored.quantity)
+        assertEquals(original.totalCents, restored.totalCents)
+    }
+
+    @Test
+    fun `fromCartLine con una linea sin selecciones no marca ninguna opcion`() {
+        val config = ProductConfig(item(groups = listOf(sauceGroup)))
+            .toggleModifier(sauceGroup, "o-brava")
+        val restored = ProductConfig.fromCartLine(config.item, config.toCartLine())
+        assertEquals(setOf("o-brava"), restored.optionsByGroup["g-sauce"])
+        assertTrue(restored.isValid)
+    }
+
+    @Test
+    fun `isConfigurable es false para un producto simple sin extras`() {
+        assertFalse(item().isConfigurable)
+    }
+
+    @Test
+    fun `isConfigurable es true si tiene grupos de modificadores`() {
+        assertTrue(item(groups = listOf(sauceGroup)).isConfigurable)
+    }
+
+    @Test
+    fun `isConfigurable es true si tiene slots de combo`() {
+        val combo = ComboDefinition(id = "combo-1", slots = listOf(drinkSlot))
+        assertTrue(item(combo = combo).isConfigurable)
+    }
+
+    @Test
+    fun `isConfigurable es true si tiene algun componente removible`() {
+        val platter = listOf(
+            PlatterComponent("pc-onion", "Cebolla", removable = true, replaceable = false, sortOrder = 0),
+        )
+        assertTrue(item(platter = platter).isConfigurable)
+    }
+
+    @Test
+    fun `isConfigurable es false si el platter no tiene componentes removibles`() {
+        val platter = listOf(
+            PlatterComponent("pc-meat", "Carne", removable = false, replaceable = false, sortOrder = 0),
+        )
+        assertFalse(item(platter = platter).isConfigurable)
     }
 }

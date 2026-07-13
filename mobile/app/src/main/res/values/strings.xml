@@ -56,6 +56,7 @@
     <string name="configurator_remove_title">Personaliza los ingredientes</string>
     <string name="configurator_without">Sin %1$s</string>
     <string name="configurator_add_for">Añadir · %1$s</string>
+    <string name="configurator_save_for">Guardar · %1$s</string>
     <string name="configurator_panel_title">Personalizar producto</string>
     <string name="configurator_panel_close">Cerrar configurador</string>
     <string name="cart_fab_label">Ver pedido (%1$d) · %2$s</string>
@@ -65,6 +66,7 @@
     <string name="cart_total">Total</string>
     <string name="cart_submit">Continuar al pago</string>
     <string name="cart_remove_line">Eliminar producto</string>
+    <string name="cart_edit_line">Editar producto</string>
     <string name="cart_clear">Vaciar pedido</string>
     <string name="cart_error_submit">No se ha podido enviar el pedido. Inténtalo de nuevo.</string>
     <string name="cart_error_server">No hemos podido conectar con el restaurante. Tu pedido sigue en el carrito; inténtalo de nuevo en unos segundos.</string>
