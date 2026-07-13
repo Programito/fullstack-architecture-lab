@@ -75,28 +75,24 @@ describe('MesaFlow Phase 1 Prisma schema', () => {
         accountType: 'demo',
       },
     });
-    const [centro, terraza] = await Promise.all([
-      prisma.restaurant.create({
-        data: {
-          organizationId: organization.id,
-          name: 'MesaFlow Centro',
-          timezone: 'Europe/Madrid',
-          currency: 'EUR',
-        },
-      }),
-      prisma.restaurant.create({
-        data: {
-          organizationId: organization.id,
-          name: 'MesaFlow Terraza',
-          timezone: 'Europe/Madrid',
-          currency: 'EUR',
-        },
-      }),
-    ]);
-    const [waiterRole, managerRole] = await Promise.all([
-      prisma.role.create({ data: { name: 'waiter' } }),
-      prisma.role.create({ data: { name: 'manager' } }),
-    ]);
+    const centro = await prisma.restaurant.create({
+      data: {
+        organizationId: organization.id,
+        name: 'MesaFlow Centro',
+        timezone: 'Europe/Madrid',
+        currency: 'EUR',
+      },
+    });
+    const terraza = await prisma.restaurant.create({
+      data: {
+        organizationId: organization.id,
+        name: 'MesaFlow Terraza',
+        timezone: 'Europe/Madrid',
+        currency: 'EUR',
+      },
+    });
+    const waiterRole = await prisma.role.create({ data: { name: 'waiter' } });
+    const managerRole = await prisma.role.create({ data: { name: 'manager' } });
     const user = await prisma.user.create({
       data: {
         email: 'waiter@mesaflow.demo',
@@ -168,27 +164,25 @@ describe('MesaFlow Phase 1 Prisma schema', () => {
         taxRateId: taxRate.id,
       },
     });
-    const [burgerSale, friesSale] = await Promise.all([
-      prisma.restaurantProduct.create({
-        data: {
-          restaurantId: centro.id,
-          productId: burgerProduct.id,
-          priceCents: 1250,
-          currency: 'EUR',
-          sortOrder: 1,
-        },
-      }),
-      prisma.restaurantProduct.create({
-        data: {
-          restaurantId: centro.id,
-          productId: platterProduct.id,
-          displayName: 'Patatas fritas',
-          priceCents: 0,
-          currency: 'EUR',
-          sortOrder: 2,
-        },
-      }),
-    ]);
+    const burgerSale = await prisma.restaurantProduct.create({
+      data: {
+        restaurantId: centro.id,
+        productId: burgerProduct.id,
+        priceCents: 1250,
+        currency: 'EUR',
+        sortOrder: 1,
+      },
+    });
+    const friesSale = await prisma.restaurantProduct.create({
+      data: {
+        restaurantId: centro.id,
+        productId: platterProduct.id,
+        displayName: 'Patatas fritas',
+        priceCents: 0,
+        currency: 'EUR',
+        sortOrder: 2,
+      },
+    });
 
     const menu = await prisma.restaurantMenu.create({
       data: {

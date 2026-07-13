@@ -33,10 +33,8 @@ export async function seedMesaFlowOrdersDemo(prisma: PrismaClient): Promise<void
     throw new Error('Missing demo accounts for orders seed.');
   }
 
-  const [waiterUser, managerUser] = await Promise.all([
-    prisma.user.findUnique({ where: { email: waiterAccount.email } }),
-    prisma.user.findUnique({ where: { email: managerAccount.email } }),
-  ]);
+  const waiterUser = await prisma.user.findUnique({ where: { email: waiterAccount.email } });
+  const managerUser = await prisma.user.findUnique({ where: { email: managerAccount.email } });
   if (!waiterUser || !managerUser) {
     throw new Error('Demo users must exist before orders are seeded.');
   }

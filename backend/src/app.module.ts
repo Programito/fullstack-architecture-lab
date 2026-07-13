@@ -14,7 +14,7 @@ import { TimeTrackingModule } from './time-tracking/time-tracking.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env', '.env.local'],
     }),
     PrismaModule,
     HealthModule,

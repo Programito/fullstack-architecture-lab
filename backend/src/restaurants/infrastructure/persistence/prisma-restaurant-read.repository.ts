@@ -128,12 +128,16 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
           name:
             item.displayNameOverride ??
             item.restaurantProduct.displayName ??
+            asNameI18n(item.restaurantProduct.product.nameI18n)?.es ??
             item.restaurantProduct.product.name,
           // `nameI18n` viene siempre del Product canonico, nunca de los overrides
           // displayName/displayNameOverride (esos quedan en castellano por ahora,
           // ver Fase 1 del plan multiidioma).
           nameI18n: asNameI18n(item.restaurantProduct.product.nameI18n),
-          description: item.restaurantProduct.product.description ?? undefined,
+          description:
+            item.restaurantProduct.product.description ??
+            asNameI18n(item.restaurantProduct.product.descriptionI18n)?.es ??
+            undefined,
           // Mismo criterio que `nameI18n`: siempre del Product canonico, nunca de
           // displayDescription/displayDescription override (fuera de alcance por
           // ahora, ver plan multiidioma).
@@ -184,7 +188,10 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
                   options: slot.options.map((option) => ({
                     id: option.id,
                     restaurantProductId: option.restaurantProductId,
-                    name: option.restaurantProduct.displayName ?? option.restaurantProduct.product.name,
+                    name:
+                      option.restaurantProduct.displayName ??
+                      asNameI18n(option.restaurantProduct.product.nameI18n)?.es ??
+                      option.restaurantProduct.product.name,
                     supplementPriceCents: option.supplementPriceCents,
                     isAvailable: option.isAvailable,
                   })),

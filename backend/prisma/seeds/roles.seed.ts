@@ -14,10 +14,8 @@ export async function seedRoles(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  const [roles, permissions] = await Promise.all([
-    prisma.role.findMany(),
-    prisma.permission.findMany(),
-  ]);
+  const roles = await prisma.role.findMany();
+  const permissions = await prisma.permission.findMany();
   const roleIdByName = new Map(roles.map((role) => [role.name, role.id]));
   const permissionIdByName = new Map(permissions.map((permission) => [permission.name, permission.id]));
 

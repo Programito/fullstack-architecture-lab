@@ -30,7 +30,7 @@ type RawComboSlotOption = {
   restaurantProductId: string;
   supplementPriceCents: number;
   isAvailable: boolean;
-  restaurantProduct: { displayName: string | null; product: { name: string } };
+  restaurantProduct: { displayName: string | null; product: { name: string; nameI18n?: unknown } };
 };
 type RawComboSlot = {
   id: string;
@@ -159,14 +159,16 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
 function mapMenuItem(item: RawMenuItem) {
   const rp = item.restaurantProduct;
   const product = rp.product;
+  const productNameI18n = asNameI18n(product.nameI18n);
+  const productDescriptionI18n = asNameI18n(product.descriptionI18n);
   return {
     id: item.id,
     restaurantProductId: rp.id,
     productId: product.id,
-    name: item.displayNameOverride ?? rp.displayName ?? product.name,
-    nameI18n: asNameI18n(product.nameI18n),
-    description: product.description ?? undefined,
-    descriptionI18n: asNameI18n(product.descriptionI18n),
+    name: item.displayNameOverride ?? rp.displayName ?? productNameI18n?.es ?? product.name,
+    nameI18n: productNameI18n,
+    description: product.description ?? productDescriptionI18n?.es ?? undefined,
+    descriptionI18n: productDescriptionI18n,
     imageUrl: rp.imageUrl,
     productType: product.productType as 'simple' | 'combo' | 'platter',
     priceCents: item.priceOverrideCents ?? rp.priceCents,
@@ -216,7 +218,10 @@ function mapComboDefinition(combo: RawComboDefinition): RestaurantMenuComboDefin
       options: slot.options.map((opt) => ({
         id: opt.id,
         restaurantProductId: opt.restaurantProductId,
-        name: opt.restaurantProduct.displayName ?? opt.restaurantProduct.product.name,
+        name:
+          opt.restaurantProduct.displayName ??
+          asNameI18n(opt.restaurantProduct.product.nameI18n)?.es ??
+          opt.restaurantProduct.product.name,
         supplementPriceCents: opt.supplementPriceCents,
         isAvailable: opt.isAvailable,
       })),

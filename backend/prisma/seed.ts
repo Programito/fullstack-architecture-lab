@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClientOptions } from '../src/shared/prisma/prisma-client-options';
 
 import { seedMesaFlowDemo } from './seeds/mesaflow-demo.seed';
 import { seedMesaFlowLayoutDemo } from './seeds/mesaflow-layout.seed';
@@ -9,7 +10,7 @@ import { seedPermissions } from './seeds/permissions.seed';
 import { seedRoles } from './seeds/roles.seed';
 import { seedDemoUsers } from './seeds/demo-users.seed';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(createPrismaClientOptions());
 
 async function main(): Promise<void> {
   await seedPermissions(prisma);

@@ -9,6 +9,7 @@ export default defineConfig({
     testTimeout: 60_000,
   },
   resolve: {
+    extensions: ['.ts', '.mts', '.tsx', '.js', '.mjs', '.jsx', '.json'],
     alias: {
       '@app': new URL('./src', import.meta.url).pathname,
     },
