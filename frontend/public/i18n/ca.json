@@ -1428,7 +1428,9 @@
       "editSectionTitle": "Editar secció",
       "sectionUpdated": "Secció actualitzada correctament.",
       "sectionUpdateFailed": "No s'ha pogut actualitzar la secció.",
-      "editModifierGroupAriaLabel": "Editar grup de modificadors"
+      "editModifierGroupAriaLabel": "Editar grup de modificadors",
+      "visibleInApp": "Visible a l'app",
+      "hiddenFromApp": "Ocult de l'app"
     },
     "customizer": {
       "title": "Personalitzar producte",
@@ -1541,7 +1543,9 @@
           "addComponent": "Afegir component",
           "removeComponent": "Treure component",
           "noComponents": "Aquest plat encara no té components."
-        }
+        },
+        "category": "Categoria",
+        "categoryRequiredHint": "Tria una categoria perquè el producte aparegui a la carta."
       },
       "success": {
         "created": "Article creat correctament.",
@@ -1551,11 +1555,14 @@
       },
       "errors": {
         "nameTaken": "Ja existeix un article amb aquest nom.",
+        "supplementNameTaken": "Ja existeix un grup de suplements amb aquest nom per a un altre article.",
         "saveFailed": "No s'ha pogut guardar l'article.",
         "loadFailed": "No s'ha pogut carregar l'article.",
         "deleteFailed": "No s'ha pogut eliminar l'article.",
         "alreadyInSection": "L'article ja és a aquesta secció.",
-        "addToSectionFailed": "No s'ha pogut afegir l'article a la secció."
+        "addToSectionFailed": "No s'ha pogut afegir l'article a la secció.",
+        "visibilityFailed": "No s'ha pogut canviar la visibilitat a l'app.",
+        "availabilityFailed": "No s'ha pogut canviar la disponibilitat de l'article."
       }
     },
     "modifierGroup": {

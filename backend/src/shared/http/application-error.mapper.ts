@@ -65,7 +65,10 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'time_entry_already_open':
     case 'time_entry_not_open':
     case 'time_entry_change_request_already_reviewed':
-      return new ConflictException(error.message);
+      // Se incluye `code` en el cuerpo (ademas del `message` por defecto) para que los clientes
+      // puedan distinguir el tipo exacto de conflicto (p.ej. `product_name_taken` vs.
+      // `modifier_group_name_taken`) en vez de asumir que todo 409 es "nombre de producto duplicado".
+      return new ConflictException({ statusCode: 409, error: 'Conflict', message: error.message, code: error.code });
 
     case 'payment_exceeds_balance':
     case 'reservation_in_past':

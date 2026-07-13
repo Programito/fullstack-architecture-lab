@@ -86,6 +86,14 @@ class RestaurantMenuItemResponseDto {
   @ApiProperty({ example: 1250 }) priceCents!: number;
   @ApiProperty({ example: 'EUR' }) currency!: string;
   @ApiProperty({ example: true }) isAvailable!: boolean;
+  // Visibilidad propia del item de sección, distinta de isAvailable (ver RestaurantMenuItem en
+  // restaurant-read.models.ts). El admin la usa para el toggle "aparece en la app"; mobile sigue
+  // usando isAvailable (ya la combina) para no tener que cambiar su filtrado.
+  @ApiProperty({ example: true }) isVisible!: boolean;
+  // Disponibilidad "cruda" del producto, sin combinar con isVisible (ver RestaurantMenuItem).
+  // El admin la usa para el toggle "agotado"; sin esto, ocultar un item con isVisible hacia
+  // que isAvailable se quedase en false pase lo que pase con esta, y el toggle parecia roto.
+  @ApiProperty({ example: true }) productAvailable!: boolean;
   @ApiProperty({ example: 'main', required: false }) defaultCourse?: string;
   @ApiProperty({ example: 'kitchen', required: false }) preparationRoute?: string;
   @ApiProperty({ type: [String], required: false }) allergens?: string[];
@@ -146,6 +154,8 @@ function mapItem(item: RestaurantMenuItem): RestaurantMenuItemResponseDto {
     priceCents: item.priceCents,
     currency: item.currency,
     isAvailable: item.isAvailable,
+    isVisible: item.isVisible ?? true,
+    productAvailable: item.productAvailable ?? item.isAvailable,
     defaultCourse: item.defaultCourse,
     preparationRoute: item.preparationRoute,
     allergens: item.allergens ?? [],

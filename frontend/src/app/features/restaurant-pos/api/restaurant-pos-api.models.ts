@@ -488,6 +488,13 @@ export type RestaurantMenuItemDto = {
   priceCents: number;
   currency: string;
   isAvailable: boolean;
+  // Visibilidad propia del item de sección (distinta de isAvailable, que ya la combina con la
+  // disponibilidad del producto). La usa el toggle "aparece en la app" del admin.
+  isVisible: boolean;
+  // Disponibilidad "cruda" del producto (sin combinar con isVisible). La usa el toggle
+  // "agotado" del admin -- isAvailable de arriba se queda en false en cuanto isVisible es
+  // false, así que no sirve para saber/editar el agotado por separado.
+  productAvailable: boolean;
   defaultCourse?: string;
   preparationRoute?: string;
   allergens?: AllergenDto[];

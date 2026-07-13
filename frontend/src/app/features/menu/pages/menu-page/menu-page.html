@@ -438,6 +438,18 @@
                       (checkedChange)="toggleAvailability(product)"
                     />
                     <div class="flex shrink-0 items-center justify-end gap-1">
+                      @if (!isCatalogOnly(product)) {
+                        <app-button
+                          [variant]="isProductVisible(product) ? 'primary' : 'neutral'"
+                          fill="clear"
+                          size="sm"
+                          [ariaLabel]="(isProductVisible(product) ? 'menu.page.visibleInApp' : 'menu.page.hiddenFromApp') | transloco"
+                          [title]="(isProductVisible(product) ? 'menu.page.visibleInApp' : 'menu.page.hiddenFromApp') | transloco"
+                          (pressed)="toggleVisibility(product)"
+                        >
+                          <app-icon [name]="isProductVisible(product) ? 'smartphone' : 'phonelink_off'" size="sm" [decorative]="true" />
+                        </app-button>
+                      }
                       @if (isCatalogOnly(product)) {
                         <app-button variant="neutral" fill="outline" size="sm" [ariaLabel]="'menu.page.addToSection' | transloco" [title]="'menu.page.addToSection' | transloco" (pressed)="openAddToSection(product)">
                           <app-icon name="playlist_add" size="sm" [decorative]="true" />
@@ -515,6 +527,18 @@
                     </button>
 
                     <div class="flex shrink-0 gap-1">
+                      @if (!isCatalogOnly(product)) {
+                        <app-button
+                          [variant]="isProductVisible(product) ? 'primary' : 'neutral'"
+                          fill="clear"
+                          size="sm"
+                          [ariaLabel]="(isProductVisible(product) ? 'menu.page.visibleInApp' : 'menu.page.hiddenFromApp') | transloco"
+                          [title]="(isProductVisible(product) ? 'menu.page.visibleInApp' : 'menu.page.hiddenFromApp') | transloco"
+                          (pressed)="toggleVisibility(product)"
+                        >
+                          <app-icon [name]="isProductVisible(product) ? 'smartphone' : 'phonelink_off'" size="sm" [decorative]="true" />
+                        </app-button>
+                      }
                       @if (isCatalogOnly(product)) {
                         <app-button variant="neutral" fill="outline" size="sm" [ariaLabel]="'menu.page.addToSection' | transloco" [title]="'menu.page.addToSection' | transloco" (pressed)="openAddToSection(product)">
                           <app-icon name="playlist_add" size="sm" [decorative]="true" />

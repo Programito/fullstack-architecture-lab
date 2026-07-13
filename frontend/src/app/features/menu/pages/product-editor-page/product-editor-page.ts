@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { filter, forkJoin, fromEvent, map, of, startWith, switchMap, take, type Observable } from 'rxjs';
+import { catchError, filter, forkJoin, fromEvent, map, of, startWith, switchMap, take, throwError, type Observable } from 'rxjs';
 
 import { mapHttpError } from '../../../../core/errors/http-error.mapper';
 import { Button } from '../../../../shared/ui/button/button';
@@ -142,6 +142,13 @@ export class ProductEditorPage {
 
   protected readonly loadingProduct = signal(this.isEdit());
   protected readonly loadingModifierGroups = signal(true);
+  // Evita guardar mientras aun no sabemos si este producto ya tiene un ModifierGroup de
+  // suplementos propio (`existingSupplementGroupId`): si se guarda antes de que responda
+  // `listModifierGroups('product')`, `upsertSupplementGroup$` cree que no existe y llama a
+  // `createModifierGroup` de nuevo con el mismo nombre -> choca con el ya creado (P2002) y el
+  // backend lo reporta como conflicto -> el usuario ve "ya existe un producto con ese nombre"
+  // aunque no haya tocado el nombre del producto.
+  protected readonly loadingSupplementGroup = signal(this.isEdit());
   protected readonly saving = signal(false);
   protected readonly existingProduct = signal<RestaurantProductDetailDto | null>(null);
   protected readonly modifierGroups = signal<ModifierGroup[]>([]);
@@ -203,6 +210,17 @@ export class ProductEditorPage {
   protected readonly course = signal('main');
   protected readonly preparationRoute = signal('kitchen');
   protected readonly available = signal(true);
+  // Categoría/sección de la carta a la que pertenece el producto. Obligatoria: sin ella el
+  // producto quedaría "solo catálogo" y no aparecería nunca en la app (ver
+  // docs/superpowers/plans/2026-07-13-mandatory-product-category.md). Editable también al
+  // editar un producto ya existente (incluidos los "solo catálogo" de antes de este cambio).
+  protected readonly categoryId = signal('');
+  protected readonly categoryOptions = signal<SelectOption[]>([]);
+  private readonly menuId = signal('');
+  // Sección/ítem original del producto en edición (si ya estaba en alguna), para poder mover
+  // el producto de sección en `syncCategoryOnSave$` cuando cambia `categoryId`.
+  private readonly originalCategoryId = signal('');
+  private readonly originalItemId = signal<string | null>(null);
   protected readonly selectedModifierGroupIds = signal<string[]>([]);
   protected readonly selectedAllergens = signal<Allergen[]>([]);
   protected readonly uploadStatus = signal<UploadStatus>('idle');
@@ -331,8 +349,10 @@ export class ProductEditorPage {
   protected readonly saveDisabled = computed(
     () =>
       !this.isValid() ||
+      !this.categoryId() ||
       this.uploadStatus() === 'uploading' ||
       this.loadingProduct() ||
+      this.loadingSupplementGroup() ||
       this.supplementOptions().some((option) => option.uploadStatus === 'uploading'),
   );
 
@@ -432,6 +452,25 @@ export class ProductEditorPage {
       next: (products) => this.availableProducts.set(products),
     });
 
+    // Categorías disponibles para el selector obligatorio + sección/ítem actual del producto en
+    // edición (si ya estaba colocado en alguna). Los productos "solo catálogo" de antes de este
+    // cambio no aparecen en menuData.products, así que categoryId se queda vacío y el admin tiene
+    // que elegir una categoría al editarlos (arregla el caso de origen sobre la marcha).
+    this.menuApi.getMenu().subscribe({
+      next: (menuData) => {
+        this.menuId.set(menuData.menuId);
+        this.categoryOptions.set(menuData.categories.map((category) => ({ value: category.id, label: category.name })));
+        if (this.productId) {
+          const current = menuData.products.find((product) => product.restaurantProductId === this.productId);
+          if (current) {
+            this.categoryId.set(current.categoryId);
+            this.originalCategoryId.set(current.categoryId);
+            this.originalItemId.set(current.id);
+          }
+        }
+      },
+    });
+
     if (this.productId) {
       const id = this.productId;
       this.menuApi.getProduct(id).subscribe({
@@ -503,7 +542,9 @@ export class ProductEditorPage {
               })),
             );
           }
+          this.loadingSupplementGroup.set(false);
         },
+        error: () => this.loadingSupplementGroup.set(false),
       });
     }
   }
@@ -864,6 +905,7 @@ export class ProductEditorPage {
             } satisfies UpdateProductInput),
           ),
           switchMap(() => (this.isCombo() || this.isPlatter() ? this.saveComboAndPlatterChanges$(existing.id) : of(undefined))),
+          switchMap(() => this.syncCategoryOnSave$(existing.id)),
         )
       : this.menuApi
           .createProduct({
@@ -889,6 +931,10 @@ export class ProductEditorPage {
                       } satisfies UpdateProductInput)
                     : of(created),
                 ),
+                // Categoría obligatoria: recién creado, el producto no está todavía en ninguna
+                // sección — sin esto quedaría como "solo catálogo" (ver bug original: un producto
+                // creado que nunca aparecía en mobile porque nadie lo añadía a una sección).
+                switchMap(() => this.menuApi.addSectionItem(this.menuId(), this.categoryId(), created.id)),
               ),
             ),
           );
@@ -904,10 +950,56 @@ export class ProductEditorPage {
       error: (err) => {
         this.saving.set(false);
         const appError = mapHttpError(err);
-        const key = appError.type === 'conflict' ? 'menu.product.errors.nameTaken' : 'menu.product.errors.saveFailed';
+        // El guardado encadena varias llamadas (producto, ModifierGroup de suplementos, sección
+        // del menu); un 409 puede venir de cualquiera de ellas. Antes se asumia que TODO 409 era
+        // "nombre de producto duplicado", lo que mostraba ese error incluso al editar sin tocar el
+        // nombre (p.ej. si chocaba el ModifierGroup de suplementos). Se distingue por `code`.
+        const key = this.conflictErrorKey(appError);
         this.toast.danger({ title: this.transloco.translate(key) });
       },
     });
+  }
+
+  private conflictErrorKey(appError: ReturnType<typeof mapHttpError>): string {
+    if (appError.type !== 'conflict') return 'menu.product.errors.saveFailed';
+    switch (appError.code) {
+      case 'product_name_taken':
+        return 'menu.product.errors.nameTaken';
+      case 'modifier_group_name_taken':
+        return 'menu.product.errors.supplementNameTaken';
+      case 'menu_item_already_in_section':
+        return 'menu.product.errors.alreadyInSection';
+      default:
+        // Conflicto de un tipo que no distinguimos con un mensaje propio todavia: mantenemos el
+        // mensaje generico anterior en vez de suponer que es de nombre duplicado.
+        return 'menu.product.errors.saveFailed';
+    }
+  }
+
+  /**
+   * Mueve el producto de sección cuando `categoryId` cambió respecto a la sección en la que
+   * estaba al cargar el editor (`originalCategoryId`). Mismo patrón que el "mover en lote a otra
+   * sección" de menu-page.ts: añade en la nueva sección y, si ya estaba en alguna, borra el ítem
+   * viejo. Si no había cambiado nada, no hace ninguna llamada.
+   */
+  private syncCategoryOnSave$(restaurantProductId: string): Observable<unknown> {
+    const targetCategoryId = this.categoryId();
+    if (!targetCategoryId || targetCategoryId === this.originalCategoryId()) return of(undefined);
+
+    const menuId = this.menuId();
+    // El objetivo de este metodo es que el producto termine colocado en `targetCategoryId`, no
+    // necesariamente que la llamada de alta sea la primera vez que se coloca ahi: un producto
+    // puede estar ya en esa seccion aparte de la seccion "actual" que detectamos (p.ej. si esta
+    // colocado en mas de una seccion), asi que un conflicto de "ya esta en esa seccion" no es un
+    // fallo real aqui y se trata como éxito en vez de mostrarse como error al usuario.
+    const add$ = this.menuApi.addSectionItem(menuId, targetCategoryId, restaurantProductId).pipe(
+      catchError((err) => (mapHttpError(err).code === 'menu_item_already_in_section' ? of(undefined) : throwError(() => err))),
+    );
+    const previousCategoryId = this.originalCategoryId();
+    const previousItemId = this.originalItemId();
+    return previousCategoryId && previousItemId
+      ? this.menuApi.removeSectionItem(menuId, previousCategoryId, previousItemId).pipe(switchMap(() => add$))
+      : add$;
   }
 
   /**

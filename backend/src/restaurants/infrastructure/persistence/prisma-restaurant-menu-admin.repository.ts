@@ -27,21 +27,32 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
   }
 
   async createSection(restaurantId: string, menuId: string, data: { name: string; nameI18n?: NameI18n; isVisible: boolean }): Promise<RestaurantMenuSectionView> {
-    const count = await this.prisma.menuSection.count({ where: { menuId } });
+    // Mismo problema que en `addSectionItem`: `sortOrder` tiene su propia restriccion unica por
+    // menu (@@unique([menuId, sortOrder])) y calcularlo con `count()` choca en cuanto hay huecos
+    // (una seccion borrada de en medio), lo que antes se etiquetaba como "nombre ya usado" aunque
+    // el nombre no tuviera nada que ver.
+    const maxSortOrder = await this.prisma.menuSection.aggregate({
+      where: { menuId },
+      _max: { sortOrder: true },
+    });
+    const nextSortOrder = (maxSortOrder._max.sortOrder ?? -1) + 1;
     try {
       const section = await this.prisma.menuSection.create({
         data: {
           menuId,
           name: data.name,
           nameI18n: toNameI18nJson(data.nameI18n),
-          sortOrder: count,
+          sortOrder: nextSortOrder,
           isVisible: data.isVisible,
         },
       });
       return mapSection(section);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ApplicationErrorException(menuSectionNameTaken(data.name));
+        const target = Array.isArray(error.meta?.target) ? (error.meta!.target as string[]) : [];
+        if (target.includes('name')) {
+          throw new ApplicationErrorException(menuSectionNameTaken(data.name));
+        }
       }
       throw error;
     }
@@ -100,7 +111,18 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
       throw new ApplicationErrorException(menuSectionNotFound(sectionId));
     }
 
-    const count = await this.prisma.menuItem.count({ where: { menuSectionId: sectionId } });
+    // OJO: `sortOrder` tiene su propia restriccion unica por seccion (@@unique([menuSectionId,
+    // sortOrder])), aparte de la de (menuSectionId, restaurantProductId). Calcularlo a partir de
+    // un `count()` de filas rompe en cuanto hay huecos en la secuencia (p.ej. tras borrar un item
+    // intermedio): el `count` ya no coincide con el `sortOrder` maximo real y choca con un item
+    // existente -> P2002 -> antes esto se etiquetaba SIEMPRE como "ya esta en esa seccion" aunque
+    // el producto nunca hubiera estado ahi, y el alta fallaba en silencio una y otra vez. Se usa
+    // el maximo `sortOrder` existente + 1 para evitar el hueco.
+    const maxSortOrder = await this.prisma.menuItem.aggregate({
+      where: { menuSectionId: sectionId },
+      _max: { sortOrder: true },
+    });
+    const nextSortOrder = (maxSortOrder._max.sortOrder ?? -1) + 1;
     try {
       const item = await this.prisma.menuItem.create({
         data: {
@@ -108,14 +130,20 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           restaurantProductId: data.restaurantProductId,
           displayNameOverride: data.displayNameOverride ?? null,
           priceOverrideCents: data.priceOverrideCents ?? null,
-          sortOrder: count,
+          sortOrder: nextSortOrder,
           isVisible: true,
         },
       });
       return mapItem(item);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ApplicationErrorException(menuItemAlreadyInSection(data.restaurantProductId));
+        // Distinguimos por el campo que realmente choco: si fue `restaurantProductId`, el
+        // producto de verdad ya estaba en esa seccion; si fue `sortOrder` (aun puede pasar en una
+        // carrera muy puntual entre dos altas simultaneas), no es un duplicado real.
+        const target = Array.isArray(error.meta?.target) ? (error.meta!.target as string[]) : [];
+        if (target.includes('restaurantProductId')) {
+          throw new ApplicationErrorException(menuItemAlreadyInSection(data.restaurantProductId));
+        }
       }
       throw error;
     }

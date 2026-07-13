@@ -64,8 +64,21 @@ const MOCK_MODIFIER_GROUPS: ModifierGroup[] = [
 
 const MOCK_MENU_DATA: MenuData = {
   menuId: 'menu-1',
-  categories: [],
-  products: [],
+  categories: [{ id: 'cat-1', name: 'Principales', sortOrder: 1 }],
+  products: [
+    {
+      id: 'item-rp-1',
+      restaurantProductId: 'rp-1',
+      name: 'Hamburguesa craft',
+      categoryId: 'cat-1',
+      basePrice: 14.9,
+      available: true,
+      course: 'main',
+      type: 'simple',
+      modifierGroupIds: [],
+      preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+    },
+  ],
   modifierGroups: [],
   comboProductDefinitions: [],
 };
@@ -80,6 +93,8 @@ describe('ProductEditorPage', () => {
   const updateProduct = vi.fn();
   const createModifierGroup = vi.fn();
   const updateModifierGroup = vi.fn();
+  const addSectionItem = vi.fn();
+  const removeSectionItem = vi.fn();
   const navigateByUrl = vi.fn(async () => true);
   const toastSuccess = vi.fn();
   const toastDanger = vi.fn();
@@ -105,6 +120,8 @@ describe('ProductEditorPage', () => {
             updateProduct,
             createModifierGroup,
             updateModifierGroup,
+            addSectionItem,
+            removeSectionItem,
           },
         },
         { provide: ProductImageUploadService, useValue: { uploadProductImage } },
@@ -124,6 +141,8 @@ describe('ProductEditorPage', () => {
     updateProduct.mockReset();
     createModifierGroup.mockReset();
     updateModifierGroup.mockReset();
+    addSectionItem.mockReset().mockReturnValue(of(undefined));
+    removeSectionItem.mockReset().mockReturnValue(of(undefined));
     navigateByUrl.mockClear();
     toastSuccess.mockClear();
     toastDanger.mockClear();
@@ -222,6 +241,7 @@ describe('ProductEditorPage', () => {
     fireEvent.input(screen.getByRole('textbox', { name: /Descripción \(castellano\)/i }), {
       target: { value: 'Bocata de jamón y queso' },
     });
+    fireEvent.change(await screen.findByRole('combobox', { name: /Categoría/i }), { target: { value: 'cat-1' } });
     fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
 
     expect(createProduct).toHaveBeenCalledWith(
@@ -292,6 +312,7 @@ describe('ProductEditorPage', () => {
       target: { value: 'Bacon extra CA' },
     });
 
+    fireEvent.change(screen.getByRole('combobox', { name: /Categoría/i }), { target: { value: 'cat-1' } });
     fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
 
     expect(createModifierGroup).toHaveBeenCalledWith(
@@ -361,6 +382,7 @@ describe('ProductEditorPage', () => {
       target: { value: 'Extra bacon EN' },
     });
 
+    fireEvent.change(screen.getByRole('combobox', { name: /Categoría/i }), { target: { value: 'cat-1' } });
     fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
 
     expect(createModifierGroup).toHaveBeenCalledWith(
@@ -533,6 +555,7 @@ describe('ProductEditorPage', () => {
 
     fireEvent.input(screen.getByRole('textbox', { name: /^Nombre principal$/i }), { target: { value: 'Bocadillo' } });
     fireEvent.input(screen.getByRole('spinbutton', { name: /Precio/i }), { target: { value: '5.50' } });
+    fireEvent.change(await screen.findByRole('combobox', { name: /Categoría/i }), { target: { value: 'cat-1' } });
     fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
 
     expect(createProduct).toHaveBeenCalledWith(
@@ -563,6 +586,7 @@ describe('ProductEditorPage', () => {
     await renderPage(null);
 
     fireEvent.input(screen.getByRole('textbox', { name: /^Nombre principal$/i }), { target: { value: 'Bocadillo' } });
+    fireEvent.change(await screen.findByRole('combobox', { name: /Categoría/i }), { target: { value: 'cat-1' } });
     fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
 
     expect(toastDanger).toHaveBeenCalled();

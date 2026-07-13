@@ -83,6 +83,16 @@ export class MenuApiService {
     return this.api.setMenuItemAvailability(this.restaurantId, restaurantProductId, available);
   }
 
+  /**
+   * Publica/oculta un producto ya colocado en una sección, sin tocar su disponibilidad
+   * ("agotado"). Distinto de [toggleAvailability]: esto decide si aparece en la app en absoluto.
+   */
+  setItemVisibility(menuId: string, sectionId: string, itemId: string, visible: boolean): Observable<void> {
+    return this.api
+      .updateMenuSectionItem(this.restaurantId, menuId, sectionId, itemId, { isVisible: visible })
+      .pipe(map(() => undefined));
+  }
+
   createSection(menuId: string, name: string, isVisible = true, nameI18n?: NameI18n): Observable<MenuSectionAdminDto> {
     return this.api.createMenuSection(this.restaurantId, menuId, { name, isVisible, ...(nameI18n ? { nameI18n } : {}) });
   }
@@ -298,7 +308,11 @@ function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): P
     categoryId,
     basePrice: item.priceCents / 100,
     price: item.priceCents / 100,
-    available: item.isAvailable,
+    // `isAvailable` viene combinada con `isVisible` (para no romper el filtrado de mobile);
+    // el admin necesita el "agotado" y el "aparece en la app" como dos controles
+    // independientes, así que usamos `productAvailable` (sin combinar) para el primero.
+    available: item.productAvailable,
+    visible: item.isVisible,
     allergens: item.allergens ?? [],
     course: toProductCourse(item.defaultCourse),
     type: item.productType,

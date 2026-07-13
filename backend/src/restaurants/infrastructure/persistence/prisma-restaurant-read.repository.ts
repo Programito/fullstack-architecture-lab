@@ -147,6 +147,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
           priceCents: item.priceOverrideCents ?? item.restaurantProduct.priceCents,
           currency: item.restaurantProduct.currency,
           isAvailable: item.restaurantProduct.isAvailable && item.isVisible,
+          isVisible: item.isVisible,
           defaultCourse: (item.restaurantProduct.product.defaultCourse ?? 'other') as
             | 'drinks'
             | 'starter'

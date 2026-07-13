@@ -965,6 +965,17 @@ export class MenuPage {
       error: (err) => {
         this.addToSectionLoading.set(false);
         const appError = mapHttpError(err);
+        if (appError.code === 'menu_item_already_in_section') {
+          // El listado de "solo catalogo" puede quedarse un instante desactualizado (p.ej. si el
+          // producto se acaba de colocar en esa misma seccion desde el editor completo): si el
+          // backend dice que ya esta ahi, el resultado que buscabamos ya se cumple, asi que no se
+          // trata como un fallo -- solo se refresca para que la tarjeta deje de mostrarse como
+          // "solo catalogo".
+          this.addToSectionOpen.set(false);
+          this.addToSectionProduct.set(null);
+          this.reloadMenuData();
+          return;
+        }
         const key = appError.type === 'conflict'
           ? 'menu.product.errors.alreadyInSection'
           : 'menu.product.errors.addToSectionFailed';
@@ -977,6 +988,27 @@ export class MenuPage {
     if (!product.restaurantProductId) return;
     this.menuApi.toggleAvailability(product.restaurantProductId, !product.available).subscribe({
       complete: () => this.reloadMenuData(),
+      // Sin este handler, un fallo (404/403/500) no se veia en absoluto: el toggle simplemente
+      // no hacia nada y parecia "no funciona" sin ninguna pista de por que.
+      error: () => this.toast.danger({ title: this.translate('menu.product.errors.availabilityFailed') }),
+    });
+  }
+
+  /** `visible` es opcional (mocks/fixtures no lo rellenan); ausente == visible. */
+  protected isProductVisible(product: Product): boolean {
+    return product.visible !== false;
+  }
+
+  /**
+   * Publica/oculta el producto de la app sin tocar su disponibilidad ("agotado"). Solo aplica a
+   * productos ya colocados en una sección — los solo-catálogo (isCatalogOnly) no tienen todavía
+   * un item de sección sobre el que operar (usan "Añadir a sección" primero).
+   */
+  protected toggleVisibility(product: Product): void {
+    if (!product.categoryId || this.isCatalogOnly(product)) return;
+    this.menuApi.setItemVisibility(this.menuId(), product.categoryId, product.id, !this.isProductVisible(product)).subscribe({
+      complete: () => this.reloadMenuData(),
+      error: () => this.toast.danger({ title: this.translate('menu.product.errors.visibilityFailed') }),
     });
   }
 
@@ -1484,6 +1516,7 @@ function mapSummaryToProduct(cp: RestaurantProductSummaryDto): Product {
     basePrice: cp.priceCents / 100,
     price: cp.priceCents / 100,
     available: cp.isAvailable,
+    visible: cp.isVisible,
     allergens: cp.allergens ?? [],
     course: cp.course,
     type: cp.productType as Product['type'],

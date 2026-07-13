@@ -103,6 +103,15 @@
             />
           </div>
           <app-select
+            [label]="'menu.product.form.category' | transloco"
+            [options]="categoryOptions()"
+            [value]="categoryId()"
+            (valueChange)="categoryId.set($event)"
+          />
+          @if (!categoryId()) {
+            <p class="theme-muted text-xs">{{ 'menu.product.form.categoryRequiredHint' | transloco }}</p>
+          }
+          <app-select
             [label]="'menu.product.form.route' | transloco"
             [options]="routeOptions()"
             [value]="preparationRoute()"

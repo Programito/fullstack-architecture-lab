@@ -84,6 +84,20 @@ export type RestaurantMenuItem = {
   priceCents: number;
   currency: string;
   isAvailable: boolean;
+  // Visibilidad propia del item de sección (MenuItem.isVisible en Prisma), distinta de
+  // `isAvailable` (que ya combina disponibilidad del producto + esta visibilidad para no
+  // romper el filtrado existente en mobile). Opcional porque el dataset de demo en memoria
+  // (demo-restaurant-read.repository.ts) no la declara en cada item; ausente == true (visible).
+  // Se expone aparte para poder ofrecer en el admin un toggle "aparece en la app" que no se
+  // confunda con el de disponibilidad ("agotado"). Ver docs/superpowers/plans/2026-07-13-menu-item-visibility-toggle.md.
+  isVisible?: boolean;
+  // Disponibilidad "cruda" del RestaurantProduct (RestaurantProduct.isAvailable en Prisma), sin
+  // combinar con `isVisible`. Antes el admin solo tenia `isAvailable` (combinada), asi que el
+  // toggle de "agotado" dejaba de reflejar cambios en cuanto `isVisible` era false: el
+  // combinado se quedaba en false pase lo que pase con la disponibilidad real, y activar/
+  // desactivar "agotado" parecia no hacer nada. Opcional por la misma razon que `isVisible`
+  // (datasets de demo que no la declaran); ausente == usar `isAvailable` como antes.
+  productAvailable?: boolean;
   defaultCourse?: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   allergens?: Allergen[];

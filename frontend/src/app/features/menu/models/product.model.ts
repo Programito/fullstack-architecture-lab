@@ -106,6 +106,12 @@ export interface Product {
   categoryId: string;
   basePrice: Money;
   available: ProductAvailability;
+  // Visibilidad del item dentro de su sección (MenuItem.isVisible), distinta de `available`
+  // (que es "agotado hoy"). Controla si aparece publicado en la app del cliente. Opcional (no
+  // boolean estricto) para no obligar a los mocks/fixtures existentes a rellenarlo: ausente se
+  // trata como `true` (visible) en todos los sitios que lo leen — ver `isProductVisible` helper
+  // en menu-page.ts. Los productos solo-catálogo (categoryId === '') tampoco lo rellenan.
+  visible?: boolean;
   // string[] on purpose: menu-mock.service.ts fills this with localized display
   // text for demo search, not the backend `Allergen` enum keys. The admin form
   // and API request types (CreateProductInput/UpdateProductInput) use the

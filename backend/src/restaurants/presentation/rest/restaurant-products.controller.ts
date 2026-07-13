@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req, Res, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
-type HttpResponse = { status(code: number): HttpResponse };
+type HttpResponse = { status(code: number): { send(): void } };
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
 import { AuthGuard, type AuthenticatedRequest } from '../../../identity/presentation/rest/auth.guard';
@@ -193,7 +193,7 @@ export class RestaurantProductsController {
       changedFields: ['deleted'],
       metadata: { productId },
     });
-    res.status(HttpStatus.NO_CONTENT);
+    res.status(HttpStatus.NO_CONTENT).send();
   }
 }
 

@@ -174,6 +174,11 @@ function mapMenuItem(item: RawMenuItem) {
     priceCents: item.priceOverrideCents ?? rp.priceCents,
     currency: rp.currency,
     isAvailable: rp.isAvailable && item.isVisible,
+    // Se exponen aparte para que el admin pueda mostrar/editar "agotado" y "aparece en la app"
+    // como dos controles independientes; `isAvailable` de arriba se deja combinada tal cual
+    // porque la app movil sigue leyendo de este mismo endpoint y depende de que combine ambas.
+    isVisible: item.isVisible,
+    productAvailable: rp.isAvailable,
     defaultCourse: (product.defaultCourse ?? 'other') as 'drinks' | 'starter' | 'main' | 'dessert' | 'other',
     preparationRoute: (product.defaultPreparationRoute ?? 'direct') as 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station',
     allergens: (product.allergens ?? []) as RestaurantMenuItem['allergens'],

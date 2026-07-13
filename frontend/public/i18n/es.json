@@ -1492,7 +1492,9 @@
       "editSectionTitle": "Editar sección",
       "sectionUpdated": "Sección actualizada correctamente.",
       "sectionUpdateFailed": "No se pudo actualizar la sección.",
-      "editModifierGroupAriaLabel": "Editar grupo de modificadores"
+      "editModifierGroupAriaLabel": "Editar grupo de modificadores",
+      "visibleInApp": "Visible en la app",
+      "hiddenFromApp": "Oculto de la app"
     },
     "customizer": {
       "title": "Personalizar producto",
@@ -1605,7 +1607,9 @@
           "addComponent": "Añadir componente",
           "removeComponent": "Quitar componente",
           "noComponents": "Este plato todavía no tiene componentes."
-        }
+        },
+        "category": "Categoría",
+        "categoryRequiredHint": "Elige una categoría para que el producto aparezca en la carta."
       },
       "success": {
         "created": "Artículo creado correctamente.",
@@ -1615,11 +1619,14 @@
       },
       "errors": {
         "nameTaken": "Ya existe un artículo con ese nombre.",
+        "supplementNameTaken": "Ya existe un grupo de suplementos con ese nombre para otro artículo.",
         "saveFailed": "No se pudo guardar el artículo.",
         "loadFailed": "No se pudo cargar el artículo.",
         "deleteFailed": "No se pudo eliminar el artículo.",
         "alreadyInSection": "El artículo ya está en esa sección.",
-        "addToSectionFailed": "No se pudo añadir el artículo a la sección."
+        "addToSectionFailed": "No se pudo añadir el artículo a la sección.",
+        "visibilityFailed": "No se pudo cambiar la visibilidad en la app.",
+        "availabilityFailed": "No se pudo cambiar la disponibilidad del articulo."
       }
     },
     "modifierGroup": {
