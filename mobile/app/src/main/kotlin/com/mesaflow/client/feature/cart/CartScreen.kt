@@ -27,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -223,13 +224,14 @@ private fun CartContent(
         }
         Button(
             onClick = onSubmit,
+            enabled = !isSubmitting,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
         ) {
             if (isSubmitting) {
                 CircularProgressIndicator(
                     modifier = Modifier.height(20.dp).width(20.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = LocalContentColor.current,
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(stringResource(R.string.cart_submit))

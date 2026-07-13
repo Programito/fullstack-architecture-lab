@@ -42,7 +42,9 @@ object MenuFilter {
             .map { section ->
                 section.copy(
                     items = section.items.filter { item ->
-                        matchesQuery(item, normalizedQuery) && excludedAllergens.none { it in item.allergens }
+                        item.isAvailable &&
+                            matchesQuery(item, normalizedQuery) &&
+                            excludedAllergens.none { it in item.allergens }
                     },
                 )
             }

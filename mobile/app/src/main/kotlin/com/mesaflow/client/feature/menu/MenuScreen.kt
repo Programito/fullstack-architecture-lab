@@ -56,7 +56,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
@@ -521,12 +520,10 @@ private fun MenuItemCard(item: MenuItem, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .clickable(
-                enabled = item.isAvailable,
                 onClickLabel = openLabel,
                 role = Role.Button,
                 onClick = onClick,
-            )
-            .alpha(if (item.isAvailable) 1f else 0.5f),
+            ),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -567,15 +564,7 @@ private fun MenuItemCard(item: MenuItem, onClick: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.height(4.dp))
-                if (item.isAvailable) {
-                    PriceText(amountCents = item.priceCents, currencyCode = item.currency)
-                } else {
-                    Text(
-                        text = stringResource(R.string.menu_unavailable),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+                PriceText(amountCents = item.priceCents, currencyCode = item.currency)
                 if (item.allergens.isNotEmpty()) {
                     Spacer(Modifier.height(2.dp))
                     AllergenBadge(allergens = item.allergens)

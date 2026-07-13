@@ -12,6 +12,10 @@
     <string name="entry_error_network">No connection. Check your network and try again.</string>
     <string name="entry_error_unauthorized">Could not sign in. Please try again.</string>
     <string name="entry_error_generic">Something went wrong. Please try again.</string>
+    <string name="entry_readiness_warming_up_title">We\'re waking up the service</string>
+    <string name="entry_readiness_warming_up_description">The first request can take a few seconds. We keep retrying in the background.</string>
+    <string name="entry_readiness_down_title">The service isn\'t responding right now</string>
+    <string name="entry_readiness_down_description">We keep trying to reconnect. If this continues, please try again in a few minutes.</string>
     <string name="entry_manual_entry_open">Can\'t scan? Enter the code</string>
     <string name="entry_manual_entry_title">Table code</string>
     <string name="entry_manual_entry_hint">Ask staff for your table\'s code or link and enter it here.</string>
@@ -22,7 +26,6 @@
     <string name="menu_table_label">Table: %1$s</string>
     <string name="menu_search_hint">Search the menu</string>
     <string name="menu_all_categories">All</string>
-    <string name="menu_unavailable">Sold out</string>
     <string name="menu_error_load">The menu could not be loaded.</string>
     <string name="menu_empty_results">No results for your search.</string>
     <string name="menu_pending_submission">Your order could not be sent. Tap here to try again.</string>

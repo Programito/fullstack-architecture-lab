@@ -197,6 +197,54 @@ class DemoToOrderFlowTest {
     }
 
     /**
+     * Volver a elegir mesa empieza un pedido nuevo: si el cliente sale de la
+     * mesa con productos en el carrito sin llegar a pedir y vuelve a entrar
+     * (aunque sea a la misma mesa demo), el carrito de la sesión anterior no
+     * debe colarse en la carta de la mesa recién elegida (EntryViewModel.
+     * signInAndEnter limpia CartRepository antes de guardar el nuevo contexto).
+     */
+    @Test
+    fun volverAElegirMesaBorraElCarritoDeLaSesionAnterior() {
+        val activity = composeRule.activity
+        FakeBackend.enqueueDemoLoginAndMenu(server)
+
+        composeRule.onNodeWithText(activity.getString(R.string.entry_demo_mode)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(FakeBackend.PRODUCT_NAME).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(FakeBackend.PRODUCT_NAME).performClick()
+
+        val addLabel = activity.getString(R.string.configurator_add_for).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(addLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(addLabel, substring = true)[0].performClick()
+
+        // El carrito tiene 1 producto: la barra flotante lo confirma.
+        val cartFabLabel = activity.getString(R.string.cart_fab_label).substringBefore("%1")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(cartFabLabel, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Sale de la mesa sin pedir: Ajustes -> "Salir de la mesa" -> confirmar.
+        composeRule.onNodeWithContentDescription(activity.getString(R.string.settings_open)).performClick()
+        composeRule.onNodeWithText(activity.getString(R.string.settings_exit_table_button)).performClick()
+        composeRule.onNodeWithText(activity.getString(R.string.settings_exit_table_confirm_button)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(activity.getString(R.string.entry_demo_mode)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Vuelve a elegir mesa (modo demo de nuevo, misma mesa demo fija).
+        FakeBackend.enqueueDemoLoginAndMenu(server)
+        composeRule.onNodeWithText(activity.getString(R.string.entry_demo_mode)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(FakeBackend.PRODUCT_NAME).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onAllNodesWithText(cartFabLabel, substring = true).assertCountEquals(0)
+    }
+
+    /**
      * Cubre el aviso persistente (CartRepository.hasFailedSubmission): el
      * envío falla, el cliente ignora el Snackbar y vuelve a la Carta con la
      * flecha de "Volver" en vez de reintentar ahí mismo — el banner debe

@@ -12,6 +12,10 @@
     <string name="entry_error_network">No hi ha connexió. Comprova la xarxa i torna-ho a provar.</string>
     <string name="entry_error_unauthorized">No s\'ha pogut iniciar sessió. Torna-ho a provar.</string>
     <string name="entry_error_generic">Alguna cosa no ha anat bé. Torna-ho a provar.</string>
+    <string name="entry_readiness_warming_up_title">Estem despertant el servei</string>
+    <string name="entry_readiness_warming_up_description">El primer accés pot trigar uns segons. Ho seguim intentant en segon pla.</string>
+    <string name="entry_readiness_down_title">Ara mateix el servei no respon</string>
+    <string name="entry_readiness_down_description">Seguim intentant recuperar la connexió. Si persisteix, torna-ho a provar d\'aquí uns minuts.</string>
     <string name="entry_manual_entry_open">No pots escanejar? Introdueix el codi</string>
     <string name="entry_manual_entry_title">Codi de la taula</string>
     <string name="entry_manual_entry_hint">Demana al personal el codi o l\'enllaç de la teva taula i introdueix-lo aquí.</string>
@@ -22,7 +26,6 @@
     <string name="menu_table_label">Taula: %1$s</string>
     <string name="menu_search_hint">Cerca a la carta</string>
     <string name="menu_all_categories">Tot</string>
-    <string name="menu_unavailable">Esgotat</string>
     <string name="menu_error_load">No s\'ha pogut carregar la carta.</string>
     <string name="menu_empty_results">No hi ha resultats per a la teva cerca.</string>
     <string name="menu_pending_submission">No s\'ha pogut enviar la teva comanda. Toca aquí per tornar-ho a provar.</string>

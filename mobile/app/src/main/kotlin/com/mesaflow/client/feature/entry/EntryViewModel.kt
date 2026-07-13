@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.data.AuthRepository
+import com.mesaflow.client.core.data.CartRepository
+import com.mesaflow.client.core.data.PlatformReadinessRepository
 import com.mesaflow.client.core.datastore.SessionStore
+import com.mesaflow.client.core.model.PlatformStatus
 import com.mesaflow.client.core.model.TableContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,9 +30,14 @@ import kotlinx.coroutines.launch
  */
 const val DEMO_TABLE_ID = "table-1"
 
+/** Cada cuanto se vuelve a comprobar el estado de la plataforma mientras no esta `ready`. */
+private const val READINESS_POLL_INTERVAL_MS = 5_000L
+
 data class EntryUiState(
     val isLoading: Boolean = false,
     val error: EntryError? = null,
+    /** null hasta la primera comprobacion; distinto de [PlatformStatus.READY] mientras la base gratuita despierta. */
+    val readinessStatus: PlatformStatus? = null,
 )
 
 enum class EntryError { QR_INVALID, NETWORK, UNAUTHORIZED, GENERIC }
@@ -37,6 +46,8 @@ enum class EntryError { QR_INVALID, NETWORK, UNAUTHORIZED, GENERIC }
 class EntryViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val sessionStore: SessionStore,
+    private val platformReadinessRepository: PlatformReadinessRepository,
+    private val cartRepository: CartRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntryUiState())
@@ -44,6 +55,27 @@ class EntryViewModel @Inject constructor(
 
     private val _navigateToMenu = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val navigateToMenu: SharedFlow<Unit> = _navigateToMenu.asSharedFlow()
+
+    init {
+        watchReadiness()
+    }
+
+    /**
+     * La base de datos es de hosting gratuito y puede quedarse dormida por inactividad, asi que
+     * el primer acceso puede tardar unos segundos en responder. Se comprueba al abrir la pantalla
+     * de entrada y, si no esta `ready`, se reintenta cada [READINESS_POLL_INTERVAL_MS] hasta que lo
+     * este, mostrando un aviso mientras tanto (ver [EntryScreen]).
+     */
+    private fun watchReadiness() {
+        viewModelScope.launch {
+            while (true) {
+                val status = platformReadinessRepository.check()
+                _uiState.update { it.copy(readinessStatus = status) }
+                if (status == PlatformStatus.READY) break
+                delay(READINESS_POLL_INTERVAL_MS)
+            }
+        }
+    }
 
     /** Resultado del escaner: valida el QR y entra en el restaurante escaneado. */
     fun onQrScanned(rawValue: String?) {
@@ -82,6 +114,11 @@ class EntryViewModel @Inject constructor(
                         _uiState.update { it.copy(isLoading = false, error = EntryError.GENERIC) }
                         return@launch
                     }
+                    // Elegir mesa (incluso si es la misma de antes) empieza un pedido nuevo: un
+                    // carrito de una sesion anterior (mesa distinta, o la sesion expiro y volvio
+                    // aqui con el carrito todavia en Room) no debe colarse en la mesa recien
+                    // elegida. El carrito esta indexado solo por restaurantId (ver CartRepository).
+                    cartRepository.clear(context.restaurantId)
                     sessionStore.saveTableContext(context)
                     _uiState.update { it.copy(isLoading = false) }
                     _navigateToMenu.tryEmit(Unit)

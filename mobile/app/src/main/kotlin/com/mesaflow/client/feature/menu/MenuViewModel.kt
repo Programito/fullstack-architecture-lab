@@ -286,9 +286,8 @@ class MenuViewModel @Inject constructor(
         }
     }
 
-    /** Abre el configurador para un producto disponible. */
+    /** Abre el configurador para un producto (los agotados ya no llegan aqui, se filtran en [MenuFilter]). */
     fun onItemClick(item: MenuItem) {
-        if (!item.isAvailable) return
         _uiState.update { it.copy(configuringItem = item) }
     }
 

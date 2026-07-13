@@ -27,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -268,13 +269,14 @@ private fun CheckoutContent(
         Spacer(Modifier.weight(1f))
         Button(
             onClick = onPay,
+            enabled = !isProcessing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (isProcessing) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = LocalContentColor.current,
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(stringResource(R.string.checkout_processing))

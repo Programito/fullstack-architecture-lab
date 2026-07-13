@@ -13,6 +13,10 @@
     <string name="entry_error_network">No hay conexión. Comprueba tu red e inténtalo de nuevo.</string>
     <string name="entry_error_unauthorized">No se ha podido iniciar sesión. Inténtalo de nuevo.</string>
     <string name="entry_error_generic">Algo no ha ido bien. Inténtalo de nuevo.</string>
+    <string name="entry_readiness_warming_up_title">Estamos despertando el servicio</string>
+    <string name="entry_readiness_warming_up_description">El primer acceso puede tardar unos segundos. Seguimos intentándolo en segundo plano.</string>
+    <string name="entry_readiness_down_title">Ahora mismo el servicio no responde</string>
+    <string name="entry_readiness_down_description">Seguimos intentando recuperar la conexión. Si persiste, inténtalo de nuevo en unos minutos.</string>
     <string name="entry_manual_entry_open">¿No puedes escanear? Introduce el código</string>
     <string name="entry_manual_entry_title">Código de la mesa</string>
     <string name="entry_manual_entry_hint">Pide al personal el código o enlace de tu mesa e introdúcelo aquí.</string>
@@ -23,7 +27,6 @@
     <string name="menu_table_label">Mesa: %1$s</string>
     <string name="menu_search_hint">Buscar en la carta</string>
     <string name="menu_all_categories">Todo</string>
-    <string name="menu_unavailable">Agotado</string>
     <string name="menu_error_load">No se ha podido cargar la carta.</string>
     <string name="menu_empty_results">No hay resultados para tu búsqueda.</string>
     <string name="menu_pending_submission">No se ha podido enviar tu pedido. Toca aquí para intentarlo de nuevo.</string>

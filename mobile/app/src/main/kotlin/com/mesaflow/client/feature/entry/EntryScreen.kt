@@ -3,16 +3,21 @@ package com.mesaflow.client.feature.entry
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +45,7 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.mesaflow.client.R
+import com.mesaflow.client.core.model.PlatformStatus
 
 /**
  * Pantalla de entrada: escanear el QR de la mesa (Google code scanner,
@@ -117,6 +123,15 @@ fun EntryScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                val readinessStatus = uiState.readinessStatus
+                when (readinessStatus) {
+                    PlatformStatus.WARMING_UP, PlatformStatus.DOWN -> {
+                        Spacer(Modifier.height(24.dp))
+                        PlatformReadinessBanner(status = readinessStatus)
+                    }
+                    else -> Unit
+                }
                 Spacer(Modifier.height(48.dp))
 
                 if (uiState.isLoading) {
@@ -178,6 +193,53 @@ fun EntryScreen(
                     viewModel.onQrScanned(code)
                 },
             )
+        }
+    }
+}
+
+/**
+ * Aviso de que el backend (base de datos de hosting gratuito) sigue
+ * despertando o no responde, ver [EntryViewModel.watchReadiness]. No bloquea
+ * el escaner ni el modo demo: el cliente puede seguir intentando entrar
+ * mientras tanto, igual que en el login web (`PlatformReadinessService`).
+ */
+@Composable
+private fun PlatformReadinessBanner(status: PlatformStatus, modifier: Modifier = Modifier) {
+    val isDown = status == PlatformStatus.DOWN
+    val containerColor = if (isDown) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.tertiaryContainer
+    val contentColor = if (isDown) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onTertiaryContainer
+    Card(
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = stringResource(
+                        if (isDown) R.string.entry_readiness_down_title else R.string.entry_readiness_warming_up_title,
+                    ),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = contentColor,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        if (isDown) R.string.entry_readiness_down_description else R.string.entry_readiness_warming_up_description,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor,
+                )
+            }
         }
     }
 }

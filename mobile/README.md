@@ -43,6 +43,18 @@ app/src/main/kotlin/com/mesaflow/client/
 └── navigation/              # (Fase 3) claves de ruta serializables + back stack
 ```
 
+## Entrada y mesa
+
+- **Readiness del backend**: al abrir la pantalla de entrada, `EntryViewModel` consulta
+  `GET /health/readiness` y reintenta cada 5s mientras no esté `ready`, mostrando un aviso
+  ("despertando"/"caído") sin bloquear el escáner ni el modo demo. Espeja el mismo patrón que
+  ya usa el login del frontend (`PlatformReadinessService`): la base de datos es de hosting
+  gratuito y puede quedarse dormida por inactividad.
+- **Elegir mesa borra el carrito anterior**: `EntryViewModel.signInAndEnter` limpia
+  `CartRepository` para el restaurante antes de guardar el nuevo `TableContext`. Cubre tanto
+  "salir de la mesa y volver a entrar" como el caso silencioso de sesión expirada (el cliente
+  vuelve a Entry con el carrito de la mesa anterior todavía en Room).
+
 ## Flujo del pedido contra el backend
 
 Al pulsar "Enviar pedido a cocina", `OrderRepository.submitCart()` encadena estas llamadas:

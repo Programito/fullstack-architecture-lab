@@ -9,7 +9,8 @@ import okhttp3.mockwebserver.MockWebServer
  * respuestas se encolan en el mismo orden en que la app las dispara; no hay
  * llamadas concurrentes en ninguno de los dos flujos criticos (demo -> carta ->
  * configurar -> pedir; pedir -> pagar -> aceptado), asi que un simple `enqueue`
- * por llamada basta y mantiene los tests legibles.
+ * por llamada basta y mantiene los tests legibles. La unica excepcion es el
+ * chequeo de readiness, ver [enqueueDemoLoginAndMenu].
  */
 object FakeBackend {
 
@@ -26,8 +27,16 @@ object FakeBackend {
 
     fun start(): MockWebServer = MockWebServer().apply { start() }
 
-    /** Encola demo-login + carta: lo necesario para llegar de Entry a Menu. */
+    /**
+     * Encola readiness "ready" + demo-login + carta: lo necesario para llegar de Entry a Menu.
+     * `EntryViewModel` comprueba `GET /health/readiness` en cuanto se abre la pantalla de
+     * entrada -es decir, antes de que el test pueda encolar nada-, y el `QueueDispatcher` de
+     * MockWebServer bloquea esa peticion hasta que haya una respuesta disponible; por eso la
+     * respuesta de readiness va primera en la cola, para que la consuma esa peticion ya esperando
+     * y las dos siguientes (demo-login, carta) le lleguen en orden al pedido real del test.
+     */
     fun enqueueDemoLoginAndMenu(server: MockWebServer) {
+        server.enqueue(readinessResponse())
         server.enqueue(demoLoginResponse())
         server.enqueue(menuResponse())
     }
@@ -93,6 +102,11 @@ object FakeBackend {
     fun enqueueServerError(server: MockWebServer) {
         server.enqueue(MockResponse().setResponseCode(500))
     }
+
+    private fun readinessResponse(): MockResponse = jsonResponse(
+        200,
+        """{"status":"ready","database":"ready","durationMs":1}""",
+    )
 
     private fun demoLoginResponse(): MockResponse = jsonResponse(
         201,

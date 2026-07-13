@@ -373,7 +373,7 @@
                         <img loading="lazy"
                           [src]="product.imageUrl"
                           [alt]="productImageAlt(product)"
-                          class="h-full w-full object-cover"
+                          class="h-full w-full object-contain"
                           [class.opacity-40]="!product.available"
                           [class.grayscale]="!product.available"
                         />
@@ -428,7 +428,7 @@
                       </div>
                     </div>
                   </button>
-                  <div class="mt-auto flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2.5 dark:border-white/10 sm:flex-nowrap" (click)="$event.stopPropagation()">
+                  <div class="mt-auto flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2.5 dark:border-white/10" (click)="$event.stopPropagation()">
                     <app-switch
                       size="sm"
                       variant="primary"
@@ -492,7 +492,7 @@
                     >
                       <div class="flex h-18 w-18 items-center justify-center overflow-hidden rounded-md border bg-black/5 dark:bg-white/5">
                         @if (product.imageUrl) {
-                          <img loading="lazy" [src]="product.imageUrl" [alt]="productImageAlt(product)" class="h-full w-full object-cover" />
+                          <img loading="lazy" [src]="product.imageUrl" [alt]="productImageAlt(product)" class="h-full w-full object-contain" />
                         } @else {
                           <span class="theme-muted text-xs font-medium">{{ 'menu.page.noImage' | transloco }}</span>
                         }

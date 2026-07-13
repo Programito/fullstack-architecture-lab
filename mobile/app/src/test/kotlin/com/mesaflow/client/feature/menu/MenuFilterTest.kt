@@ -20,6 +20,7 @@ class MenuFilterTest {
         modifierGroups: List<ModifierGroup> = emptyList(),
         platterComponents: List<PlatterComponent> = emptyList(),
         allergens: List<Allergen> = emptyList(),
+        isAvailable: Boolean = true,
     ) = MenuItem(
         id = id,
         restaurantProductId = "rp-$id",
@@ -29,7 +30,7 @@ class MenuFilterTest {
         productType = ProductType.SIMPLE,
         priceCents = 1000,
         currency = "EUR",
-        isAvailable = true,
+        isAvailable = isAvailable,
         modifierGroups = modifierGroups,
         comboDefinition = null,
         platterComponents = platterComponents,
@@ -155,6 +156,34 @@ class MenuFilterTest {
             sections, query = "salmon", selectedSectionId = null,
             excludedAllergens = setOf(Allergen.FISH),
         )
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `los items agotados no aparecen`() {
+        val withUnavailable = listOf(
+            MenuSection(
+                id = "postres", name = "Postres", sortOrder = 1,
+                items = listOf(
+                    item("coulant", "Coulant de chocolate"),
+                    item("tarta", "Tarta de queso", isAvailable = false),
+                ),
+            ),
+        )
+        val result = MenuFilter.filter(withUnavailable, query = "", selectedSectionId = null)
+        val ids = result.flatMap { it.items }.map { it.id }
+        assertEquals(listOf("coulant"), ids)
+    }
+
+    @Test
+    fun `una seccion con solo items agotados desaparece`() {
+        val onlyUnavailable = listOf(
+            MenuSection(
+                id = "postres", name = "Postres", sortOrder = 1,
+                items = listOf(item("tarta", "Tarta de queso", isAvailable = false)),
+            ),
+        )
+        val result = MenuFilter.filter(onlyUnavailable, query = "", selectedSectionId = null)
         assertTrue(result.isEmpty())
     }
 }

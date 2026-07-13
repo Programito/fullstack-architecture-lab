@@ -9,6 +9,15 @@ export function createPrismaClientOptions(): Prisma.PrismaClientOptions {
   }
 
   return {
-    adapter: new PrismaPg(connectionString),
+    adapter: new PrismaPg({
+      connectionString,
+      // Neon (hosting gratuito) limita muy pocas conexiones simultaneas; el pool por
+      // defecto de `pg` (max 10) las agota enseguida en cuanto coinciden el servidor,
+      // el polling de readiness y algun script (seed) sobre la misma base. El timeout
+      // mas largo da margen al cold start del compute en vez de fallar con "Failed to
+      // acquire permit to connect to the database".
+      max: 5,
+      connectionTimeoutMillis: 10_000,
+    }),
   };
 }

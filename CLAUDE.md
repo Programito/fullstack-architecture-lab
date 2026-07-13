@@ -1,13 +1,14 @@
 # MesaFlow POS — Guía de Claude Code
 
-Proyecto de fin de máster: TPV full-stack de restaurante (MesaFlow). Frontend Angular + backend NestJS con arquitectura limpia.
+Proyecto de fin de máster: TPV full-stack de restaurante (MesaFlow), con app cliente Android. Frontend Angular + backend NestJS con arquitectura limpia + app móvil Kotlin/Compose.
 
 ## Estructura del repositorio
 
 ```txt
 .
 ├── frontend/   # Angular, Tailwind CSS, Transloco, Storybook, Vitest, Testing Library, Playwright
-└── backend/    # NestJS, Prisma, PostgreSQL, Vitest, Supertest, Testcontainers
+├── backend/    # NestJS, Prisma, PostgreSQL, Vitest, Supertest, Testcontainers
+└── mobile/     # Android cliente: Kotlin, Jetpack Compose, Hilt, Room, Retrofit
 ```
 
 Codex skills originales del proyecto en `.codex/skills/`.
@@ -20,7 +21,9 @@ Codex skills originales del proyecto en `.codex/skills/`.
 
 **Backend:** NestJS 11, Prisma, PostgreSQL, Swagger, Vitest, Supertest, Testcontainers.
 
-**Herramientas:** pnpm, TypeScript, Docker.
+**Mobile:** Kotlin, Jetpack Compose (Material 3), Hilt, Room, Retrofit/OkHttp, kotlinx.serialization, DataStore, JUnit + MockWebServer, Compose UI Test (androidTest).
+
+**Herramientas:** pnpm, TypeScript, Docker, Gradle (mobile).
 
 ---
 
@@ -62,6 +65,21 @@ Convención de archivos de test backend:
 
 No ejecutar servidores Angular ni Storybook ocultos en segundo plano. Mantenerlos visibles para ver errores.
 
+### Mobile
+
+```bash
+./gradlew :app:testDebugUnitTest                                              # unitarios (JVM, sin emulador)
+./gradlew :app:testDebugUnitTest --tests "com.mesaflow.client.pkg.ClaseTest"   # spec concreto
+./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin           # compila main + androidTest sin ejecutar
+./gradlew :app:connectedDebugAndroidTest                                      # instrumentados (requiere emulador/dispositivo)
+./gradlew :app:assembleDebug
+```
+
+En Windows, si `JAVA_HOME` no está configurado en la shell, usar el JDK de Android Studio antes de invocar Gradle:
+`$env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'` (PowerShell).
+
+Los tests unitarios (`app/src/test/`) corren en la JVM y no necesitan emulador. Los instrumentados (`app/src/androidTest/`) sí — si el entorno no tiene un emulador/dispositivo conectado, no se pueden ejecutar; usar `compileDebugAndroidTestKotlin` para al menos detectar errores de compilación y pedir verificación manual en Android Studio/CI antes de cerrar el cambio.
+
 ---
 
 ## Routing de tareas
@@ -74,8 +92,11 @@ No ejecutar servidores Angular ni Storybook ocultos en segundo plano. Mantenerlo
 | Nuevo componente UI compartido | Scaffold componente UI + TDD frontend |
 | Logs, auditoría, retención, dashboard `/developer/logs` | Workflow NestJS backend + §Observabilidad y auditoría |
 | Realtime de pedidos, `RealtimeGateway`, `RealtimeService`, sockets | Workflow NestJS backend + TDD frontend + §Realtime de pedidos |
+| App cliente Android: Kotlin, Compose, ViewModel, Hilt, Room, Retrofit | TDD mobile Kotlin |
+| Cambios en `mobile/app/build.gradle.kts`, `libs.versions.toml`, wrapper Gradle/AGP | TDD mobile Kotlin + `.codex/skills/documenting-mobile-kotlin-changes/SKILL.md` |
 | Verificación final frontend | Lista de comprobación frontend |
 | Verificación final backend | Lista de comprobación backend |
+| Verificación final mobile | Lista de comprobación mobile |
 | Diagramas Mermaid en docs | Validador Mermaid |
 
 Preferir una skill principal; añadir secundaria solo cuando aporta valor procedimental distinto.
@@ -346,11 +367,72 @@ Puntos que rompen fácil si se tocan sin cuidado:
 
 ---
 
+## Mobile Android/Kotlin
+
+App cliente para que el comensal pida desde su mesa (escaneando QR o en modo demo). Kotlin + Jetpack Compose + Material 3, MVVM/UDF, Hilt para DI. Plan completo en `docs/plan-mobile-app-cliente.md`.
+
+### Arquitectura feature-first
+
+```txt
+mobile/app/src/main/kotlin/com/mesaflow/client/
+├── core/
+│   ├── model/          # modelos de dominio (independientes de DTOs de red)
+│   ├── data/            # repositorios: orquestan network + database + datastore
+│   ├── network/          # Retrofit APIs, DTOs (`network/dto/`), interceptors, DI (`network/di/`)
+│   ├── database/        # Room (carrito)
+│   ├── datastore/        # DataStore Preferences (sesión, mesa activa, ajustes)
+│   └── designsystem/     # tema Material 3, componentes compartidos (`designsystem/components/`)
+├── feature/<nombre>/     # pantalla + ViewModel + (a veces) lógica pura extraída y testeada aparte
+└── navigation/           # claves de ruta serializables (Nav3) + back stack
+```
+
+Preferir extender un repositorio/ViewModel existente antes de crear uno nuevo. DTOs (`network/dto/`) son un espejo del contrato del backend (`backend/src/<feature>/presentation/rest/dto/`) — nunca se exponen directamente a la UI, los repositorios mapean a `core/model/`.
+
+### Estado y ViewModels
+
+- `ViewModel` con `MutableStateFlow` privado + `StateFlow` público (`_uiState`/`uiState`), actualizado con `.update { it.copy(...) }`.
+- Eventos de navegación puntuales (no estado) vía `MutableSharedFlow<Unit>` con `extraBufferCapacity = 1` + `tryEmit`.
+- Repositorios devuelven `AppResult<T>` (`core/common/AppError.kt`): `safeApiCall { ... }` envuelve la llamada Retrofit y traduce excepciones a `AppError` tipado (`Network`, `Unauthorized`, `NotFound`, `Validation`, `Server`, `Unknown`) — la UI solo conoce esas categorías, nunca detalles técnicos ni excepciones crudas.
+- Enums que reflejan un string del backend siguen el patrón `UNKNOWN` de reserva (ver `OrderLineKitchenStatus`, `PlatformStatus`): un valor no reconocido se muestra como "actualizando"/estado neutro en vez de ocultarse u ocurrir un crash.
+
+### Persistencia
+
+- **Room** (`core/database/`): solo el carrito. `CartLineEntity` está indexado **únicamente por `restaurantId`**, no por mesa — dos mesas del mismo restaurante comparten carrito. Al re-entrar por la pantalla de entrada (escanear QR, modo demo), `EntryViewModel.signInAndEnter` limpia el carrito del restaurante antes de guardar el nuevo contexto de mesa, para que no se cuele el pedido de una sesión anterior.
+- **DataStore Preferences** (`core/datastore/`): sesión (token en memoria vía `TokenHolder`, cookie de refresh), mesa activa (`SessionStore.tableContext`), ajustes de tema/idioma (`SettingsStore`).
+
+### Red
+
+- Retrofit + OkHttp + `kotlinx.serialization` (no Gson/Moshi). DTOs en `core/network/dto/`, interfaces de API (`AuthApi`, `MenuApi`, `OrdersApi`, `HealthApi`) en `core/network/`, cableado Hilt en `core/network/di/NetworkModule.kt`.
+- `AuthInterceptor` añade el Bearer token; `TokenAuthenticator` renueva vía `/auth/refresh` en 401 (cliente de refresh aislado, sin `Authenticator`, para evitar recursión).
+- Caché HTTP en disco (ETag/`If-None-Match`) para GETs cacheables (carta, estado del pedido): el backend es de hosting gratuito, así que los sondeos repetidos deben poder resolverse en 304 sin round-trip completo.
+- **Readiness del backend**: `EntryViewModel` consulta `GET /health/readiness` al abrir la pantalla de entrada y reintenta cada 5s mientras no esté `ready`, mostrando un aviso sin bloquear el escáner/modo demo (`PlatformReadinessRepository`, nunca lanza — un fallo de red se trata igual que "despertando"). Espeja el mismo patrón que `PlatformReadinessService` en el frontend (ver login web): la base de datos es de hosting gratuito y puede quedarse dormida por inactividad.
+
+### Internacionalización
+
+- Strings en `res/values/strings.xml` (es, por defecto), `res/values-en/strings.xml`, `res/values-ca/strings.xml` — equivalente Android a Transloco. Mantener las tres traducciones completas cuando cambie texto visible.
+- Mismo tono de contenido que el resto del proyecto (ver §Frontend Angular → Tono del contenido): describir estado o siguiente acción, sin culpar al usuario.
+
+### Tests
+
+Diamante de tests igual que en frontend, adaptado a JVM/Android:
+
+- **Lógica pura** (parsers, filtros): spec JUnit junto al fuente (`app/src/test/`), sin mocks — ver `MenuFilterTest`.
+- **Repositorios con red**: spec JUnit con `MockWebServer` (`app/src/test/`) — ver `AuthRepositoryTest`, `PlatformReadinessRepositoryTest`.
+- **Repositorios con Room**: spec JUnit con un fake del DAO en memoria (mismo contrato observable que Room) — ver `CartRepositoryTest`.
+- **Flujos críticos end-to-end**: Compose UI Test instrumentado (`app/src/androidTest/`), Hilt (`@HiltAndroidTest`) + `FakeBackend` (`testutil/FakeBackend.kt`) como backend falso sobre `MockWebServer`.
+
+**`FakeBackend` usa una cola FIFO estricta** (`server.enqueue(...)` en el mismo orden en que la app dispara las llamadas), no un dispatcher por ruta — más simple de leer, pero frágil ante llamadas de red que se disparan solas al abrir una pantalla (p. ej. el chequeo de readiness en `EntryViewModel`, que se lanza en `init` antes de que el cuerpo del test pueda encolar nada). Si se añade una llamada de red nueva que se dispare automáticamente al componer una pantalla, hay que decidir explícitamente cómo encaja en esa cola (ver el comentario en `enqueueDemoLoginAndMenu` para el precedente con readiness) en vez de asumir que el test seguirá pasando.
+
+**Los tests instrumentados no se pueden ejecutar en muchos entornos CLI** (sin emulador/dispositivo Android). Cuando no haya uno disponible: ejecutar `./gradlew :app:testDebugUnitTest` (cubre toda la lógica no ligada a Compose/Android) y `./gradlew :app:compileDebugAndroidTestKotlin` (detecta errores de compilación en `androidTest` sin ejecutarlo), y pedir explícitamente verificación manual en Android Studio o CI antes de dar el cambio por cerrado — no asumir que compila-luego-pasa.
+
+---
+
 ## Documentación
 
 - Docs técnicos frontend: `frontend/docs/`
 - Docs UI Storybook: `frontend/src/app/shared/ui/docs/`
 - Docs técnicos backend: `backend/docs/`
+- Doc técnica mobile: `mobile/README.md` (setup, stack fijado, flujo de pedido contra el backend, entrada/mesa, build release)
 
 Incluir diagramas Mermaid cerca del texto que explican cuando un diagrama aclara la arquitectura, flujos o estrategia de tests.
 
@@ -411,9 +493,33 @@ Checklist final:
 
 ---
 
+## Lista de comprobación — Verificación final mobile
+
+Antes de cerrar trabajo mobile:
+
+| Tipo de cambio | Verificación |
+|---|---|
+| Lógica pura (parser, filtro) | Spec JUnit enfocada en `app/src/test/` |
+| Repositorio con red | Spec con `MockWebServer` |
+| Repositorio con Room | Spec con fake del DAO en memoria |
+| ViewModel, pantalla, navegación | `compileDebugKotlin` + `compileDebugAndroidTestKotlin`, más test instrumentado si toca un flujo crítico |
+| Nueva llamada de red disparada al abrir una pantalla | Revisar si `FakeBackend` necesita ajuste (cola FIFO, ver §Mobile Android/Kotlin → Tests) |
+| Cambio i18n | `values/strings.xml` + `values-en/` + `values-ca/` completos |
+| Toolchain (`build.gradle.kts`, `libs.versions.toml`, wrapper) | `.codex/skills/documenting-mobile-kotlin-changes/SKILL.md` + `mobile/README.md` |
+
+Checklist final:
+
+- No se revirtieron cambios no relacionados del usuario.
+- `./gradlew :app:testDebugUnitTest` en verde.
+- `./gradlew :app:compileDebugAndroidTestKotlin` en verde si se tocó algo bajo `app/src/androidTest/`.
+- Si no hay emulador/dispositivo disponible para ejecutar `androidTest`, decirlo explícitamente y pedir verificación manual — no darlo por pasado.
+- Traducciones completas para `es`, `en` y `ca` si cambió texto visible.
+
+---
+
 ## Notas generales de edición
 
-- Usar `pnpm` para comandos de dependencias y scripts.
+- Usar `pnpm` para comandos de dependencias y scripts (frontend/backend); `./gradlew` para mobile.
 - Mantener ediciones acotadas al componente o feature solicitado.
 - No eliminar ni revertir cambios no relacionados del usuario.
 - Preferir CSS legible y convenciones existentes del proyecto sobre añadir nuevas abstracciones prematuramente.
