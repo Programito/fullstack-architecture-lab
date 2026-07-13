@@ -4,7 +4,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.mesaflow.client.core.data.CartRepository
@@ -143,7 +143,8 @@ class DemoToOrderFlowTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeRule.onNodeWithText(activity.getString(R.string.order_line_status_preparing)).assertDoesNotExist()
+        composeRule.onAllNodesWithText(activity.getString(R.string.order_line_status_preparing))
+            .assertCountEquals(0)
     }
 
     /**

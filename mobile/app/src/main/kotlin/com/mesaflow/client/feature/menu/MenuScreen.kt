@@ -66,7 +66,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.compose.AsyncImage
 import com.mesaflow.client.R
 import com.mesaflow.client.core.common.PriceFormatter
 import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
@@ -74,6 +73,7 @@ import com.mesaflow.client.core.designsystem.WindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.components.CategoryChip
 import com.mesaflow.client.core.designsystem.components.EmptyState
 import com.mesaflow.client.core.designsystem.components.ErrorState
+import com.mesaflow.client.core.designsystem.components.LoadingAsyncImage
 import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.components.SkeletonBox
 import com.mesaflow.client.core.model.Allergen
@@ -533,7 +533,7 @@ private fun MenuItemCard(item: MenuItem, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (item.imageUrl != null) {
-                AsyncImage(
+                LoadingAsyncImage(
                     model = item.imageUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

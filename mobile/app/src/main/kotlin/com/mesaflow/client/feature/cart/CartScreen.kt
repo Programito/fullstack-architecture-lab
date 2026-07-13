@@ -49,12 +49,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.compose.AsyncImage
 import com.mesaflow.client.R
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.PriceFormatter
 import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.components.EmptyState
+import com.mesaflow.client.core.designsystem.components.LoadingAsyncImage
 import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.components.QuantityStepper
 import com.mesaflow.client.core.designsystem.expandedContentMaxWidth
@@ -314,7 +314,7 @@ private fun CartLineThumbnail(imageUrl: String?) {
         .clip(RoundedCornerShape(12.dp))
 
     if (imageUrl != null) {
-        AsyncImage(
+        LoadingAsyncImage(
             model = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
