@@ -538,6 +538,79 @@ describe('RestaurantPosReservationsPage', () => {
     expect(screen.queryByRole('region', { name: 'Comidas' })).toBeNull();
   });
 
+  it('hides the occupancy strip while a date change reload is pending', async () => {
+    const i18n = provideI18nTesting();
+    const reloadSubject = new Subject<RestaurantReservationDto[]>();
+    const apiMock = {
+      ...createApiMock(),
+      getRestaurantReservations: vi.fn()
+        .mockReturnValueOnce(of([
+          {
+            id: 'reservation-existing',
+            customerId: null,
+            customerNameSnapshot: 'Reserva anterior',
+            customerPhoneSnapshot: null,
+            partySize: 2,
+            reservationAt: todayAt(13, 30),
+            durationMinutes: 90,
+            status: 'confirmed' as const,
+            notes: null,
+            tableIds: [],
+            tables: [],
+          },
+        ]))
+        .mockReturnValueOnce(reloadSubject.asObservable()),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    expect(screen.getByLabelText('Carga por servicio')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Día anterior' }));
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.queryByLabelText('Carga por servicio')).toBeNull();
+  });
+
+  it('hides the occupancy strip after a date reload fails', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = {
+      ...createApiMock(),
+      getRestaurantReservations: vi.fn()
+        .mockReturnValueOnce(of([
+          {
+            id: 'reservation-existing',
+            customerId: null,
+            customerNameSnapshot: 'Reserva anterior',
+            customerPhoneSnapshot: null,
+            partySize: 2,
+            reservationAt: todayAt(13, 30),
+            durationMinutes: 90,
+            status: 'confirmed' as const,
+            notes: null,
+            tableIds: [],
+            tables: [],
+          },
+        ]))
+        .mockReturnValueOnce(throwError(() => new Error('network error'))),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    expect(screen.getByLabelText('Carga por servicio')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Día anterior' }));
+
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.queryByLabelText('Carga por servicio')).toBeNull();
+  });
+
   it('shows an error alert and a retry button when the initial load fails', async () => {
     const i18n = provideI18nTesting();
     const apiMock = {
@@ -688,6 +761,28 @@ describe('RestaurantPosReservationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
 
     expect(await screen.findByText('No se ha podido crear la reserva.')).toBeTruthy();
+  });
+
+  it('shows a spinner in the creation CTA while a reservation is submitting', async () => {
+    const i18n = provideI18nTesting();
+    const createSubject = new Subject<RestaurantReservationDto>();
+    const apiMock = {
+      ...createApiMock(),
+      createRestaurantReservation: vi.fn(() => createSubject.asObservable()),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    fireEvent.input(within(drawer).getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
+
+    expect(within(drawer).getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }).hasAttribute('disabled')).toBe(true);
+    expect(drawer.querySelector('.spinner')).toBeTruthy();
   });
 
   it('shows a success toast after a reservation action completes', async () => {

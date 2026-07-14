@@ -45,6 +45,60 @@ describe('Dialog', () => {
     expect(closed).toHaveBeenCalledTimes(1);
   });
 
+  it('only closes the topmost dialog on Escape', async () => {
+    const drawerClosed = vi.fn();
+    const confirmationClosed = vi.fn();
+
+    await render(
+      `
+        <app-dialog [open]="drawerOpen" title="Crear reserva" panelVariant="drawer" (closed)="drawerOpen = false; drawerClosed()">
+          Contenido del cajon
+        </app-dialog>
+        <app-dialog [open]="confirmationOpen" title="Confirmar cancelacion" (closed)="confirmationOpen = false; confirmationClosed()">
+          Confirmacion
+        </app-dialog>
+      `,
+      {
+        imports: [Dialog],
+        componentProperties: { drawerOpen: true, confirmationOpen: true, drawerClosed, confirmationClosed },
+      },
+    );
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(confirmationClosed).toHaveBeenCalledTimes(1);
+    expect(drawerClosed).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Confirmar cancelacion' })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Crear reserva' })).toBeTruthy();
+  });
+
+  it('does not let Escape close an underlying dialog when the topmost dialog disables Escape', async () => {
+    const drawerClosed = vi.fn();
+    const confirmationClosed = vi.fn();
+
+    await render(
+      `
+        <app-dialog [open]="drawerOpen" title="Crear reserva" panelVariant="drawer" (closed)="drawerOpen = false; drawerClosed()">
+          Contenido del cajon
+        </app-dialog>
+        <app-dialog [open]="confirmationOpen" title="Advertencia de capacidad" [closeOnEscape]="false" (closed)="confirmationOpen = false; confirmationClosed()">
+          Confirmacion
+        </app-dialog>
+      `,
+      {
+        imports: [Dialog],
+        componentProperties: { drawerOpen: true, confirmationOpen: true, drawerClosed, confirmationClosed },
+      },
+    );
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(confirmationClosed).not.toHaveBeenCalled();
+    expect(drawerClosed).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Advertencia de capacidad' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Crear reserva' })).toBeTruthy();
+  });
+
   it('supports large size and minimal appearance', async () => {
     await render('<app-dialog open title="Detalle" size="lg" appearance="minimal">Contenido</app-dialog>', {
       imports: [Dialog],

@@ -1,4 +1,4 @@
-import { booleanAttribute, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, input, output, viewChild } from '@angular/core';
+import { booleanAttribute, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { Button, type ButtonFill, type ButtonVariant } from '../button/button';
 
 export type DialogSize = 'sm' | 'md' | 'lg';
@@ -15,6 +15,8 @@ let nextDialogId = 0;
   styleUrl: './dialog.css',
 })
 export class Dialog {
+  private static readonly openDialogs = new Set<Dialog>();
+
   readonly open = input(false, { transform: booleanAttribute });
   readonly title = input('');
   readonly description = input('');
@@ -44,6 +46,7 @@ export class Dialog {
   private readonly id = nextDialogId++;
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly stackLayer = signal(0);
   private previouslyFocusedElement: HTMLElement | null = null;
   private wasOpen = false;
 
@@ -63,6 +66,7 @@ export class Dialog {
   );
   protected readonly labelledBy = computed(() => (this.title() ? this.titleId : null));
   protected readonly describedBy = computed(() => (this.description() ? this.descriptionId : null));
+  protected readonly zIndex = computed(() => 50 + this.stackLayer());
 
   constructor() {
     effect(() => {
@@ -71,20 +75,25 @@ export class Dialog {
 
       this.wasOpen = isOpen;
       if (isOpen) {
+        this.registerInStack();
         this.previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         queueMicrotask(() => this.focusInitialElement());
         return;
       }
 
+      this.unregisterFromStack();
       this.restoreFocus();
     });
 
-    this.destroyRef.onDestroy(() => this.restoreFocus());
+    this.destroyRef.onDestroy(() => {
+      this.unregisterFromStack();
+      this.restoreFocus();
+    });
   }
 
   @HostListener('document:keydown.escape')
   protected handleEscape(): void {
-    if (this.open() && this.closeOnEscape()) {
+    if (Dialog.topmost() === this && this.closeOnEscape()) {
       this.close();
     }
   }
@@ -158,5 +167,26 @@ export class Dialog {
     const previouslyFocusedElement = this.previouslyFocusedElement;
     this.previouslyFocusedElement = null;
     if (previouslyFocusedElement?.isConnected) previouslyFocusedElement.focus();
+  }
+
+  private registerInStack(): void {
+    Dialog.openDialogs.add(this);
+    Dialog.updateStackLayers();
+  }
+
+  private unregisterFromStack(): void {
+    if (Dialog.openDialogs.delete(this)) Dialog.updateStackLayers();
+  }
+
+  private static topmost(): Dialog | undefined {
+    return Array.from(Dialog.openDialogs).at(-1);
+  }
+
+  private static updateStackLayers(): void {
+    let layer = 0;
+    for (const dialog of Dialog.openDialogs) {
+      dialog.stackLayer.set(layer);
+      layer += 10;
+    }
   }
 }

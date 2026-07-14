@@ -107,33 +107,38 @@
     </label>
   </div>
 
-  <div class="mx-auto w-full max-w-7xl px-4 pb-4 lg:px-6">
-    <section class="theme-panel reservations-page__occupancy-strip rounded-2xl border p-4 shadow-sm" [attr.aria-label]="'restaurantPos.reservations.occupancyTitle' | transloco">
-      <div class="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.occupancyTitle' | transloco }}</p>
-          <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.reservations.occupancyHeading' | transloco }}</h2>
+  @if (!loading() && !loadError()) {
+    <div class="mx-auto w-full max-w-7xl px-4 pb-4 lg:px-6">
+      <section class="theme-panel reservations-page__occupancy-strip rounded-2xl border p-4 shadow-sm" [attr.aria-label]="'restaurantPos.reservations.occupancyTitle' | transloco">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.occupancyTitle' | transloco }}</p>
+            <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.reservations.occupancyHeading' | transloco }}</h2>
+          </div>
+          <span class="reservations-page__pax-chip">{{ summary().pax }} {{ 'restaurantPos.reservations.summaryPax' | transloco | lowercase }}</span>
         </div>
-        <span class="reservations-page__pax-chip">{{ summary().pax }} {{ 'restaurantPos.reservations.summaryPax' | transloco | lowercase }}</span>
-      </div>
-      <div class="reservations-page__occupancy-grid">
-        @for (service of serviceLoadSummary(); track service.serviceKey) {
-          <article class="reservations-page__occupancy-card" [class.reservations-page__occupancy-card--busy]="service.intensity === 'busy'">
-            <p class="theme-title text-sm font-semibold">{{ service.serviceKey | transloco }}</p>
-            <p class="theme-muted text-sm">{{ service.reservationCount }} {{ 'restaurantPos.reservations.summaryReservations' | transloco | lowercase }}</p>
-            <div class="reservations-page__badges">
-              @if (service.unassignedCount > 0) {
-                <span class="reservations-page__badge">{{ service.unassignedCount }} {{ 'restaurantPos.reservations.summaryUnassigned' | transloco | lowercase }}</span>
-              }
-              @if (service.overdueCount > 0) {
-                <span class="reservations-page__badge reservations-page__badge--warning">{{ service.overdueCount }} {{ 'restaurantPos.reservations.summaryOverdue' | transloco | lowercase }}</span>
-              }
-            </div>
-          </article>
-        }
-      </div>
-    </section>
-  </div>
+        <div class="reservations-page__occupancy-grid">
+          @for (service of serviceLoadSummary(); track service.serviceKey) {
+            <article class="reservations-page__occupancy-card" [class.reservations-page__occupancy-card--busy]="service.intensity === 'busy'">
+              <p class="theme-title text-sm font-semibold">{{ service.serviceKey | transloco }}</p>
+              <p class="theme-muted text-sm">{{ service.reservationCount }} {{ 'restaurantPos.reservations.summaryReservations' | transloco | lowercase }}</p>
+              <div class="reservations-page__badges">
+                @if (service.upcomingCount > 0) {
+                  <span class="reservations-page__badge reservations-page__badge--accent">{{ service.upcomingCount }} {{ 'restaurantPos.reservations.upcoming' | transloco | lowercase }}</span>
+                }
+                @if (service.unassignedCount > 0) {
+                  <span class="reservations-page__badge">{{ service.unassignedCount }} {{ 'restaurantPos.reservations.summaryUnassigned' | transloco | lowercase }}</span>
+                }
+                @if (service.overdueCount > 0) {
+                  <span class="reservations-page__badge reservations-page__badge--warning">{{ service.overdueCount }} {{ 'restaurantPos.reservations.summaryOverdue' | transloco | lowercase }}</span>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    </div>
+  }
 
   @if (loading()) {
     <div class="mx-auto flex w-full max-w-7xl justify-center px-4 py-16 lg:px-6">
@@ -603,7 +608,12 @@
       </div>
       <div class="reservations-page__drawer-actions">
         <button type="button" class="reservations-page__secondary-button" [disabled]="creationSubmitting()" (click)="closeCreateReservation()">{{ 'restaurantPos.reservations.create.cancel' | transloco }}</button>
-        <button type="button" class="reservations-page__primary-button" [disabled]="creationSubmitting()" (click)="submitReservation()">{{ creationProgressState().ctaLabelKey | transloco }}</button>
+        <button type="button" class="reservations-page__primary-button" [disabled]="creationSubmitting()" (click)="submitReservation()">
+          @if (creationSubmitting()) {
+            <app-spinner size="sm" decorative />
+          }
+          {{ creationProgressState().ctaLabelKey | transloco }}
+        </button>
       </div>
     </footer>
   </div>
