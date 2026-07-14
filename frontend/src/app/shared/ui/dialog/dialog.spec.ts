@@ -175,6 +175,44 @@ describe('Dialog', () => {
     await waitFor(() => expect(document.activeElement).toBe(within(drawerDialog).getByRole('button', { name: 'Cerrar dialogo' })));
   });
 
+  it('restores focus to the remaining dialog when a nested dialog is destroyed after its opener becomes hidden', async () => {
+    const { fixture } = await render(
+      `
+        <app-dialog [open]="drawerOpen" title="Crear reserva" panelVariant="drawer">
+          <div [hidden]="hideOpener">
+            <button type="button" (click)="hideOpener = true; confirmationMounted = true; confirmationOpen = true">Abrir confirmacion</button>
+          </div>
+          <button type="button">Continuar editando</button>
+        </app-dialog>
+        @if (confirmationMounted) {
+          <app-dialog [open]="confirmationOpen" title="Confirmar reserva">
+            <button type="button">Confirmar ahora</button>
+          </app-dialog>
+        }
+      `,
+      {
+        imports: [Dialog],
+        componentProperties: { drawerOpen: true, confirmationOpen: false, confirmationMounted: false, hideOpener: false },
+      },
+    );
+    const host = fixture.componentInstance as {
+      confirmationOpen: boolean;
+      confirmationMounted: boolean;
+    };
+    const opener = screen.getByRole('button', { name: 'Abrir confirmacion' });
+    opener.focus();
+
+    fireEvent.click(opener);
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Confirmar reserva' })).toBeTruthy());
+
+    host.confirmationOpen = false;
+    host.confirmationMounted = false;
+    fixture.detectChanges();
+
+    const drawerDialog = screen.getByRole('dialog', { name: 'Crear reserva' });
+    await waitFor(() => expect(document.activeElement).toBe(within(drawerDialog).getByRole('button', { name: 'Cerrar dialogo' })));
+  });
+
   it('traps forward and reverse tab navigation inside the open dialog', async () => {
     await render(
       `

@@ -26,6 +26,7 @@ export class Dialog {
   readonly panelVariant = input<DialogPanelVariant>('default');
   readonly closeOnBackdrop = input(true, { transform: booleanAttribute });
   readonly closeOnEscape = input(true, { transform: booleanAttribute });
+  readonly closeDisabled = input(false, { transform: booleanAttribute });
   readonly closeAriaLabel = input('Cerrar dialogo');
   readonly showActions = input(false, { transform: booleanAttribute });
   readonly showCancel = input(true, { transform: booleanAttribute });
@@ -93,13 +94,13 @@ export class Dialog {
 
   @HostListener('document:keydown.escape')
   protected handleEscape(): void {
-    if (Dialog.topmost() === this && this.closeOnEscape()) {
+    if (Dialog.topmost() === this && this.closeOnEscape() && !this.closeDisabled()) {
       this.close();
     }
   }
 
   protected handleBackdropClick(): void {
-    if (this.closeOnBackdrop()) {
+    if (this.closeOnBackdrop() && !this.closeDisabled()) {
       this.close();
     }
   }
@@ -128,6 +129,7 @@ export class Dialog {
   }
 
   protected close(): void {
+    if (this.closeDisabled()) return;
     this.closed.emit();
   }
 
@@ -166,12 +168,14 @@ export class Dialog {
   private restoreFocus(): void {
     const previouslyFocusedElement = this.previouslyFocusedElement;
     this.previouslyFocusedElement = null;
-    if (this.isFocusable(previouslyFocusedElement)) {
-      previouslyFocusedElement.focus();
-      return;
-    }
+    queueMicrotask(() => {
+      if (this.isFocusable(previouslyFocusedElement)) {
+        previouslyFocusedElement.focus();
+        return;
+      }
 
-    Dialog.topmost()?.focusInitialElement();
+      Dialog.topmost()?.focusInitialElement();
+    });
   }
 
   private isFocusable(element: HTMLElement | null): element is HTMLElement {

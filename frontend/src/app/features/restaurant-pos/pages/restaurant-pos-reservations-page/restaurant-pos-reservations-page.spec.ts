@@ -12,6 +12,10 @@ import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosReservationsPage } from './restaurant-pos-reservations-page';
 
 describe('RestaurantPosReservationsPage', () => {
+  function formatDateForInput(value: Date): string {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  }
+
   function todayAt(hours: number, minutes: number): string {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes, 0, 0).toISOString();
@@ -96,8 +100,21 @@ describe('RestaurantPosReservationsPage', () => {
       tables: [
         { id: 'table-1', tableNumber: 1, name: 'Mesa 1', capacity: 2, isActive: true },
         { id: 'table-2', tableNumber: 2, name: 'Mesa 2', capacity: 4, isActive: true },
+        { id: 'stool-1', tableNumber: 3, name: 'Taburete 1', capacity: 1, isActive: true },
+        { id: 'stool-2', tableNumber: 4, name: 'Taburete 2', capacity: 1, isActive: true },
       ],
-      floors: [],
+      floors: [{
+        id: 'floor-main',
+        name: 'Sala principal',
+        rows: 10,
+        columns: 10,
+        elements: [
+          { id: 'element-table-1', type: 'table', label: 'Mesa 1', x: 1, y: 1, width: 2, height: 2, tableId: 'table-1', shape: 'round', sortOrder: 1 },
+          { id: 'element-table-2', type: 'table', label: 'Mesa 2', x: 4, y: 1, width: 2, height: 2, tableId: 'table-2', shape: 'square', sortOrder: 2 },
+          { id: 'element-stool-1', type: 'stool', label: 'Taburete 1', x: 1, y: 4, width: 1, height: 1, tableId: 'stool-1', shape: null, sortOrder: 3 },
+          { id: 'element-stool-2', type: 'stool', label: 'Taburete 2', x: 2, y: 4, width: 1, height: 1, tableId: 'stool-2', shape: null, sortOrder: 4 },
+        ],
+      }],
     };
 
     return ({
@@ -150,7 +167,35 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(component.recommendedSlots().length).toBeGreaterThan(0);
     expect(component.suggestedTables()[0]).toEqual(expect.objectContaining({ id: 'table-2' }));
-    expect(component.manualTables().map((table) => table.id)).toEqual(['table-1', 'table-2']);
+    expect(component.manualTables().map((table) => table.id)).toEqual(['table-1', 'table-2', 'stool-1', 'stool-2']);
+  });
+
+  it('keeps stools as a secondary suggestion for two guests and allows selecting them as a pair', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+    const component = fixture.componentInstance as unknown as {
+      openCreateReservation(): void;
+      updateCreateField(field: 'customerNameSnapshot' | 'partySize', value: string | number): void;
+      suggestedTables(): Array<{ id: string; kind: string; label: string; tableIds: string[] }>;
+    };
+
+    component.openCreateReservation();
+    component.updateCreateField('customerNameSnapshot', 'Marina Soler');
+    component.updateCreateField('partySize', 2);
+    fixture.detectChanges();
+
+    const suggestions = component.suggestedTables();
+    expect(suggestions[0]).toEqual(expect.objectContaining({ id: 'table-1', kind: 'table' }));
+    expect(suggestions.at(-1)).toEqual(expect.objectContaining({ id: 'stool-combo-2', kind: 'stool_combo' }));
+
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    fireEvent.click(within(drawer).getByRole('checkbox', { name: /2 taburetes/i }));
+
+    expect(within(drawer).getByText('Taburetes x2')).toBeTruthy();
   });
 
   it('keeps all tables available in the manual fallback without duplicate accessible controls', async () => {
@@ -229,8 +274,8 @@ describe('RestaurantPosReservationsPage', () => {
     component.statusFilter.set('pending');
     fixture.detectChanges();
 
-    expect(within(lunchCard as HTMLElement).getByText('1 reservas')).toBeTruthy();
-    expect(within(dinnerCard as HTMLElement).getByText('1 reservas')).toBeTruthy();
+    expect(within(lunchCard as HTMLElement).getByText('1 reserva')).toBeTruthy();
+    expect(within(dinnerCard as HTMLElement).getByText('1 reserva')).toBeTruthy();
   });
 
   it('localizes occupancy and table-fit labels', async () => {
@@ -246,7 +291,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'New reservation' }));
 
-    expect(screen.getByText('Ideal fit')).toBeTruthy();
+    expect(screen.getAllByText('Ideal fit').length).toBeGreaterThan(0);
   });
 
   it('derives the guided CTA from every required field while keeping tables optional', async () => {
@@ -461,9 +506,9 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
     fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
-    fireEvent.input(screen.getByLabelText('Telefono'), { target: { value: '+34 600 777 888' } });
+    fireEvent.input(screen.getByLabelText('Teléfono'), { target: { value: '+34 600 777 888' } });
     fireEvent.input(screen.getByLabelText('Comensales'), { target: { value: '4' } });
-    fireEvent.click(screen.getByRole('button', { name: '13:30' }));
+    fireEvent.click(screen.getByRole('radio', { name: '13:30' }));
     fireEvent.click(screen.getAllByLabelText('Mesa 2', { exact: false })[0]!);
     fireEvent.input(screen.getByLabelText('Notas'), { target: { value: 'Ventana' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar reserva' }));
@@ -481,6 +526,28 @@ describe('RestaurantPosReservationsPage', () => {
     expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2);
   });
 
+  it('lets the creation flow book a reservation for a different day than the active agenda date', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    const tomorrow = formatDateForInput(new Date(Date.now() + 24 * 60 * 60 * 1000));
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
+    fireEvent.input(screen.getByLabelText('Fecha'), { target: { value: tomorrow } });
+    fireEvent.click(screen.getByRole('radio', { name: '13:30' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
+
+    expect(apiMock.createRestaurantReservation).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      expect.objectContaining({ reservationAt: new Date(`${tomorrow}T13:30:00`).toISOString() }),
+    );
+  });
+
   it('keeps the create flow available without selecting a table', async () => {
     const i18n = provideI18nTesting();
     const apiMock = createApiMock();
@@ -492,7 +559,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
     fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
-    fireEvent.click(screen.getByRole('button', { name: '13:30' }));
+    fireEvent.click(screen.getByRole('radio', { name: '13:30' }));
     fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
 
     expect(apiMock.createRestaurantReservation).toHaveBeenCalledWith(
@@ -533,14 +600,54 @@ describe('RestaurantPosReservationsPage', () => {
     expect((document.activeElement as HTMLElement).hasAttribute('disabled')).toBe(false);
   });
 
+  it('prevents closing or reopening the drawer while a reservation creation is still submitting', async () => {
+    const i18n = provideI18nTesting();
+    const createSubject = new Subject<RestaurantReservationDto>();
+    const apiMock = {
+      ...createApiMock(),
+      createRestaurantReservation: vi.fn(() => createSubject.asObservable()),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    const opener = screen.getByRole('button', { name: 'Nueva reserva' });
+    fireEvent.click(opener);
+
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    fireEvent.input(within(drawer).getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
+
+    expect(apiMock.createRestaurantReservation).toHaveBeenCalledTimes(1);
+    expect(opener.hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Cerrar dialogo' }));
+    fireEvent.click(drawer.closest('.dialog')?.querySelector('.dialog__backdrop') as HTMLElement);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(opener);
+
+    expect(screen.getByRole('dialog', { name: 'Crear reserva' })).toBeTruthy();
+    expect(apiMock.createRestaurantReservation).toHaveBeenCalledTimes(1);
+
+    createSubject.next(createReservationDto());
+    createSubject.complete();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Crear reserva' })).toBeNull());
+  });
+
   it('provides translation entries for the drawer guidance labels', () => {
     const i18n = provideI18nTesting();
+    const reservationsEs = (i18n.translations.es.restaurantPos.reservations as unknown as Record<string, string | Record<string, string>>);
+    const reservationsCa = (i18n.translations.ca.restaurantPos.reservations as unknown as Record<string, string | Record<string, string>>);
 
     expect(i18n.translations.es.restaurantPos.reservations.create.cta.selectTime).toBeTruthy();
     expect(i18n.translations.es.restaurantPos.reservations.create.suggestedTables).toBeTruthy();
-    expect(i18n.translations.es.restaurantPos.reservations.occupancyHeading).toBe('Vision operativa del dia');
+    expect(i18n.translations.es.restaurantPos.reservations.occupancyHeading).toBe('Resumen de ocupación');
+    expect(reservationsEs['occupancyReservationsOne']).toContain('reserva');
     expect(i18n.translations.en.restaurantPos.reservations.create.tableTitle).toBe('Table');
     expect(i18n.translations.en.restaurantPos.reservations.create.manualTables).toBe('All tables');
+    expect(reservationsCa['occupancyUpcomingOther']).toContain('pròxim');
     expect(i18n.translations.ca.restaurantPos.reservations.create.tableTitle).toBe('Taula');
     expect(i18n.translations.ca.restaurantPos.reservations.create.manualTables).toBe('Totes les taules');
   });
@@ -1089,7 +1196,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(within(summary).getByText('Sin mesa asignada')).toBeTruthy();
 
-    fireEvent.click(within(drawer).getByRole('button', { name: '14:00' }));
+    fireEvent.click(within(drawer).getByRole('radio', { name: '14:00' }));
     fireEvent.input(within(drawer).getByLabelText('Comensales'), { target: { value: '4' } });
     fireEvent.click(within(drawer).getByRole('checkbox', { name: /Mesa 2/ }));
 
@@ -1114,12 +1221,33 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(within(drawer).getByRole('radio', { name: 'Cenas' }));
 
-    expect(within(drawer).getByRole('button', { name: '20:00' }).className).toContain(
+    expect(within(drawer).getByRole('radio', { name: '20:00' }).className).toContain(
       'reservations-page__time-slot--selected',
     );
     expect(within(drawer).queryByText(/13:30/)).toBeNull();
     const summary = drawer.querySelector('.reservations-page__drawer-summary') as HTMLElement;
     expect(within(summary).getByText(/20:00/)).toBeTruthy();
+  });
+
+  it('exposes the selected reservation time with radio semantics', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    const recommendedSlots = within(drawer).getByRole('radiogroup', { name: 'Horas recomendadas' });
+
+    expect(within(recommendedSlots).getByRole('radio', { name: '13:30' }).getAttribute('aria-checked')).toBe('true');
+
+    fireEvent.click(within(recommendedSlots).getByRole('radio', { name: '14:00' }));
+
+    expect(within(recommendedSlots).getByRole('radio', { name: '13:30' }).getAttribute('aria-checked')).toBe('false');
+    expect(within(recommendedSlots).getByRole('radio', { name: '14:00' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('replaces the default time when the initial service window excludes it', async () => {
@@ -1143,7 +1271,7 @@ describe('RestaurantPosReservationsPage', () => {
     };
 
     expect(component.creationForm().time).toBe('18:00');
-    expect(within(drawer).getByRole('button', { name: '18:00' }).className).toContain(
+    expect(within(drawer).getByRole('radio', { name: '18:00' }).className).toContain(
       'reservations-page__time-slot--selected',
     );
   });
@@ -1175,7 +1303,7 @@ describe('RestaurantPosReservationsPage', () => {
     fixture.detectChanges();
 
     expect(component.creationForm().time).toBe('14:00');
-    expect(within(drawer).getByRole('button', { name: '14:00' }).className).toContain(
+    expect(within(drawer).getByRole('radio', { name: '14:00' }).className).toContain(
       'reservations-page__time-slot--selected',
     );
   });
@@ -1219,8 +1347,8 @@ describe('RestaurantPosReservationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
 
     // Comidas 12:00–16:30 → should have these chip buttons
-    expect(screen.getByRole('button', { name: '12:00' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '13:30' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '16:30' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: '12:00' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: '13:30' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: '16:30' })).toBeTruthy();
   });
 });

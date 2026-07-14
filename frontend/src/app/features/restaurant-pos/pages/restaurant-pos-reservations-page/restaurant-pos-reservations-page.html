@@ -5,7 +5,7 @@
         <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.reservations.eyebrow' | transloco }}</p>
         <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.reservations.title' | transloco }}</h1>
         <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.reservations.description' | transloco }}</p>
-        <button type="button" class="reservations-page__primary-button mt-4" (click)="openCreateReservation()">
+        <button type="button" class="reservations-page__primary-button mt-4" [disabled]="creationSubmitting()" (click)="openCreateReservation()">
           {{ 'restaurantPos.reservations.create.open' | transloco }}
         </button>
       </div>
@@ -121,16 +121,16 @@
           @for (service of serviceLoadSummary(); track service.serviceKey) {
             <article class="reservations-page__occupancy-card" [class.reservations-page__occupancy-card--busy]="service.intensity === 'busy'">
               <p class="theme-title text-sm font-semibold">{{ service.serviceKey | transloco }}</p>
-              <p class="theme-muted text-sm">{{ service.reservationCount }} {{ 'restaurantPos.reservations.summaryReservations' | transloco | lowercase }}</p>
+              <p class="theme-muted text-sm">{{ occupancyLabel('reservations', service.reservationCount) }}</p>
               <div class="reservations-page__badges">
                 @if (service.upcomingCount > 0) {
-                  <span class="reservations-page__badge reservations-page__badge--accent">{{ service.upcomingCount }} {{ 'restaurantPos.reservations.upcoming' | transloco | lowercase }}</span>
+                  <span class="reservations-page__badge reservations-page__badge--accent">{{ occupancyLabel('upcoming', service.upcomingCount) }}</span>
                 }
                 @if (service.unassignedCount > 0) {
-                  <span class="reservations-page__badge">{{ service.unassignedCount }} {{ 'restaurantPos.reservations.summaryUnassigned' | transloco | lowercase }}</span>
+                  <span class="reservations-page__badge">{{ occupancyLabel('unassigned', service.unassignedCount) }}</span>
                 }
                 @if (service.overdueCount > 0) {
-                  <span class="reservations-page__badge reservations-page__badge--warning">{{ service.overdueCount }} {{ 'restaurantPos.reservations.summaryOverdue' | transloco | lowercase }}</span>
+                  <span class="reservations-page__badge reservations-page__badge--warning">{{ occupancyLabel('overdue', service.overdueCount) }}</span>
                 }
               </div>
             </article>
@@ -340,8 +340,11 @@
   [open]="creationOpen()"
   size="lg"
   [title]="'restaurantPos.reservations.create.title' | transloco"
-  [footerSummary]="selectedDateLabel()"
+  [footerSummary]="creationDateLabel()"
   [showActions]="false"
+  [closeOnBackdrop]="!creationSubmitting()"
+  [closeOnEscape]="!creationSubmitting()"
+  [closeDisabled]="creationSubmitting()"
   panelClass="dialog__panel--drawer reservations-page__drawer"
   panelVariant="drawer"
   (closed)="closeCreateReservation()"
@@ -479,6 +482,16 @@
           </div>
         </div>
   <div>
+    <label class="mb-4 block max-w-xs">
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.date' | transloco }}</span>
+      <input
+        type="date"
+        class="reservations-page__input"
+        [value]="creationForm().date"
+        [attr.aria-label]="'restaurantPos.reservations.create.date' | transloco"
+        (input)="updateCreateField('date', ($any($event.target).value ?? '').toString())"
+      />
+    </label>
     <div class="mb-3 flex items-center justify-between gap-2">
       <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.timeSlots' | transloco }}</p>
       <button type="button" class="reservations-page__link-button" (click)="openServiceWindowsEdit()">
@@ -491,12 +504,14 @@
       size="sm"
       (valueChange)="selectServiceWindow($any($event))"
     />
-    <div class="reservations-page__slot-group">
+    <div class="reservations-page__slot-group" role="radiogroup" [attr.aria-label]="'restaurantPos.reservations.create.recommendedSlots' | transloco">
       <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.recommendedSlots' | transloco }}</p>
       <div class="reservations-page__time-slots">
       @for (slot of recommendedSlots(); track slot) {
         <button
           type="button"
+          role="radio"
+          [attr.aria-checked]="creationForm().time === slot"
           class="reservations-page__time-slot reservations-page__time-slot--recommended"
           [class.reservations-page__time-slot--selected]="creationForm().time === slot"
           (click)="updateCreateField('time', slot)"
@@ -505,11 +520,11 @@
       </div>
     </div>
     @if (secondarySlots().length > 0) {
-      <div class="reservations-page__slot-group">
+      <div class="reservations-page__slot-group" role="radiogroup" [attr.aria-label]="'restaurantPos.reservations.create.otherSlots' | transloco">
         <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.otherSlots' | transloco }}</p>
         <div class="reservations-page__time-slots">
           @for (slot of secondarySlots(); track slot) {
-            <button type="button" class="reservations-page__time-slot" [class.reservations-page__time-slot--selected]="creationForm().time === slot" (click)="updateCreateField('time', slot)">{{ slot }}</button>
+            <button type="button" role="radio" [attr.aria-checked]="creationForm().time === slot" class="reservations-page__time-slot" [class.reservations-page__time-slot--selected]="creationForm().time === slot" (click)="updateCreateField('time', slot)">{{ slot }}</button>
           }
         </div>
       </div>
@@ -535,11 +550,14 @@
               <input
                 type="checkbox"
                 [checked]="table.selected"
-                (change)="toggleCreateTable(table.id, $any($event.target).checked)"
+                (change)="toggleSuggestedTables(table.tableIds, $any($event.target).checked)"
               />
               <span class="theme-title text-sm font-semibold">{{ table.label }}</span>
               <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
               <span class="reservations-page__fit-chip">{{ ('restaurantPos.reservations.create.fit.' + table.fit) | transloco }}</span>
+              @if (table.kind === 'stool_combo') {
+                <span class="reservations-page__badge reservations-page__badge--accent">{{ 'restaurantPos.reservations.create.stoolComboBadge' | transloco }}</span>
+              }
             </label>
           }
           </div>
@@ -595,10 +613,10 @@
       <div class="reservations-page__drawer-summary">
         <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.summaryTitle' | transloco }}</p>
         <p class="theme-title text-sm font-semibold">
-          {{ selectedDateLabel() }} · {{ creationForm().time }} · {{ 'restaurantPos.reservations.partySize' | transloco: { count: creationForm().partySize } }}
+          {{ creationDateLabel() }} · {{ creationForm().time }} · {{ 'restaurantPos.reservations.partySize' | transloco: { count: creationForm().partySize } }}
         </p>
         @if (selectedTableLabels().length > 0) {
-          <p class="theme-title text-sm font-semibold">{{ selectedTableLabels().join(', ') }}</p>
+          <p class="theme-title text-sm font-semibold">{{ selectedTableSummaryLabel() }}</p>
           <p class="theme-muted text-xs">
             {{ 'restaurantPos.reservations.create.capacityHint' | transloco: { count: selectedTablesCapacity() } }}
           </p>

@@ -30,7 +30,7 @@
           }
         </div>
 
-        <button class="dialog__close" type="button" [attr.aria-label]="closeAriaLabel()" (click)="close()">&times;</button>
+        <button class="dialog__close" type="button" [disabled]="closeDisabled()" [attr.aria-label]="closeAriaLabel()" (click)="close()">&times;</button>
       </header>
 
       <div class="dialog__body">

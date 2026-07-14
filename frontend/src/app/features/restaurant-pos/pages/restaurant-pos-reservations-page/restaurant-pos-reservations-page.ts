@@ -25,10 +25,21 @@ type ReservationCreateForm = {
   customerId: string | null;
   customerNameSnapshot: string;
   customerPhoneSnapshot: string;
+  date: string;
   partySize: number;
   time: string;
   durationMinutes: number;
   notes: string;
+  tableIds: string[];
+};
+type ReservationSeatKind = 'table' | 'stool';
+type ReservationSeatOption = {
+  id: string;
+  label: string;
+  capacity: number;
+  selected: boolean;
+  fit: 'ideal' | 'tight' | 'oversized';
+  kind: ReservationSeatKind | 'stool_combo';
   tableIds: string[];
 };
 
@@ -124,11 +135,18 @@ export class RestaurantPosReservationsPage {
   protected readonly serviceWindowsEditError = signal<string | null>(null);
 
   protected readonly availableTables = computed(() =>
-    this.restaurantFloors()?.tables.map((table) => ({
-      id: table.id,
-      label: table.name || `Mesa ${table.tableNumber}`,
-      capacity: table.capacity,
-    })) ?? [],
+    this.restaurantFloors()?.tables.map((table) => {
+      const matchingElement = this.restaurantFloors()?.floors
+        .flatMap((floor) => floor.elements)
+        .find((element) => element.tableId === table.id);
+      const kind: ReservationSeatKind = matchingElement?.type === 'stool' ? 'stool' : 'table';
+      return {
+        id: table.id,
+        label: table.name || (kind === 'stool' ? `Taburete ${table.tableNumber}` : `Mesa ${table.tableNumber}`),
+        capacity: table.capacity,
+        kind,
+      };
+    }) ?? [],
   );
   protected readonly selectedTablesCapacity = computed(() => {
     const selectedIds = this.creationForm().tableIds;
@@ -141,17 +159,40 @@ export class RestaurantPosReservationsPage {
     const selectedIds = this.creationForm().tableIds;
     return this.availableTables().filter((table) => selectedIds.includes(table.id)).map((table) => table.label);
   });
+  protected readonly selectedTableSummaryLabel = computed(() => {
+    const selected = this.availableTables().filter((table) => this.creationForm().tableIds.includes(table.id));
+    if (selected.length > 1 && selected.every((table) => table.kind === 'stool')) {
+      return this.transloco.translate('restaurantPos.reservations.create.selectedStools', { count: selected.length });
+    }
+    return selected.map((table) => table.label).join(', ');
+  });
   protected readonly suggestedTables = computed(() => {
     const partySize = this.creationForm().partySize;
     const selectedIds = this.creationForm().tableIds;
-    return this.availableTables()
-      .map((table) => ({
+    const tables = this.availableTables()
+      .filter((table) => table.kind === 'table')
+      .map<ReservationSeatOption>((table) => ({
         ...table,
         selected: selectedIds.includes(table.id),
-        fit: table.capacity === partySize ? 'ideal' : table.capacity < partySize ? 'tight' : 'oversized' as const,
+        fit: table.capacity === partySize ? 'ideal' : table.capacity < partySize ? 'tight' : 'oversized',
+        tableIds: [table.id],
       }))
       .sort((left, right) => Math.abs(left.capacity - partySize) - Math.abs(right.capacity - partySize))
       .slice(0, 4);
+    const stools = this.availableTables().filter((table) => table.kind === 'stool');
+    if (partySize === 2 && stools.length >= 2) {
+      const stoolPair = stools.slice(0, 2);
+      tables.push({
+        id: 'stool-combo-2',
+        label: this.transloco.translate('restaurantPos.reservations.create.stoolComboLabel', { count: stoolPair.length }),
+        capacity: stoolPair.reduce((total, stool) => total + stool.capacity, 0),
+        selected: stoolPair.every((stool) => selectedIds.includes(stool.id)),
+        fit: 'ideal',
+        kind: 'stool_combo',
+        tableIds: stoolPair.map((stool) => stool.id),
+      });
+    }
+    return tables;
   });
   protected readonly manualTables = computed(() => {
     const selectedTableIds = this.creationForm().tableIds;
@@ -181,6 +222,13 @@ export class RestaurantPosReservationsPage {
       capacity,
     });
   });
+  protected readonly creationDateLabel = computed(() =>
+    new Intl.DateTimeFormat(this.transloco.getActiveLang(), {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }).format(parseLocalDate(this.creationForm().date)),
+  );
   protected readonly selectedDateLabel = computed(() =>
     new Intl.DateTimeFormat(this.transloco.getActiveLang(), {
       weekday: 'long',
@@ -325,12 +373,27 @@ export class RestaurantPosReservationsPage {
     }
   }
 
+  protected occupancyLabel(kind: 'reservations' | 'upcoming' | 'unassigned' | 'overdue', count: number): string {
+    const plurality = count === 1 ? 'One' : 'Other';
+    return this.transloco.translate(`restaurantPos.reservations.occupancy${capitalize(kind)}${plurality}`, { count });
+  }
+
   protected openCreateReservation(): void {
+    if (this.creationSubmitting()) return;
     this.creationError.set(null);
+    this.creationForm.set(createReservationFormState(this.selectedDate()));
+    this.manualTableSelectionOpen.set(false);
+    this.capacityWarningOpen.set(false);
+    this.pendingSubmitRequest.set(null);
+    this.serviceTab.set(this.serviceWindows()[0]?.id ?? '');
+    this.selectedCustomer.set(null);
+    this.customerSearchResults.set([]);
+    this.customerSearchOpen.set(false);
     this.creationOpen.set(true);
   }
 
   protected closeCreateReservation(): void {
+    if (this.creationSubmitting()) return;
     this.creationOpen.set(false);
     this.creationSubmitting.set(false);
     this.creationError.set(null);
@@ -454,6 +517,15 @@ export class RestaurantPosReservationsPage {
       tableIds: checked
         ? [...current.tableIds, tableId]
         : current.tableIds.filter((candidate) => candidate !== tableId),
+    }));
+  }
+
+  protected toggleSuggestedTables(tableIds: string[], checked: boolean): void {
+    this.creationForm.update((current) => ({
+      ...current,
+      tableIds: checked
+        ? Array.from(new Set([...current.tableIds, ...tableIds]))
+        : current.tableIds.filter((candidate) => !tableIds.includes(candidate)),
     }));
   }
 
@@ -601,7 +673,7 @@ export class RestaurantPosReservationsPage {
       this.creationError.set(this.transloco.translate('restaurantPos.reservations.create.validation.timeRequired'));
       return null;
     }
-    const reservationAt = buildLocalReservationDateTime(this.selectedDate(), form.time);
+    const reservationAt = buildLocalReservationDateTime(form.date, form.time);
     if (!reservationAt) {
       this.creationError.set(this.transloco.translate('restaurantPos.reservations.create.validation.timeRequired'));
       return null;
@@ -618,8 +690,8 @@ export class RestaurantPosReservationsPage {
   }
 }
 
-function createReservationFormState(): ReservationCreateForm {
-  return { customerId: null, customerNameSnapshot: '', customerPhoneSnapshot: '', partySize: 2, time: '13:30', durationMinutes: 90, notes: '', tableIds: [] };
+function createReservationFormState(date = formatIsoDate(new Date())): ReservationCreateForm {
+  return { customerId: null, customerNameSnapshot: '', customerPhoneSnapshot: '', date, partySize: 2, time: '13:30', durationMinutes: 90, notes: '', tableIds: [] };
 }
 
 function formatIsoDate(value: Date): string {
@@ -676,6 +748,10 @@ function buildLocalReservationDateTime(selectedDate: string, time: string): stri
   const [hours, minutes] = time.split(':').map(Number);
   if ([year, month, day, hours, minutes].some((v) => Number.isNaN(v))) return null;
   return new Date(year!, (month ?? 1) - 1, day ?? 1, hours!, minutes!, 0, 0).toISOString();
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function generateTimeSlots(startTime: string, endTime: string, stepMinutes = 30): string[] {
