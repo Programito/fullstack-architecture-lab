@@ -84,6 +84,7 @@ export class RestaurantPosReservationsPage {
   protected readonly creationSubmitting = signal(false);
   protected readonly creationError = signal<string | null>(null);
   protected readonly creationForm = signal<ReservationCreateForm>(createReservationFormState());
+  protected readonly manualTableSelectionOpen = signal(false);
   protected readonly capacityWarningOpen = signal(false);
   private readonly pendingSubmitRequest = signal<CreateRestaurantReservationRequest | null>(null);
 
@@ -153,17 +154,15 @@ export class RestaurantPosReservationsPage {
       .slice(0, 4);
   });
   protected readonly manualTables = computed(() => {
-    const suggestedTableIds = new Set(this.suggestedTables().map((table) => table.id));
     const selectedTableIds = this.creationForm().tableIds;
     return this.availableTables()
-      .filter((table) => !suggestedTableIds.has(table.id))
       .map((table) => ({ ...table, selected: selectedTableIds.includes(table.id) }));
   });
   protected readonly creationProgressState = computed(() => {
     const form = this.creationForm();
     const hasCustomer = form.customerNameSnapshot.trim().length > 0;
     const hasPartySize = form.partySize > 0;
-    const hasTime = form.time.trim().length > 0;
+    const hasTime = this.activeSlots().includes(form.time);
     const hasSuggestedTable = form.tableIds.length > 0;
 
     let ctaLabelKey = 'restaurantPos.reservations.create.submit';
@@ -255,6 +254,15 @@ export class RestaurantPosReservationsPage {
       }
     });
 
+    // The selected time must always belong to the currently active service window.
+    effect(() => {
+      const slots = this.activeSlots();
+      const selectedTime = this.creationForm().time;
+      if (slots.length > 0 && !slots.includes(selectedTime)) {
+        this.updateCreateField('time', slots[0]!);
+      }
+    });
+
     // Búsqueda de clientes con debounce
     this.customerSearch$.pipe(
       debounceTime(300),
@@ -327,6 +335,7 @@ export class RestaurantPosReservationsPage {
     this.creationSubmitting.set(false);
     this.creationError.set(null);
     this.creationForm.set(createReservationFormState());
+    this.manualTableSelectionOpen.set(false);
     this.capacityWarningOpen.set(false);
     this.pendingSubmitRequest.set(null);
     this.serviceTab.set(this.serviceWindows()[0]?.id ?? '');
@@ -432,11 +441,11 @@ export class RestaurantPosReservationsPage {
 
   protected selectServiceWindow(serviceWindowId: string): void {
     this.serviceTab.set(serviceWindowId);
-    const window = this.serviceWindows().find((candidate) => candidate.id === serviceWindowId);
-    const slots = window ? generateTimeSlots(window.startTime, window.endTime) : [];
-    if (!slots.includes(this.creationForm().time)) {
-      this.updateCreateField('time', slots[0] ?? '');
-    }
+  }
+
+  protected toggleManualTableSelection(event: MouseEvent): void {
+    event.preventDefault();
+    this.manualTableSelectionOpen.update((isOpen) => !isOpen);
   }
 
   protected toggleCreateTable(tableId: string, checked: boolean): void {
@@ -586,6 +595,10 @@ export class RestaurantPosReservationsPage {
     }
     if (form.partySize < 1) {
       this.creationError.set(this.transloco.translate('restaurantPos.reservations.create.validation.partySizeRequired'));
+      return null;
+    }
+    if (!this.activeSlots().includes(form.time)) {
+      this.creationError.set(this.transloco.translate('restaurantPos.reservations.create.validation.timeRequired'));
       return null;
     }
     const reservationAt = buildLocalReservationDateTime(this.selectedDate(), form.time);

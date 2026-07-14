@@ -521,35 +521,39 @@
           <p class="theme-muted text-sm">{{ 'restaurantPos.reservations.create.tableHelp' | transloco }}</p>
         </div>
       </div>
-      <div class="reservations-page__slot-group">
-        <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.suggestedTables' | transloco }}</p>
-        <div class="reservations-page__suggested-tables">
-        @for (table of suggestedTables(); track table.id) {
-          <label class="reservations-page__table-card" [class.reservations-page__table-card--selected]="table.selected">
-            <input
-              type="checkbox"
-              [checked]="table.selected"
-              (change)="toggleCreateTable(table.id, $any($event.target).checked)"
-            />
-            <span class="theme-title text-sm font-semibold">{{ table.label }}</span>
-            <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
-            <span class="reservations-page__fit-chip">{{ ('restaurantPos.reservations.create.fit.' + table.fit) | transloco }}</span>
-          </label>
-        }
-        </div>
-      </div>
-      @if (manualTables().length > 0) {
-        <details class="reservations-page__manual-tables">
-          <summary class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.manualTables' | transloco }}</summary>
-          <div class="reservations-page__table-options">
-            @for (table of manualTables(); track table.id) {
-              <label class="reservations-page__table-option">
-                <input type="checkbox" [checked]="table.selected" (change)="toggleCreateTable(table.id, $any($event.target).checked)" />
-                <span>{{ table.label }}</span>
-                <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
-              </label>
-            }
+      @if (!manualTableSelectionOpen()) {
+        <div class="reservations-page__slot-group">
+          <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.suggestedTables' | transloco }}</p>
+          <div class="reservations-page__suggested-tables">
+          @for (table of suggestedTables(); track table.id) {
+            <label class="reservations-page__table-card" [class.reservations-page__table-card--selected]="table.selected">
+              <input
+                type="checkbox"
+                [checked]="table.selected"
+                (change)="toggleCreateTable(table.id, $any($event.target).checked)"
+              />
+              <span class="theme-title text-sm font-semibold">{{ table.label }}</span>
+              <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
+              <span class="reservations-page__fit-chip">{{ ('restaurantPos.reservations.create.fit.' + table.fit) | transloco }}</span>
+            </label>
+          }
           </div>
+        </div>
+      }
+      @if (manualTables().length > 0) {
+        <details class="reservations-page__manual-tables" [open]="manualTableSelectionOpen()">
+          <summary class="reservations-page__subheading" (click)="toggleManualTableSelection($event)">{{ 'restaurantPos.reservations.create.manualTables' | transloco }}</summary>
+          @if (manualTableSelectionOpen()) {
+            <div class="reservations-page__table-options">
+              @for (table of manualTables(); track table.id) {
+                <label class="reservations-page__table-option">
+                  <input type="checkbox" [checked]="table.selected" (change)="toggleCreateTable(table.id, $any($event.target).checked)" />
+                  <span>{{ table.label }}</span>
+                  <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
+                </label>
+              }
+            </div>
+          }
         </details>
       }
       @if (selectedTablesCapacity(); as capacity) {

@@ -143,7 +143,25 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(component.recommendedSlots().length).toBeGreaterThan(0);
     expect(component.suggestedTables()[0]).toEqual(expect.objectContaining({ id: 'table-2' }));
-    expect(component.manualTables()).toEqual([]);
+    expect(component.manualTables().map((table) => table.id)).toEqual(['table-1', 'table-2']);
+  });
+
+  it('keeps all tables available in the manual fallback without duplicate accessible controls', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+
+    fireEvent.click(within(drawer).getByText('Todas las mesas'));
+
+    expect(within(drawer).getAllByRole('checkbox', { name: /Mesa 1/ })).toHaveLength(1);
+    expect(within(drawer).getAllByRole('checkbox', { name: /Mesa 2/ })).toHaveLength(1);
   });
 
   it('shows suggested tables with fit labels and contextual capacity guidance', async () => {
@@ -771,7 +789,7 @@ describe('RestaurantPosReservationsPage', () => {
     expect(within(drawer).getAllByText('Cliente').length).toBeGreaterThan(0);
     expect(within(drawer).getByText('Hora')).toBeTruthy();
     expect(within(drawer).getByText('Mesa')).toBeTruthy();
-    expect(within(drawer).queryByText('Todas las mesas')).toBeNull();
+    expect(within(drawer).getByText('Todas las mesas')).toBeTruthy();
   });
 
   it('updates the sticky summary after changing time, party size, and table selection', async () => {
@@ -821,6 +839,91 @@ describe('RestaurantPosReservationsPage', () => {
     expect(within(drawer).queryByText(/13:30/)).toBeNull();
     const summary = drawer.querySelector('.reservations-page__drawer-summary') as HTMLElement;
     expect(within(summary).getByText(/20:00/)).toBeTruthy();
+  });
+
+  it('replaces the default time when the initial service window excludes it', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    apiMock.getRestaurantServiceWindows = vi.fn(() => of([
+      { id: 'sw-custom', restaurantId: 'restaurant-mesaflow-centro', name: 'Tarde', startTime: '18:00', endTime: '19:00', sortOrder: 1 },
+    ]));
+
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    fixture.detectChanges();
+
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    const component = fixture.componentInstance as unknown as {
+      creationForm(): { time: string };
+    };
+
+    expect(component.creationForm().time).toBe('18:00');
+    expect(within(drawer).getByRole('button', { name: '18:00' }).className).toContain(
+      'reservations-page__time-slot--selected',
+    );
+  });
+
+  it('corrects an invalid selected time after saving an edit to the active service window', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    apiMock.updateRestaurantServiceWindows = vi.fn(() => of([
+      { ...demoServiceWindows[0]!, startTime: '14:00', endTime: '16:30' },
+      demoServiceWindows[1]!,
+    ]));
+
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    const component = fixture.componentInstance as unknown as {
+      openServiceWindowsEdit(): void;
+      updateServiceWindowRow(index: number, field: 'startTime', value: string): void;
+      saveServiceWindows(): void;
+      creationForm(): { time: string };
+    };
+    component.openServiceWindowsEdit();
+    component.updateServiceWindowRow(0, 'startTime', '14:00');
+    component.saveServiceWindows();
+    fixture.detectChanges();
+
+    expect(component.creationForm().time).toBe('14:00');
+    expect(within(drawer).getByRole('button', { name: '14:00' }).className).toContain(
+      'reservations-page__time-slot--selected',
+    );
+  });
+
+  it('requires a time from the active service slots before creating a reservation', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+    const component = fixture.componentInstance as unknown as {
+      openCreateReservation(): void;
+      updateCreateField(field: 'customerNameSnapshot' | 'time', value: string): void;
+      creationProgressState(): { hasTime: boolean; ctaLabelKey: string };
+      submitReservation(): void;
+    };
+
+    component.openCreateReservation();
+    component.updateCreateField('customerNameSnapshot', 'Marina Soler');
+    component.updateCreateField('time', '17:00');
+    expect(component.creationProgressState()).toMatchObject({
+      hasTime: false,
+      ctaLabelKey: 'restaurantPos.reservations.create.cta.selectTime',
+    });
+
+    component.submitReservation();
+
+    expect(apiMock.createRestaurantReservation).not.toHaveBeenCalled();
   });
 
   it('shows time slot chips based on the service windows from the API', async () => {
