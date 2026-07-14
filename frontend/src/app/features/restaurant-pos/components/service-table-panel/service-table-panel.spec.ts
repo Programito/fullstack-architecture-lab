@@ -131,6 +131,24 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByTestId('service-panel-payment-section').getAttribute('data-highlighted')).toBe('true');
   });
 
+  it('applies a visible highlighted treatment to the active workflow section', async () => {
+    const { fixture } = await renderServiceTablePanel({ nextAction: { type: 'send_kitchen', count: 1 } });
+    const highlightedTransitions = [
+      { nextAction: { type: 'send_kitchen' as const, count: 1 }, testId: 'service-panel-kitchen-section' },
+      { nextAction: { type: 'charge' as const, count: 0 }, testId: 'service-panel-payment-section' },
+      { nextAction: { type: 'cleaning' as const, count: 0 }, testId: 'service-panel-closing-section' },
+    ];
+
+    highlightedTransitions.forEach(({ nextAction, testId }) => {
+      fixture.componentRef.setInput('serviceInfo', createServiceInfo(table, order, { nextAction }));
+      fixture.detectChanges();
+
+      const section = screen.getByTestId(testId);
+      expect(section.getAttribute('data-highlighted')).toBe('true');
+      expect(section.className).toContain('ring-2');
+    });
+  });
+
   it('exposes workflow-first panel sections with one highlighted next step', async () => {
     const i18n = provideI18nTesting();
     const { fixture } = await render(ServiceTablePanel, {
