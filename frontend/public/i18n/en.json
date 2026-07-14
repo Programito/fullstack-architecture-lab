@@ -577,6 +577,12 @@
         "payment": "Payment",
         "closing": "Closing"
       },
+      "dashboard": {
+        "occupied": "Active",
+        "kitchen": "In kitchen",
+        "charge": "To charge",
+        "sales": "Sales"
+      },
       "total": "Total",
       "notStarted": "Not started",
       "noOrderPhase": "No order",

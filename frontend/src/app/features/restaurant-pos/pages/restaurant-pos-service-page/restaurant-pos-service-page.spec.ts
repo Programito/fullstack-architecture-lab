@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { of } from 'rxjs';
+import englishTranslations from '../../../../../../public/i18n/en.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
@@ -492,6 +493,15 @@ describe('RestaurantPosServicePage', () => {
     expect(i18n.translations.es.restaurantPos.service.workflow.summary).toBeTruthy();
     expect(i18n.translations.es.restaurantPos.service.workflow.payment).toBeTruthy();
     expect(i18n.translations.es.restaurantPos.service.dashboard.occupied).toBeTruthy();
+  });
+
+  it('includes dashboard labels in the production English locale', () => {
+    expect(englishTranslations.restaurantPos.service.dashboard).toEqual({
+      occupied: 'Active',
+      kitchen: 'In kitchen',
+      charge: 'To charge',
+      sales: 'Sales',
+    });
   });
 
   it('derives compact dashboard stats for the command center header', async () => {
