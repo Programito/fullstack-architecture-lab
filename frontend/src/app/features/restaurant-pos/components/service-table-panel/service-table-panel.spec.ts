@@ -125,6 +125,21 @@ describe('ServiceTablePanel', () => {
     expect(component.selectedServiceWorkflowSections().filter((section) => section.highlighted)).toEqual([
       expect.objectContaining({ id: 'payment' }),
     ]);
+
+    const workflowTransitions = [
+      { nextAction: { type: 'mark_served' as const, count: 0 }, highlightedId: 'kitchen' },
+      { nextAction: { type: 'cleaning' as const, count: 0 }, highlightedId: 'closing' },
+      { nextAction: { type: 'free_table' as const, count: 0 }, highlightedId: 'closing' },
+    ];
+
+    workflowTransitions.forEach(({ nextAction, highlightedId }) => {
+      fixture.componentRef.setInput('serviceInfo', createServiceInfo(table, order, { nextAction }));
+      fixture.detectChanges();
+
+      expect(component.selectedServiceWorkflowSections().filter((section) => section.highlighted)).toEqual([
+        expect.objectContaining({ id: highlightedId }),
+      ]);
+    });
   });
 
   it('renders selected table details, order lines, and service actions', async () => {
