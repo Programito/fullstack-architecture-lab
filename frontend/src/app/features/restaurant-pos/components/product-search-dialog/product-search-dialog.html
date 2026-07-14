@@ -8,20 +8,25 @@
   [confirmLabel]="text('restaurantPos.service.finishProductSearch')"
   [footerSummary]="productPickerSummary()"
   size="lg"
+  panelVariant="drawer"
+  panelClass="product-picker product-picker--drawer"
+  [attr.data-layout]="'drawer'"
   (closed)="closed.emit()"
   (confirmed)="finished.emit()"
 >
-  <div data-testid="product-search-layout" class="grid h-[min(33rem,calc(100vh-11rem))] min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-4">
-    <app-search-input
-      [label]="text('restaurantPos.service.searchProduct')"
-      [placeholder]="text('restaurantPos.service.searchProductPlaceholder')"
-      [value]="query()"
-      [clearAriaLabel]="text('restaurantPos.service.clearProductSearch')"
-      (valueChange)="queryChanged.emit($event)"
-      (searched)="searched.emit($event)"
-    />
+  <div data-testid="product-search-layout" class="product-picker__layout grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-4">
+    <header data-testid="product-picker-header" class="product-picker__header">
+      <app-search-input
+        [label]="text('restaurantPos.service.searchProduct')"
+        [placeholder]="text('restaurantPos.service.searchProductPlaceholder')"
+        [value]="query()"
+        [clearAriaLabel]="text('restaurantPos.service.clearProductSearch')"
+        (valueChange)="queryChanged.emit($event)"
+        (searched)="searched.emit($event)"
+      />
+    </header>
 
-    <div class="min-w-0" [attr.aria-label]="text('restaurantPos.service.productView')">
+    <nav data-testid="product-picker-quick-sections" class="product-picker__sections min-w-0" [attr.aria-label]="text('restaurantPos.service.productView')">
       <div data-testid="product-section-chips" class="flex flex-wrap gap-2">
         @for (section of sectionOptions(); track section.id) {
           <button
@@ -40,9 +45,9 @@
           </button>
         }
       </div>
-    </div>
+    </nav>
 
-    <div data-testid="product-search-results" class="min-h-0 overflow-y-auto pr-1">
+    <div data-testid="product-search-results" class="product-picker__results min-h-0 overflow-y-auto pr-1">
       <div class="grid content-start gap-4">
       @for (group of productPickerGroups(); track group.id) {
         @if (group.items.length) {

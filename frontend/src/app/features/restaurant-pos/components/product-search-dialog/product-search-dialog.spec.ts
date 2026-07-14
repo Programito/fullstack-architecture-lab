@@ -121,6 +121,22 @@ describe('ProductSearchDialog', () => {
 
   const section = (name: string) => screen.getByRole('region', { name });
 
+  it('renders the product picker as a drawer-style overlay with search-first hierarchy', async () => {
+    await renderDialog({ open: true });
+
+    const dialog = screen.getByRole('dialog', { name: 'Añadir productos' });
+    expect(dialog.closest('app-dialog')?.getAttribute('data-layout')).toBe('drawer');
+    expect(screen.getByTestId('product-picker-header')).toBeTruthy();
+    expect(screen.getByTestId('product-picker-quick-sections')).toBeTruthy();
+  });
+
+  it('keeps quick add actions visible while browsing products', async () => {
+    await renderDialog({ open: true });
+
+    expect(screen.getAllByRole('button', { name: /Añadir/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Más vendidos|Favoritos/).length).toBeGreaterThan(0);
+  });
+
   it('renders section chips, grouped products and polished POS card actions', async () => {
     const { fixture } = await renderDialog();
     const sectionChanged = vi.fn();
@@ -154,7 +170,7 @@ describe('ProductSearchDialog', () => {
     expect(screen.queryByText('Finalizar')).toBeNull();
     expect(screen.getByRole('button', { name: 'Cerrar' })).toBeTruthy();
     expect(screen.getByText(/3 productos/).textContent).toMatch(/38,50/);
-    expect(screen.getByTestId('product-search-layout').className).toContain('h-[min(33rem,calc(100vh-11rem))]');
+    expect(screen.getByTestId('product-search-layout').className).toContain('h-full');
     expect(screen.getByTestId('product-search-results').className).toContain('overflow-y-auto');
 
     const chips = screen.getByTestId('product-section-chips');
