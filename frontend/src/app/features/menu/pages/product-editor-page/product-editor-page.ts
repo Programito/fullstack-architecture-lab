@@ -28,6 +28,7 @@ import {
   type UpdateComboSlotRequest,
   type UpdatePlatterComponentRequest,
 } from '../../services/menu-api.service';
+import { MenuViewCacheService } from '../../services/menu-view-cache.service';
 import { ProductImageUploadError, ProductImageUploadService } from '../../services/product-image-upload.service';
 
 const MENU_URL = '/restaurant-pos/menu';
@@ -135,6 +136,7 @@ export class ProductEditorPage {
   private readonly imageUpload = inject(ProductImageUploadService);
   private readonly toast = inject(ToastService);
   private readonly restaurantContext = inject(RestaurantContextStore);
+  private readonly viewCache = inject(MenuViewCacheService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
 
   private readonly productId = this.route.snapshot.paramMap.get('productId');
@@ -887,7 +889,7 @@ export class ProductEditorPage {
     this.saving.set(true);
     const existing = this.existingProduct();
 
-    const req$: Observable<unknown> = existing
+    const req$: Observable<RestaurantProductDetailDto | null> = existing
       ? this.upsertSupplementGroup$(existing.id, name).pipe(
           switchMap((supplementGroupId) =>
             this.menuApi.updateProduct(existing.id, {
@@ -904,8 +906,16 @@ export class ProductEditorPage {
               isAvailable: this.available(),
             } satisfies UpdateProductInput),
           ),
-          switchMap(() => (this.isCombo() || this.isPlatter() ? this.saveComboAndPlatterChanges$(existing.id) : of(undefined))),
-          switchMap(() => this.syncCategoryOnSave$(existing.id)),
+          switchMap((updatedProduct) =>
+            (this.isCombo() || this.isPlatter() ? this.saveComboAndPlatterChanges$(existing.id) : of(undefined)).pipe(
+              map(() => updatedProduct),
+            ),
+          ),
+          switchMap((updatedProduct) =>
+            this.syncCategoryOnSave$(existing.id).pipe(
+              map(() => updatedProduct),
+            ),
+          ),
         )
       : this.menuApi
           .createProduct({
@@ -935,13 +945,17 @@ export class ProductEditorPage {
                 // sección — sin esto quedaría como "solo catálogo" (ver bug original: un producto
                 // creado que nunca aparecía en mobile porque nadie lo añadía a una sección).
                 switchMap(() => this.menuApi.addSectionItem(this.menuId(), this.categoryId(), created.id)),
+                map(() => null),
               ),
             ),
           );
 
     req$.subscribe({
-      complete: () => {
+      next: (savedProduct) => {
         this.saving.set(false);
+        if (savedProduct) {
+          this.viewCache.patchEditedProduct(savedProduct, this.categoryId());
+        }
         this.toast.success({
           title: this.transloco.translate(existing ? 'menu.product.success.updated' : 'menu.product.success.created'),
         });

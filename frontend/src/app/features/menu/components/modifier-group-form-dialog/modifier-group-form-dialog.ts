@@ -4,6 +4,7 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import { Input } from '../../../../shared/ui/input/input';
+import { SegmentedControl, type SegmentedControlOption } from '../../../../shared/ui/segmented-control/segmented-control';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Switch } from '../../../../shared/ui/switch/switch';
 import { ImageDropzone } from '../image-dropzone/image-dropzone';
@@ -15,6 +16,7 @@ import {
 } from '../../services/product-image-upload.service';
 
 type OptionUploadStatus = 'idle' | 'uploading' | 'failed';
+type ModifierLocale = 'es' | 'ca' | 'en';
 
 export type ModifierGroupOptionDraft = {
   name: string;
@@ -37,14 +39,14 @@ function emptyOption(): ModifierGroupOptionDraft {
 
 @Component({
   selector: 'app-modifier-group-form-dialog',
-  imports: [Button, Dialog, Icon, ImageDropzone, Input, Select, Switch, TranslocoPipe],
+  imports: [Button, Dialog, Icon, ImageDropzone, Input, SegmentedControl, Select, Switch, TranslocoPipe],
   templateUrl: './modifier-group-form-dialog.html',
 })
 export class ModifierGroupFormDialog {
   readonly open = input(false, { transform: booleanAttribute });
   readonly loading = input(false, { transform: booleanAttribute });
-  // Grupo a editar (null = modo creación). Al abrir con un valor no nulo, el effect() de abajo
-  // precarga todos los campos desde ese grupo en vez de resetearlos a vacío — ver
+  // Grupo a editar (null = modo creacion). Al abrir con un valor no nulo, el effect() de abajo
+  // precarga todos los campos desde ese grupo en vez de resetearlos a vacio; ver
   // docs/superpowers/plans/2026-07-11-menu-multilingual-names.md, Fase 2 Paso 3 (hueco resuelto).
   readonly editingGroup = input<ModifierGroup | null>(null);
   readonly closed = output<void>();
@@ -68,6 +70,8 @@ export class ModifierGroupFormDialog {
   protected readonly nameCa = signal('');
   protected readonly nameEn = signal('');
   protected readonly nameEs = signal('');
+  protected readonly activeGroupLocale = signal<ModifierLocale>('es');
+  protected readonly activeOptionLocale = signal<ModifierLocale>('es');
   protected readonly selectionType = signal<'single' | 'multiple'>('single');
   protected readonly isRequired = signal(false);
   protected readonly options = signal<ModifierGroupOptionDraft[]>([emptyOption()]);
@@ -79,6 +83,12 @@ export class ModifierGroupFormDialog {
     { value: 'single', label: 'Una opción' },
     { value: 'multiple', label: 'Varias opciones' },
   ];
+
+  protected readonly localeOptions = computed<SegmentedControlOption[]>(() => [
+    { value: 'es', label: 'Español' },
+    { value: 'ca', label: 'Català' },
+    { value: 'en', label: 'English' },
+  ]);
 
   protected readonly isValid = computed(() => {
     const nameOk = this.name().trim().length > 0;
@@ -98,8 +108,10 @@ export class ModifierGroupFormDialog {
         this.nameCa.set(editing.nameI18n?.ca ?? '');
         this.nameEn.set(editing.nameI18n?.en ?? '');
         this.nameEs.set(editing.nameI18n?.es ?? '');
-        // El diálogo solo distingue single/multiple; un grupo 'remove' (fuera del alcance de
-        // creación de este diálogo) se trata como 'multiple' si alguna vez llega aquí a editar.
+        this.activeGroupLocale.set('es');
+        this.activeOptionLocale.set('es');
+        // El di?logo solo distingue single/multiple; un grupo 'remove' (fuera del alcance de
+        // creaci?n de este di?logo) se trata como 'multiple' si alguna vez llega aqu? a editar.
         this.selectionType.set(editing.type === 'single' ? 'single' : 'multiple');
         this.isRequired.set(editing.required);
         this.options.set(
@@ -121,6 +133,8 @@ export class ModifierGroupFormDialog {
         this.nameCa.set('');
         this.nameEn.set('');
         this.nameEs.set('');
+        this.activeGroupLocale.set('es');
+        this.activeOptionLocale.set('es');
         this.selectionType.set('single');
         this.isRequired.set(false);
         this.options.set([emptyOption()]);
@@ -165,6 +179,84 @@ export class ModifierGroupFormDialog {
 
   protected updateOptionNameEs(index: number, value: string): void {
     this.options.update((opts) => opts.map((opt, i) => (i === index ? { ...opt, nameEs: value } : opt)));
+  }
+
+  protected activeGroupName(): string {
+    switch (this.activeGroupLocale()) {
+      case 'ca':
+        return this.nameCa();
+      case 'en':
+        return this.nameEn();
+      case 'es':
+      default:
+        return this.nameEs();
+    }
+  }
+
+  protected activeGroupNameLabel(): string {
+    switch (this.activeGroupLocale()) {
+      case 'ca':
+        return this.transloco.translate('menu.page.sectionNameCaLabel');
+      case 'en':
+        return this.transloco.translate('menu.page.sectionNameEnLabel');
+      case 'es':
+      default:
+        return this.transloco.translate('menu.page.sectionNameEsLabel');
+    }
+  }
+
+  protected updateActiveGroupName(value: string): void {
+    switch (this.activeGroupLocale()) {
+      case 'ca':
+        this.nameCa.set(value);
+        break;
+      case 'en':
+        this.nameEn.set(value);
+        break;
+      case 'es':
+      default:
+        this.nameEs.set(value);
+        break;
+    }
+  }
+
+  protected activeOptionName(option: ModifierGroupOptionDraft): string {
+    switch (this.activeOptionLocale()) {
+      case 'ca':
+        return option.nameCa;
+      case 'en':
+        return option.nameEn;
+      case 'es':
+      default:
+        return option.nameEs;
+    }
+  }
+
+  protected activeOptionNameLabel(): string {
+    switch (this.activeOptionLocale()) {
+      case 'ca':
+        return this.transloco.translate('menu.page.sectionNameCaLabel');
+      case 'en':
+        return this.transloco.translate('menu.page.sectionNameEnLabel');
+      case 'es':
+      default:
+        return this.transloco.translate('menu.page.sectionNameEsLabel');
+    }
+  }
+
+  protected updateActiveOptionName(index: number, value: string): void {
+    switch (this.activeOptionLocale()) {
+      case 'ca':
+        this.updateOptionNameCa(index, value);
+        break;
+      case 'en':
+        this.updateOptionNameEn(index, value);
+        break;
+      case 'es':
+      default:
+        this.updateOptionNameEs(index, value);
+        break;
+    }
   }
 
   protected updateOptionPrice(index: number, raw: string): void {
@@ -268,3 +360,4 @@ export class ModifierGroupFormDialog {
     }
   }
 }
+

@@ -1268,7 +1268,7 @@
       "reorderSaved": "Ordre desat.",
       "reorderFailed": "No s'ha pogut desar l'ordre.",
       "previewReorderHint": "Arrossega les seccions (per la seva nansa) o els plats per reordenar-los: l'ordre es desa i és el que veurà el client al seu mòbil.",
-      "duplicateProduct": "Duplica el producte",
+      "duplicateProduct": "Duplicar",
       "duplicateSuccess": "Producte duplicat.",
       "duplicateFailed": "No s'ha pogut duplicar el producte.",
       "selectMode": "Selecciona",
@@ -1291,10 +1291,32 @@
         "customizableOnly": "Només personalitzables",
         "withImage": "Amb imatge",
         "withoutImage": "Sense imatge",
-        "noSection": "Sense secció",
+        "noSection": "Sense secció del menú",
         "missingDescription": "Sense descripció",
         "clearAll": "Neteja els filtres",
         "viewProducts": "Veure {{count}} productes"
+      },
+      "filtersSummary": {
+        "title": "Filtres actius",
+        "single": "{{count}} filtre actiu",
+        "multiple": "{{count}} filtres actius",
+        "empty": "Encara no hi ha filtres actius. Fes servir aquests controls per acotar la llista més ràpid."
+      },
+      "filterSections": {
+        "basics": {
+          "title": "Bàsics",
+          "description": "Comença per la categoria, la disponibilitat i el tipus de producte."
+        },
+        "allergens": {
+          "title": "Al·lèrgies"
+        },
+        "review": {
+          "title": "Revisió"
+        },
+        "view": {
+          "title": "Vista",
+          "description": "Tria com prefereixes recórrer la llista mentre edites."
+        }
       },
       "viewModeLabel": "Vista",
       "viewModes": {
@@ -1372,29 +1394,37 @@
       "toggleAvailability": "Disponible",
       "availabilityManagementDescription": "Activa o desactiva productes per al servei d'avui.",
       "newSection": "Nova secció",
+      "sectionBaseNameLabel": "Nom base",
       "sectionNameLabel": "Nom",
+      "sectionNameEsLabel": "Nom (castellà)",
       "sectionNamePlaceholder": "Nom de la secció",
       "sectionNameCaLabel": "Nom (català)",
       "sectionNameEnLabel": "Nom (anglès)",
       "sectionNameI18nPlaceholder": "Opcional",
+      "sectionTranslationsTitle": "Traduccions",
+      "sectionTranslationLocaleLabel": "Idioma del nom",
       "saveSection": "Desar",
       "cancelSection": "Cancel·lar",
+      "managementTitle": "Gestió",
       "sectionVisibilityLabel": "Visible a la carta",
       "deleteSectionLabel": "Eliminar secció",
+      "deleteSectionAction": "Eliminar",
       "deleteSectionTitle": "Eliminar secció",
       "deleteSectionConfirm": "Eliminar la secció \"{{name}}\"? S'eliminaran també els ítems que conté.",
       "confirmDelete": "Confirmar eliminació",
       "cancelDelete": "Cancel·lar",
       "newProduct": "Nou producte",
-      "editProduct": "Editar producte",
+      "editProduct": "Editar",
       "deleteProduct": "Eliminar producte",
       "deleteProductTitle": "Eliminar producte",
       "deleteProductDescription": "Eliminar «{{name}}»? Aquesta acció no es pot desfer.",
       "confirmDeleteProduct": "Eliminar",
       "cancelDeleteProduct": "Cancel·lar",
-      "noSection": "Sense secció",
-      "addToSection": "Afegir a secció",
-      "addToSectionTitle": "Afegir a secció",
+      "managementTitle": "Gestió",
+      "preparationLabel": "Preparació",
+      "noSection": "Sense secció del menú",
+      "addToSection": "Assignar a secció",
+      "addToSectionTitle": "Assignar a secció",
       "audit": {
         "title": "Revisió ràpida del menú",
         "description": "Fes servir aquestes alertes per detectar de pressa quins productes encara necessiten imatge, text o revisió operativa.",
@@ -1418,13 +1448,13 @@
         "warningLabels": {
           "missing-image": "Sense imatge",
           "missing-description": "Sense descripció",
-          "missing-section": "Sense secció",
+          "missing-section": "Sense secció del menú",
           "unavailable": "No disponibles",
           "weak-combo-summary": "Resum de menú feble",
           "weak-customization-summary": "Extres poc clars"
         }
       },
-      "editSectionLabel": "Editar secció",
+      "editSectionLabel": "Editar",
       "editSectionTitle": "Editar secció",
       "sectionUpdated": "Secció actualitzada correctament.",
       "sectionUpdateFailed": "No s'ha pogut actualitzar la secció.",
@@ -1480,8 +1510,11 @@
         "uploadImage": "Pujar imatge",
         "uploadingImage": "Pujant imatge...",
         "replaceImage": "Reemplaçar imatge",
+        "replaceImageShort": "Reemplaçar",
         "removeImage": "Treure imatge",
+        "removeImageShort": "Treure",
         "retryUpload": "Reintentar pujada",
+        "retryUploadShort": "Reintentar",
         "invalidImageType": "Fes servir una imatge JPG, PNG o WEBP.",
         "imageTooLarge": "La imatge pesa massa. Prova amb un fitxer més lleuger.",
         "imageTooSmall": "La imatge és massa petita. Fes servir una resolució més gran.",
@@ -1500,6 +1533,8 @@
         "moveDown": "Baixa",
         "selectedGroupsOrder": "Ordre dels grups seleccionats",
         "basicInfoTitle": "Informació bàsica",
+        "contentTitle": "Contingut del producte",
+        "settingsTitle": "Configuració del producte",
         "previewTitle": "Vista prèvia",
         "previewNoSectionHint": "Aquest producte encara no és a cap secció de la carta.",
         "previewNewProductHint": "Afegeix el producte a una secció des de la carta per veure'l aquí en context.",

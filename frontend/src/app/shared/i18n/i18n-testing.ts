@@ -2316,11 +2316,40 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     customizableOnly: 'Solo personalizables',
     withImage: 'Con imagen',
     withoutImage: 'Sin imagen',
-    noSection: 'Sin sección',
+    noSection: 'Sin sección del menú',
     missingDescription: 'Sin descripción',
     clearAll: 'Limpiar filtros',
     viewProducts: 'Ver {{count}} productos',
   };
+  clones['es'].menu.page.filtersSummary = {
+    title: 'Filtros activos',
+    single: '{{count}} filtro activo',
+    multiple: '{{count}} filtros activos',
+    empty: 'No hay filtros activos. Usa estos controles para acotar la lista más rápido.',
+  };
+  clones['es'].menu.page.filterSections = {
+    basics: { title: 'Básicos', description: 'Empieza por la categoría, disponibilidad y tipo de producto.' },
+    allergens: { title: 'Alergias' },
+    review: { title: 'Revisión' },
+    view: { title: 'Vista', description: 'Elige cómo prefieres recorrer la lista mientras editas.' },
+  };
+  clones['es'].menu.page.duplicateProduct = 'Duplicar';
+  clones['es'].menu.page.editProduct = 'Editar';
+  clones['es'].menu.page.noSection = 'Sin sección del menú';
+  clones['es'].menu.page.addToSection = 'Asignar a sección';
+  clones['es'].menu.page.addToSectionTitle = 'Asignar a sección';
+  clones['es'].menu.page.managementTitle = 'Gestión';
+  clones['es'].menu.page.preparationLabel = 'Preparación';
+  clones['es'].menu.page.deleteSectionAction = 'Eliminar';
+  clones['es'].menu.page.editSectionLabel = 'Editar';
+  clones['es'].menu.page.sectionBaseNameLabel = 'Nombre base';
+  clones['es'].menu.page.sectionNameEsLabel = 'Nombre (español)';
+  clones['es'].menu.page.sectionNameCaLabel = 'Nombre (catalán)';
+  clones['es'].menu.page.sectionNameEnLabel = 'Nombre (inglés)';
+  clones['es'].menu.page.sectionTranslationsTitle = 'Traducciones';
+  clones['es'].menu.page.sectionTranslationLocaleLabel = 'Idioma del nombre';
+  clones['es'].menu.page.visibleInApp = 'Visible en la app';
+  clones['es'].menu.page.hiddenFromApp = 'Oculto de la app';
   clones['es'].menu.page.viewModeLabel = 'Vista';
   clones['es'].menu.page.viewModes = { cards: 'Tarjetas', compact: 'Compacta' };
   clones['es'].menu.page.comboReady = 'Listo para vender';
@@ -2345,7 +2374,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     warningLabels: {
       'missing-image': 'Sin imagen',
       'missing-description': 'Sin descripción',
-      'missing-section': 'Sin sección',
+      'missing-section': 'Sin sección del menú',
       unavailable: 'No disponibles',
       'weak-combo-summary': 'Resumen de menú débil',
       'weak-customization-summary': 'Extras poco claros',
@@ -2374,8 +2403,13 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.product.form.uploadImage = 'Subir imagen';
   clones['es'].menu.product.form.uploadingImage = 'Subiendo imagen...';
   clones['es'].menu.product.form.replaceImage = 'Reemplazar imagen';
+  clones['es'].menu.product.form.replaceImageShort = 'Reemplazar';
   clones['es'].menu.product.form.removeImage = 'Quitar imagen';
+  clones['es'].menu.product.form.removeImageShort = 'Quitar';
   clones['es'].menu.product.form.retryUpload = 'Reintentar subida';
+  clones['es'].menu.product.form.retryUploadShort = 'Reintentar';
+  clones['es'].menu.product.form.contentTitle = 'Contenido del producto';
+  clones['es'].menu.product.form.settingsTitle = 'Configuración del producto';
   clones['es'].menu.product.form.invalidImageType = 'Usa una imagen JPG, PNG o WEBP.';
   clones['es'].menu.product.form.imageTooLarge = 'La imagen es demasiado pesada. Prueba con un archivo mas ligero.';
   clones['es'].menu.product.form.imageTooSmall = 'La imagen es demasiado pequena. Usa una resolucion mayor.';
@@ -2533,11 +2567,40 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     customizableOnly: 'Customizable only',
     withImage: 'With image',
     withoutImage: 'Without image',
-    noSection: 'No section',
+    noSection: 'No menu section',
     missingDescription: 'Missing description',
     clearAll: 'Clear filters',
     viewProducts: 'View {{count}} products',
   };
+  clones['en'].menu.page.filtersSummary = {
+    title: 'Active filters',
+    single: '{{count}} active filter',
+    multiple: '{{count}} active filters',
+    empty: 'There are no active filters yet. Use these controls to narrow the list faster.',
+  };
+  clones['en'].menu.page.filterSections = {
+    basics: { title: 'Basics', description: 'Start with category, availability and product type.' },
+    allergens: { title: 'Allergens' },
+    review: { title: 'Review' },
+    view: { title: 'View', description: 'Choose how you want to scan the list while editing.' },
+  };
+  clones['en'].menu.page.duplicateProduct = 'Duplicate';
+  clones['en'].menu.page.editProduct = 'Edit';
+  clones['en'].menu.page.noSection = 'No menu section';
+  clones['en'].menu.page.addToSection = 'Assign to section';
+  clones['en'].menu.page.addToSectionTitle = 'Assign to section';
+  clones['en'].menu.page.managementTitle = 'Management';
+  clones['en'].menu.page.preparationLabel = 'Preparation';
+  clones['en'].menu.page.deleteSectionAction = 'Delete';
+  clones['en'].menu.page.editSectionLabel = 'Edit';
+  clones['en'].menu.page.sectionBaseNameLabel = 'Base name';
+  clones['en'].menu.page.sectionNameEsLabel = 'Name (Spanish)';
+  clones['en'].menu.page.sectionNameCaLabel = 'Name (Catalan)';
+  clones['en'].menu.page.sectionNameEnLabel = 'Name (English)';
+  clones['en'].menu.page.sectionTranslationsTitle = 'Translations';
+  clones['en'].menu.page.sectionTranslationLocaleLabel = 'Name language';
+  clones['en'].menu.page.visibleInApp = 'Visible in the app';
+  clones['en'].menu.page.hiddenFromApp = 'Hidden from the app';
   clones['en'].menu.page.viewModeLabel = 'View';
   clones['en'].menu.page.viewModes = { cards: 'Cards', compact: 'Compact' };
   clones['en'].menu.page.comboReady = 'Ready to sell';
@@ -2578,7 +2641,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     warningLabels: {
       'missing-image': 'Missing image',
       'missing-description': 'Missing description',
-      'missing-section': 'No section',
+      'missing-section': 'No menu section',
       unavailable: 'Unavailable',
       'weak-combo-summary': 'Weak combo summary',
       'weak-customization-summary': 'Unclear extras',
@@ -2590,8 +2653,13 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.product.form.uploadImage = 'Upload image';
   clones['en'].menu.product.form.uploadingImage = 'Uploading image...';
   clones['en'].menu.product.form.replaceImage = 'Replace image';
+  clones['en'].menu.product.form.replaceImageShort = 'Replace';
   clones['en'].menu.product.form.removeImage = 'Remove image';
+  clones['en'].menu.product.form.removeImageShort = 'Remove';
   clones['en'].menu.product.form.retryUpload = 'Retry upload';
+  clones['en'].menu.product.form.retryUploadShort = 'Retry';
+  clones['en'].menu.product.form.contentTitle = 'Product content';
+  clones['en'].menu.product.form.settingsTitle = 'Product settings';
   clones['en'].menu.product.form.invalidImageType = 'Use a JPG, PNG, or WEBP image.';
   clones['en'].menu.product.form.imageTooLarge = 'The image is too large. Try a lighter file.';
   clones['en'].menu.product.form.imageTooSmall = 'The image is too small. Use a higher resolution image.';
@@ -2750,11 +2818,40 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     customizableOnly: 'Només personalitzables',
     withImage: 'Amb imatge',
     withoutImage: 'Sense imatge',
-    noSection: 'Sense secció',
+    noSection: 'Sense secció del menú',
     missingDescription: 'Sense descripció',
     clearAll: 'Neteja els filtres',
     viewProducts: 'Veure {{count}} productes',
   };
+  clones['ca'].menu.page.filtersSummary = {
+    title: 'Filtres actius',
+    single: '{{count}} filtre actiu',
+    multiple: '{{count}} filtres actius',
+    empty: 'Encara no hi ha filtres actius. Fes servir aquests controls per acotar la llista més ràpid.',
+  };
+  clones['ca'].menu.page.filterSections = {
+    basics: { title: 'Bàsics', description: 'Comença per la categoria, la disponibilitat i el tipus de producte.' },
+    allergens: { title: 'Al·lèrgies' },
+    review: { title: 'Revisió' },
+    view: { title: 'Vista', description: 'Tria com prefereixes recórrer la llista mentre edites.' },
+  };
+  clones['ca'].menu.page.duplicateProduct = 'Duplicar';
+  clones['ca'].menu.page.editProduct = 'Editar';
+  clones['ca'].menu.page.noSection = 'Sense secció del menú';
+  clones['ca'].menu.page.addToSection = 'Assignar a secció';
+  clones['ca'].menu.page.addToSectionTitle = 'Assignar a secció';
+  clones['ca'].menu.page.managementTitle = 'Gestió';
+  clones['ca'].menu.page.preparationLabel = 'Preparació';
+  clones['ca'].menu.page.deleteSectionAction = 'Eliminar';
+  clones['ca'].menu.page.editSectionLabel = 'Editar';
+  clones['ca'].menu.page.sectionBaseNameLabel = 'Nom base';
+  clones['ca'].menu.page.sectionNameEsLabel = 'Nom (castellà)';
+  clones['ca'].menu.page.sectionNameCaLabel = 'Nom (català)';
+  clones['ca'].menu.page.sectionNameEnLabel = 'Nom (anglès)';
+  clones['ca'].menu.page.sectionTranslationsTitle = 'Traduccions';
+  clones['ca'].menu.page.sectionTranslationLocaleLabel = 'Idioma del nom';
+  clones['ca'].menu.page.visibleInApp = "Visible a l'app";
+  clones['ca'].menu.page.hiddenFromApp = "Ocult de l'app";
   clones['ca'].menu.page.viewModeLabel = 'Vista';
   clones['ca'].menu.page.viewModes = { cards: 'Targetes', compact: 'Compacta' };
   clones['ca'].menu.page.comboReady = 'Llesta per vendre';
@@ -2779,7 +2876,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
     warningLabels: {
       'missing-image': 'Sense imatge',
       'missing-description': 'Sense descripció',
-      'missing-section': 'Sense secció',
+      'missing-section': 'Sense secció del menú',
       unavailable: 'No disponibles',
       'weak-combo-summary': 'Resum de menú feble',
       'weak-customization-summary': 'Extres poc clars',
@@ -2808,8 +2905,13 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['ca'].menu.product.form.uploadImage = 'Pujar imatge';
   clones['ca'].menu.product.form.uploadingImage = 'Pujant imatge...';
   clones['ca'].menu.product.form.replaceImage = 'Reemplaçar imatge';
+  clones['ca'].menu.product.form.replaceImageShort = 'Reemplaçar';
   clones['ca'].menu.product.form.removeImage = 'Treure imatge';
+  clones['ca'].menu.product.form.removeImageShort = 'Treure';
   clones['ca'].menu.product.form.retryUpload = 'Reintentar pujada';
+  clones['ca'].menu.product.form.retryUploadShort = 'Reintentar';
+  clones['ca'].menu.product.form.contentTitle = 'Contingut del producte';
+  clones['ca'].menu.product.form.settingsTitle = 'Configuració del producte';
   clones['ca'].menu.product.form.invalidImageType = 'Fes servir una imatge JPG, PNG o WEBP.';
   clones['ca'].menu.product.form.imageTooLarge = 'La imatge pesa massa. Prova amb un fitxer mes lleuger.';
   clones['ca'].menu.product.form.imageTooSmall = 'La imatge es massa petita. Fes servir una resolucio mes gran.';

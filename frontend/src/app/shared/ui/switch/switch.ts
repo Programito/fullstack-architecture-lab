@@ -1,7 +1,7 @@
 import { booleanAttribute, Component, computed, input, output } from '@angular/core';
 
 export type SwitchSize = 'sm' | 'md' | 'lg';
-export type SwitchVariant = 'primary' | 'secondary' | 'neutral' | 'danger' | 'violet';
+export type SwitchVariant = 'primary' | 'secondary' | 'neutral' | 'danger' | 'violet' | 'contrast';
 export type SwitchAppearance = 'default' | 'minimal';
 
 @Component({

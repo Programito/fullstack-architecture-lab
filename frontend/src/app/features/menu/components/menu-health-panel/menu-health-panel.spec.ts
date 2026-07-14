@@ -39,7 +39,7 @@ describe('MenuHealthPanel', () => {
       },
     });
 
-    screen.getByRole('button', { name: /Sin sección/i }).click();
+    screen.getByRole('button', { name: /Sin sección del menú/i }).click();
 
     expect(filterSelected).toHaveBeenCalledWith('missing-section');
   });

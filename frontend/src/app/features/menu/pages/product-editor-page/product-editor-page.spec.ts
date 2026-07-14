@@ -7,6 +7,7 @@ import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 import type { ModifierGroup } from '../../models/modifier-group.model';
 import { MenuApiService, type MenuData, type RestaurantProductDetailDto } from '../../services/menu-api.service';
+import { MenuViewCacheService } from '../../services/menu-view-cache.service';
 import { ProductImageUploadError, ProductImageUploadService } from '../../services/product-image-upload.service';
 import { ToastService } from '../../../../shared/ui/toast/toast';
 import { ProductEditorPage } from './product-editor-page';
@@ -96,6 +97,7 @@ describe('ProductEditorPage', () => {
   const addSectionItem = vi.fn();
   const removeSectionItem = vi.fn();
   const navigateByUrl = vi.fn(async () => true);
+  const patchEditedProduct = vi.fn();
   const toastSuccess = vi.fn();
   const toastDanger = vi.fn();
 
@@ -124,6 +126,7 @@ describe('ProductEditorPage', () => {
             removeSectionItem,
           },
         },
+        { provide: MenuViewCacheService, useValue: { patchEditedProduct } },
         { provide: ProductImageUploadService, useValue: { uploadProductImage } },
         { provide: ToastService, useValue: { success: toastSuccess, danger: toastDanger } },
         { provide: RestaurantContextStore, useValue: { activeRestaurant: signal(ACTIVE_RESTAURANT).asReadonly() } },
@@ -144,6 +147,7 @@ describe('ProductEditorPage', () => {
     addSectionItem.mockReset().mockReturnValue(of(undefined));
     removeSectionItem.mockReset().mockReturnValue(of(undefined));
     navigateByUrl.mockClear();
+    patchEditedProduct.mockClear();
     toastSuccess.mockClear();
     toastDanger.mockClear();
   });
@@ -337,13 +341,13 @@ describe('ProductEditorPage', () => {
     await renderPage(null);
 
     fireEvent.input(screen.getByRole('textbox', { name: /^Nombre principal$/i }), { target: { value: 'Bocadillo' } });
-    fireEvent.click(screen.getByRole('button', { name: /AÃ±adir suplemento/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Añadir suplemento/i }));
 
     fireEvent.input(screen.getByRole('textbox', { name: /^Nombre principal$/i, hidden: true }), { target: { value: 'Bacon extra' } });
     const supplementCard = screen.getByText(/Bacon extra/i).closest('.rounded-xl') as HTMLElement;
 
     fireEvent.click(within(supplementCard).getByRole('radio', { name: 'English' }));
-    fireEvent.input(within(supplementCard).getByRole('textbox', { name: /Nombre \(inglÃ©s\)/i }), {
+    fireEvent.input(within(supplementCard).getByRole('textbox', { name: /Nombre \(inglés\)/i }), {
       target: { value: 'Extra bacon EN' },
     });
 
@@ -567,7 +571,7 @@ describe('ProductEditorPage', () => {
 
   it('updates a product and navigates back to the menu on save', async () => {
     getProduct.mockReturnValue(of(MOCK_PRODUCT));
-    updateProduct.mockReturnValue(of(MOCK_PRODUCT));
+    updateProduct.mockReturnValue(of({ ...MOCK_PRODUCT, name: 'Hamburguesa premium' }));
     await renderPage('rp-1');
 
     const nameInput = await screen.findByRole('textbox', { name: /^Nombre principal$/i });
@@ -577,6 +581,10 @@ describe('ProductEditorPage', () => {
     expect(updateProduct).toHaveBeenCalledWith(
       'rp-1',
       expect.objectContaining({ name: 'Hamburguesa premium', isAvailable: true }),
+    );
+    expect(patchEditedProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'rp-1', name: 'Hamburguesa premium' }),
+      'cat-1',
     );
     expect(navigateByUrl).toHaveBeenCalledWith('/restaurant-pos/menu');
   });
@@ -626,7 +634,7 @@ describe('ProductEditorPage', () => {
     expect(await screen.findByText(/demasiado pesada/i)).toBeTruthy();
 
     uploadProductImage.mockReturnValueOnce(of('https://res.cloudinary.com/demo/image/upload/v1/retried.jpg'));
-    fireEvent.click(screen.getByRole('button', { name: /reintentar subida/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
 
     expect(uploadProductImage).toHaveBeenNthCalledWith(2, file);
     expect((await screen.findByRole('img', { name: /imagen/i }) as HTMLImageElement).src).toContain('retried.jpg');
@@ -658,7 +666,7 @@ describe('ProductEditorPage', () => {
     updateProduct.mockReturnValue(of(MOCK_PRODUCT));
     await renderPage('rp-1');
 
-    fireEvent.click(await screen.findByRole('button', { name: /quitar imagen/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /quitar/i }));
     fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
 
     expect(updateProduct).toHaveBeenCalledWith('rp-1', expect.objectContaining({ imageUrl: null }));

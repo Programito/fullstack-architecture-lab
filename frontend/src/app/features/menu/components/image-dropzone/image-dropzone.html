@@ -9,7 +9,7 @@
         (drop)="handleDrop($event)"
       >
         @if (hasImage()) {
-          <img [src]="imageUrl()!" [alt]="previewAlt() || (inputLabel() | transloco)" class="h-full w-full object-cover" />
+          <img [src]="imageUrl()!" [alt]="previewAlt() || (inputLabel() | transloco)" class="h-full w-full object-contain" />
         } @else {
           <span class="theme-muted text-[10px] font-medium">{{ 'menu.product.form.noImage' | transloco }}</span>
         }
@@ -31,10 +31,11 @@
           [disabled]="!canSelect()"
           (click)="openFilePicker()"
         >
+          <app-icon name="upload" size="sm" [decorative]="true" />
           @if (uploadStatus() === 'uploading') {
             {{ 'menu.product.form.uploadingImage' | transloco }}
           } @else if (hasImage()) {
-            {{ 'menu.product.form.replaceImage' | transloco }}
+            {{ 'menu.product.form.replaceImageShort' | transloco }}
           } @else {
             {{ 'menu.product.form.uploadImage' | transloco }}
           }
@@ -46,7 +47,8 @@
             class="theme-field inline-flex h-8 items-center rounded-md border px-2 text-xs font-medium transition-colors hover:border-red-400"
             (click)="removeRequested.emit()"
           >
-            {{ 'menu.product.form.removeImage' | transloco }}
+            <app-icon name="delete" size="sm" [decorative]="true" />
+            {{ 'menu.product.form.removeImageShort' | transloco }}
           </button>
         }
 
@@ -56,7 +58,8 @@
             class="theme-field inline-flex h-8 items-center rounded-md border px-2 text-xs font-medium transition-colors hover:border-amber-400"
             (click)="retryRequested.emit()"
           >
-            {{ 'menu.product.form.retryUpload' | transloco }}
+            <app-icon name="refresh" size="sm" [decorative]="true" />
+            {{ 'menu.product.form.retryUploadShort' | transloco }}
           </button>
         }
       </div>
@@ -80,12 +83,12 @@
         (dragleave)="handleDragLeave()"
         (drop)="handleDrop($event)"
       >
-        <div class="flex min-h-40 items-center justify-center overflow-hidden rounded-md border bg-black/5 dark:bg-white/5">
+        <div class="flex min-h-56 items-center justify-center overflow-hidden rounded-md border bg-black/5 dark:bg-white/5">
           @if (hasImage()) {
             <img
               [src]="imageUrl()!"
               [alt]="previewAlt() || (inputLabel() | transloco)"
-              class="h-40 w-full object-cover"
+              class="h-56 w-full object-contain"
             />
           } @else {
             <div class="grid justify-items-center gap-1 text-center">
@@ -104,38 +107,45 @@
           (change)="handleFileChange($event)"
         />
 
-        <div class="flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="theme-field inline-flex min-h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="!canSelect()"
-            (click)="openFilePicker()"
-          >
-            @if (uploadStatus() === 'uploading') {
-              {{ 'menu.product.form.uploadingImage' | transloco }}
-            } @else if (hasImage()) {
-              {{ 'menu.product.form.replaceImage' | transloco }}
-            } @else {
-              {{ 'menu.product.form.uploadImage' | transloco }}
-            }
-          </button>
+        <div class="grid gap-2">
+          <div class="grid gap-2" [class.sm:grid-cols-2]="hasImage()">
+            <button
+              type="button"
+              class="theme-field inline-flex min-h-10 w-full items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="!canSelect()"
+              (click)="openFilePicker()"
+            >
+              <app-icon name="upload" size="sm" [decorative]="true" />
+              @if (uploadStatus() === 'uploading') {
+                {{ 'menu.product.form.uploadingImage' | transloco }}
+              } @else if (hasImage()) {
+                {{ 'menu.product.form.replaceImageShort' | transloco }}
+              } @else {
+                {{ 'menu.product.form.uploadImage' | transloco }}
+              }
+            </button>
 
-          <button
-            type="button"
-            class="theme-field inline-flex min-h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="!canRemove()"
-            (click)="removeRequested.emit()"
-          >
-            {{ 'menu.product.form.removeImage' | transloco }}
-          </button>
+            @if (hasImage()) {
+              <button
+                type="button"
+                class="theme-field inline-flex min-h-10 w-full items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="!canRemove()"
+                (click)="removeRequested.emit()"
+              >
+                <app-icon name="delete" size="sm" [decorative]="true" />
+                {{ 'menu.product.form.removeImageShort' | transloco }}
+              </button>
+            }
+          </div>
 
           @if (canRetry()) {
             <button
               type="button"
-              class="theme-field inline-flex min-h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-amber-400"
+              class="theme-field inline-flex min-h-10 w-full items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-amber-400"
               (click)="retryRequested.emit()"
             >
-              {{ 'menu.product.form.retryUpload' | transloco }}
+              <app-icon name="refresh" size="sm" [decorative]="true" />
+              {{ 'menu.product.form.retryUploadShort' | transloco }}
             </button>
           }
         </div>

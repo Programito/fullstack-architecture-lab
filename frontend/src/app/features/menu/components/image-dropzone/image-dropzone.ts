@@ -1,12 +1,13 @@
 import { booleanAttribute, Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { Icon } from '../../../../shared/ui/icon/icon';
 
 export type ImageDropzoneUploadStatus = 'idle' | 'uploading' | 'failed';
 export type ImageDropzoneSize = 'default' | 'compact';
 
 @Component({
   selector: 'app-image-dropzone',
-  imports: [TranslocoPipe],
+  imports: [Icon, TranslocoPipe],
   templateUrl: './image-dropzone.html',
 })
 export class ImageDropzone {

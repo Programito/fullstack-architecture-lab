@@ -1268,7 +1268,7 @@
       "reorderSaved": "Order saved.",
       "reorderFailed": "The order could not be saved.",
       "previewReorderHint": "Drag sections (by their handle) or dishes to reorder them: the order is saved and is what customers will see on their phone.",
-      "duplicateProduct": "Duplicate product",
+      "duplicateProduct": "Duplicate",
       "duplicateSuccess": "Product duplicated.",
       "duplicateFailed": "The product could not be duplicated.",
       "selectMode": "Select",
@@ -1291,10 +1291,32 @@
         "customizableOnly": "Customizable only",
         "withImage": "With image",
         "withoutImage": "Without image",
-        "noSection": "No section",
+        "noSection": "No menu section",
         "missingDescription": "Missing description",
         "clearAll": "Clear filters",
         "viewProducts": "View {{count}} products"
+      },
+      "filtersSummary": {
+        "title": "Active filters",
+        "single": "{{count}} active filter",
+        "multiple": "{{count}} active filters",
+        "empty": "There are no active filters yet. Use these controls to narrow the list faster."
+      },
+      "filterSections": {
+        "basics": {
+          "title": "Basics",
+          "description": "Start with category, availability and product type."
+        },
+        "allergens": {
+          "title": "Allergens"
+        },
+        "review": {
+          "title": "Review"
+        },
+        "view": {
+          "title": "View",
+          "description": "Choose how you want to scan the list while editing."
+        }
       },
       "viewModeLabel": "View",
       "viewModes": {
@@ -1372,29 +1394,37 @@
       "toggleAvailability": "Available",
       "availabilityManagementDescription": "Enable or disable products for today's service.",
       "newSection": "New section",
+      "sectionBaseNameLabel": "Base name",
       "sectionNameLabel": "Name",
+      "sectionNameEsLabel": "Name (Spanish)",
       "sectionNamePlaceholder": "Section name",
       "sectionNameCaLabel": "Name (Catalan)",
       "sectionNameEnLabel": "Name (English)",
       "sectionNameI18nPlaceholder": "Optional",
+      "sectionTranslationsTitle": "Translations",
+      "sectionTranslationLocaleLabel": "Name language",
       "saveSection": "Save",
       "cancelSection": "Cancel",
+      "managementTitle": "Management",
       "sectionVisibilityLabel": "Visible on the menu",
       "deleteSectionLabel": "Delete section",
+      "deleteSectionAction": "Delete",
       "deleteSectionTitle": "Delete section",
       "deleteSectionConfirm": "Delete section \"{{name}}\"? Its items will also be removed.",
       "confirmDelete": "Confirm delete",
       "cancelDelete": "Cancel",
       "newProduct": "New product",
-      "editProduct": "Edit product",
+      "editProduct": "Edit",
       "deleteProduct": "Delete product",
       "deleteProductTitle": "Delete product",
       "deleteProductDescription": "Delete «{{name}}»? This action cannot be undone.",
       "confirmDeleteProduct": "Delete",
       "cancelDeleteProduct": "Cancel",
-      "noSection": "No section",
-      "addToSection": "Add to section",
-      "addToSectionTitle": "Add to section",
+      "managementTitle": "Management",
+      "preparationLabel": "Preparation",
+      "noSection": "No menu section",
+      "addToSection": "Assign to section",
+      "addToSectionTitle": "Assign to section",
       "audit": {
         "title": "Quick menu review",
         "description": "Use these alerts to spot which products still need imagery, copy, or operational review.",
@@ -1418,13 +1448,13 @@
         "warningLabels": {
           "missing-image": "Missing image",
           "missing-description": "Missing description",
-          "missing-section": "No section",
+          "missing-section": "No menu section",
           "unavailable": "Unavailable",
           "weak-combo-summary": "Weak combo summary",
           "weak-customization-summary": "Unclear extras"
         }
       },
-      "editSectionLabel": "Edit section",
+      "editSectionLabel": "Edit",
       "editSectionTitle": "Edit section",
       "sectionUpdated": "Section updated successfully.",
       "sectionUpdateFailed": "Could not update the section.",
@@ -1480,8 +1510,11 @@
         "uploadImage": "Upload image",
         "uploadingImage": "Uploading image...",
         "replaceImage": "Replace image",
+        "replaceImageShort": "Replace",
         "removeImage": "Remove image",
+        "removeImageShort": "Remove",
         "retryUpload": "Retry upload",
+        "retryUploadShort": "Retry",
         "invalidImageType": "Use a JPG, PNG, or WEBP image.",
         "imageTooLarge": "The image is too large. Try a lighter file.",
         "imageTooSmall": "The image is too small. Use a higher resolution image.",
@@ -1500,6 +1533,8 @@
         "moveDown": "Move down",
         "selectedGroupsOrder": "Order of selected groups",
         "basicInfoTitle": "Basic information",
+        "contentTitle": "Product content",
+        "settingsTitle": "Product settings",
         "previewTitle": "Preview",
         "previewNoSectionHint": "This product isn't in any menu section yet.",
         "previewNewProductHint": "Add the product to a section from the menu to see it here in context.",

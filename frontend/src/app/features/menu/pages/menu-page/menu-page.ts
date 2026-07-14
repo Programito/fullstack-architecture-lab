@@ -31,6 +31,7 @@ import { MenuAuditService } from '../../services/menu-audit.service';
 import { MenuPricingService } from '../../services/menu-pricing.service';
 import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 import { MenuApiService, type CreateModifierGroupRequest, type MenuData, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
+import { MenuViewCacheService } from '../../services/menu-view-cache.service';
 
 type AvailabilityFilter = 'all' | 'available' | 'sold-out';
 type CustomizationFilter = 'all' | 'customizable' | 'simple';
@@ -38,6 +39,7 @@ type ReviewFilter = 'combo-only' | 'customizable-only' | 'with-image' | 'without
 type ProductViewMode = 'cards' | 'compact';
 type MenuPageTab = 'products' | 'categories' | 'modifiers' | 'combos' | 'platters' | 'availability';
 type PreparationRoute = Product['preparationPolicy']['route'];
+type SectionLocale = 'es' | 'ca' | 'en';
 
 @Component({
   selector: 'app-menu-page',
@@ -53,12 +55,14 @@ export class MenuPage {
   private readonly toast = inject(ToastService);
   private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly router = inject(Router);
+  private readonly viewCache = inject(MenuViewCacheService);
 
   private readonly reloadTrigger = new BehaviorSubject<void>(undefined);
-  private readonly _menuLoading = signal(true);
+  private readonly initialCache = this.viewCache.getSnapshot();
+  private readonly _menuLoading = signal(!this.initialCache);
   private readonly _menuError = signal<unknown>(null);
-  private readonly _menuData = signal<MenuData | undefined>(undefined);
-  private readonly _catalogProducts = signal<RestaurantProductSummaryDto[]>([]);
+  private readonly _menuData = signal<MenuData | undefined>(this.initialCache?.menuData);
+  private readonly _catalogProducts = signal<RestaurantProductSummaryDto[]>(this.initialCache?.catalogProducts ?? []);
 
   protected readonly menuLoading = this._menuLoading.asReadonly();
   protected readonly menuError = this._menuError.asReadonly();
@@ -114,7 +118,7 @@ export class MenuPage {
   // this.modifierGroups() porque ese último solo trae los grupos ya enlazados a algún producto
   // del menú (necesarios para el pricing), mientras que aquí necesitamos también los grupos
   // compartidos sin enlazar todavía, y necesitamos excluir los suplementos privados de producto.
-  private readonly _sharedModifierGroups = signal<ModifierGroup[]>([]);
+  private readonly _sharedModifierGroups = signal<ModifierGroup[]>(this.initialCache?.sharedModifierGroups ?? []);
   protected readonly sharedModifierGroups = this._sharedModifierGroups.asReadonly();
 
   constructor() {
@@ -142,8 +146,11 @@ export class MenuPage {
         this._menuData.set(outcome.result.menuData);
         this._catalogProducts.set(outcome.result.catalogProducts);
         this._sharedModifierGroups.set(outcome.result.sharedModifierGroups);
+        this.viewCache.setSnapshot(outcome.result);
       } else {
-        this._menuError.set(outcome.err);
+        if (!this._menuData()) {
+          this._menuError.set(outcome.err);
+        }
       }
       this._menuLoading.set(false);
     });
@@ -166,10 +173,12 @@ export class MenuPage {
 
   protected readonly createSectionOpen = signal(false);
   protected readonly newSectionName = signal('');
+  protected readonly newSectionNameEs = signal('');
   // Nombres opcionales en catalan/ingles para la nueva seccion, junto al nombre canonico
   // en castellano. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
   protected readonly newSectionNameCa = signal('');
   protected readonly newSectionNameEn = signal('');
+  protected readonly activeCreateSectionLocale = signal<SectionLocale>('es');
   protected readonly sectionToDelete = signal<MenuCategory | null>(null);
   protected readonly deleteSectionOpen = signal(false);
 
@@ -178,8 +187,10 @@ export class MenuPage {
   protected readonly editSectionOpen = signal(false);
   protected readonly editSectionCategory = signal<MenuCategory | null>(null);
   protected readonly editSectionName = signal('');
+  protected readonly editSectionNameEs = signal('');
   protected readonly editSectionNameCa = signal('');
   protected readonly editSectionNameEn = signal('');
+  protected readonly activeEditSectionLocale = signal<SectionLocale>('es');
   protected readonly editSectionLoading = signal(false);
 
   protected readonly productToDelete = signal<Product | null>(null);
@@ -218,6 +229,7 @@ export class MenuPage {
     if (this.availabilityFilter() !== 'all') count++;
     if (this.customizationFilter() !== 'all') count++;
     count += this.selectedAllergenFilters().length;
+    count += this.reviewFilters().length;
     return count;
   });
   protected readonly auditFilter = signal<MenuAuditFilter>('all');
@@ -241,6 +253,11 @@ export class MenuPage {
   protected readonly currentCategoryLabel = computed(
     () => this.categoryOptions().find((opt) => opt.value === this.categoryFilter())?.label ?? '',
   );
+  protected readonly editSectionLocaleOptions = computed<SegmentedControlOption[]>(() => [
+    { label: 'Español', value: 'es' },
+    { label: 'Català', value: 'ca' },
+    { label: 'English', value: 'en' },
+  ]);
   protected readonly filteredCategoryOptions = computed(() => {
     const q = this.normalize(this.categorySelectorQuery());
     if (!q) return this.categoryOptions();
@@ -289,6 +306,40 @@ export class MenuPage {
     { value: 'no-section', label: this.translate('menu.page.reviewFilters.noSection') },
     { value: 'missing-description', label: this.translate('menu.page.reviewFilters.missingDescription') },
   ]);
+  protected readonly activeMobileFilterLabels = computed(() => {
+    const labels: string[] = [];
+
+    if (this.categoryFilter() !== 'all') {
+      labels.push(this.currentCategoryLabel());
+    }
+
+    if (this.availabilityFilter() !== 'all') {
+      labels.push(
+        this.availabilityOptions().find((option) => option.value === this.availabilityFilter())?.label
+          ?? this.availabilityFilter(),
+      );
+    }
+
+    if (this.customizationFilter() !== 'all') {
+      labels.push(
+        this.customizationOptions().find((option) => option.value === this.customizationFilter())?.label
+          ?? this.customizationFilter(),
+      );
+    }
+
+    labels.push(
+      ...this.selectedAllergenFilters().map((filter) => this.translate(`menu.allergen.${filter}`)),
+      ...this.reviewFilterOptions()
+        .filter((filter) => this.hasReviewFilter(filter.value))
+        .map((filter) => filter.label),
+    );
+
+    return labels;
+  });
+  protected readonly activeMobileFilterSummaryLabel = computed(() => {
+    const count = this.activeFilterCount();
+    return this.translate(count === 1 ? 'menu.page.filtersSummary.single' : 'menu.page.filtersSummary.multiple', { count });
+  });
   protected readonly auditReport = computed(() => this.audit.buildReport(this.products(), this.modifierGroups(), this.comboDefinitions()));
   protected readonly auditCounters = computed(() => this.auditReport().counters);
   protected readonly activeWarningCount = computed(() => this.auditCounters().reduce((sum, c) => sum + c.count, 0));
@@ -542,6 +593,15 @@ export class MenuPage {
 
   protected clearAllReviewFilters(): void {
     this.auditFilter.set('all');
+    this.reviewFilters.set([]);
+    this.resetSelection();
+  }
+
+  protected clearAllMobileFilters(): void {
+    this.categoryFilter.set('all');
+    this.availabilityFilter.set('all');
+    this.customizationFilter.set('all');
+    this.selectedAllergenFilters.set([]);
     this.reviewFilters.set([]);
     this.resetSelection();
   }
@@ -804,55 +864,112 @@ export class MenuPage {
 
   protected openCreateSection(): void {
     this.newSectionName.set('');
+    this.newSectionNameEs.set('');
     this.newSectionNameCa.set('');
     this.newSectionNameEn.set('');
+    this.activeCreateSectionLocale.set('es');
     this.createSectionOpen.set(true);
   }
 
   protected cancelCreateSection(): void {
     this.createSectionOpen.set(false);
     this.newSectionName.set('');
+    this.newSectionNameEs.set('');
     this.newSectionNameCa.set('');
     this.newSectionNameEn.set('');
+    this.activeCreateSectionLocale.set('es');
   }
 
   protected submitCreateSection(): void {
     const name = this.newSectionName().trim();
     if (!name) return;
+    const es = this.newSectionNameEs().trim();
     const ca = this.newSectionNameCa().trim();
     const en = this.newSectionNameEn().trim();
-    const nameI18n = ca || en ? { ...(ca ? { ca } : {}), ...(en ? { en } : {}) } : undefined;
+    const nameI18n = es || ca || en ? { ...(es && es !== name ? { es } : {}), ...(ca ? { ca } : {}), ...(en ? { en } : {}) } : undefined;
     this.menuApi.createSection(this.menuId(), name, true, nameI18n).subscribe({
       complete: () => {
         this.createSectionOpen.set(false);
         this.newSectionName.set('');
+        this.newSectionNameEs.set('');
         this.newSectionNameCa.set('');
         this.newSectionNameEn.set('');
+        this.activeCreateSectionLocale.set('es');
         this.reloadMenuData();
       },
     });
   }
 
+  protected activeCreateSectionName(): string {
+    switch (this.activeCreateSectionLocale()) {
+      case 'ca':
+        return this.newSectionNameCa();
+      case 'en':
+        return this.newSectionNameEn();
+      default:
+        return this.newSectionNameEs();
+    }
+  }
+
+  protected activeCreateSectionNameLabel(): string {
+    switch (this.activeCreateSectionLocale()) {
+      case 'ca':
+        return this.translate('menu.page.sectionNameCaLabel');
+      case 'en':
+        return this.translate('menu.page.sectionNameEnLabel');
+      default:
+        return this.translate('menu.page.sectionNameEsLabel');
+    }
+  }
+
+  protected updateActiveCreateSectionName(value: string): void {
+    switch (this.activeCreateSectionLocale()) {
+      case 'ca':
+        this.newSectionNameCa.set(value);
+        break;
+      case 'en':
+        this.newSectionNameEn.set(value);
+        break;
+      default:
+        this.newSectionNameEs.set(value);
+        break;
+    }
+  }
+
+  protected setActiveCreateSectionLocale(value: string): void {
+    if (value === 'ca' || value === 'en' || value === 'es') {
+      this.activeCreateSectionLocale.set(value);
+    }
+  }
+
   protected openEditSection(category: MenuCategory): void {
     this.editSectionCategory.set(category);
     this.editSectionName.set(category.name);
+    this.editSectionNameEs.set(category.nameI18n?.es ?? category.name);
     this.editSectionNameCa.set(category.nameI18n?.ca ?? '');
     this.editSectionNameEn.set(category.nameI18n?.en ?? '');
+    this.activeEditSectionLocale.set('es');
     this.editSectionOpen.set(true);
   }
 
   protected cancelEditSection(): void {
     this.editSectionOpen.set(false);
     this.editSectionCategory.set(null);
+    this.activeEditSectionLocale.set('es');
   }
 
   protected submitEditSection(): void {
     const category = this.editSectionCategory();
     const name = this.editSectionName().trim();
     if (!category || !name || this.editSectionLoading()) return;
+    const es = this.editSectionNameEs().trim();
     const ca = this.editSectionNameCa().trim();
     const en = this.editSectionNameEn().trim();
-    const nameI18n = ca || en ? { ...(ca ? { ca } : {}), ...(en ? { en } : {}) } : undefined;
+    const nameI18n = es || ca || en ? {
+      ...(es && es !== name ? { es } : {}),
+      ...(ca ? { ca } : {}),
+      ...(en ? { en } : {}),
+    } : undefined;
 
     this.editSectionLoading.set(true);
     this.menuApi.updateSection(this.menuId(), category.id, { name, nameI18n }).subscribe({
@@ -860,6 +977,7 @@ export class MenuPage {
         this.editSectionLoading.set(false);
         this.editSectionOpen.set(false);
         this.editSectionCategory.set(null);
+        this.activeEditSectionLocale.set('es');
         this.reloadMenuData();
         this.toast.success({ title: this.translate('menu.page.sectionUpdated') });
       },
@@ -868,6 +986,48 @@ export class MenuPage {
         this.toast.danger({ title: this.translate('menu.page.sectionUpdateFailed') });
       },
     });
+  }
+
+  protected activeEditSectionName(): string {
+    switch (this.activeEditSectionLocale()) {
+      case 'ca':
+        return this.editSectionNameCa();
+      case 'en':
+        return this.editSectionNameEn();
+      default:
+        return this.editSectionNameEs();
+    }
+  }
+
+  protected activeEditSectionNameLabel(): string {
+    switch (this.activeEditSectionLocale()) {
+      case 'ca':
+        return this.translate('menu.page.sectionNameCaLabel');
+      case 'en':
+        return this.translate('menu.page.sectionNameEnLabel');
+      default:
+        return this.translate('menu.page.sectionNameEsLabel');
+    }
+  }
+
+  protected updateActiveEditSectionName(value: string): void {
+    switch (this.activeEditSectionLocale()) {
+      case 'ca':
+        this.editSectionNameCa.set(value);
+        break;
+      case 'en':
+        this.editSectionNameEn.set(value);
+        break;
+      default:
+        this.editSectionNameEs.set(value);
+        break;
+    }
+  }
+
+  protected setActiveEditSectionLocale(value: string): void {
+    if (value === 'ca' || value === 'en' || value === 'es') {
+      this.activeEditSectionLocale.set(value);
+    }
   }
 
   protected toggleSectionVisibility(category: MenuCategory): void {
@@ -986,8 +1146,9 @@ export class MenuPage {
 
   protected toggleAvailability(product: Product): void {
     if (!product.restaurantProductId) return;
+    const nextAvailability = !product.available;
     this.menuApi.toggleAvailability(product.restaurantProductId, !product.available).subscribe({
-      complete: () => this.reloadMenuData(),
+      complete: () => this.patchProductState(product, { available: nextAvailability }, { isAvailable: nextAvailability }),
       // Sin este handler, un fallo (404/403/500) no se veia en absoluto: el toggle simplemente
       // no hacia nada y parecia "no funciona" sin ninguna pista de por que.
       error: () => this.toast.danger({ title: this.translate('menu.product.errors.availabilityFailed') }),
@@ -1006,8 +1167,9 @@ export class MenuPage {
    */
   protected toggleVisibility(product: Product): void {
     if (!product.categoryId || this.isCatalogOnly(product)) return;
-    this.menuApi.setItemVisibility(this.menuId(), product.categoryId, product.id, !this.isProductVisible(product)).subscribe({
-      complete: () => this.reloadMenuData(),
+    const nextVisibility = !this.isProductVisible(product);
+    this.menuApi.setItemVisibility(this.menuId(), product.categoryId, product.id, nextVisibility).subscribe({
+      complete: () => this.patchProductState(product, { visible: nextVisibility }, { isVisible: nextVisibility }),
       error: () => this.toast.danger({ title: this.translate('menu.product.errors.visibilityFailed') }),
     });
   }
@@ -1079,6 +1241,49 @@ export class MenuPage {
   private reloadMenuData(): void {
     this._menuLoading.set(true);
     this.reloadTrigger.next();
+  }
+
+  private patchProductState(
+    product: Product,
+    productPatch: Partial<Product>,
+    catalogPatch?: Partial<RestaurantProductSummaryDto>,
+  ): void {
+    this._menuData.update((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        products: current.products.map((candidate) =>
+          candidate.id === product.id
+            || (!!product.restaurantProductId && candidate.restaurantProductId === product.restaurantProductId)
+            ? { ...candidate, ...productPatch }
+            : candidate,
+        ),
+      };
+    });
+
+    if (product.restaurantProductId && catalogPatch) {
+      this._catalogProducts.update((current) =>
+        current.map((candidate) =>
+          candidate.id === product.restaurantProductId
+            ? { ...candidate, ...catalogPatch }
+            : candidate,
+        ),
+      );
+    }
+
+    this.syncViewCacheSnapshot();
+  }
+
+  private syncViewCacheSnapshot(): void {
+    const menuData = this._menuData();
+    if (!menuData) return;
+
+    this.viewCache.setSnapshot({
+      menuData,
+      catalogProducts: this._catalogProducts(),
+      sharedModifierGroups: this._sharedModifierGroups(),
+    });
   }
 
   protected setCategoryFilter(value: string): void {

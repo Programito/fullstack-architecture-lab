@@ -19,6 +19,8 @@
   --ui-primary-ring: rgb(22 78 99);
   --ui-secondary: rgb(212 212 216);
   --ui-secondary-ring: rgb(63 63 70);
+  --ui-contrast: rgb(244 244 245);
+  --ui-contrast-ring: rgb(63 63 70);
   --ui-neutral: rgb(161 161 170);
   --ui-neutral-ring: rgb(63 63 70);
   --ui-danger: rgb(252 165 165);
@@ -53,6 +55,8 @@
     --ui-primary-ring: rgb(22 78 99);
     --ui-secondary: rgb(212 212 216);
     --ui-secondary-ring: rgb(63 63 70);
+    --ui-contrast: rgb(244 244 245);
+    --ui-contrast-ring: rgb(63 63 70);
     --ui-neutral: rgb(161 161 170);
     --ui-neutral-ring: rgb(63 63 70);
     --ui-danger: rgb(252 165 165);

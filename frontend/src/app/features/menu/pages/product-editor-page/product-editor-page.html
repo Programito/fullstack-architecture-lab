@@ -21,7 +21,7 @@
         <app-spinner size="lg" variant="primary" />
       </div>
     } @else {
-      <div class="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <section class="theme-panel grid h-full content-start gap-3 rounded-lg border p-4 shadow-sm">
           <h2 class="theme-title flex items-center gap-2 text-sm font-semibold">
             <app-icon name="image" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
@@ -39,54 +39,64 @@
             (retryRequested)="handleRetryUpload()"
           />
         </section>
-        <section class="theme-panel grid content-start gap-4 rounded-lg border p-4 shadow-sm">
-          <h2 class="theme-title flex items-center gap-2 text-sm font-semibold">
-            <app-icon name="edit_note" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
-            {{ 'menu.product.form.basicInfoTitle' | transloco }}
-          </h2>
-          <app-input
-            [label]="'menu.product.form.name' | transloco"
-            [placeholder]="'menu.product.form.namePlaceholder' | transloco"
-            [hint]="'menu.product.form.nameHint' | transloco"
-            [value]="name()"
-            required
-            (valueChange)="name.set($event)"
-          />
-          <app-textarea
-            [label]="'menu.product.form.description' | transloco"
-            [placeholder]="'menu.product.form.descriptionPlaceholder' | transloco"
-            [value]="description()"
-            [rows]="3"
-            (valueChange)="description.set($event)"
-          />
-          <div class="grid gap-2 rounded-lg border p-3 shadow-sm">
-            <div class="flex items-center justify-between gap-2">
-              <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.product.form.translationsTitle' | transloco }}</p>
-              <app-segmented-control
-                size="sm"
-                [ariaLabel]="'menu.product.form.translationsLocaleLabel' | transloco"
-                [options]="contentLocaleOptions()"
-                [value]="activeContentLocale()"
-                (valueChange)="setActiveContentLocale($event)"
-              />
-            </div>
+        <div class="grid content-start gap-4">
+          <section class="theme-panel grid content-start gap-4 rounded-lg border p-4 shadow-sm">
+            <h2 class="theme-title flex items-center gap-2 text-sm font-semibold">
+              <app-icon name="edit_note" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
+              {{ 'menu.product.form.contentTitle' | transloco }}
+            </h2>
             <app-input
-              [label]="activeVariantNameLabel()"
-              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-              [hint]="'menu.product.form.nameI18nHint' | transloco"
-              [value]="activeVariantName()"
-              (valueChange)="updateActiveVariantName($event)"
+              [label]="'menu.product.form.name' | transloco"
+              [placeholder]="'menu.product.form.namePlaceholder' | transloco"
+              [hint]="'menu.product.form.nameHint' | transloco"
+              [value]="name()"
+              required
+              (valueChange)="name.set($event)"
             />
             <app-textarea
-              [label]="activeVariantDescriptionLabel()"
-              [placeholder]="'menu.product.form.descriptionI18nPlaceholder' | transloco"
-              [hint]="'menu.product.form.descriptionI18nHint' | transloco"
-              [value]="activeVariantDescription()"
+              [label]="'menu.product.form.description' | transloco"
+              [placeholder]="'menu.product.form.descriptionPlaceholder' | transloco"
+              [value]="description()"
               [rows]="3"
-              (valueChange)="updateActiveVariantDescription($event)"
+              (valueChange)="description.set($event)"
             />
-          </div>
-          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-2 rounded-lg border p-3 shadow-sm">
+              <div class="flex items-center justify-between gap-2">
+                <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.product.form.translationsTitle' | transloco }}</p>
+                <app-segmented-control
+                  size="sm"
+                  [ariaLabel]="'menu.product.form.translationsLocaleLabel' | transloco"
+                  [options]="contentLocaleOptions()"
+                  [value]="activeContentLocale()"
+                  (valueChange)="setActiveContentLocale($event)"
+                />
+              </div>
+              <app-input
+                [label]="activeVariantNameLabel()"
+                [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
+                [hint]="'menu.product.form.nameI18nHint' | transloco"
+                [value]="activeVariantName()"
+                (valueChange)="updateActiveVariantName($event)"
+              />
+              <app-textarea
+                [label]="activeVariantDescriptionLabel()"
+                [placeholder]="'menu.product.form.descriptionI18nPlaceholder' | transloco"
+                [hint]="'menu.product.form.descriptionI18nHint' | transloco"
+                [value]="activeVariantDescription()"
+                [rows]="3"
+                (valueChange)="updateActiveVariantDescription($event)"
+              />
+            </div>
+          </section>
+
+        </div>
+
+        <section class="theme-panel grid content-start gap-4 rounded-lg border p-4 shadow-sm lg:col-span-2">
+          <h2 class="theme-title flex items-center gap-2 text-sm font-semibold">
+            <app-icon name="tune" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
+            {{ 'menu.product.form.settingsTitle' | transloco }}
+          </h2>
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <app-input
               [label]="'menu.product.form.price' | transloco"
               type="number"
@@ -101,22 +111,22 @@
               [value]="course()"
               (valueChange)="course.set($event)"
             />
+            <app-select
+              [label]="'menu.product.form.category' | transloco"
+              [options]="categoryOptions()"
+              [value]="categoryId()"
+              (valueChange)="categoryId.set($event)"
+            />
+            <app-select
+              [label]="'menu.product.form.route' | transloco"
+              [options]="routeOptions()"
+              [value]="preparationRoute()"
+              (valueChange)="preparationRoute.set($event)"
+            />
           </div>
-          <app-select
-            [label]="'menu.product.form.category' | transloco"
-            [options]="categoryOptions()"
-            [value]="categoryId()"
-            (valueChange)="categoryId.set($event)"
-          />
           @if (!categoryId()) {
             <p class="theme-muted text-xs">{{ 'menu.product.form.categoryRequiredHint' | transloco }}</p>
           }
-          <app-select
-            [label]="'menu.product.form.route' | transloco"
-            [options]="routeOptions()"
-            [value]="preparationRoute()"
-            (valueChange)="preparationRoute.set($event)"
-          />
         </section>
 
 

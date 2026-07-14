@@ -27,10 +27,10 @@ describe('ModifierGroupFormDialog', () => {
     expect(confirm.hasAttribute('disabled')).toBe(true);
   });
 
-  it('enables confirm after filling name and at least one option', async () => {
+  it('enables confirm after filling base name and at least one option', async () => {
     const { fixture } = await renderDialog();
 
-    fireEvent.input(screen.getByPlaceholderText('Nombre del grupo'), { target: { value: 'Extras' } });
+    fireEvent.input(screen.getByRole('textbox', { name: 'Nombre base' }), { target: { value: 'Extras' } });
     fireEvent.input(screen.getByPlaceholderText('Nombre de la opción'), { target: { value: 'Queso extra' } });
     fixture.detectChanges();
 
@@ -41,7 +41,7 @@ describe('ModifierGroupFormDialog', () => {
     const confirmed = vi.fn();
     const { fixture } = await renderDialog({ confirmed });
 
-    fireEvent.input(screen.getByPlaceholderText('Nombre del grupo'), { target: { value: 'Extras' } });
+    fireEvent.input(screen.getByRole('textbox', { name: 'Nombre base' }), { target: { value: 'Extras' } });
     fireEvent.input(screen.getByPlaceholderText('Nombre de la opción'), { target: { value: 'Queso extra' } });
     fixture.detectChanges();
 
@@ -80,18 +80,22 @@ describe('ModifierGroupFormDialog', () => {
     expect(closed).toHaveBeenCalled();
   });
 
-  it('includes nameEs in nameI18n for the group and its options', async () => {
+  it('uses segmented translations for the group and its options', async () => {
     const confirmed = vi.fn();
     const { fixture } = await renderDialog({ confirmed });
 
-    fireEvent.input(screen.getByPlaceholderText('Nombre del grupo'), { target: { value: 'Extras' } });
+    fireEvent.input(screen.getByRole('textbox', { name: 'Nombre base' }), { target: { value: 'Extras' } });
     fireEvent.input(screen.getByPlaceholderText('Nombre de la opción'), { target: { value: 'Queso extra' } });
 
-    // Con una sola opción visible, hay dos campos "Nombre (castellano)": el del grupo y el de
-    // la opción (el label de la opción solo se muestra en la fila $index === 0).
-    const [groupNameEsInput, optionNameEsInput] = screen.getAllByLabelText('Nombre (castellano)') as HTMLInputElement[];
-    fireEvent.input(groupNameEsInput, { target: { value: 'Extras (ES)' } });
-    fireEvent.input(optionNameEsInput, { target: { value: 'Queso extra (ES)' } });
+    fireEvent.click(screen.getAllByRole('radio', { name: /Espa/i })[0]);
+    fireEvent.input(screen.getAllByRole('textbox', { name: /Nombre \(espa/i })[0], { target: { value: 'Extras (ES)' } });
+    fireEvent.click(screen.getAllByRole('radio', { name: /Catal/i })[0]);
+    fireEvent.input(screen.getByRole('textbox', { name: /Nombre \(catal/i }), { target: { value: 'Extres' } });
+
+    fireEvent.click(screen.getAllByRole('radio', { name: /Espa/i })[1]);
+    fireEvent.input(screen.getAllByRole('textbox', { name: /Nombre \(espa/i })[0], { target: { value: 'Queso extra (ES)' } });
+    fireEvent.click(screen.getAllByRole('radio', { name: 'English' })[1]);
+    fireEvent.input(screen.getByRole('textbox', { name: /Nombre \(ingl/i }), { target: { value: 'Extra cheese' } });
     fixture.detectChanges();
 
     fireEvent.click(screen.getByRole('button', { name: /crear grupo/i }));
@@ -100,11 +104,11 @@ describe('ModifierGroupFormDialog', () => {
     expect(confirmed).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Extras',
-        nameI18n: expect.objectContaining({ es: 'Extras (ES)' }),
+        nameI18n: expect.objectContaining({ es: 'Extras (ES)', ca: 'Extres' }),
         options: [
           expect.objectContaining({
             name: 'Queso extra',
-            nameI18n: expect.objectContaining({ es: 'Queso extra (ES)' }),
+            nameI18n: expect.objectContaining({ es: 'Queso extra (ES)', en: 'Extra cheese' }),
           }),
         ],
       }),

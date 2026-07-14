@@ -1332,7 +1332,7 @@
       "reorderSaved": "Orden guardado.",
       "reorderFailed": "No se pudo guardar el orden.",
       "previewReorderHint": "Arrastra las secciones (por su asa) o los platos para reordenarlos: el orden se guarda y es el que verá el cliente en su móvil.",
-      "duplicateProduct": "Duplicar producto",
+      "duplicateProduct": "Duplicar",
       "duplicateSuccess": "Producto duplicado.",
       "duplicateFailed": "No se pudo duplicar el producto.",
       "selectMode": "Seleccionar",
@@ -1355,10 +1355,32 @@
         "customizableOnly": "Solo personalizables",
         "withImage": "Con imagen",
         "withoutImage": "Sin imagen",
-        "noSection": "Sin sección",
+        "noSection": "Sin sección del menú",
         "missingDescription": "Sin descripción",
         "clearAll": "Limpiar filtros",
         "viewProducts": "Ver {{count}} productos"
+      },
+      "filtersSummary": {
+        "title": "Filtros activos",
+        "single": "{{count}} filtro activo",
+        "multiple": "{{count}} filtros activos",
+        "empty": "No hay filtros activos. Usa estos controles para acotar la lista más rápido."
+      },
+      "filterSections": {
+        "basics": {
+          "title": "Básicos",
+          "description": "Empieza por la categoría, disponibilidad y tipo de producto."
+        },
+        "allergens": {
+          "title": "Alergias"
+        },
+        "review": {
+          "title": "Revisión"
+        },
+        "view": {
+          "title": "Vista",
+          "description": "Elige cómo prefieres recorrer la lista mientras editas."
+        }
       },
       "viewModeLabel": "Vista",
       "viewModes": {
@@ -1436,29 +1458,37 @@
       "toggleAvailability": "Disponible",
       "availabilityManagementDescription": "Activa o desactiva productos para el servicio de hoy.",
       "newSection": "Nueva sección",
+      "sectionBaseNameLabel": "Nombre base",
       "sectionNameLabel": "Nombre",
+      "sectionNameEsLabel": "Nombre (español)",
       "sectionNamePlaceholder": "Nombre de la sección",
       "sectionNameCaLabel": "Nombre (catalán)",
       "sectionNameEnLabel": "Nombre (inglés)",
       "sectionNameI18nPlaceholder": "Opcional",
+      "sectionTranslationsTitle": "Traducciones",
+      "sectionTranslationLocaleLabel": "Idioma del nombre",
       "saveSection": "Guardar",
       "cancelSection": "Cancelar",
+      "managementTitle": "Gestión",
       "sectionVisibilityLabel": "Visible en la carta",
       "deleteSectionLabel": "Eliminar sección",
+      "deleteSectionAction": "Eliminar",
       "deleteSectionTitle": "Eliminar sección",
       "deleteSectionConfirm": "¿Eliminar la sección \"{{name}}\"? Se eliminarán también los ítems que contiene.",
       "confirmDelete": "Confirmar eliminación",
       "cancelDelete": "Cancelar",
       "newProduct": "Nuevo producto",
-      "editProduct": "Editar producto",
+      "editProduct": "Editar",
       "deleteProduct": "Eliminar producto",
       "deleteProductTitle": "Eliminar producto",
       "deleteProductDescription": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
       "confirmDeleteProduct": "Eliminar",
       "cancelDeleteProduct": "Cancelar",
-      "noSection": "Sin sección",
-      "addToSection": "Añadir a sección",
-      "addToSectionTitle": "Añadir a sección",
+      "managementTitle": "Gestión",
+      "preparationLabel": "Preparación",
+      "noSection": "Sin sección del menú",
+      "addToSection": "Asignar a sección",
+      "addToSectionTitle": "Asignar a sección",
       "audit": {
         "title": "Revisión rápida del menú",
         "description": "Usa estas alertas para detectar rápido qué productos necesitan imagen, descripción o revisión operativa.",
@@ -1482,13 +1512,13 @@
         "warningLabels": {
           "missing-image": "Sin imagen",
           "missing-description": "Sin descripción",
-          "missing-section": "Sin sección",
+          "missing-section": "Sin sección del menú",
           "unavailable": "No disponibles",
           "weak-combo-summary": "Resumen de menú débil",
           "weak-customization-summary": "Extras poco claros"
         }
       },
-      "editSectionLabel": "Editar sección",
+      "editSectionLabel": "Editar",
       "editSectionTitle": "Editar sección",
       "sectionUpdated": "Sección actualizada correctamente.",
       "sectionUpdateFailed": "No se pudo actualizar la sección.",
@@ -1544,8 +1574,11 @@
         "uploadImage": "Subir imagen",
         "uploadingImage": "Subiendo imagen...",
         "replaceImage": "Reemplazar imagen",
+        "replaceImageShort": "Reemplazar",
         "removeImage": "Quitar imagen",
+        "removeImageShort": "Quitar",
         "retryUpload": "Reintentar subida",
+        "retryUploadShort": "Reintentar",
         "invalidImageType": "Usa una imagen JPG, PNG o WEBP.",
         "imageTooLarge": "La imagen es demasiado pesada. Prueba con un archivo más ligero.",
         "imageTooSmall": "La imagen es demasiado pequeña. Usa una resolución mayor.",
@@ -1564,6 +1597,8 @@
         "moveDown": "Bajar",
         "selectedGroupsOrder": "Orden de los grupos seleccionados",
         "basicInfoTitle": "Información básica",
+        "contentTitle": "Contenido del producto",
+        "settingsTitle": "Configuración del producto",
         "previewTitle": "Vista previa",
         "previewNoSectionHint": "Este producto todavía no está en ninguna sección de la carta.",
         "previewNewProductHint": "Añade el producto a una sección desde la carta para verlo aquí en contexto.",

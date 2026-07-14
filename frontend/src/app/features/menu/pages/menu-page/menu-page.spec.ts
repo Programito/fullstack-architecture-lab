@@ -1,11 +1,13 @@
 ﻿import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
+import { Subject } from 'rxjs';
 import { signal } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Router } from '@angular/router';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { MenuApiService, type MenuData, type MenuSectionAdminDto, type RestaurantProductSummaryDto } from '../../services/menu-api.service';
+import { MenuViewCacheService, type MenuViewCacheSnapshot } from '../../services/menu-view-cache.service';
 import {
   localizeComboProductDefinitions,
   localizeMenuCategories,
@@ -53,6 +55,8 @@ const CATALOG_ONLY_PRODUCT: RestaurantProductSummaryDto = {
 
 function makeMockMenuApi(overrides: Partial<{
   getMenu: () => ReturnType<MenuApiService['getMenu']>;
+  toggleAvailability: () => ReturnType<MenuApiService['toggleAvailability']>;
+  setItemVisibility: () => ReturnType<MenuApiService['setItemVisibility']>;
   createSection: () => ReturnType<MenuApiService['createSection']>;
   updateSection: () => ReturnType<MenuApiService['updateSection']>;
   deleteSection: () => ReturnType<MenuApiService['deleteSection']>;
@@ -62,7 +66,8 @@ function makeMockMenuApi(overrides: Partial<{
 }> = {}) {
   return {
     getMenu: overrides.getMenu ?? (() => of(buildMockMenuData())),
-    toggleAvailability: () => of(undefined),
+    toggleAvailability: overrides.toggleAvailability ?? (() => of(undefined)),
+    setItemVisibility: overrides.setItemVisibility ?? (() => of(undefined)),
     createSection: overrides.createSection ?? (() => of({ id: 'new-sec', menuId: 'menu-demo-main', name: 'Nueva', sortOrder: 5, isVisible: true } as MenuSectionAdminDto)),
     updateSection: overrides.updateSection ?? (() => of({ id: 'cat-hamburguesas', menuId: 'menu-demo-main', name: 'Hamburguesas', sortOrder: 0, isVisible: false } as MenuSectionAdminDto)),
     deleteSection: overrides.deleteSection ?? (() => of(undefined)),
@@ -84,6 +89,7 @@ describe('MenuPage', () => {
     apiOverrides = {},
     locale: 'es' | 'en' | 'ca' = 'es',
     breakpoints: Record<string, boolean> = { '(max-width: 1023px)': false, '(min-width: 1024px)': true },
+    cacheSnapshot: MenuViewCacheSnapshot | null = null,
   ) => {
     navigateByUrl.mockClear();
     const i18n = provideI18nTesting(locale);
@@ -99,6 +105,7 @@ describe('MenuPage', () => {
           },
         },
         { provide: MenuApiService, useValue: makeMockMenuApi(apiOverrides) },
+        { provide: MenuViewCacheService, useValue: { getSnapshot: () => cacheSnapshot, setSnapshot: vi.fn(), clear: vi.fn() } },
         { provide: RestaurantContextStore, useValue: { activeRestaurant: signal(ACTIVE_RESTAURANT).asReadonly() } },
         { provide: Router, useValue: { navigateByUrl } },
       ],
@@ -124,6 +131,30 @@ describe('MenuPage', () => {
 
     expect(screen.getAllByText('Croquetas de jamón ibérico').length).toBeGreaterThan(0);
     expect(screen.queryByText('Hamburguesa craft')).toBeNull();
+  });
+
+  it('keeps cached product cards visible while refreshing in the background', async () => {
+    const pendingMenu = new Subject<MenuData>();
+    const cacheSnapshot: MenuViewCacheSnapshot = {
+      menuData: buildMockMenuData(),
+      catalogProducts: [],
+      sharedModifierGroups: localizeModifierGroups('es'),
+    };
+
+    await renderPage(
+      {
+        getMenu: () => pendingMenu,
+      },
+      'es',
+      { '(max-width: 1023px)': false, '(min-width: 1024px)': true },
+      cacheSnapshot,
+    );
+
+    expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('status', { name: /cargando/i })).toBeNull();
+
+    pendingMenu.next(buildMockMenuData());
+    pendingMenu.complete();
   });
 
   it('filters by category, availability and customization state', async () => {
@@ -240,7 +271,7 @@ it('renders the menu health panel with actionable warning groups', async () => {
 
   const healthPanel = screen.getByRole('region', { name: 'Revisión rápida del menú' });
   expect(within(healthPanel).getByRole('button', { name: /Sin imagen/i })).toBeTruthy();
-  expect(within(healthPanel).getByRole('button', { name: /Sin sección/i })).toBeTruthy();
+  expect(within(healthPanel).getByRole('button', { name: /Sin sección del menú/i })).toBeTruthy();
 });
 
 it('filters the current product list from a warning shortcut and closes the modal on confirm', async () => {
@@ -252,7 +283,7 @@ it('filters the current product list from a warning shortcut and closes the moda
   fixture.detectChanges();
 
   const healthPanel = screen.getByRole('region', { name: 'Revisión rápida del menú' });
-  fireEvent.click(within(healthPanel).getByRole('button', { name: /Sin sección/i }));
+  fireEvent.click(within(healthPanel).getByRole('button', { name: /Sin sección del menú/i }));
   fixture.detectChanges();
 
   expect(screen.getAllByText('Agua mineral').length).toBeGreaterThan(0);
@@ -281,8 +312,26 @@ it('supports a compact review mode', async () => {
   fireEvent.click(screen.getByRole('radio', { name: 'Compacta' }));
   fixture.detectChanges();
 
-  expect(screen.getAllByText(/Ruta:/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Cocina/).length).toBeGreaterThan(0);
   expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+});
+
+it('keeps compact rows focused on quick actions only', async () => {
+  const { fixture } = await renderPage();
+
+  fireEvent.click(screen.getByRole('radio', { name: 'Compacta' }));
+  fixture.detectChanges();
+
+  const row = screen.getAllByRole('button', { name: 'Hamburguesa craft' })[0].closest('article');
+  expect(row).toBeTruthy();
+
+  expect(within(row!).getByText('Simple')).toBeTruthy();
+  expect(within(row!).getByText('Disponibles')).toBeTruthy();
+  expect(within(row!).getByRole('switch', { name: 'Disponible' })).toBeTruthy();
+  expect(within(row!).getByRole('button', { name: 'Visible en la app' })).toBeTruthy();
+  expect(within(row!).getByRole('button', { name: 'Editar' })).toBeTruthy();
+  expect(within(row!).queryByRole('button', { name: 'Duplicar' })).toBeNull();
+  expect(within(row!).queryByRole('button', { name: 'Eliminar' })).toBeNull();
 });
 
 it('combines operational review filters', async () => {
@@ -340,6 +389,30 @@ it('shows allergen filters inside the mobile filter dialog', async () => {
   expect(within(dialog).getByRole('button', { name: 'Gluten' })).toBeTruthy();
 });
 
+it('shows a clearer mobile filter layout with active summary and footer actions', async () => {
+  const { fixture } = await renderPage({}, 'es', {
+    '(max-width: 1023px)': true,
+    '(min-width: 900px)': false,
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+  fixture.detectChanges();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Gluten' }));
+  fixture.detectChanges();
+
+  const dialog = screen.getByRole('dialog', { name: 'Filtros' });
+  expect(within(dialog).getByText('Filtros activos')).toBeTruthy();
+  expect(within(dialog).getByText('1 filtro activo')).toBeTruthy();
+  expect(within(dialog).getByText((content) => content.includes('sicos'))).toBeTruthy();
+  expect(within(dialog).getByText('Alergias')).toBeTruthy();
+  expect(within(dialog).getByText((content) => content.includes('Revisi'))).toBeTruthy();
+  expect(within(dialog).getByText('Vista')).toBeTruthy();
+  expect(within(dialog).getAllByText('Gluten').length).toBeGreaterThan(0);
+  expect(within(dialog).getByRole('button', { name: 'Limpiar filtros' })).toBeTruthy();
+  expect(within(dialog).getByRole('button', { name: /Ver \d+ productos/i })).toBeTruthy();
+});
+
 it('shows combo summaries inside the mobile detail dialog', async () => {
   const { fixture } = await renderPage({}, 'es', {
     '(max-width: 1023px)': true,
@@ -385,9 +458,91 @@ it('navigates to the product editor page when creating a product', async () => {
 it('navigates to the product editor page when editing a product', async () => {
   await renderPage();
 
-  fireEvent.click(screen.getAllByRole('button', { name: 'Editar producto' })[0]);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0]);
 
   expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching(/^\/restaurant-pos\/menu\/products\/.+\/edit$/));
+});
+
+it('shows visible text labels for the primary card actions', async () => {
+  await renderPage();
+
+  const card = screen.getAllByRole('button', { name: 'Hamburguesa craft' })[0].closest('article');
+  expect(card).toBeTruthy();
+
+  const actions = card!.querySelector('.menu-page__card-actions');
+  expect(actions?.className).toContain('grid');
+  expect(actions?.className).toContain('w-full');
+  expect(actions?.className).toContain('gap-2');
+
+  expect(within(card!).getByText('Preparación: Cocina')).toBeTruthy();
+  expect(within(card!).getByText('Gestión')).toBeTruthy();
+  expect(within(card!).getAllByText('Visible en la app').length).toBeGreaterThan(0);
+  expect(within(card!).getByText('Duplicar')).toBeTruthy();
+  expect(within(card!).getByText('Editar')).toBeTruthy();
+  expect(within(card!).getByText('Eliminar')).toBeTruthy();
+});
+
+it('keeps product cards more compact and avoids the "Desde" price label', async () => {
+  await renderPage();
+
+  const cardButton = screen.getAllByRole('button', { name: 'Hamburguesa craft' })[0];
+  const imageFrame = cardButton.querySelector('.menu-page__card-image');
+  expect(imageFrame?.className).toContain('h-24');
+  expect(within(cardButton).queryByText('DESDE')).toBeNull();
+  expect(within(cardButton).queryByText('+€0.80')).toBeNull();
+});
+
+it('shows add-to-section as a full-width labeled action for catalog-only products', async () => {
+  await renderPage({
+    listProducts: () => of([CATALOG_ONLY_PRODUCT]),
+  });
+
+  const card = screen.getAllByRole('button', { name: 'Agua mineral' })[0].closest('article');
+  expect(card).toBeTruthy();
+
+  const addToSectionButton = within(card!).getByRole('button', { name: 'Asignar a sección' });
+  expect(addToSectionButton.className).toContain('w-full');
+});
+
+it('updates availability in place without reloading all cards', async () => {
+  const getMenu = vi.fn(() => of(buildMockMenuData()));
+  const toggleAvailability = vi.fn(() => of(undefined));
+  const { fixture } = await renderPage({
+    getMenu,
+    toggleAvailability,
+  });
+
+  expect(getMenu).toHaveBeenCalledTimes(1);
+  expect(screen.getAllByText('Hamburguesa craft').length).toBeGreaterThan(0);
+
+  fireEvent.click(screen.getAllByRole('switch', { name: 'Disponible' })[0]);
+  fixture.detectChanges();
+  await fixture.whenStable();
+
+  expect(toggleAvailability).toHaveBeenCalledTimes(1);
+  expect(getMenu).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('status', { name: /cargando/i })).toBeNull();
+  expect(screen.getAllByText('Agotado').length).toBeGreaterThan(0);
+});
+
+it('updates app visibility in place without reloading all cards', async () => {
+  const getMenu = vi.fn(() => of(buildMockMenuData()));
+  const setItemVisibility = vi.fn(() => of(undefined));
+  const { fixture } = await renderPage({
+    getMenu,
+    setItemVisibility,
+  });
+
+  expect(getMenu).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(screen.getAllByRole('switch', { name: 'Visible en la app' })[0]);
+  fixture.detectChanges();
+  await fixture.whenStable();
+
+  expect(setItemVisibility).toHaveBeenCalledTimes(1);
+  expect(getMenu).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('status', { name: /cargando/i })).toBeNull();
+  expect(screen.getAllByText('Oculto de la app').length).toBeGreaterThan(0);
 });
 
 it('keeps long product names clamped inside cards', async () => {
@@ -600,7 +755,7 @@ it('renders changeable extras summaries for customizable products', async () => 
     expect(within(extrasCard!).getByText(/Bacon.*\+€1\.50/)).toBeTruthy();
 
     const unusedCard = screen.getByText('Grupo sin usar').closest('article');
-    expect(within(unusedCard!).getByText('Usado en 0 productos')).toBeTruthy();
+    expect(within(unusedCard!).getAllByText('Usado en 0 productos').length).toBeGreaterThan(0);
   });
 
   it('groups modifier groups by selection type with a translated heading', async () => {
@@ -612,6 +767,19 @@ it('renders changeable extras summaries for customizable products', async () => 
     expect(screen.getAllByText(/Selección única/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Selección múltiple/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Quitar ingredientes/).length).toBeGreaterThan(0);
+  });
+
+  it('shows readable management actions in modifier cards', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Modificadores' }));
+    fixture.detectChanges();
+
+    const groupCard = screen.getByText('Extras de hamburguesa').closest('article');
+    expect(groupCard).toBeTruthy();
+    expect(within(groupCard!).getByText('Gestión')).toBeTruthy();
+    expect(within(groupCard!).getByRole('button', { name: 'Editar' })).toBeTruthy();
+    expect(within(groupCard!).getByRole('button', { name: 'Eliminar' })).toBeTruthy();
   });
 
   it('filters modifier groups with the per-tab search box', async () => {
@@ -669,6 +837,37 @@ it('renders changeable extras summaries for customizable products', async () => 
     expect(screen.getByText('No hay resultados para tu búsqueda.')).toBeTruthy();
   });
 
+  it('renders combo cards with the same management hierarchy used in products', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
+    fixture.detectChanges();
+
+    const comboCard = screen.getByText('Menu Classic Burger').closest('article');
+    expect(comboCard).toBeTruthy();
+    expect(within(comboCard!).getByText('Gestión')).toBeTruthy();
+    expect(within(comboCard!).getAllByText('Disponible').length).toBeGreaterThan(0);
+    expect(within(comboCard!).getAllByText('Visible en la app').length).toBeGreaterThan(0);
+    expect(within(comboCard!).getByRole('button', { name: 'Editar' })).toBeTruthy();
+    expect(within(comboCard!).getByRole('button', { name: 'Eliminar' })).toBeTruthy();
+  });
+
+  it('supports a compact operational view for combos', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Menús' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('radio', { name: 'Compacta' }));
+    fixture.detectChanges();
+
+    const comboRow = screen.getByText('Menu Classic Burger').closest('article');
+    expect(comboRow).toBeTruthy();
+    expect(within(comboRow!).getByText('Menú')).toBeTruthy();
+    expect(within(comboRow!).getAllByText('Visible en la app').length).toBeGreaterThan(0);
+    expect(within(comboRow!).getByRole('button', { name: 'Editar' })).toBeTruthy();
+    expect(within(comboRow!).queryByRole('button', { name: 'Eliminar' })).toBeNull();
+  });
+
   it('shows an image or placeholder on platter cards, matching combos', async () => {
     const { fixture } = await renderPage();
 
@@ -678,6 +877,36 @@ it('renders changeable extras summaries for customizable products', async () => 
     const card = screen.getByText('Plato combinado de lomo').closest('article');
     expect(card).toBeTruthy();
     expect(within(card!).queryByRole('img') ?? within(card!).getByText('Sin imagen')).toBeTruthy();
+  });
+
+  it('renders platter cards with product-like management controls', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Platos combinados' }));
+    fixture.detectChanges();
+
+    const platterCard = screen.getByText('Plato combinado de lomo').closest('article');
+    expect(platterCard).toBeTruthy();
+    expect(within(platterCard!).getByText('Gestión')).toBeTruthy();
+    expect(within(platterCard!).getAllByText('Disponible').length).toBeGreaterThan(0);
+    expect(within(platterCard!).getByRole('button', { name: 'Editar' })).toBeTruthy();
+    expect(within(platterCard!).getByRole('button', { name: 'Eliminar' })).toBeTruthy();
+  });
+
+  it('supports a compact operational view for platters', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Platos combinados' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('radio', { name: 'Compacta' }));
+    fixture.detectChanges();
+
+    const platterRow = screen.getByText('Plato combinado de lomo').closest('article');
+    expect(platterRow).toBeTruthy();
+    expect(within(platterRow!).getByText('Plato combinado')).toBeTruthy();
+    expect(within(platterRow!).getByRole('switch', { name: 'Disponible' })).toBeTruthy();
+    expect(within(platterRow!).getByRole('button', { name: 'Editar' })).toBeTruthy();
+    expect(within(platterRow!).queryByRole('button', { name: 'Eliminar' })).toBeNull();
   });
 
   it('shows management tabs for categories, modifiers, menus, platters and availability', async () => {
@@ -708,6 +937,18 @@ it('renders changeable extras summaries for customizable products', async () => 
     fixture.detectChanges();
     expect(screen.getByText('Activa o desactiva productos para el servicio de hoy.')).toBeTruthy();
     expect(screen.getByText('Coulant de chocolate')).toBeTruthy();
+  });
+
+  it('renders availability items as management cards instead of flat rows', async () => {
+    const { fixture } = await renderPage();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Disponibilidad' }));
+    fixture.detectChanges();
+
+    const availabilityCard = screen.getByText('Coulant de chocolate').closest('article');
+    expect(availabilityCard).toBeTruthy();
+    expect(within(availabilityCard!).getByText('Gestión')).toBeTruthy();
+    expect(within(availabilityCard!).getAllByText('Agotado').length).toBeGreaterThan(0);
   });
 
   it('keeps combo image coverage scoped to combo products only', async () => {
@@ -791,7 +1032,7 @@ it('renders changeable extras summaries for customizable products', async () => 
       fireEvent.click(screen.getByRole('button', { name: /nueva sección/i }));
       fixture.detectChanges();
 
-      expect(screen.getByRole('textbox', { name: /nombre/i })).toBeTruthy();
+      expect(screen.getByRole('textbox', { name: /nombre base/i })).toBeTruthy();
       expect(screen.getByRole('button', { name: /guardar/i })).toBeTruthy();
       expect(screen.getByRole('button', { name: /cancelar/i })).toBeTruthy();
     });
@@ -803,7 +1044,7 @@ it('renders changeable extras summaries for customizable products', async () => 
       fireEvent.click(screen.getByRole('button', { name: /nueva sección/i }));
       fixture.detectChanges();
 
-      fireEvent.input(screen.getByRole('textbox', { name: /nombre/i }), { target: { value: 'Tapas' } });
+      fireEvent.input(screen.getByRole('textbox', { name: /nombre base/i }), { target: { value: 'Tapas' } });
       fixture.detectChanges();
       fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
       fixture.detectChanges();
@@ -829,12 +1070,55 @@ it('renders changeable extras summaries for customizable products', async () => 
       const updateSection = vi.fn(() => of({ id: 'cat-hamburguesas', menuId: 'menu-demo-main', name: 'Hamburguesas', sortOrder: 0, isVisible: false } as MenuSectionAdminDto));
       const { fixture } = await goToCategories({ updateSection });
 
-      const toggle = screen.getAllByRole('checkbox')[0];
+      const toggle = screen.getAllByRole('switch', { name: /visible en la carta/i })[0];
       fireEvent.click(toggle);
       fixture.detectChanges();
       await fixture.whenStable();
 
       expect(updateSection).toHaveBeenCalled();
+    });
+
+    it('edita el nombre base y las traducciones de una sección con selector por idioma', async () => {
+      const updateSection = vi.fn(() => of({ id: 'drinks', menuId: 'menu-demo-main', name: 'Bebidas base', sortOrder: 10, isVisible: true } as MenuSectionAdminDto));
+      const { fixture } = await goToCategories({ updateSection });
+
+      fireEvent.click(screen.getAllByRole('button', { name: /^editar$/i })[0]);
+      fixture.detectChanges();
+
+      fireEvent.input(screen.getByRole('textbox', { name: /nombre base/i }), { target: { value: 'Bebidas base' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Español' }));
+      fireEvent.input(screen.getByRole('textbox', { name: /nombre \(español\)/i }), { target: { value: 'Bebidas ES' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Català' }));
+      fireEvent.input(screen.getByRole('textbox', { name: /nombre \(catalán\)|nom \(català\)/i }), { target: { value: 'Begudes' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'English' }));
+      fireEvent.input(screen.getByRole('textbox', { name: /nombre \(inglés\)|name \(english\)/i }), { target: { value: 'Drinks' } });
+      fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(updateSection).toHaveBeenCalledWith(
+        'menu-demo-main',
+        'drinks',
+        expect.objectContaining({
+          name: 'Bebidas base',
+          nameI18n: { es: 'Bebidas ES', ca: 'Begudes', en: 'Drinks' },
+        }),
+      );
+    });
+
+    it('usa un bloque de gestión con toggle y acciones de ancho completo por sección', async () => {
+      await goToCategories();
+
+      const card = screen.getAllByText('Bebidas').find((node) => node.closest('article'))?.closest('article');
+      expect(card).toBeTruthy();
+      expect(within(card as HTMLElement).getAllByText('Visible en la carta').length).toBeGreaterThan(0);
+      expect(within(card as HTMLElement).getByText('Gestión')).toBeTruthy();
+      expect(within(card as HTMLElement).getByText('Editar')).toBeTruthy();
+      expect(within(card as HTMLElement).getByText('Eliminar')).toBeTruthy();
+
+      const actions = (card as HTMLElement).querySelector('.menu-page__category-actions');
+      expect(actions?.className).toContain('grid');
+      expect(actions?.className).toContain('sm:grid-cols-2');
     });
 
     it('muestra botón de eliminar por sección y abre confirmación', async () => {
@@ -874,9 +1158,9 @@ it('renders changeable extras summaries for customizable products', async () => 
       return result;
     };
 
-    it('muestra badge "Sin sección" para artículos del catálogo sin asignar', async () => {
+    it('muestra badge "Sin sección del menú" para artículos del catálogo sin asignar', async () => {
       await renderWithCatalogProduct();
-      expect(screen.getAllByText('Sin sección').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Sin sección del menú').length).toBeGreaterThan(0);
     });
 
     it('mantiene el badge "Personalizable" para artículos de catálogo con modificadores', async () => {
@@ -897,16 +1181,16 @@ it('renders changeable extras summaries for customizable products', async () => 
 
     it('muestra botón "Añadir a sección" para artículos sin asignar', async () => {
       await renderWithCatalogProduct();
-      expect(screen.getByRole('button', { name: /añadir a sección/i })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /asignar a sección/i })).toBeTruthy();
     });
 
     it('abre el selector de sección al pulsar "Añadir a sección"', async () => {
       const { fixture } = await renderWithCatalogProduct();
 
-      fireEvent.click(screen.getByRole('button', { name: /añadir a sección/i }));
+      fireEvent.click(screen.getByRole('button', { name: /asignar a sección/i }));
       fixture.detectChanges();
 
-      expect(screen.getByRole('dialog', { name: /añadir a sección/i })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: /asignar a sección/i })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Bebidas' })).toBeTruthy();
     });
 
@@ -914,7 +1198,7 @@ it('renders changeable extras summaries for customizable products', async () => 
       const addSectionItem = vi.fn(() => of(undefined));
       const { fixture } = await renderWithCatalogProduct({ addSectionItem });
 
-      fireEvent.click(screen.getByRole('button', { name: /añadir a sección/i }));
+      fireEvent.click(screen.getByRole('button', { name: /asignar a sección/i }));
       fixture.detectChanges();
 
       fireEvent.click(screen.getByRole('button', { name: 'Bebidas' }));

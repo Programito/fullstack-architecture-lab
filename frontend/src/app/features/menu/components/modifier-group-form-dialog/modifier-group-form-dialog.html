@@ -12,35 +12,32 @@
 >
   <div class="grid gap-4">
     <app-input
-      [label]="'menu.modifierGroup.form.nameLabel' | transloco"
+      [label]="'menu.page.sectionBaseNameLabel' | transloco"
       [placeholder]="'menu.modifierGroup.form.namePlaceholder' | transloco"
       [value]="name()"
       [disabled]="loading()"
       (valueChange)="name.set($event)"
     />
 
-    <div class="grid gap-3 sm:grid-cols-3">
+    <div class="grid gap-2 rounded-lg border p-3 shadow-sm">
+      <div class="flex items-center justify-between gap-2">
+        <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.page.sectionTranslationsTitle' | transloco }}</p>
+        <app-segmented-control
+          size="sm"
+          [ariaLabel]="'menu.page.sectionTranslationLocaleLabel' | transloco"
+          [options]="localeOptions()"
+          [value]="activeGroupLocale()"
+          (valueChange)="activeGroupLocale.set($event === 'ca' ? 'ca' : $event === 'en' ? 'en' : 'es')"
+        />
+      </div>
       <app-input
-        [label]="'menu.product.form.nameEs' | transloco"
+        [label]="activeGroupNameLabel()"
         [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-        [value]="nameEs()"
+        [value]="activeGroupName()"
         [disabled]="loading()"
-        (valueChange)="nameEs.set($event)"
+        (valueChange)="updateActiveGroupName($event)"
       />
-      <app-input
-        [label]="'menu.product.form.nameCa' | transloco"
-        [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-        [value]="nameCa()"
-        [disabled]="loading()"
-        (valueChange)="nameCa.set($event)"
-      />
-      <app-input
-        [label]="'menu.product.form.nameEn' | transloco"
-        [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-        [value]="nameEn()"
-        [disabled]="loading()"
-        (valueChange)="nameEn.set($event)"
-      />
+      <p class="theme-muted text-sm">{{ 'menu.product.form.nameI18nHint' | transloco }}</p>
     </div>
 
     <app-select
@@ -116,28 +113,25 @@
             }
           </div>
 
-          <div class="grid gap-2 sm:grid-cols-3">
+          <div class="grid gap-2 rounded-lg border p-3 shadow-sm">
+            <div class="flex items-center justify-between gap-2">
+              <p class="theme-title text-xs font-semibold uppercase">{{ 'menu.page.sectionTranslationsTitle' | transloco }}</p>
+              <app-segmented-control
+                size="sm"
+                [ariaLabel]="'menu.page.sectionTranslationLocaleLabel' | transloco"
+                [options]="localeOptions()"
+                [value]="activeOptionLocale()"
+                (valueChange)="activeOptionLocale.set($event === 'ca' ? 'ca' : $event === 'en' ? 'en' : 'es')"
+              />
+            </div>
             <app-input
-              [label]="$index === 0 ? ('menu.product.form.nameEs' | transloco) : ''"
+              [label]="activeOptionNameLabel()"
               [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-              [value]="option.nameEs"
+              [value]="activeOptionName(option)"
               [disabled]="loading()"
-              (valueChange)="updateOptionNameEs($index, $event)"
+              (valueChange)="updateActiveOptionName($index, $event)"
             />
-            <app-input
-              [label]="$index === 0 ? ('menu.product.form.nameCa' | transloco) : ''"
-              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-              [value]="option.nameCa"
-              [disabled]="loading()"
-              (valueChange)="updateOptionNameCa($index, $event)"
-            />
-            <app-input
-              [label]="$index === 0 ? ('menu.product.form.nameEn' | transloco) : ''"
-              [placeholder]="'menu.product.form.nameI18nPlaceholder' | transloco"
-              [value]="option.nameEn"
-              [disabled]="loading()"
-              (valueChange)="updateOptionNameEn($index, $event)"
-            />
+            <p class="theme-muted text-sm">{{ 'menu.product.form.nameI18nHint' | transloco }}</p>
           </div>
 
           <app-image-dropzone

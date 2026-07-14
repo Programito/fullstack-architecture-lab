@@ -81,6 +81,11 @@
   --switch-ring: var(--ui-violet-ring);
 }
 
+.switch-field__track--contrast {
+  --switch-accent: var(--ui-contrast);
+  --switch-ring: var(--ui-contrast-ring);
+}
+
 .switch-field__track--sm {
   width: 2rem;
   height: 1.125rem;
@@ -134,6 +139,10 @@
 }
 
 .switch-field__input:checked + .switch-field__label .switch-field__track--violet {
+  background: var(--switch-accent);
+}
+
+.switch-field__input:checked + .switch-field__label .switch-field__track--contrast {
   background: var(--switch-accent);
 }
 

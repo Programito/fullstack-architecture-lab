@@ -66,7 +66,7 @@ describe('ImageDropzone', () => {
       removeRequested,
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /quitar imagen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /quitar/i }));
 
     expect(removeRequested).toHaveBeenCalled();
   });
@@ -83,6 +83,29 @@ describe('ImageDropzone', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     expect(fileSelected).toHaveBeenCalledWith(file);
-    expect(screen.getByRole('button', { name: /reemplazar imagen/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /reemplazar/i })).toBeTruthy();
+  });
+
+  it('shows the full preview image inside a taller frame', async () => {
+    await renderDropzone({
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+    });
+
+    const preview = screen.getByRole('img', { name: 'Imagen del producto' });
+    expect(preview.className).toContain('object-contain');
+    expect(preview.className).toContain('h-56');
+  });
+
+  it('uses two equal-width action columns when the preview already exists', async () => {
+    await renderDropzone({
+      imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+    });
+
+    const replaceButton = screen.getByRole('button', { name: /reemplazar/i });
+    const actionsGrid = replaceButton.parentElement as HTMLElement;
+
+    expect(actionsGrid.className).toContain('sm:grid-cols-2');
+    expect(replaceButton.className).toContain('w-full');
+    expect(screen.getByRole('button', { name: /quitar/i }).className).toContain('w-full');
   });
 });
