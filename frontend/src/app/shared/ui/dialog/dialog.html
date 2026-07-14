@@ -12,6 +12,7 @@
       [class]="classes()"
       role="dialog"
       aria-modal="true"
+      [attr.data-variant]="panelVariant() || null"
       [attr.aria-labelledby]="labelledBy()"
       [attr.aria-describedby]="describedBy()"
     >

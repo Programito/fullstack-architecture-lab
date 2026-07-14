@@ -18,6 +18,8 @@ export class Dialog {
   readonly description = input('');
   readonly size = input<DialogSize>('md');
   readonly appearance = input<DialogAppearance>('default');
+  readonly panelClass = input('');
+  readonly panelVariant = input('');
   readonly closeOnBackdrop = input(true, { transform: booleanAttribute });
   readonly closeOnEscape = input(true, { transform: booleanAttribute });
   readonly closeAriaLabel = input('Cerrar dialogo');
@@ -42,7 +44,9 @@ export class Dialog {
   protected readonly titleId = `dialog-title-${this.id}`;
   protected readonly descriptionId = `dialog-description-${this.id}`;
   protected readonly classes = computed(() =>
-    ['dialog__panel', `dialog__panel--${this.size()}`, `dialog__panel--${this.appearance()}`].join(' '),
+    ['dialog__panel', `dialog__panel--${this.size()}`, `dialog__panel--${this.appearance()}`, this.panelClass()]
+      .filter(Boolean)
+      .join(' '),
   );
   protected readonly labelledBy = computed(() => (this.title() ? this.titleId : null));
   protected readonly describedBy = computed(() => (this.description() ? this.descriptionId : null));

@@ -46,6 +46,15 @@
   max-width: 42rem;
 }
 
+.dialog__panel--drawer {
+  align-self: stretch;
+  justify-self: end;
+  width: min(42rem, 100vw);
+  max-height: none;
+  height: 100dvh;
+  border-radius: 1.5rem 0 0 1.5rem;
+}
+
 .dialog__panel--minimal {
   border-color: color-mix(in srgb, var(--ui-border) 74%, transparent);
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.14);

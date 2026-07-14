@@ -308,15 +308,22 @@
   size="lg"
   [title]="'restaurantPos.reservations.create.title' | transloco"
   [footerSummary]="selectedDateLabel()"
-  [showActions]="true"
-  [confirmLabel]="'restaurantPos.reservations.create.submit' | transloco"
-  [cancelLabel]="'restaurantPos.reservations.create.cancel' | transloco"
-  [confirmLoading]="creationSubmitting()"
-  [confirmDisabled]="creationSubmitting()"
-  (confirmed)="submitReservation()"
+  [showActions]="false"
+  panelClass="dialog__panel--drawer"
+  panelVariant="drawer"
   (closed)="closeCreateReservation()"
 >
-  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+  <div class="reservations-page__drawer-body">
+    <div class="reservations-page__drawer-content">
+      <section class="reservations-page__drawer-section">
+        <div class="reservations-page__section-header">
+          <p class="reservations-page__section-step">1</p>
+          <div>
+            <h2 class="theme-title text-base font-semibold">{{ 'restaurantPos.reservations.create.customer' | transloco }}</h2>
+            <p class="theme-muted text-sm">{{ 'restaurantPos.reservations.create.customerHelp' | transloco }}</p>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
     <!-- Autocomplete de cliente -->
     <div class="relative md:col-span-2">
       <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">
@@ -427,18 +434,18 @@
       />
     </label>
 
-    <label class="md:col-span-2 xl:col-span-4">
-      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.notes' | transloco }}</span>
-      <textarea
-        class="reservations-page__textarea"
-        [value]="creationForm().notes"
-        [attr.aria-label]="'restaurantPos.reservations.create.notes' | transloco"
-        (input)="updateCreateField('notes', ($any($event.target).value ?? '').toString())"
-      ></textarea>
-    </label>
-  </div>
+        </div>
+      </section>
 
-  <div class="mt-4">
+      <section class="reservations-page__drawer-section">
+        <div class="reservations-page__section-header">
+          <p class="reservations-page__section-step">2</p>
+          <div>
+            <h2 class="theme-title text-base font-semibold">{{ 'restaurantPos.reservations.create.time' | transloco }}</h2>
+            <p class="theme-muted text-sm">{{ 'restaurantPos.reservations.create.timeHelp' | transloco }}</p>
+          </div>
+        </div>
+  <div>
     <div class="mb-3 flex items-center justify-between gap-2">
       <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.timeSlots' | transloco }}</p>
       <button type="button" class="reservations-page__link-button" (click)="openServiceWindowsEdit()">
@@ -451,43 +458,105 @@
       size="sm"
       (valueChange)="serviceTab.set($any($event))"
     />
-    <div class="reservations-page__time-slots mt-3">
-      @for (slot of activeSlots(); track slot) {
+    <div class="reservations-page__slot-group">
+      <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.recommendedSlots' | transloco }}</p>
+      <div class="reservations-page__time-slots">
+      @for (slot of recommendedSlots(); track slot) {
         <button
           type="button"
-          class="reservations-page__time-slot"
+          class="reservations-page__time-slot reservations-page__time-slot--recommended"
           [class.reservations-page__time-slot--selected]="creationForm().time === slot"
           (click)="updateCreateField('time', slot)"
         >{{ slot }}</button>
       }
+      </div>
     </div>
+    @if (secondarySlots().length > 0) {
+      <div class="reservations-page__slot-group">
+        <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.otherSlots' | transloco }}</p>
+        <div class="reservations-page__time-slots">
+          @for (slot of secondarySlots(); track slot) {
+            <button type="button" class="reservations-page__time-slot" [class.reservations-page__time-slot--selected]="creationForm().time === slot" (click)="updateCreateField('time', slot)">{{ slot }}</button>
+          }
+        </div>
+      </div>
+    }
   </div>
+      </section>
 
   @if (availableTables().length > 0) {
-    <div class="mt-4">
-      <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.tables' | transloco }}</p>
-      <div class="reservations-page__table-options mt-3">
-        @for (table of availableTables(); track table.id) {
+    <section class="reservations-page__drawer-section">
+      <div class="reservations-page__section-header">
+        <p class="reservations-page__section-step">3</p>
+        <div>
+          <h2 class="theme-title text-base font-semibold">{{ 'restaurantPos.reservations.create.tableTitle' | transloco }}</h2>
+          <p class="theme-muted text-sm">{{ 'restaurantPos.reservations.create.tableHelp' | transloco }}</p>
+        </div>
+      </div>
+      <div class="reservations-page__slot-group">
+        <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.suggestedTables' | transloco }}</p>
+        <div class="reservations-page__table-options">
+        @for (table of suggestedTables(); track table.id) {
           <label class="reservations-page__table-option">
             <input
               type="checkbox"
-              [checked]="creationForm().tableIds.includes(table.id)"
+              [checked]="table.selected"
               (change)="toggleCreateTable(table.id, $any($event.target).checked)"
             />
             <span>{{ table.label }}</span>
             <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
           </label>
         }
+        </div>
       </div>
+      <details class="reservations-page__manual-tables">
+        <summary class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.manualTables' | transloco }}</summary>
+        <div class="reservations-page__table-options">
+          @for (table of manualTables(); track table.id) {
+            <label class="reservations-page__table-option">
+              <input type="checkbox" [checked]="table.selected" (change)="toggleCreateTable(table.id, $any($event.target).checked)" />
+              <span>{{ table.label }}</span>
+              <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
+            </label>
+          }
+        </div>
+      </details>
       @if (selectedTablesCapacity(); as capacity) {
         <p class="theme-muted mt-2 text-sm">
           {{ 'restaurantPos.reservations.create.capacityHint' | transloco: { count: capacity } }}
         </p>
       }
-    </div>
+    </section>
   }
+
+  <section class="reservations-page__drawer-section">
+    <div class="reservations-page__section-header">
+      <p class="reservations-page__section-step">4</p>
+      <div>
+        <h2 class="theme-title text-base font-semibold">{{ 'restaurantPos.reservations.create.notes' | transloco }}</h2>
+      </div>
+    </div>
+    <textarea
+      class="reservations-page__textarea"
+      [value]="creationForm().notes"
+      [attr.aria-label]="'restaurantPos.reservations.create.notes' | transloco"
+      (input)="updateCreateField('notes', ($any($event.target).value ?? '').toString())"
+    ></textarea>
+  </section>
 
   @if (creationError(); as creationErrorText) {
     <p class="reservations-page__error mt-4">{{ creationErrorText }}</p>
   }
+    </div>
+    <footer class="reservations-page__drawer-footer">
+      <div class="reservations-page__drawer-summary">
+        <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.summaryTitle' | transloco }}</p>
+        <p class="theme-title text-sm font-semibold">{{ selectedDateLabel() }} · {{ creationForm().time }} · {{ creationForm().partySize }}</p>
+      </div>
+      <div class="reservations-page__drawer-actions">
+        <button type="button" class="reservations-page__secondary-button" [disabled]="creationSubmitting()" (click)="closeCreateReservation()">{{ 'restaurantPos.reservations.create.cancel' | transloco }}</button>
+        <button type="button" class="reservations-page__primary-button" [disabled]="creationSubmitting()" (click)="submitReservation()">{{ creationProgressState().ctaLabelKey | transloco }}</button>
+      </div>
+    </footer>
+  </div>
 </app-dialog>

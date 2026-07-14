@@ -345,7 +345,7 @@ describe('RestaurantPosReservationsPage', () => {
     fireEvent.input(screen.getByLabelText('Telefono'), { target: { value: '+34 600 777 888' } });
     fireEvent.input(screen.getByLabelText('Comensales'), { target: { value: '4' } });
     fireEvent.click(screen.getByRole('button', { name: '13:30' }));
-    fireEvent.click(screen.getByLabelText('Mesa 2', { exact: false }));
+    fireEvent.click(screen.getAllByLabelText('Mesa 2', { exact: false })[0]!);
     fireEvent.input(screen.getByLabelText('Notas'), { target: { value: 'Ventana' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar reserva' }));
 
@@ -371,7 +371,7 @@ describe('RestaurantPosReservationsPage', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar reserva' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
 
     expect(screen.getByText('Introduce el nombre del cliente.')).toBeTruthy();
   });
@@ -540,7 +540,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
     fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar reserva' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
 
     expect(await screen.findByText('No se ha podido crear la reserva.')).toBeTruthy();
   });
@@ -627,7 +627,7 @@ describe('RestaurantPosReservationsPage', () => {
     expect(component.selectedDate()).toBe(today);
   });
 
-  it('opens the reservation creation form inside a dialog', async () => {
+  it('opens the reservation creation flow inside a drawer instead of a centered dialog', async () => {
     const i18n = provideI18nTesting();
     const apiMock = createApiMock();
 
@@ -638,8 +638,26 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
 
-    expect(screen.getByRole('dialog')).toBeTruthy();
-    expect(screen.getByLabelText('Cliente')).toBeTruthy();
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    expect(drawer.getAttribute('data-variant')).toBe('drawer');
+    expect(within(drawer).getAllByText('Cliente').length).toBeGreaterThan(0);
+    expect(within(drawer).getByText('Hora')).toBeTruthy();
+    expect(within(drawer).getByText('Mesa')).toBeTruthy();
+  });
+
+  it('renders a sticky reservation summary and guided CTA label', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+
+    expect(screen.getByText('Resumen de la reserva')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' })).toBeTruthy();
   });
 
   it('shows time slot chips based on the service windows from the API', async () => {
