@@ -100,6 +100,26 @@ describe('ServiceTablePanel', () => {
     };
   };
 
+  it('exposes workflow-first panel sections with one highlighted next step', async () => {
+    const i18n = provideI18nTesting();
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, order, { nextAction: { type: 'send_kitchen', count: 2 } }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    const component = fixture.componentInstance as ServiceTablePanel & {
+      selectedServiceWorkflowSections(): Array<{ id: string; highlighted: boolean }>;
+    };
+
+    expect(component.selectedServiceWorkflowSections()).toContainEqual(
+      expect.objectContaining({ id: 'kitchen', highlighted: true }),
+    );
+  });
+
   it('renders selected table details, order lines, and service actions', async () => {
     const i18n = provideI18nTesting();
     const increaseProduct = vi.fn();

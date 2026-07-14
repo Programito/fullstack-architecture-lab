@@ -486,6 +486,22 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
   };
 
+  it('derives compact dashboard stats for the command center header', async () => {
+    const { fixture } = await renderServicePage();
+    const component = fixture.componentInstance as unknown as {
+      serviceDashboardStats(): Array<{ id: string; value: string }>;
+    };
+
+    expect(component.serviceDashboardStats()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'occupied' }),
+        expect.objectContaining({ id: 'kitchen' }),
+        expect.objectContaining({ id: 'charge' }),
+        expect.objectContaining({ id: 'sales' }),
+      ]),
+    );
+  });
+
   it('renders a compact service floor and empty selected-table panel without the preparation board', async () => {
     const { container } = await renderServicePage();
 

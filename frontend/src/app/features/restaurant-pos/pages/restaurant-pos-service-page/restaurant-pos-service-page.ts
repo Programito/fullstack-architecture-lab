@@ -80,6 +80,20 @@ export class RestaurantPosServicePage {
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
 
+  protected readonly serviceDashboardStats = computed(() => {
+    const servicePoints = this.store.servicePoints();
+    const occupied = servicePoints.filter((point) => point.table.status !== 'free').length;
+    const kitchen = servicePoints.filter((point) => point.table.status === 'waiting_kitchen').length;
+    const charge = servicePoints.filter((point) => point.table.status === 'payment_pending' || point.table.status === 'served').length;
+
+    return [
+      { id: 'occupied', value: String(occupied), tone: 'neutral' as const },
+      { id: 'kitchen', value: String(kitchen), tone: kitchen > 0 ? ('warning' as const) : ('neutral' as const) },
+      { id: 'charge', value: String(charge), tone: charge > 0 ? ('accent' as const) : ('neutral' as const) },
+      { id: 'sales', value: this.formatCurrency(this.store.salesToday()), tone: 'accent' as const },
+    ];
+  });
+  protected readonly productPickerMode = computed<'drawer'>(() => 'drawer');
   protected readonly availableProducts = computed(() => this.store.products().filter((product) => product.available));
   protected readonly filteredProducts = computed(() => {
     const query = this.normalizeSearch(this.productSearchQuery());

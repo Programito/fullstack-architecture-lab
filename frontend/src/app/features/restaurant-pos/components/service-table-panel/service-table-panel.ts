@@ -42,6 +42,35 @@ export class ServiceTablePanel {
   protected readonly freeTableConfirmOpen = signal(false);
   protected readonly table = computed(() => this.serviceInfo()?.table ?? null);
   protected readonly order = computed(() => this.serviceInfo()?.order ?? null);
+  protected readonly selectedServiceWorkflowSections = computed(() => {
+    const info = this.serviceInfo();
+    const order = info?.order;
+    const pendingKitchenCount = info?.pendingKitchenCount ?? 0;
+    const nextAction = info?.nextAction?.type;
+
+    return [
+      { id: 'summary', titleKey: 'restaurantPos.service.workflow.summary', highlighted: false, countLabel: null },
+      { id: 'order', titleKey: 'restaurantPos.service.workflow.order', highlighted: false, countLabel: order ? `${order.lines.length}` : null },
+      {
+        id: 'kitchen',
+        titleKey: 'restaurantPos.service.workflow.kitchen',
+        highlighted: nextAction === 'send_kitchen' || nextAction === 'mark_served',
+        countLabel: pendingKitchenCount > 0 ? `${pendingKitchenCount}` : null,
+      },
+      {
+        id: 'payment',
+        titleKey: 'restaurantPos.service.workflow.payment',
+        highlighted: nextAction === 'charge',
+        countLabel: order ? this.formatCurrency(order.total) : null,
+      },
+      {
+        id: 'closing',
+        titleKey: 'restaurantPos.service.workflow.closing',
+        highlighted: nextAction === 'cleaning' || nextAction === 'free_table',
+        countLabel: null,
+      },
+    ] as const;
+  });
   protected readonly chargePriority = computed(() => {
     const status = this.table()?.status;
     return this.serviceInfo()?.canCharge && (status === 'served' || status === 'payment_pending');
