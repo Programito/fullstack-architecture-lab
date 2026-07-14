@@ -488,18 +488,31 @@ describe('RestaurantPosServicePage', () => {
 
   it('derives compact dashboard stats for the command center header', async () => {
     const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const component = fixture.componentInstance as unknown as {
-      serviceDashboardStats(): Array<{ id: string; value: string }>;
+      serviceDashboardStats(): Array<{ id: 'occupied' | 'kitchen' | 'charge' | 'sales'; value: string; tone: 'neutral' | 'warning' | 'accent' }>;
+      productPickerMode(): 'drawer';
     };
 
-    expect(component.serviceDashboardStats()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'occupied' }),
-        expect.objectContaining({ id: 'kitchen' }),
-        expect.objectContaining({ id: 'charge' }),
-        expect.objectContaining({ id: 'sales' }),
-      ]),
-    );
+    const servicePoints = store.servicePoints();
+    const updates = [
+      { status: 'occupied' as const, total: 12 },
+      { status: 'waiting_kitchen' as const, total: 15 },
+      { status: 'served' as const, total: 20 },
+      { status: 'payment_pending' as const, total: 25 },
+    ];
+
+    updates.forEach((update, index) => {
+      store.hydrateServicePoint({ table: { ...servicePoints[index].table, ...update } });
+    });
+
+    expect(component.serviceDashboardStats()).toEqual([
+      { id: 'occupied', value: '4', tone: 'neutral' },
+      { id: 'kitchen', value: '1', tone: 'warning' },
+      { id: 'charge', value: '2', tone: 'accent' },
+      { id: 'sales', value: '72,00\u00a0€', tone: 'accent' },
+    ]);
+    expect(component.productPickerMode()).toBe('drawer');
   });
 
   it('renders a compact service floor and empty selected-table panel without the preparation board', async () => {

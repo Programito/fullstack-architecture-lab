@@ -30,6 +30,11 @@ const FAVORITE_PRODUCTS_STORAGE_KEY = 'restaurant-pos.favorite-products';
 const DEFAULT_FAVORITE_PRODUCT_IDS = ['product-1', 'product-3'] as const;
 const BEST_SELLER_PRODUCT_IDS = ['product-1', 'product-2', 'product-3', 'product-16'] as const;
 type ServicePointStatusFilter = (typeof SERVICE_POINT_STATUS_FILTER_ORDER)[number] | 'all';
+type ServiceDashboardStat = {
+  id: 'occupied' | 'kitchen' | 'charge' | 'sales';
+  value: string;
+  tone: 'neutral' | 'warning' | 'accent';
+};
 
 const isServicePointStatusFilter = (value: string): value is ServicePointStatusFilter =>
   value === 'all' || SERVICE_POINT_STATUS_FILTER_ORDER.includes(value as (typeof SERVICE_POINT_STATUS_FILTER_ORDER)[number]);
@@ -80,7 +85,7 @@ export class RestaurantPosServicePage {
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
 
-  protected readonly serviceDashboardStats = computed(() => {
+  protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
     const servicePoints = this.store.servicePoints();
     const occupied = servicePoints.filter((point) => point.table.status !== 'free').length;
     const kitchen = servicePoints.filter((point) => point.table.status === 'waiting_kitchen').length;

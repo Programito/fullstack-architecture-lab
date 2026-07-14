@@ -115,9 +115,16 @@ describe('ServiceTablePanel', () => {
       selectedServiceWorkflowSections(): Array<{ id: string; highlighted: boolean }>;
     };
 
-    expect(component.selectedServiceWorkflowSections()).toContainEqual(
-      expect.objectContaining({ id: 'kitchen', highlighted: true }),
-    );
+    expect(component.selectedServiceWorkflowSections().filter((section) => section.highlighted)).toEqual([
+      expect.objectContaining({ id: 'kitchen' }),
+    ]);
+
+    fixture.componentRef.setInput('serviceInfo', createServiceInfo(table, order, { nextAction: { type: 'charge', count: 0 } }));
+    fixture.detectChanges();
+
+    expect(component.selectedServiceWorkflowSections().filter((section) => section.highlighted)).toEqual([
+      expect.objectContaining({ id: 'payment' }),
+    ]);
   });
 
   it('renders selected table details, order lines, and service actions', async () => {
