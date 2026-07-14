@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -7,6 +8,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast';
 import type { RestaurantFloorsDto, RestaurantReservationDto } from '../../api/restaurant-pos-api.models';
 import type { ServiceWindowDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosReservationsPage } from './restaurant-pos-reservations-page';
 
 describe('RestaurantPosReservationsPage', () => {
@@ -779,6 +781,76 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(screen.getByRole('button', { name: 'Confirmar' }).hasAttribute('disabled')).toBe(true);
     expect(container.querySelector('.spinner')).toBeTruthy();
+  });
+
+  it('does not refresh the previous date when an action completes after navigating dates', async () => {
+    const i18n = provideI18nTesting();
+    const actionResponse = new Subject<RestaurantReservationDto>();
+    const apiMock = {
+      ...createApiMock(),
+      confirmRestaurantReservation: vi.fn(() => actionResponse.asObservable()),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Día anterior' }));
+    await waitFor(() => expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2));
+
+    actionResponse.next(createReservationDto());
+
+    expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not refresh the previous restaurant when an action completes after switching restaurants', async () => {
+    const i18n = provideI18nTesting();
+    const actionResponse = new Subject<RestaurantReservationDto>();
+    const activeRestaurant = signal({
+      id: 'restaurant-mesaflow-centro',
+      organizationId: 'org-demo',
+      name: 'MesaFlow Centro',
+      displayName: 'MesaFlow Centro',
+      timezone: 'Europe/Madrid',
+      currency: 'EUR',
+      isActive: true,
+    });
+    const apiMock = {
+      ...createApiMock(),
+      confirmRestaurantReservation: vi.fn(() => actionResponse.asObservable()),
+    };
+    const restaurantContext = {
+      activeRestaurant: activeRestaurant.asReadonly(),
+      load: vi.fn(),
+    };
+
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        { provide: RestaurantPosApiService, useValue: apiMock },
+        { provide: RestaurantContextStore, useValue: restaurantContext },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+    activeRestaurant.set({
+      id: 'restaurant-mesaflow-norte',
+      organizationId: 'org-demo',
+      name: 'MesaFlow Norte',
+      displayName: 'MesaFlow Norte',
+      timezone: 'Europe/Madrid',
+      currency: 'EUR',
+      isActive: true,
+    });
+    fixture.detectChanges();
+    await waitFor(() => expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2));
+
+    actionResponse.next(createReservationDto());
+
+    expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2);
   });
 
   it('clicking a destructive action opens a confirmation dialog without calling the API', async () => {

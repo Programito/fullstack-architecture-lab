@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/angular';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular';
 import { Dialog } from './dialog';
 
 describe('Dialog', () => {
@@ -143,6 +143,36 @@ describe('Dialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar dialogo' }));
     await waitFor(() => expect(document.activeElement).toBe(opener));
+  });
+
+  it('restores focus to the remaining dialog when the opener becomes CSS-hidden', async () => {
+    await render(
+      `
+        <app-dialog [open]="drawerOpen" title="Crear reserva" panelVariant="drawer">
+          <button type="button" [style.display]="hideOpener ? 'none' : 'inline-flex'" (click)="hideOpener = true; confirmationOpen = true">Abrir confirmacion</button>
+          <button type="button">Continuar editando</button>
+        </app-dialog>
+        <app-dialog [open]="confirmationOpen" title="Confirmar reserva" (closed)="confirmationOpen = false">
+          <button type="button">Confirmar ahora</button>
+        </app-dialog>
+      `,
+      {
+        imports: [Dialog],
+        componentProperties: { drawerOpen: true, confirmationOpen: false, hideOpener: false },
+      },
+    );
+    const opener = screen.getByRole('button', { name: 'Abrir confirmacion' });
+    opener.focus();
+    expect(document.activeElement).toBe(opener);
+
+    fireEvent.click(opener);
+    const confirmationDialog = screen.getByRole('dialog', { name: 'Confirmar reserva' });
+    await waitFor(() => expect(confirmationDialog).toBeTruthy());
+
+    fireEvent.click(within(confirmationDialog).getByRole('button', { name: 'Cerrar dialogo' }));
+
+    const drawerDialog = screen.getByRole('dialog', { name: 'Crear reserva' });
+    await waitFor(() => expect(document.activeElement).toBe(within(drawerDialog).getByRole('button', { name: 'Cerrar dialogo' })));
   });
 
   it('traps forward and reverse tab navigation inside the open dialog', async () => {

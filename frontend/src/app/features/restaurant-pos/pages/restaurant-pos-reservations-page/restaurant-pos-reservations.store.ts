@@ -8,6 +8,11 @@ import type { RestaurantFloorsDto, RestaurantReservationDto, ServiceWindowDto, U
 
 export type ReservationAction = 'confirm' | 'seat' | 'no_show' | 'cancel';
 
+type ReservationsLoadContext = {
+  restaurantId: string;
+  date: string | undefined;
+};
+
 @Injectable()
 export class RestaurantPosReservationsStore {
   private readonly api = inject(RestaurantPosApiService);
@@ -24,6 +29,7 @@ export class RestaurantPosReservationsStore {
   private readonly _serviceWindowsSaving = signal(false);
   private readonly _actionState = signal<Record<string, { loading: boolean; error: string | null }>>({});
   private reservationsLoadGeneration = 0;
+  private currentReservationsContext: ReservationsLoadContext | null = null;
 
   // ── Señales públicas readonly (contratos de la vista) ────────────────────
   readonly reservations = this._reservations.asReadonly();
@@ -45,6 +51,7 @@ export class RestaurantPosReservationsStore {
 
   // ── Comandos ─────────────────────────────────────────────────────────────
   loadReservations(restaurantId: string, date?: string): void {
+    this.currentReservationsContext = { restaurantId, date };
     const generation = ++this.reservationsLoadGeneration;
     this._loading.set(true);
     this._loadError.set(false);
@@ -106,6 +113,7 @@ export class RestaurantPosReservationsStore {
 
   clearData(): void {
     this.reservationsLoadGeneration += 1;
+    this.currentReservationsContext = null;
     this._reservations.set([]);
     this._restaurantFloors.set(null);
     this._serviceWindows.set([]);
@@ -127,7 +135,9 @@ export class RestaurantPosReservationsStore {
             ...state,
             [reservationId]: { loading: false, error: null },
           }));
-          this.loadReservations(restaurantId, date);
+          if (this.isCurrentReservationsContext(restaurantId, date)) {
+            this.loadReservations(restaurantId, date);
+          }
           this.toast.success({
             title: this.transloco.translate(`restaurantPos.reservations.actionSuccess.${action}.title`),
             description: this.transloco.translate(`restaurantPos.reservations.actionSuccess.${action}.description`),
@@ -156,5 +166,10 @@ export class RestaurantPosReservationsStore {
       case 'cancel':
         return this.api.cancelRestaurantReservation(restaurantId, reservationId);
     }
+  }
+
+  private isCurrentReservationsContext(restaurantId: string, date?: string): boolean {
+    return this.currentReservationsContext?.restaurantId === restaurantId
+      && this.currentReservationsContext.date === date;
   }
 }

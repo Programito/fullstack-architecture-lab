@@ -160,7 +160,7 @@ export class Dialog {
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
     ) as NodeListOf<HTMLElement>;
 
-    return Array.from(focusableElements).filter((element) => element.tabIndex >= 0 && !element.hasAttribute('hidden'));
+    return Array.from(focusableElements).filter((element) => this.isFocusable(element));
   }
 
   private restoreFocus(): void {
@@ -178,7 +178,19 @@ export class Dialog {
     return !!element
       && element.isConnected
       && element.tabIndex >= 0
-      && !element.matches(':disabled, [hidden]');
+      && !element.matches(':disabled, [hidden], [inert]')
+      && this.isEffectivelyVisible(element);
+  }
+
+  private isEffectivelyVisible(element: HTMLElement): boolean {
+    for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+      const style = getComputedStyle(current);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private registerInStack(): void {

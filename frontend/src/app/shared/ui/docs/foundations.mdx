@@ -233,6 +233,10 @@ Toma el idioma activo de la toolbar `Locale` de Storybook para nombres de mes, d
 
 ## Dialogs
 
+### Drawer Panel
+
+Usa `panelVariant="drawer"` para un panel lateral de altura completa, como una creacion o edicion contextual. Conserva el comportamiento modal compartido de `Dialog`: backdrop, Escape, foco atrapado y restauracion de foco. Para una decision breve sobre un drawer abierto, muestra un segundo `Dialog` encima en lugar de sustituir el panel lateral.
+
 `Dialog` se usa para confirmaciones, edición breve y contenido que necesita atención modal. Debe tener título visible siempre que sea posible y cierre accesible.
 
 Activa `showActions` para usar el footer estándar con `cancel` y `confirm`. El botón principal acepta `confirmVariant` y `confirmFill`; el botón secundario puede ocultarse con `showCancel` o usar `cancelFill="clear"` para una acción discreta.
