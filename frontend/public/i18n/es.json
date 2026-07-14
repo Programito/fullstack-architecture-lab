@@ -630,6 +630,12 @@
         "payment": "Cobro",
         "closing": "Cierre"
       },
+      "dashboard": {
+        "occupied": "Activas",
+        "kitchen": "En cocina",
+        "charge": "Para cobrar",
+        "sales": "Ventas"
+      },
       "total": "Total",
       "notStarted": "Sin iniciar",
       "noOrderPhase": "Sin pedido",

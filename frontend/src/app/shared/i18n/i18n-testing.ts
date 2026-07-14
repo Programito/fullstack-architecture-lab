@@ -372,6 +372,12 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
           payment: 'Cobro',
           closing: 'Cierre',
         },
+        dashboard: {
+          occupied: 'Activas',
+          kitchen: 'En cocina',
+          charge: 'Para cobrar',
+          sales: 'Ventas',
+        },
         total: 'Total',
         notStarted: 'Sin iniciar',
         noOrderPhase: 'Sin pedido',
@@ -1221,6 +1227,19 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
       },
       service: {
         title: 'Dining room service',
+        workflow: {
+          summary: 'Summary',
+          order: 'Order',
+          kitchen: 'Kitchen',
+          payment: 'Payment',
+          closing: 'Closing',
+        },
+        dashboard: {
+          occupied: 'Active',
+          kitchen: 'In kitchen',
+          charge: 'To charge',
+          sales: 'Sales',
+        },
         searchServicePoint: 'Search table/stool',
         searchServicePointDescription: 'Find a table or stool and bring it into view on the service floor.',
         searchServicePointPlaceholder: 'Search table, stool, status, or capacity',
@@ -2025,6 +2044,19 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
       },
       service: {
         combo: 'Menú',
+        workflow: {
+          summary: 'Resum',
+          order: 'Comanda',
+          kitchen: 'Cuina',
+          payment: 'Cobrament',
+          closing: 'Tancament',
+        },
+        dashboard: {
+          occupied: 'Actives',
+          kitchen: 'En cuina',
+          charge: 'Per cobrar',
+          sales: 'Vendes',
+        },
         addProductsTitle: 'Afegir productes',
         addProductsDescription: 'Busca, filtra i afegeix productes a la comanda.',
         searchProduct: 'Buscar producte',

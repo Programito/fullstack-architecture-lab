@@ -577,6 +577,12 @@
         "payment": "Cobrament",
         "closing": "Tancament"
       },
+      "dashboard": {
+        "occupied": "Actives",
+        "kitchen": "En cuina",
+        "charge": "Per cobrar",
+        "sales": "Vendes"
+      },
       "total": "Total",
       "notStarted": "Sense iniciar",
       "noOrderPhase": "Sense comanda",

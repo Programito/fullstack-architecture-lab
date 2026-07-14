@@ -486,6 +486,14 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
   };
 
+  it('provides translation fixtures for the service dashboard and workflow labels', () => {
+    const i18n = provideI18nTesting();
+
+    expect(i18n.translations.es.restaurantPos.service.workflow.summary).toBeTruthy();
+    expect(i18n.translations.es.restaurantPos.service.workflow.payment).toBeTruthy();
+    expect(i18n.translations.es.restaurantPos.service.dashboard.occupied).toBeTruthy();
+  });
+
   it('derives compact dashboard stats for the command center header', async () => {
     const { fixture } = await renderServicePage();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
