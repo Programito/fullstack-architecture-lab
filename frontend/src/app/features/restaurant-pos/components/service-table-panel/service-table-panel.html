@@ -16,7 +16,7 @@
 
     <section class="pt-4" aria-labelledby="service-panel-summary-heading">
       <div class="flex items-center justify-between gap-3">
-        <h3 id="service-panel-summary-heading" class="theme-title text-sm font-semibold">Resumen</h3>
+        <h3 id="service-panel-summary-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.summary' | transloco }}</h3>
         <app-button variant="neutral" fill="outline" size="sm" (pressed)="occupy.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="event_seat" size="sm" />{{ 'restaurantPos.service.startService' | transloco }}</span>
         </app-button>
@@ -47,7 +47,7 @@
     <section class="border-t pt-4 mt-5" data-testid="service-panel-order-section" aria-labelledby="service-panel-order-heading">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h3 id="service-panel-order-heading" class="theme-title text-sm font-semibold">Pedido</h3>
+          <h3 id="service-panel-order-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.order' | transloco }}</h3>
           <p class="theme-muted mt-1 text-xs">{{ formatCurrency(order()?.total ?? 0) }}</p>
         </div>
         <app-button variant="primary" fill="outline" size="sm" (pressed)="openProductSearch.emit()">
@@ -118,7 +118,7 @@
 
     <section class="border-t pt-4 mt-5" data-testid="service-panel-kitchen-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('kitchen')" [attr.aria-label]="'restaurantPos.service.kitchenActions' | transloco" aria-labelledby="service-panel-kitchen-heading">
       <div class="flex items-center justify-between gap-3">
-        <h3 id="service-panel-kitchen-heading" class="theme-title text-sm font-semibold">Cocina</h3>
+        <h3 id="service-panel-kitchen-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.kitchen' | transloco }}</h3>
         <p class="theme-muted text-xs font-semibold">{{ pendingKitchenCountLabel() }}</p>
       </div>
       <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -133,7 +133,7 @@
 
     <section class="border-t pt-4 mt-5" data-testid="service-panel-payment-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('payment')" [ngClass]="chargePriority() ? 'rounded-md border-cyan-300 bg-cyan-50/70 px-3 pb-3 dark:border-cyan-800 dark:bg-cyan-950/20' : ''" [attr.aria-label]="'restaurantPos.service.paymentActions' | transloco" aria-labelledby="service-panel-payment-heading">
       <div class="flex items-center justify-between gap-3">
-        <h3 id="service-panel-payment-heading" class="theme-title text-sm font-semibold">Cobro</h3>
+        <h3 id="service-panel-payment-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.payment' | transloco }}</h3>
         <p class="theme-title text-lg font-semibold">{{ formatCurrency(order()?.total ?? 0) }}</p>
       </div>
       <div class="mt-3 grid gap-2">
@@ -148,7 +148,7 @@
     </section>
 
     <section class="border-t pt-4 mt-5" data-testid="service-panel-closing-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('closing')" [attr.aria-label]="'restaurantPos.service.closingActions' | transloco" aria-labelledby="service-panel-closing-heading">
-      <h3 id="service-panel-closing-heading" class="theme-title text-sm font-semibold">Cierre</h3>
+      <h3 id="service-panel-closing-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.closing' | transloco }}</h3>
       <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <app-button variant="neutral" fill="outline" expand="block" size="sm" [ariaLabel]="actionLabel('cleaningActionLabel')" [disabled]="!canMarkCleaning()" (pressed)="markCleaning.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="cleaning_services" size="sm" />{{ 'restaurantPos.service.cleaning' | transloco }}</span>

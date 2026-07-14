@@ -570,6 +570,13 @@
       "occupiedFor": "Ocupada",
       "guests": "Comensals",
       "servicePhase": "Fase",
+      "workflow": {
+        "summary": "Resum",
+        "order": "Comanda",
+        "kitchen": "Cuina",
+        "payment": "Cobrament",
+        "closing": "Tancament"
+      },
       "total": "Total",
       "notStarted": "Sense iniciar",
       "noOrderPhase": "Sense comanda",

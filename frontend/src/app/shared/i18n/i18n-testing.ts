@@ -365,6 +365,13 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         occupiedFor: 'Ocupada',
         guests: 'Comensales',
         servicePhase: 'Fase',
+        workflow: {
+          summary: 'Resumen',
+          order: 'Pedido',
+          kitchen: 'Cocina',
+          payment: 'Cobro',
+          closing: 'Cierre',
+        },
         total: 'Total',
         notStarted: 'Sin iniciar',
         noOrderPhase: 'Sin pedido',

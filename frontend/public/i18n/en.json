@@ -570,6 +570,13 @@
       "occupiedFor": "Occupied",
       "guests": "Guests",
       "servicePhase": "Phase",
+      "workflow": {
+        "summary": "Summary",
+        "order": "Order",
+        "kitchen": "Kitchen",
+        "payment": "Payment",
+        "closing": "Closing"
+      },
       "total": "Total",
       "notStarted": "Not started",
       "noOrderPhase": "No order",
