@@ -1,10 +1,9 @@
-import { execFileSync } from 'node:child_process';
-
 import { Prisma } from '@prisma/client';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { PrismaService } from './prisma.service';
+import { runPnpmCommand } from './run-pnpm-command';
 
 describe('MesaFlow order write schema', () => {
   let container: StartedPostgreSqlContainer;
@@ -18,13 +17,7 @@ describe('MesaFlow order write schema', () => {
     container = await new PostgreSqlContainer('postgres:16-alpine').start();
     process.env.DATABASE_URL = container.getConnectionUri();
 
-    const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-    execFileSync(pnpm, ['prisma', 'migrate', 'deploy'], {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: 'pipe',
-      shell: true,
-    });
+    runPnpmCommand(['prisma', 'migrate', 'deploy'], process.cwd());
 
     prisma = new PrismaService();
     await prisma.$connect();

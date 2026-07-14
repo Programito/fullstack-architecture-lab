@@ -3,12 +3,11 @@
  * Requires Docker (Testcontainers). Run with:
  * `pnpm test:integration -- observability.service.integration-spec.ts`
  */
-import { execFileSync } from 'node:child_process';
-
 import { ConfigService } from '@nestjs/config';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { runPnpmCommand } from '../../shared/prisma/run-pnpm-command';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ObservabilityRetentionService } from './observability-retention.service';
 import { ObservabilityService } from './observability.service';
@@ -22,13 +21,7 @@ describe('ObservabilityService (integration)', () => {
     container = await new PostgreSqlContainer('postgres:16-alpine').start();
     process.env.DATABASE_URL = container.getConnectionUri();
 
-    const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-    execFileSync(pnpm, ['prisma', 'migrate', 'deploy'], {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: 'pipe',
-      shell: true,
-    });
+    runPnpmCommand(['prisma', 'migrate', 'deploy'], process.cwd());
 
     prisma = new PrismaService();
     await prisma.$connect();

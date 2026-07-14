@@ -186,7 +186,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
   }
 
   async open(command: OpenRestaurantOrderCommand): Promise<RestaurantOrderView> {
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.findUniqueOrThrow({ where: { id: command.restaurantId } });
 
       // Numero de ticket visible al cliente: contador diario por restaurante, calculado
@@ -214,14 +214,15 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
           discountTotalCents: 0,
           totalCents: 0,
         },
-        include: ORDER_INCLUDE,
       });
-      return this.mapOrder(created as unknown as RawOrder);
+      return created.id;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
   async addLine(command: AddOrderLineCommand): Promise<RestaurantOrderView> {
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       // 1. Load and validate order
       const order = await tx.order.findFirst({
         where: { id: command.orderId, restaurantId: command.restaurantId },
@@ -398,16 +399,14 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       });
 
       // 9. Return final order state
-      const finalOrder = await tx.order.findUniqueOrThrow({
-        where: { id: command.orderId },
-        include: ORDER_INCLUDE,
-      });
-      return this.mapOrder(finalOrder as unknown as RawOrder);
+      return command.orderId;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
   async updatePendingLine(command: UpdateOrderLineCommand): Promise<RestaurantOrderView> {
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       // Load line to verify it exists and check its status
       const line = await tx.orderLine.findFirst({
         where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
@@ -462,13 +461,14 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       );
       await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
 
-      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
-      return this.mapOrder(finalOrder as unknown as RawOrder);
+      return command.orderId;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
   async deletePendingLine(command: DeleteOrderLineCommand): Promise<RestaurantOrderView> {
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       const line = await tx.orderLine.findFirst({
         where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
         select: { id: true, status: true, order: { select: { discountTotalCents: true } } },
@@ -507,13 +507,14 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       );
       await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
 
-      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
-      return this.mapOrder(finalOrder as unknown as RawOrder);
+      return command.orderId;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
   async cancelLine(command: CancelOrderLineCommand): Promise<RestaurantOrderView> {
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       const line = await tx.orderLine.findFirst({
         where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
         select: { id: true, status: true, order: { select: { discountTotalCents: true } } },
@@ -555,9 +556,10 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       );
       await tx.order.update({ where: { id: command.orderId }, data: { subtotalCents, taxCents, totalCents } });
 
-      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
-      return this.mapOrder(finalOrder as unknown as RawOrder);
+      return command.orderId;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
   async updateLineStatus(command: UpdateOrderLineStatusCommand): Promise<RestaurantOrderView> {
@@ -572,7 +574,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       sent_to_kitchen: 'pending',
     };
 
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       const line = await tx.orderLine.findFirst({
         where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
         select: { id: true, status: true },
@@ -597,9 +599,10 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       const dbStatus = DB_STATUS_MAP[command.status] ?? (command.status as OrderLineStatus);
       await tx.orderLine.update({ where: { id: command.lineId }, data: { status: dbStatus } });
 
-      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
-      return this.mapOrder(finalOrder as unknown as RawOrder);
+      return command.orderId;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
   async sendPendingLinesToKitchen(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null> {
@@ -633,7 +636,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
   }
 
   async registerPayment(command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView> {
-    return this.prisma.$transaction(async (tx) => {
+    const orderId = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findFirst({
         where: { id: command.orderId, restaurantId: command.restaurantId },
         include: { payments: { where: { status: 'completed' } } },
@@ -686,9 +689,18 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
         data: { status: newStatus, closedAt: newBalance === 0 ? now : null },
       });
 
-      const finalOrder = await tx.order.findUniqueOrThrow({ where: { id: command.orderId }, include: ORDER_INCLUDE });
-      return this.mapOrder(finalOrder as unknown as RawOrder);
+      return command.orderId;
     });
+
+    return this.getOrderOrThrow(command.restaurantId, orderId);
+  }
+
+  private async getOrderOrThrow(restaurantId: string, orderId: string): Promise<RestaurantOrderView> {
+    const order = await this.prisma.order.findFirstOrThrow({
+      where: { id: orderId, restaurantId },
+      include: ORDER_INCLUDE,
+    });
+    return this.mapOrder(order as unknown as RawOrder);
   }
 
   private mapOrder(raw: RawOrder): RestaurantOrderView {

@@ -1,8 +1,7 @@
-import { execFileSync } from 'node:child_process';
-
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { runPnpmCommand } from '../../../shared/prisma/run-pnpm-command';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { PrismaRestaurantOrderCatalogRepository } from './prisma-restaurant-order-catalog.repository';
 
@@ -15,19 +14,8 @@ describe('PrismaRestaurantOrderCatalogRepository', () => {
     container = await new PostgreSqlContainer('postgres:16-alpine').start();
     process.env.DATABASE_URL = container.getConnectionUri();
 
-    const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-    execFileSync(pnpm, ['prisma', 'migrate', 'deploy'], {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: 'pipe',
-      shell: true,
-    });
-    execFileSync(pnpm, ['prisma', 'db', 'seed'], {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: 'pipe',
-      shell: true,
-    });
+    runPnpmCommand(['prisma', 'migrate', 'deploy'], process.cwd());
+    runPnpmCommand(['prisma', 'db', 'seed'], process.cwd());
 
     prisma = new PrismaService();
     await prisma.$connect();
