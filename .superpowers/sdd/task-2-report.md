@@ -25,3 +25,14 @@ Rebuilt only the `restaurant-pos-service-page` shell. The existing service-table
 
 - The brief's literal `pnpm test -- --watch=false <spec>` command is incompatible with this Angular CLI configuration: the script forwards the spec path as the project argument and the runner rejects the forwarded watch argument. The equivalent supported focused command above was used.
 - The build retains existing repository warnings for the initial bundle budget, unrelated component-style budgets, and Mermaid CommonJS dependencies. No task-specific build failure or warning was introduced.
+
+## Review Fix: Desktop Workflow Panel
+
+- Promoted the service page's two-column grid from `2xl` to `xl`, so the workflow panel is positioned alongside the floor canvas at normal desktop widths.
+- Promoted the workflow shell's sticky positioning from `2xl` to `xl` to keep the desktop panel behavior aligned with the two-column layout.
+- Strengthened the command-center shell test with an exact `classList` assertion for `xl:grid-cols-[minmax(0,1fr)_26rem]`. This avoids the false positive where a substring assertion matched the old `2xl` token.
+
+### Focused Evidence
+
+- Red: the exact class-token assertion failed against the prior `2xl:grid-cols-[minmax(0,1fr)_26rem]` implementation; 24 other tests passed.
+- Green: `pnpm exec ng test frontend --include src/app/features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page.spec.ts --watch=false` passed with 25/25 tests after the `xl` change.

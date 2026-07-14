@@ -27,7 +27,7 @@
     </div>
   </header>
 
-  <section class="service-page__body mx-auto grid w-full max-w-[100rem] gap-4 p-4 lg:p-6 2xl:grid-cols-[minmax(0,1fr)_26rem] 2xl:items-start">
+  <section class="service-page__body mx-auto grid w-full max-w-[100rem] gap-4 p-4 lg:p-6 xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-start">
     <div data-testid="service-floor-canvas" class="service-page__floor-stage theme-panel min-w-0 overflow-hidden rounded-xl border p-4 shadow-sm lg:p-5">
       <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div>
@@ -56,7 +56,7 @@
       </div>
     </div>
 
-    <div data-testid="service-workflow-panel-shell" class="service-page__workflow-shell theme-panel w-full overflow-hidden rounded-xl border p-2 shadow-sm 2xl:sticky 2xl:top-24">
+    <div data-testid="service-workflow-panel-shell" class="service-page__workflow-shell theme-panel w-full overflow-hidden rounded-xl border p-2 shadow-sm xl:sticky xl:top-24">
       <app-service-table-panel
         class="w-full"
         [serviceInfo]="store.selectedServiceInfo()"

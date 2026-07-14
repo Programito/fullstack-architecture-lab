@@ -532,6 +532,9 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByLabelText('M1 mesa, Libre')).toBeTruthy();
     expect(screen.queryByRole('toolbar', { name: 'Acciones del elemento del plano' })).toBeNull();
 
+    const pageShell = screen.getByTestId('service-floor-canvas').closest('section');
+    expect(pageShell?.classList.contains('xl:grid-cols-[minmax(0,1fr)_26rem]')).toBe(true);
+
     const tablePanelHost = container.querySelector('app-service-table-panel');
     expect(tablePanelHost?.className).toContain('w-full');
     expect(tablePanelHost?.className).not.toMatch(/\babsolute\b|\bfixed\b/);
