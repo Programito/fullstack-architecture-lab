@@ -201,6 +201,10 @@ export class ServiceTablePanel {
     return this.serviceInfo()?.canFreeTable ?? false;
   }
 
+  protected isWorkflowSectionHighlighted(sectionId: string): boolean {
+    return this.selectedServiceWorkflowSections().some((section) => section.id === sectionId && section.highlighted);
+  }
+
   protected serviceAttentionClass(table: RestaurantTable): string {
     if (table.status === 'occupied') {
       return 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200';

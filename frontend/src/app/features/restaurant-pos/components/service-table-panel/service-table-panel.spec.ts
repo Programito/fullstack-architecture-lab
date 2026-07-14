@@ -100,6 +100,37 @@ describe('ServiceTablePanel', () => {
     };
   };
 
+  const renderServiceTablePanel = (patch: Partial<ServiceTableInfo> = {}) => {
+    const i18n = provideI18nTesting();
+
+    return render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, order, patch),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+  };
+
+  it('renders the selected table panel as workflow-first sections', async () => {
+    await renderServiceTablePanel();
+
+    expect(screen.getByRole('heading', { name: 'Resumen' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Pedido' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Cocina' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Cobro' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Cierre' })).toBeTruthy();
+  });
+
+  it('emphasizes the next action inside the matching workflow section', async () => {
+    await renderServiceTablePanel({ nextAction: { type: 'charge', count: 0 } });
+
+    expect(screen.getByTestId('service-panel-next-action').textContent).toContain('Siguiente: cobrar');
+    expect(screen.getByTestId('service-panel-payment-section').getAttribute('data-highlighted')).toBe('true');
+  });
+
   it('exposes workflow-first panel sections with one highlighted next step', async () => {
     const i18n = provideI18nTesting();
     const { fixture } = await render(ServiceTablePanel, {
@@ -146,6 +177,7 @@ describe('ServiceTablePanel', () => {
     const i18n = provideI18nTesting();
     const increaseProduct = vi.fn();
     const decreaseProduct = vi.fn();
+    const occupy = vi.fn();
 
     const { fixture, container } = await render(ServiceTablePanel, {
       imports: [...i18n.imports],
@@ -163,18 +195,19 @@ describe('ServiceTablePanel', () => {
     });
     fixture.componentInstance.increaseProduct.subscribe(increaseProduct);
     fixture.componentInstance.decreaseProduct.subscribe(decreaseProduct);
+    fixture.componentInstance.occupy.subscribe(occupy);
 
     expect(screen.getByLabelText('Panel de mesa seleccionada')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Mesa 1' })).toBeTruthy();
     expect(screen.getByText('Ocupada · 25m · Principal pendiente · 12,50 €')).toBeTruthy();
-    expect(screen.getByText('Fase')).toBeTruthy();
-    expect(screen.getByText('Principal pendiente')).toBeTruthy();
     expect(screen.getByText('4 pax')).toBeTruthy();
     expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
     expect(container.querySelector('.theme-order-line')).toBeTruthy();
     expect(container.querySelector('.theme-quantity-stepper')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar servicio' }));
     fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Craft Burger' }));
     fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Craft Burger' }));
+    expect(occupy).toHaveBeenCalledTimes(1);
     expect(increaseProduct).toHaveBeenCalledWith('line-burger');
     expect(decreaseProduct).toHaveBeenCalledWith('line-burger');
     expect(screen.getByRole('button', { name: /Cocina/i })).toBeTruthy();
