@@ -697,6 +697,8 @@
       "summaryPax": "Pax",
       "summaryUnassigned": "Unassigned",
       "summaryOverdue": "Overdue",
+      "occupancyTitle": "Service load",
+      "occupancyHeading": "Occupancy overview",
       "searchLabel": "Search reservation",
       "searchPlaceholder": "Search by guest or phone",
       "statusFilter": "Status",
@@ -779,6 +781,11 @@
         "otherSlots": "More available times",
         "suggestedTables": "Suggested tables",
         "manualTables": "All tables",
+        "fit": {
+          "ideal": "Ideal fit",
+          "tight": "Tight fit",
+          "oversized": "More space"
+        },
         "summaryTitle": "Reservation summary",
         "cta": {
           "selectTime": "Select a time",

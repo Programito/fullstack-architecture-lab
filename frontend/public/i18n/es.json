@@ -750,6 +750,8 @@
       "summaryPax": "Pax",
       "summaryUnassigned": "Sin mesa",
       "summaryOverdue": "Pendientes",
+      "occupancyTitle": "Carga por servicio",
+      "occupancyHeading": "Resumen de ocupación",
       "searchLabel": "Buscar reserva",
       "searchPlaceholder": "Buscar por nombre de cliente o teléfono",
       "statusFilter": "Estado",
@@ -832,6 +834,11 @@
         "otherSlots": "Mas horas disponibles",
         "suggestedTables": "Mesas sugeridas",
         "manualTables": "Todas las mesas",
+        "fit": {
+          "ideal": "Encaje ideal",
+          "tight": "Encaje ajustado",
+          "oversized": "Mesa amplia"
+        },
         "summaryTitle": "Resumen de la reserva",
         "cta": {
           "selectTime": "Selecciona una hora",

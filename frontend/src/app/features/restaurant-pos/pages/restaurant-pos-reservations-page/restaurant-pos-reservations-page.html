@@ -108,11 +108,11 @@
   </div>
 
   <div class="mx-auto w-full max-w-7xl px-4 pb-4 lg:px-6">
-    <section class="theme-panel reservations-page__occupancy-strip rounded-2xl border p-4 shadow-sm" aria-label="Carga por servicio">
+    <section class="theme-panel reservations-page__occupancy-strip rounded-2xl border p-4 shadow-sm" [attr.aria-label]="'restaurantPos.reservations.occupancyTitle' | transloco">
       <div class="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">Carga por servicio</p>
-          <h2 class="theme-title text-lg font-semibold">Resumen de ocupación</h2>
+          <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.occupancyTitle' | transloco }}</p>
+          <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.reservations.occupancyHeading' | transloco }}</h2>
         </div>
         <span class="reservations-page__pax-chip">{{ summary().pax }} {{ 'restaurantPos.reservations.summaryPax' | transloco | lowercase }}</span>
       </div>
@@ -533,7 +533,7 @@
             />
             <span class="theme-title text-sm font-semibold">{{ table.label }}</span>
             <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
-            <span class="reservations-page__fit-chip">{{ table.fit === 'ideal' ? 'Encaje ideal' : table.fit === 'tight' ? 'Encaje ajustado' : 'Mesa amplia' }}</span>
+            <span class="reservations-page__fit-chip">{{ ('restaurantPos.reservations.create.fit.' + table.fit) | transloco }}</span>
           </label>
         }
         </div>

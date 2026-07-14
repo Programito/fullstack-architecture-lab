@@ -187,6 +187,22 @@ describe('RestaurantPosReservationsPage', () => {
     expect(within(occupancyStrip).getByText('Cenas')).toBeTruthy();
   });
 
+  it('localizes occupancy and table-fit labels', async () => {
+    const i18n = provideI18nTesting('en');
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    expect(screen.getByLabelText('Service load')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'New reservation' }));
+
+    expect(screen.getByText('Ideal fit')).toBeTruthy();
+  });
+
   it('derives a guided CTA state before submission', async () => {
     const i18n = provideI18nTesting();
     const apiMock = createApiMock();

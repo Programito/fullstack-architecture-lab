@@ -697,6 +697,8 @@
       "summaryPax": "Pax",
       "summaryUnassigned": "Sense taula",
       "summaryOverdue": "Pendents",
+      "occupancyTitle": "Càrrega per servei",
+      "occupancyHeading": "Resum d'ocupació",
       "searchLabel": "Buscar reserva",
       "searchPlaceholder": "Buscar per nom de client o telèfon",
       "statusFilter": "Estat",
@@ -779,6 +781,11 @@
         "otherSlots": "Mes hores disponibles",
         "suggestedTables": "Taules suggerides",
         "manualTables": "Totes les taules",
+        "fit": {
+          "ideal": "Encaix ideal",
+          "tight": "Encaix ajustat",
+          "oversized": "Taula àmplia"
+        },
         "summaryTitle": "Resum de la reserva",
         "cta": {
           "selectTime": "Selecciona una hora",
