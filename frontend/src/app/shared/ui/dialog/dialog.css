@@ -11,6 +11,11 @@
   padding: 1rem;
 }
 
+.dialog--drawer {
+  place-items: stretch;
+  padding: 0;
+}
+
 .dialog__backdrop {
   position: fixed;
   inset: 0;
@@ -49,6 +54,7 @@
 .dialog__panel--drawer {
   align-self: stretch;
   justify-self: end;
+  box-sizing: border-box;
   width: min(42rem, 100vw);
   max-height: none;
   height: 100dvh;

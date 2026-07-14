@@ -22,3 +22,15 @@ Completed and committed.
 ## Notes
 
 - The command specified in the brief with `--runInBand` is incompatible with this Angular test runner. The focused spec was run with Angular's supported `--watch false --include` flags instead.
+
+## Reviewer Fixes
+
+- Added all drawer labels and CTA keys to the shipped `es`, `en`, and `ca` locale files.
+- Added a drawer-specific overlay class that removes container padding and stretches the overlay panel cleanly from the viewport top to bottom.
+- Excluded suggested table IDs from the manual table list and hid the manual control when no additional tables remain.
+
+## Reviewer Fix Verification
+
+- Passed: `pnpm test -- --watch false --include src/app/features/restaurant-pos/pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page.spec.ts`
+- Result: 1 test file passed, 26 tests passed.
+- Passed: published drawer locale JSON validation for `es`, `en`, and `ca`.

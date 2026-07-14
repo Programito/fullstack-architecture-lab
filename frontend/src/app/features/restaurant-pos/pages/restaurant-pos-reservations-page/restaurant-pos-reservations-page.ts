@@ -148,12 +148,13 @@ export class RestaurantPosReservationsPage {
       .sort((left, right) => Math.abs(left.capacity - partySize) - Math.abs(right.capacity - partySize))
       .slice(0, 4);
   });
-  protected readonly manualTables = computed(() =>
-    this.availableTables().map((table) => ({
-      ...table,
-      selected: this.creationForm().tableIds.includes(table.id),
-    })),
-  );
+  protected readonly manualTables = computed(() => {
+    const suggestedTableIds = new Set(this.suggestedTables().map((table) => table.id));
+    const selectedTableIds = this.creationForm().tableIds;
+    return this.availableTables()
+      .filter((table) => !suggestedTableIds.has(table.id))
+      .map((table) => ({ ...table, selected: selectedTableIds.includes(table.id) }));
+  });
   protected readonly creationProgressState = computed(() => {
     const form = this.creationForm();
     const hasCustomer = form.customerNameSnapshot.trim().length > 0;

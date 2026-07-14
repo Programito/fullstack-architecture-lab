@@ -509,18 +509,20 @@
         }
         </div>
       </div>
-      <details class="reservations-page__manual-tables">
-        <summary class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.manualTables' | transloco }}</summary>
-        <div class="reservations-page__table-options">
-          @for (table of manualTables(); track table.id) {
-            <label class="reservations-page__table-option">
-              <input type="checkbox" [checked]="table.selected" (change)="toggleCreateTable(table.id, $any($event.target).checked)" />
-              <span>{{ table.label }}</span>
-              <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
-            </label>
-          }
-        </div>
-      </details>
+      @if (manualTables().length > 0) {
+        <details class="reservations-page__manual-tables">
+          <summary class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.manualTables' | transloco }}</summary>
+          <div class="reservations-page__table-options">
+            @for (table of manualTables(); track table.id) {
+              <label class="reservations-page__table-option">
+                <input type="checkbox" [checked]="table.selected" (change)="toggleCreateTable(table.id, $any($event.target).checked)" />
+                <span>{{ table.label }}</span>
+                <span class="reservations-page__table-capacity">{{ table.capacity }}</span>
+              </label>
+            }
+          </div>
+        </details>
+      }
       @if (selectedTablesCapacity(); as capacity) {
         <p class="theme-muted mt-2 text-sm">
           {{ 'restaurantPos.reservations.create.capacityHint' | transloco: { count: capacity } }}

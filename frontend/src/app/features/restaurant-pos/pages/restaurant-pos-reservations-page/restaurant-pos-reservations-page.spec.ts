@@ -133,6 +133,7 @@ describe('RestaurantPosReservationsPage', () => {
       updateCreateField(field: 'customerNameSnapshot' | 'partySize', value: string | number): void;
       recommendedSlots(): string[];
       suggestedTables(): Array<{ id: string; fit: string }>;
+      manualTables(): Array<{ id: string }>;
     };
 
     component.openCreateReservation();
@@ -142,6 +143,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(component.recommendedSlots().length).toBeGreaterThan(0);
     expect(component.suggestedTables()[0]).toEqual(expect.objectContaining({ id: 'table-2' }));
+    expect(component.manualTables()).toEqual([]);
   });
 
   it('derives a guided CTA state before submission', async () => {
@@ -640,9 +642,11 @@ describe('RestaurantPosReservationsPage', () => {
 
     const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
     expect(drawer.getAttribute('data-variant')).toBe('drawer');
+    expect(drawer.closest('.dialog')?.classList.contains('dialog--drawer')).toBe(true);
     expect(within(drawer).getAllByText('Cliente').length).toBeGreaterThan(0);
     expect(within(drawer).getByText('Hora')).toBeTruthy();
     expect(within(drawer).getByText('Mesa')).toBeTruthy();
+    expect(within(drawer).queryByText('Todas las mesas')).toBeNull();
   });
 
   it('renders a sticky reservation summary and guided CTA label', async () => {
