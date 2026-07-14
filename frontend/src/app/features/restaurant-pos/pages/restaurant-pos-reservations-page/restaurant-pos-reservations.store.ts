@@ -23,6 +23,7 @@ export class RestaurantPosReservationsStore {
   private readonly _loadError = signal(false);
   private readonly _serviceWindowsSaving = signal(false);
   private readonly _actionState = signal<Record<string, { loading: boolean; error: string | null }>>({});
+  private reservationsLoadGeneration = 0;
 
   // ── Señales públicas readonly (contratos de la vista) ────────────────────
   readonly reservations = this._reservations.asReadonly();
@@ -44,6 +45,7 @@ export class RestaurantPosReservationsStore {
 
   // ── Comandos ─────────────────────────────────────────────────────────────
   loadReservations(restaurantId: string, date?: string): void {
+    const generation = ++this.reservationsLoadGeneration;
     this._loading.set(true);
     this._loadError.set(false);
     this.api
@@ -51,10 +53,12 @@ export class RestaurantPosReservationsStore {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (reservations) => {
+          if (generation !== this.reservationsLoadGeneration) return;
           this._reservations.set(reservations);
           this._loading.set(false);
         },
         error: () => {
+          if (generation !== this.reservationsLoadGeneration) return;
           this._loading.set(false);
           this._loadError.set(true);
         },
@@ -101,9 +105,12 @@ export class RestaurantPosReservationsStore {
   }
 
   clearData(): void {
+    this.reservationsLoadGeneration += 1;
     this._reservations.set([]);
     this._restaurantFloors.set(null);
     this._serviceWindows.set([]);
+    this._loading.set(false);
+    this._loadError.set(false);
   }
 
   executeAction(action: ReservationAction, restaurantId: string, reservationId: string, date?: string): void {

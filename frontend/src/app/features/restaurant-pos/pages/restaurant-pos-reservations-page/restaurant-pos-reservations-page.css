@@ -489,6 +489,7 @@
   position: sticky;
   bottom: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -501,7 +502,7 @@
   margin: 0;
 }
 
-.reservations-page__drawer-footer .reservations-page__error {
+.reservations-page__drawer-footer > [role='alert'] {
   flex-basis: 100%;
   margin: 0;
 }

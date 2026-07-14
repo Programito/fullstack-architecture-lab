@@ -166,7 +166,19 @@ export class Dialog {
   private restoreFocus(): void {
     const previouslyFocusedElement = this.previouslyFocusedElement;
     this.previouslyFocusedElement = null;
-    if (previouslyFocusedElement?.isConnected) previouslyFocusedElement.focus();
+    if (this.isFocusable(previouslyFocusedElement)) {
+      previouslyFocusedElement.focus();
+      return;
+    }
+
+    Dialog.topmost()?.focusInitialElement();
+  }
+
+  private isFocusable(element: HTMLElement | null): element is HTMLElement {
+    return !!element
+      && element.isConnected
+      && element.tabIndex >= 0
+      && !element.matches(':disabled, [hidden]');
   }
 
   private registerInStack(): void {

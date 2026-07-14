@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/angular';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -13,6 +13,11 @@ describe('RestaurantPosReservationsPage', () => {
   function todayAt(hours: number, minutes: number): string {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes, 0, 0).toISOString();
+  }
+
+  function relativeDayAt(offset: number, hours: number, minutes: number): string {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset, hours, minutes, 0, 0).toISOString();
   }
 
   const updateReservationStatus = (
@@ -494,6 +499,38 @@ describe('RestaurantPosReservationsPage', () => {
     );
   });
 
+  it('keeps focus in the drawer after confirming an over-capacity reservation while submission disables its opener', async () => {
+    const i18n = provideI18nTesting();
+    const createSubject = new Subject<RestaurantReservationDto>();
+    const apiMock = {
+      ...createApiMock(),
+      createRestaurantReservation: vi.fn(() => createSubject.asObservable()),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    fireEvent.input(within(drawer).getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
+    fireEvent.input(within(drawer).getByLabelText('Comensales'), { target: { value: '4' } });
+    fireEvent.click(within(drawer).getByRole('checkbox', { name: /Mesa 1/ }));
+    const submitButton = within(drawer).getByRole('button', { name: 'Guardar reserva' });
+    submitButton.focus();
+    fireEvent.click(submitButton);
+
+    const capacityWarning = screen.getAllByRole('dialog').find((dialog) => dialog !== drawer)!;
+    await waitFor(() => expect(capacityWarning.contains(document.activeElement)).toBe(true));
+    fireEvent.click(within(capacityWarning).getAllByRole('button').at(-1)!);
+
+    expect(apiMock.createRestaurantReservation).toHaveBeenCalledTimes(1);
+    expect(within(drawer).getByRole('button', { name: 'Guardar reserva' }).hasAttribute('disabled')).toBe(true);
+    await waitFor(() => expect(drawer.contains(document.activeElement)).toBe(true));
+    expect((document.activeElement as HTMLElement).hasAttribute('disabled')).toBe(false);
+  });
+
   it('provides translation entries for the drawer guidance labels', () => {
     const i18n = provideI18nTesting();
 
@@ -573,6 +610,83 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.queryByLabelText('Carga por servicio')).toBeNull();
+  });
+
+  it('keeps the newest date occupancy when overlapping date loads resolve out of order', async () => {
+    const i18n = provideI18nTesting();
+    const staleRequest = new Subject<RestaurantReservationDto[]>();
+    const latestRequest = new Subject<RestaurantReservationDto[]>();
+    const apiMock = {
+      ...createApiMock(),
+      getRestaurantReservations: vi.fn()
+        .mockReturnValueOnce(staleRequest.asObservable())
+        .mockReturnValueOnce(latestRequest.asObservable()),
+    };
+
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /anterior/i }));
+    await waitFor(() => expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2));
+    latestRequest.next([{
+      id: 'reservation-latest',
+      customerId: null,
+      customerNameSnapshot: 'Reserva vigente',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: relativeDayAt(-1, 13, 30),
+      durationMinutes: 90,
+      status: 'confirmed',
+      notes: null,
+      tableIds: [],
+      tables: [],
+    }]);
+    latestRequest.complete();
+    fixture.detectChanges();
+    await waitFor(() => expect(screen.getByText('Reserva vigente')).toBeTruthy());
+    staleRequest.next([{
+      id: 'reservation-stale',
+      customerId: null,
+      customerNameSnapshot: 'Reserva obsoleta',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: relativeDayAt(-1, 13, 30),
+      durationMinutes: 90,
+      status: 'confirmed',
+      notes: null,
+      tableIds: [],
+      tables: [],
+    }]);
+    fixture.detectChanges();
+
+    expect(screen.getByText('Reserva vigente')).toBeTruthy();
+    expect(screen.queryByText('Reserva obsoleta')).toBeNull();
+  });
+
+  it('keeps the newest date loading state and error clear when a stale load fails', async () => {
+    const i18n = provideI18nTesting();
+    const staleRequest = new Subject<RestaurantReservationDto[]>();
+    const latestRequest = new Subject<RestaurantReservationDto[]>();
+    const apiMock = {
+      ...createApiMock(),
+      getRestaurantReservations: vi.fn()
+        .mockReturnValueOnce(staleRequest.asObservable())
+        .mockReturnValueOnce(latestRequest.asObservable()),
+    };
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /anterior/i }));
+    await waitFor(() => expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2));
+    staleRequest.error(new Error('stale network error'));
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('hides the occupancy strip after a date reload fails', async () => {
