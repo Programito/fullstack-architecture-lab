@@ -1,42 +1,27 @@
-# Task 2 Report: Guided Reservations Drawer
+# Task 2 Report: Service Command-Center Shell
 
-## Status
+## Scope
 
-Completed and committed.
+Rebuilt only the `restaurant-pos-service-page` shell. The existing service-table workflow component, product picker implementation, service state, routing, API contracts, and order write flows were not reorganized or changed.
 
 ## Delivered
 
-- Replaced the centered reservation-creation dialog actions with a guided desktop drawer.
-- Added numbered customer, time, table, and notes sections.
-- Reused Task 1 slot and table recommendations, while preserving the option to submit without a table.
-- Added a sticky summary footer whose CTA is derived from `creationProgressState().ctaLabelKey`.
-- Added minimal `app-dialog` panel class and variant hooks required for the drawer panel.
-- Added the minimum Spanish testing translations required for this task.
+- Replaced the legacy summary widget with the Task 1 `serviceDashboardStats()` compact metric strip.
+- Introduced the command-center header with service title, service-point search control, and kitchen navigation.
+- Made the floor plan the dominant responsive canvas region, retaining the status legend, selected-service-point return action, and existing floor selection/focus bindings.
+- Wrapped `app-service-table-panel` in a dedicated, responsive workflow shell without changing the panel's inputs or outputs.
+- Retained the product search as the existing overlay. Its drawer implementation remains deliberately deferred to Task 4.
+- Removed the now-unused `ServiceSummary` import.
+- Added a focused command-center shell assertion for the header stats, floor canvas, and workflow panel test IDs.
 
 ## Verification
 
-- Passed: `pnpm test -- --watch false --include src/app/features/restaurant-pos/pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page.spec.ts`
-- Result: 1 test file passed, 26 tests passed.
-- `pnpm build` compiled application bundles but exited non-zero because existing CSS budgets are exceeded in the unrelated developer logs and login pages.
+- Red: `pnpm exec ng test frontend --include src/app/features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page.spec.ts --watch=false` failed as expected before implementation because `service-dashboard-stats` was missing; the remaining 24 tests passed.
+- Green: the same focused command passed with 25/25 tests.
+- Build: `pnpm build` completed successfully.
+- Diff hygiene: `git diff --check` completed successfully.
 
 ## Notes
 
-- The command specified in the brief with `--runInBand` is incompatible with this Angular test runner. The focused spec was run with Angular's supported `--watch false --include` flags instead.
-
-## Reviewer Fixes
-
-- Added all drawer labels and CTA keys to the shipped `es`, `en`, and `ca` locale files.
-- Added a drawer-specific overlay class that removes container padding and stretches the overlay panel cleanly from the viewport top to bottom.
-- Excluded suggested table IDs from the manual table list and hid the manual control when no additional tables remain.
-
-## Reviewer Fix Verification
-
-- Passed: `pnpm test -- --watch false --include src/app/features/restaurant-pos/pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page.spec.ts`
-- Result: 1 test file passed, 26 tests passed.
-- Passed: published drawer locale JSON validation for `es`, `en`, and `ca`.
-
-## Validation Error Fix
-
-- Moved reservation-creation validation errors into the sticky drawer footer and marked them as an alert, keeping the explanation adjacent to the submitting CTA.
-- Passed: `pnpm test -- --watch false --include src/app/features/restaurant-pos/pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page.spec.ts`
-- Result: 1 test file passed, 26 tests passed.
+- The brief's literal `pnpm test -- --watch=false <spec>` command is incompatible with this Angular CLI configuration: the script forwards the spec path as the project argument and the runner rejects the forwarded watch argument. The equivalent supported focused command above was used.
+- The build retains existing repository warnings for the initial bundle budget, unrelated component-style budgets, and Mermaid CommonJS dependencies. No task-specific build failure or warning was introduced.

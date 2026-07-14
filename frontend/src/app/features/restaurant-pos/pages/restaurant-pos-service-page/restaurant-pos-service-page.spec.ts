@@ -515,16 +515,16 @@ describe('RestaurantPosServicePage', () => {
     expect(component.productPickerMode()).toBe('drawer');
   });
 
-  it('renders a compact service floor and empty selected-table panel without the preparation board', async () => {
+  it('renders the service page as a command center with compact metrics and a dominant floor canvas', async () => {
     const { container } = await renderServicePage();
 
     expect(screen.getByRole('heading', { name: 'Servicio de sala' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Plano de servicio' })).toBeTruthy();
+    expect(screen.getByTestId('service-dashboard-stats')).toBeTruthy();
+    expect(screen.getByTestId('service-floor-canvas')).toBeTruthy();
+    expect(screen.getByTestId('service-workflow-panel-shell')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Selecciona una mesa' })).toBeTruthy();
     expect(screen.getByText('Selecciona una mesa para empezar.')).toBeTruthy();
     expect(screen.getByLabelText('Panel de mesa seleccionada')).toBeTruthy();
-    expect(screen.getByText('0/5')).toBeTruthy();
-    expect(screen.getByText('Pagada')).toBeTruthy();
     expect(screen.queryByText('Añadir rápido')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Preparación' })).toBeNull();
     expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toBeTruthy();
@@ -534,8 +534,6 @@ describe('RestaurantPosServicePage', () => {
 
     const tablePanelHost = container.querySelector('app-service-table-panel');
     expect(tablePanelHost?.className).toContain('w-full');
-    expect(tablePanelHost?.className).toContain('self-start');
-    expect(tablePanelHost?.className).toContain('xl:w-[22rem]');
     expect(tablePanelHost?.className).not.toMatch(/\babsolute\b|\bfixed\b/);
   });
 

@@ -1,22 +1,25 @@
-<main class="min-h-dvh">
-  <header class="theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-      <div class="min-w-0">
-        <p class="theme-muted text-sm font-medium">{{ 'restaurantPos.service.eyebrow' | transloco }}</p>
-        <h1 class="theme-title truncate text-2xl font-semibold">{{ 'restaurantPos.service.title' | transloco }}</h1>
+<main class="service-page min-h-dvh bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--ui-primary)_12%,transparent),transparent_30rem)]">
+  <header class="service-page__header theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+    <div class="service-page__header-inner mx-auto grid w-full max-w-[100rem] gap-4 2xl:grid-cols-[minmax(14rem,1fr)_minmax(30rem,auto)_minmax(15rem,1fr)] 2xl:items-center">
+      <div class="service-page__title-block min-w-0">
+        <p class="service-page__eyebrow theme-muted text-xs font-bold tracking-[0.16em] uppercase">{{ 'restaurantPos.service.eyebrow' | transloco }}</p>
+        <h1 class="service-page__title theme-title truncate text-2xl font-semibold tracking-tight">{{ 'restaurantPos.service.title' | transloco }}</h1>
       </div>
 
-      <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-end">
-        <app-service-summary
-          [occupiedTables]="store.occupiedTables()"
-          [totalTables]="store.servicePoints().length"
-          [kitchenQueue]="store.kitchenQueue()"
-          [salesToday]="formatCurrency(store.salesToday())"
-        />
-        <a
-          class="theme-nav-link inline-flex h-10 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-ring)]"
-          routerLink="/restaurant-pos/kitchen"
-        >
+      <div data-testid="service-dashboard-stats" class="service-page__stats grid grid-cols-2 gap-2 sm:grid-cols-4">
+        @for (stat of serviceDashboardStats(); track stat.id) {
+          <article class="service-page__stat theme-soft-panel min-w-20 rounded-lg border px-3 py-2.5 shadow-sm" [attr.data-tone]="stat.tone">
+            <span class="service-page__stat-label theme-muted block text-[0.68rem] font-bold tracking-[0.12em] uppercase">{{ ('restaurantPos.service.dashboard.' + stat.id) | transloco }}</span>
+            <strong class="service-page__stat-value theme-title mt-0.5 block text-lg font-semibold tabular-nums">{{ stat.value }}</strong>
+          </article>
+        }
+      </div>
+
+      <div class="service-page__actions flex flex-wrap items-center gap-2 2xl:justify-end">
+        <app-button variant="neutral" fill="outline" size="sm" (pressed)="openServicePointSearch()">
+          <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
+        </app-button>
+        <a class="service-page__kitchen-link theme-nav-link inline-flex h-9 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-ring)]" routerLink="/restaurant-pos/kitchen">
           <app-icon name="restaurant" size="sm" />
           {{ 'restaurantPos.common.kitchen' | transloco }}
         </a>
@@ -24,61 +27,58 @@
     </div>
   </header>
 
-  <div class="mx-auto grid w-full max-w-7xl gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
-    <div class="grid min-w-0 gap-4">
-      <section class="theme-panel min-w-0 rounded-lg border p-4 shadow-sm">
-        <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.service.floorTitle' | transloco }}</h2>
-            <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.service.floorDescription' | transloco }}</p>
-          </div>
+  <section class="service-page__body mx-auto grid w-full max-w-[100rem] gap-4 p-4 lg:p-6 2xl:grid-cols-[minmax(0,1fr)_26rem] 2xl:items-start">
+    <div data-testid="service-floor-canvas" class="service-page__floor-stage theme-panel min-w-0 overflow-hidden rounded-xl border p-4 shadow-sm lg:p-5">
+      <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <h2 class="theme-title text-lg font-semibold">{{ 'restaurantPos.service.floorTitle' | transloco }}</h2>
+          <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.service.floorDescription' | transloco }}</p>
+        </div>
 
-          <div class="flex flex-col items-start gap-2 md:items-end">
-            <div class="theme-soft-panel flex flex-wrap gap-2 rounded-md border px-3 py-2 text-xs font-medium">
-              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>{{ 'restaurantPos.tableStatus.free' | transloco }}</span>
-              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{{ 'restaurantPos.tableStatus.waiting_kitchen' | transloco }}</span>
-              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span>{{ 'restaurantPos.tableStatus.payment_pending' | transloco }}</span>
-              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-cyan-600"></span>{{ 'restaurantPos.tableStatus.paid' | transloco }}</span>
-              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>{{ 'restaurantPos.tableStatus.cleaning' | transloco }}</span>
-            </div>
-            <app-button variant="neutral" fill="outline" size="sm" (pressed)="openServicePointSearch()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
+        <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+          <div class="theme-soft-panel flex flex-wrap gap-x-3 gap-y-1.5 rounded-md border px-3 py-2 text-xs font-medium">
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>{{ 'restaurantPos.tableStatus.free' | transloco }}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-amber-500"></span>{{ 'restaurantPos.tableStatus.waiting_kitchen' | transloco }}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-orange-500"></span>{{ 'restaurantPos.tableStatus.payment_pending' | transloco }}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-cyan-600"></span>{{ 'restaurantPos.tableStatus.paid' | transloco }}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-sky-500"></span>{{ 'restaurantPos.tableStatus.cleaning' | transloco }}</span>
+          </div>
+          @if (lastSelectedServicePoint()) {
+            <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
+              <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
             </app-button>
-            @if (lastSelectedServicePoint()) {
-              <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
-                <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
-              </app-button>
-            }
-          </div>
+          }
         </div>
+      </div>
 
-        <div class="min-w-0 overflow-x-auto">
-          <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
-        </div>
-      </section>
+      <div class="min-w-0 overflow-x-auto pb-1">
+        <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
+      </div>
     </div>
 
-    <app-service-table-panel
-      class="w-full self-start xl:w-[22rem]"
-      [serviceInfo]="store.selectedServiceInfo()"
-      [title]="selectedTableTitle()"
-      [errorMessage]="store.errorMessage()"
-      (occupy)="occupySelectedTable()"
-      (openProductSearch)="openProductSearch()"
-      (sendToKitchen)="sendToKitchen()"
-      (markServed)="markServed()"
-      (increaseProduct)="increaseProductQuantity($event)"
-      (decreaseProduct)="decreaseProductQuantity($event)"
-      (markProductReady)="markProductReady($event)"
-      (markProductServed)="markProductServed($event)"
-      (removeProduct)="removeProduct($event)"
-      (updateProductNote)="updateProductNote($event)"
-      (setPaymentMethod)="setPaymentMethod($event)"
-      (charge)="chargeTable()"
-      (markCleaning)="markCleaning()"
-      (freeTable)="freeTable()"
-    />
-  </div>
+    <div data-testid="service-workflow-panel-shell" class="service-page__workflow-shell theme-panel w-full overflow-hidden rounded-xl border p-2 shadow-sm 2xl:sticky 2xl:top-24">
+      <app-service-table-panel
+        class="w-full"
+        [serviceInfo]="store.selectedServiceInfo()"
+        [title]="selectedTableTitle()"
+        [errorMessage]="store.errorMessage()"
+        (occupy)="occupySelectedTable()"
+        (openProductSearch)="openProductSearch()"
+        (sendToKitchen)="sendToKitchen()"
+        (markServed)="markServed()"
+        (increaseProduct)="increaseProductQuantity($event)"
+        (decreaseProduct)="decreaseProductQuantity($event)"
+        (markProductReady)="markProductReady($event)"
+        (markProductServed)="markProductServed($event)"
+        (removeProduct)="removeProduct($event)"
+        (updateProductNote)="updateProductNote($event)"
+        (setPaymentMethod)="setPaymentMethod($event)"
+        (charge)="chargeTable()"
+        (markCleaning)="markCleaning()"
+        (freeTable)="freeTable()"
+      />
+    </div>
+  </section>
 </main>
 
 <app-product-search-dialog

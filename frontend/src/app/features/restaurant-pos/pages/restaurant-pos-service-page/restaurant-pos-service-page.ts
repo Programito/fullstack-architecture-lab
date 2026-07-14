@@ -18,7 +18,6 @@ import { PaymentGatewayDialog } from '../../components/payment-gateway-dialog/pa
 import type { ProductPickerConfiguredLineInput } from '../../components/product-search-dialog/product-picker-item.mapper';
 import { ProductSearchDialog, type ProductPickerSection } from '../../components/product-search-dialog/product-search-dialog';
 import { ServicePointSearchDialog } from '../../components/service-point-search-dialog/service-point-search-dialog';
-import { ServiceSummary } from '../../components/service-summary/service-summary';
 import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
 import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
@@ -51,7 +50,6 @@ const isServicePointStatusFilter = (value: string): value is ServicePointStatusF
     ProductSearchDialog,
     RouterLink,
     ServicePointSearchDialog,
-    ServiceSummary,
     ServiceTablePanel,
     TranslocoPipe,
   ],
