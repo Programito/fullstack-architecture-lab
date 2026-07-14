@@ -539,9 +539,10 @@ describe('RestaurantPosServicePage', () => {
     const component = fixture.componentInstance as unknown as {
       serviceDashboardStats(): Array<{ id: 'occupied' | 'kitchen' | 'charge' | 'sales'; value: string; tone: 'neutral' | 'warning' | 'accent' }>;
     };
-    const activePoint = store.servicePoints().find((servicePoint) => servicePoint.table.status === 'free')!;
+    const [activePoint, reservedPoint] = store.servicePoints().filter((servicePoint) => servicePoint.table.status === 'free');
 
     store.hydrateServicePoint({ table: { ...activePoint.table, status: 'occupied' } });
+    store.hydrateServicePoint({ table: { ...reservedPoint.table, status: 'reserved' } });
 
     expect(component.serviceDashboardStats().find((stat) => stat.id === 'occupied')).toEqual({
       id: 'occupied',
@@ -570,7 +571,7 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.queryByRole('toolbar', { name: 'Acciones del elemento del plano' })).toBeNull();
 
     const pageShell = screen.getByTestId('service-floor-canvas').closest('section');
-    expect(pageShell?.classList.contains('2xl:grid-cols-[minmax(0,1fr)_26rem]')).toBe(true);
+    expect(pageShell?.classList.contains('xl:grid-cols-[minmax(0,1fr)_26rem]')).toBe(true);
 
     const tablePanelHost = container.querySelector('app-service-table-panel');
     expect(tablePanelHost?.className).toContain('w-full');

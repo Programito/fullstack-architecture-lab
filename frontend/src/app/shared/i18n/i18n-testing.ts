@@ -389,6 +389,7 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         nextActionMarkServed: 'Siguiente: marcar servido',
         nextActionCharge: 'Siguiente: cobrar',
         nextActionAddOrder: 'Siguiente: añade productos al pedido',
+        nextActionStartService: 'Siguiente: iniciar servicio',
         nextActionCleaning: 'Siguiente: pasar a limpieza',
         nextActionFreeTable: 'Siguiente: liberar mesa',
         nextActionNone: 'Sin acción pendiente',
@@ -1311,6 +1312,7 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         nextActionMarkServed: 'Next: mark served',
         nextActionCharge: 'Next: charge',
         nextActionAddOrder: 'Next: add products to the order',
+        nextActionStartService: 'Next: start service',
         nextActionCleaning: 'Next: move to cleaning',
         nextActionFreeTable: 'Next: free table',
         nextActionNone: 'No pending action',
@@ -2058,6 +2060,7 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
           closing: 'Tancament',
         },
         nextActionAddOrder: 'Següent: afegeix productes a la comanda',
+        nextActionStartService: 'Següent: iniciar servei',
         chargeWithTotal: 'Cobrar {{total}}',
         chargeWithTotalActionLabel: 'Cobrar la taula seleccionada per {{total}}',
         dashboard: {

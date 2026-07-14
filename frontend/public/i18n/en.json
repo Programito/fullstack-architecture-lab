@@ -594,6 +594,7 @@
       "nextActionMarkServed": "Next: mark served",
       "nextActionCharge": "Next: charge",
       "nextActionAddOrder": "Next: add products to the order",
+      "nextActionStartService": "Next: start service",
       "nextActionCleaning": "Next: move to cleaning",
       "nextActionFreeTable": "Next: free table",
       "nextActionNone": "No pending action",

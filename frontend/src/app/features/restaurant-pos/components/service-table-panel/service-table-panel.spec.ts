@@ -153,6 +153,29 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByTestId('service-panel-closing-section').getAttribute('data-highlighted')).toBe('false');
   });
 
+  it('guides a free table to start service from the summary section', async () => {
+    const i18n = provideI18nTesting();
+    const emptyOrder: TableOrder = { ...order, total: 0, lines: [] };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo({ ...table, status: 'free', total: 0 }, emptyOrder, {
+          servicePhase: { course: null, status: 'no_order' },
+          nextAction: { type: 'none', count: 0 },
+          canMarkCleaning: false,
+        }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByTestId('service-panel-next-action').textContent).toContain('Siguiente: iniciar servicio');
+    expect(screen.getByTestId('service-panel-summary-section').getAttribute('data-highlighted')).toBe('true');
+    expect(screen.getByTestId('service-panel-order-section').getAttribute('data-highlighted')).toBe('false');
+  });
+
   it('applies a visible highlighted treatment to the active workflow section', async () => {
     const { fixture } = await renderServiceTablePanel({ nextAction: { type: 'send_kitchen', count: 1 } });
     const highlightedTransitions = [

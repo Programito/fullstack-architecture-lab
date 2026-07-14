@@ -46,6 +46,7 @@ export class ServiceTablePanel {
     const info = this.serviceInfo();
     return info?.table.status === 'occupied' && info.servicePhase.status === 'no_order';
   });
+  protected readonly guidesToStartService = computed(() => this.table()?.status === 'free');
   protected readonly selectedServiceWorkflowSections = computed(() => {
     const info = this.serviceInfo();
     const order = info?.order;
@@ -53,7 +54,7 @@ export class ServiceTablePanel {
     const nextAction = info?.nextAction?.type;
 
     return [
-      { id: 'summary', titleKey: 'restaurantPos.service.workflow.summary', highlighted: false, countLabel: null },
+      { id: 'summary', titleKey: 'restaurantPos.service.workflow.summary', highlighted: this.guidesToStartService(), countLabel: null },
       { id: 'order', titleKey: 'restaurantPos.service.workflow.order', highlighted: this.guidesToOrder(), countLabel: order ? `${order.lines.length}` : null },
       {
         id: 'kitchen',
@@ -135,6 +136,10 @@ export class ServiceTablePanel {
   }
 
   protected nextActionLabel(): string {
+    if (this.guidesToStartService()) {
+      return this.translate('restaurantPos.service.nextActionStartService');
+    }
+
     if (this.guidesToOrder()) {
       return this.translate('restaurantPos.service.nextActionAddOrder');
     }

@@ -647,6 +647,7 @@
       "nextActionMarkServed": "Siguiente: marcar servido",
       "nextActionCharge": "Siguiente: cobrar",
       "nextActionAddOrder": "Siguiente: añade productos al pedido",
+      "nextActionStartService": "Siguiente: iniciar servicio",
       "nextActionCleaning": "Siguiente: pasar a limpieza",
       "nextActionFreeTable": "Siguiente: liberar mesa",
       "nextActionNone": "Sin acción pendiente",

@@ -594,6 +594,7 @@
       "nextActionMarkServed": "Següent: marcar servit",
       "nextActionCharge": "Següent: cobrar",
       "nextActionAddOrder": "Següent: afegeix productes a la comanda",
+      "nextActionStartService": "Següent: iniciar servei",
       "nextActionCleaning": "Següent: passar a neteja",
       "nextActionFreeTable": "Següent: alliberar taula",
       "nextActionNone": "Sense acció pendent",

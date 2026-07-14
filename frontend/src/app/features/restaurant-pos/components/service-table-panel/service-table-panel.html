@@ -14,7 +14,7 @@
       <p class="mt-3 text-sm font-semibold" [ngClass]="serviceAttentionClass(currentTable)">{{ serviceSummaryLabel(currentTable) }}</p>
     </header>
 
-    <section class="pt-4" aria-labelledby="service-panel-summary-heading">
+    <section class="pt-4" data-testid="service-panel-summary-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('summary')" [ngClass]="isWorkflowSectionHighlighted('summary') ? 'rounded-md bg-cyan-50/70 px-3 pb-3 ring-2 ring-cyan-400/70 shadow-sm dark:bg-cyan-950/20' : ''" aria-labelledby="service-panel-summary-heading">
       <div class="flex items-center justify-between gap-3">
         <h3 id="service-panel-summary-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.summary' | transloco }}</h3>
         <app-button variant="neutral" fill="outline" size="sm" (pressed)="occupy.emit()">
