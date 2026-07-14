@@ -332,13 +332,12 @@
 
 <!-- Diálogo de creación de reserva -->
 <app-dialog
-  class="reservations-page__drawer"
   [open]="creationOpen()"
   size="lg"
   [title]="'restaurantPos.reservations.create.title' | transloco"
   [footerSummary]="selectedDateLabel()"
   [showActions]="false"
-  panelClass="dialog__panel--drawer"
+  panelClass="dialog__panel--drawer reservations-page__drawer"
   panelVariant="drawer"
   (closed)="closeCreateReservation()"
 >

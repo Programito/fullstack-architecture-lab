@@ -49,10 +49,6 @@
   opacity: 0.6;
 }
 
-.reservations-page__create-panel {
-  box-shadow: 0 24px 60px -34px color-mix(in srgb, var(--ui-primary, #0891b2) 35%, transparent);
-}
-
 .reservations-page__table-options,
 .reservations-page__badges,
 .reservations-page__actions,
@@ -518,7 +514,7 @@
 }
 
 @media (max-width: 767px) {
-  .reservations-page__drawer {
+  :host ::ng-deep .reservations-page__drawer {
     width: 100vw;
     border-radius: 0;
   }
@@ -531,10 +527,6 @@
   .reservations-page__occupancy-grid,
   .reservations-page__suggested-tables {
     grid-template-columns: 1fr;
-  }
-
-  .reservations-page__drawer-actions {
-    width: 100%;
   }
 
   .reservations-page__drawer-actions button {
