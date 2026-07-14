@@ -533,6 +533,23 @@ describe('RestaurantPosServicePage', () => {
     expect(component.productPickerMode()).toBe('drawer');
   });
 
+  it('excludes reserved tables from the active dashboard count', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const component = fixture.componentInstance as unknown as {
+      serviceDashboardStats(): Array<{ id: 'occupied' | 'kitchen' | 'charge' | 'sales'; value: string; tone: 'neutral' | 'warning' | 'accent' }>;
+    };
+    const activePoint = store.servicePoints().find((servicePoint) => servicePoint.table.status === 'free')!;
+
+    store.hydrateServicePoint({ table: { ...activePoint.table, status: 'occupied' } });
+
+    expect(component.serviceDashboardStats().find((stat) => stat.id === 'occupied')).toEqual({
+      id: 'occupied',
+      value: '1',
+      tone: 'neutral',
+    });
+  });
+
   it('renders the service page as a command center with compact metrics and a dominant floor canvas', async () => {
     const { container } = await renderServicePage();
 
@@ -540,6 +557,8 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByTestId('service-dashboard-stats')).toBeTruthy();
     expect(screen.getByTestId('service-floor-canvas')).toBeTruthy();
     expect(screen.getByTestId('service-workflow-panel-shell')).toBeTruthy();
+    expect(screen.getByTestId('service-workflow-panel-shell').classList.contains('2xl:sticky')).toBe(true);
+    expect(screen.getByTestId('service-workflow-panel-shell').classList.contains('xl:sticky')).toBe(false);
     expect(screen.getByRole('heading', { name: 'Selecciona una mesa' })).toBeTruthy();
     expect(screen.getByText('Selecciona una mesa para empezar.')).toBeTruthy();
     expect(screen.getByLabelText('Panel de mesa seleccionada')).toBeTruthy();
@@ -551,7 +570,7 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.queryByRole('toolbar', { name: 'Acciones del elemento del plano' })).toBeNull();
 
     const pageShell = screen.getByTestId('service-floor-canvas').closest('section');
-    expect(pageShell?.classList.contains('xl:grid-cols-[minmax(0,1fr)_26rem]')).toBe(true);
+    expect(pageShell?.classList.contains('2xl:grid-cols-[minmax(0,1fr)_26rem]')).toBe(true);
 
     const tablePanelHost = container.querySelector('app-service-table-panel');
     expect(tablePanelHost?.className).toContain('w-full');

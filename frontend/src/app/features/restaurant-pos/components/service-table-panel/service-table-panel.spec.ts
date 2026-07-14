@@ -131,6 +131,28 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByTestId('service-panel-payment-section').getAttribute('data-highlighted')).toBe('true');
   });
 
+  it('guides an occupied table with an empty order to the order section', async () => {
+    const i18n = provideI18nTesting();
+    const emptyOrder: TableOrder = { ...order, total: 0, lines: [] };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo({ ...table, total: 0 }, emptyOrder, {
+          servicePhase: { course: null, status: 'no_order' },
+          nextAction: { type: 'cleaning', count: 0 },
+        }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByTestId('service-panel-next-action').textContent).toContain('Siguiente: añade productos al pedido');
+    expect(screen.getByTestId('service-panel-order-section').getAttribute('data-highlighted')).toBe('true');
+    expect(screen.getByTestId('service-panel-closing-section').getAttribute('data-highlighted')).toBe('false');
+  });
+
   it('applies a visible highlighted treatment to the active workflow section', async () => {
     const { fixture } = await renderServiceTablePanel({ nextAction: { type: 'send_kitchen', count: 1 } });
     const highlightedTransitions = [
@@ -231,6 +253,14 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByRole('button', { name: /Cocina/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Cobrar/i })).toBeTruthy();
     expect(screen.queryByText('Añadir rápido')).toBeNull();
+  });
+
+  it('includes the formatted total in the payment CTA and its accessible label', async () => {
+    await renderServiceTablePanel({ canCharge: true });
+
+    const paymentButton = screen.getByRole('button', { name: /Cobrar la mesa seleccionada por 12,50\s?€/i });
+    expect(paymentButton).toBeTruthy();
+    expect(paymentButton.textContent).toContain('Cobrar 12,50');
   });
 
   it('groups order lines by course and highlights the next service action', async () => {

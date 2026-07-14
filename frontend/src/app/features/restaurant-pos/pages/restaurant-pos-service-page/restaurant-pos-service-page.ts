@@ -85,7 +85,7 @@ export class RestaurantPosServicePage {
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
     const servicePoints = this.store.servicePoints();
-    const occupied = servicePoints.filter((point) => point.table.status !== 'free').length;
+    const occupied = this.store.occupiedTables();
     const kitchen = servicePoints.filter((point) => point.table.status === 'waiting_kitchen').length;
     const charge = servicePoints.filter((point) => point.table.status === 'payment_pending' || point.table.status === 'served').length;
 

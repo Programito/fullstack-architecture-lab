@@ -42,6 +42,10 @@ export class ServiceTablePanel {
   protected readonly freeTableConfirmOpen = signal(false);
   protected readonly table = computed(() => this.serviceInfo()?.table ?? null);
   protected readonly order = computed(() => this.serviceInfo()?.order ?? null);
+  protected readonly guidesToOrder = computed(() => {
+    const info = this.serviceInfo();
+    return info?.table.status === 'occupied' && info.servicePhase.status === 'no_order';
+  });
   protected readonly selectedServiceWorkflowSections = computed(() => {
     const info = this.serviceInfo();
     const order = info?.order;
@@ -50,7 +54,7 @@ export class ServiceTablePanel {
 
     return [
       { id: 'summary', titleKey: 'restaurantPos.service.workflow.summary', highlighted: false, countLabel: null },
-      { id: 'order', titleKey: 'restaurantPos.service.workflow.order', highlighted: false, countLabel: order ? `${order.lines.length}` : null },
+      { id: 'order', titleKey: 'restaurantPos.service.workflow.order', highlighted: this.guidesToOrder(), countLabel: order ? `${order.lines.length}` : null },
       {
         id: 'kitchen',
         titleKey: 'restaurantPos.service.workflow.kitchen',
@@ -66,7 +70,7 @@ export class ServiceTablePanel {
       {
         id: 'closing',
         titleKey: 'restaurantPos.service.workflow.closing',
-        highlighted: nextAction === 'cleaning' || nextAction === 'free_table',
+        highlighted: !this.guidesToOrder() && (nextAction === 'cleaning' || nextAction === 'free_table'),
         countLabel: null,
       },
     ] as const;
@@ -131,6 +135,10 @@ export class ServiceTablePanel {
   }
 
   protected nextActionLabel(): string {
+    if (this.guidesToOrder()) {
+      return this.translate('restaurantPos.service.nextActionAddOrder');
+    }
+
     const action = this.serviceInfo()?.nextAction;
 
     switch (action?.type) {
@@ -151,6 +159,14 @@ export class ServiceTablePanel {
 
   protected formatCurrency(value: number): string {
     return new Intl.NumberFormat(this.activeLang(), { style: 'currency', currency: 'EUR' }).format(value);
+  }
+
+  protected chargeButtonLabel(): string {
+    return this.translate('restaurantPos.service.chargeWithTotal', { total: this.formatCurrency(this.order()?.total ?? 0) });
+  }
+
+  protected chargeButtonAriaLabel(): string {
+    return this.translate('restaurantPos.service.chargeWithTotalActionLabel', { total: this.formatCurrency(this.order()?.total ?? 0) });
   }
 
   protected formatClock(value: string | undefined): string {
