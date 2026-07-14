@@ -46,7 +46,10 @@ export class ServiceTablePanel {
     const info = this.serviceInfo();
     return info?.table.status === 'occupied' && info.servicePhase.status === 'no_order';
   });
-  protected readonly guidesToStartService = computed(() => this.table()?.status === 'free');
+  protected readonly guidesToStartService = computed(() => {
+    const status = this.table()?.status;
+    return status === 'free' || status === 'reserved';
+  });
   protected readonly selectedServiceWorkflowSections = computed(() => {
     const info = this.serviceInfo();
     const order = info?.order;
