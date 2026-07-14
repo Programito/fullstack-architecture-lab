@@ -106,6 +106,16 @@ export class RestaurantPosReservationsPage {
     const active = windows.find((w) => w.id === this.serviceTab()) ?? windows[0];
     return active ? generateTimeSlots(active.startTime, active.endTime) : [];
   });
+  protected readonly recommendedSlots = computed(() => {
+    const selected = this.creationForm().time;
+    const slots = this.activeSlots();
+    if (slots.length <= 4) return slots;
+    const anchorIndex = Math.max(slots.indexOf(selected), 0);
+    return Array.from(new Set([slots[anchorIndex - 1], slots[anchorIndex], slots[anchorIndex + 1], slots[anchorIndex + 2]].filter(Boolean))) as string[];
+  });
+  protected readonly secondarySlots = computed(() =>
+    this.activeSlots().filter((slot) => !this.recommendedSlots().includes(slot)),
+  );
 
   // ── Estado del dialog de edición de franjas ──────────────────────────────
   protected readonly serviceWindowsEditOpen = signal(false);
@@ -125,6 +135,37 @@ export class RestaurantPosReservationsPage {
     return this.availableTables()
       .filter((t) => selectedIds.includes(t.id))
       .reduce((total, t) => total + t.capacity, 0);
+  });
+  protected readonly suggestedTables = computed(() => {
+    const partySize = this.creationForm().partySize;
+    const selectedIds = this.creationForm().tableIds;
+    return this.availableTables()
+      .map((table) => ({
+        ...table,
+        selected: selectedIds.includes(table.id),
+        fit: table.capacity === partySize ? 'ideal' : table.capacity < partySize ? 'tight' : 'oversized' as const,
+      }))
+      .sort((left, right) => Math.abs(left.capacity - partySize) - Math.abs(right.capacity - partySize))
+      .slice(0, 4);
+  });
+  protected readonly manualTables = computed(() =>
+    this.availableTables().map((table) => ({
+      ...table,
+      selected: this.creationForm().tableIds.includes(table.id),
+    })),
+  );
+  protected readonly creationProgressState = computed(() => {
+    const form = this.creationForm();
+    const hasCustomer = form.customerNameSnapshot.trim().length > 0;
+    const hasPartySize = form.partySize > 0;
+    const hasTime = form.time.trim().length > 0;
+    const hasSuggestedTable = form.tableIds.length > 0;
+
+    let ctaLabelKey = 'restaurantPos.reservations.create.submit';
+    if (!hasTime) ctaLabelKey = 'restaurantPos.reservations.create.cta.selectTime';
+    else if (!hasSuggestedTable) ctaLabelKey = 'restaurantPos.reservations.create.cta.optionalTable';
+
+    return { hasCustomer, hasPartySize, hasTime, hasSuggestedTable, ctaLabelKey };
   });
   protected readonly capacityWarningDescription = computed(() => {
     const capacity = this.selectedTablesCapacity();
@@ -167,6 +208,16 @@ export class RestaurantPosReservationsPage {
     { labelKey: 'restaurantPos.reservations.lunch', descKey: 'restaurantPos.reservations.lunchDescription', reservations: this.lunchReservations() },
     { labelKey: 'restaurantPos.reservations.dinner', descKey: 'restaurantPos.reservations.dinnerDescription', reservations: this.dinnerReservations() },
   ]);
+  protected readonly serviceLoadSummary = computed(() =>
+    this.serviceGroups().map((group) => {
+      const reservationCount = group.reservations.length;
+      const unassignedCount = group.reservations.filter((reservation) => reservation.isUnassigned).length;
+      const overdueCount = group.reservations.filter((reservation) => reservation.isOverdue).length;
+      const upcomingCount = group.reservations.filter((reservation) => reservation.isUpcoming).length;
+      const intensity = reservationCount >= 6 ? 'busy' : reservationCount >= 3 ? 'balanced' : 'quiet';
+      return { serviceKey: group.labelKey, reservationCount, unassignedCount, overdueCount, upcomingCount, intensity } as const;
+    }),
+  );
 
   constructor() {
     this.restaurantContext.load();

@@ -120,6 +120,47 @@ describe('RestaurantPosReservationsPage', () => {
     });
   };
 
+  it('shows recommended slots and suggested tables in the creation flow', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    const component = fixture.componentInstance as unknown as {
+      openCreateReservation(): void;
+      updateCreateField(field: 'customerNameSnapshot' | 'partySize', value: string | number): void;
+      recommendedSlots(): string[];
+      suggestedTables(): Array<{ id: string; fit: string }>;
+    };
+
+    component.openCreateReservation();
+    component.updateCreateField('customerNameSnapshot', 'Marina Soler');
+    component.updateCreateField('partySize', 4);
+    fixture.detectChanges();
+
+    expect(component.recommendedSlots().length).toBeGreaterThan(0);
+    expect(component.suggestedTables()[0]).toEqual(expect.objectContaining({ id: 'table-2' }));
+  });
+
+  it('derives a guided CTA state before submission', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    const component = fixture.componentInstance as unknown as {
+      updateCreateField(field: 'time', value: string): void;
+      creationProgressState(): { ctaLabelKey: string };
+    };
+
+    component.updateCreateField('time', '');
+    expect(component.creationProgressState().ctaLabelKey).toBe('restaurantPos.reservations.create.cta.selectTime');
+  });
+
   it('renders the reservations day agenda grouped by service', async () => {
     const i18n = provideI18nTesting();
     await render(RestaurantPosReservationsPage, {
