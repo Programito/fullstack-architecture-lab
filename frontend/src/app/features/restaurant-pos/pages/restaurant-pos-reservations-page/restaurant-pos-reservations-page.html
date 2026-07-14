@@ -546,11 +546,11 @@
     ></textarea>
   </section>
 
-  @if (creationError(); as creationErrorText) {
-    <p class="reservations-page__error mt-4">{{ creationErrorText }}</p>
-  }
     </div>
     <footer class="reservations-page__drawer-footer">
+      @if (creationError(); as creationErrorText) {
+        <p class="reservations-page__error" role="alert">{{ creationErrorText }}</p>
+      }
       <div class="reservations-page__drawer-summary">
         <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.summaryTitle' | transloco }}</p>
         <p class="theme-title text-sm font-semibold">{{ selectedDateLabel() }} · {{ creationForm().time }} · {{ creationForm().partySize }}</p>

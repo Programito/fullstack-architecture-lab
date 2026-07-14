@@ -376,6 +376,7 @@ describe('RestaurantPosReservationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
 
     expect(screen.getByText('Introduce el nombre del cliente.')).toBeTruthy();
+    expect(within(screen.getByRole('contentinfo')).getByText('Introduce el nombre del cliente.')).toBeTruthy();
   });
 
   it('shows a loading spinner while reservations are being fetched', async () => {

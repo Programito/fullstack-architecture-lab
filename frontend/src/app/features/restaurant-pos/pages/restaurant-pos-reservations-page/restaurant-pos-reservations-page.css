@@ -444,6 +444,11 @@
   margin: 0;
 }
 
+.reservations-page__drawer-footer .reservations-page__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .reservations-page__drawer-actions {
   display: flex;
   flex-wrap: wrap;

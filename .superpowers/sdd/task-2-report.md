@@ -34,3 +34,9 @@ Completed and committed.
 - Passed: `pnpm test -- --watch false --include src/app/features/restaurant-pos/pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page.spec.ts`
 - Result: 1 test file passed, 26 tests passed.
 - Passed: published drawer locale JSON validation for `es`, `en`, and `ca`.
+
+## Validation Error Fix
+
+- Moved reservation-creation validation errors into the sticky drawer footer and marked them as an alert, keeping the explanation adjacent to the submitting CTA.
+- Passed: `pnpm test -- --watch false --include src/app/features/restaurant-pos/pages/restaurant-pos-reservations-page/restaurant-pos-reservations-page.spec.ts`
+- Result: 1 test file passed, 26 tests passed.
