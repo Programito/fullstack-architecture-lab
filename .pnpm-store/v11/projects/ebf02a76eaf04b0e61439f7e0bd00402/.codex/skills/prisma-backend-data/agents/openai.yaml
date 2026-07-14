@@ -1,4 +1,0 @@
-interface:
-  display_name: "Prisma Backend Data"
-  short_description: "Schema, migraciones, seeds y repositorios Prisma"
-  default_prompt: "Use $prisma-backend-data to change Prisma schema, migrations, seeds, and persistence code safely in this backend project."
