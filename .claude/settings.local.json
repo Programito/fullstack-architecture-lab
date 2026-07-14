@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d['scripts'].get\\('test',''\\)\\)\")",
+      "Bash(git commit -m 'fix: restaura encoding UTF-8 en i18n-testing y añade claves de imagen/combo *)",
+      "Bash(pnpm test *)",
+      "Bash(rm \"/c/Users/Thor_/Documents/Proyecto/.git/index.lock\" && echo removed)",
+      "Bash(pkill -f \"find /\")",
+      "Bash(npx ng *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Thor_\\Documents\\Proyecto\\.git"
+    ]
+  }
+}

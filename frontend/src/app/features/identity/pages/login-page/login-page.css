@@ -1,23 +1,57 @@
-:host{display:block;min-height:100dvh;color:var(--ui-text);--login-shell-width:min(72rem,calc(100% - 2rem));background:radial-gradient(circle at 0 0,color-mix(in srgb,var(--ui-primary) 20%,transparent),transparent 28rem),radial-gradient(circle at 88% 16%,color-mix(in srgb,var(--ui-violet) 15%,transparent),transparent 24rem),linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 68%,transparent),transparent 32%),var(--ui-background)}
+:host{
+  display:block;
+  min-height:100dvh;
+  color:var(--ui-text);
+  --login-shell-width:min(72rem,calc(100% - 2rem));
+  --login-bg:radial-gradient(circle at 0 0,color-mix(in srgb,var(--ui-primary) 20%,transparent),transparent 28rem),radial-gradient(circle at 88% 16%,color-mix(in srgb,var(--ui-violet) 15%,transparent),transparent 24rem),linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 68%,transparent),transparent 32%),var(--ui-background);
+  --login-backdrop:radial-gradient(circle at 20% 25%,color-mix(in srgb,var(--ui-primary) 10%,transparent),transparent 18rem),radial-gradient(circle at 80% 75%,color-mix(in srgb,var(--ui-secondary) 9%,transparent),transparent 16rem);
+  --login-badge-border:color-mix(in srgb,var(--ui-border) 76%,transparent);
+  --login-badge-bg:color-mix(in srgb,var(--ui-surface) 82%,transparent);
+  --login-badge-color:var(--ui-text-muted);
+  --login-badge-shadow:none;
+  --login-title-shadow:none;
+  --login-description-color:var(--ui-text-muted);
+  --login-benefit-border:color-mix(in srgb,var(--ui-border) 72%,transparent);
+  --login-benefit-bg:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 76%,transparent),color-mix(in srgb,var(--ui-background) 84%,transparent));
+  --login-benefit-shadow:0 10px 24px color-mix(in srgb,var(--ui-background) 56%,transparent);
+  --login-card-border:color-mix(in srgb,var(--ui-border) 80%,transparent);
+  --login-card-bg:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 92%,transparent),color-mix(in srgb,var(--ui-background) 86%,transparent)),var(--ui-surface);
+  --login-card-shadow:0 26px 58px color-mix(in srgb,var(--ui-background) 72%,transparent),inset 0 1px 0 color-mix(in srgb,white 18%,transparent);
+  --login-role-border:color-mix(in srgb,var(--ui-border) 86%,transparent);
+  --login-role-bg:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 90%,transparent),color-mix(in srgb,var(--ui-background) 84%,transparent)),var(--ui-surface);
+  --login-role-hover-bg:color-mix(in srgb,var(--ui-primary) 8%,var(--ui-surface));
+  --login-role-hover-shadow:0 14px 28px color-mix(in srgb,var(--ui-background) 74%,transparent);
+  --login-role-avatar-bg:color-mix(in srgb,var(--ui-primary) 14%,var(--ui-surface));
+  --login-role-avatar-color:var(--ui-primary);
+  --login-input-border:var(--ui-border);
+  --login-input-bg:color-mix(in srgb,var(--ui-background) 75%,var(--ui-surface));
+  --login-input-shadow:inset 0 1px 0 color-mix(in srgb,white 10%,transparent);
+  --login-seed-border:var(--ui-border);
+  --login-seed-btn-border:var(--ui-border);
+  --login-seed-btn-bg:transparent;
+  --login-seed-btn-hover-bg:color-mix(in srgb,var(--ui-primary) 5%,transparent);
+  background:var(--login-bg);
+}
+
 .login-page{position:relative;min-height:100dvh;overflow-x:clip}
-.login-page__backdrop{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 20% 25%,color-mix(in srgb,var(--ui-primary) 10%,transparent),transparent 18rem),radial-gradient(circle at 80% 75%,color-mix(in srgb,var(--ui-secondary) 9%,transparent),transparent 16rem)}
+.login-page__backdrop{position:absolute;inset:0;pointer-events:none;background:var(--login-backdrop)}
 .login-page__toolbar,.login-page__hero{position:relative;width:var(--login-shell-width);margin:0 auto}
 .login-page__toolbar{z-index:3;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.25rem 0 0}
 .login-page__brand-group,.login-page__preferences{display:flex;align-items:center}
 .login-page__brand-group{gap:.75rem;flex-wrap:wrap}
 .login-page__brand,.login-page__intro h1,.login-page__panel-copy h2,.login-page__section-copy h3{font-family:'Plus Jakarta Sans Variable',sans-serif}
 .login-page__brand{color:inherit;font-size:1.2rem;font-weight:800;letter-spacing:-.02em;text-decoration:none}
-.login-page__badge{padding:.35rem .7rem;border:1px solid color-mix(in srgb,var(--ui-border) 76%,transparent);border-radius:999px;background:color-mix(in srgb,var(--ui-surface) 82%,transparent);color:var(--ui-text-muted);font-size:.76rem;font-weight:700;text-transform:uppercase}
+.login-page__badge{padding:.35rem .7rem;border:1px solid var(--login-badge-border);border-radius:999px;background:var(--login-badge-bg);box-shadow:var(--login-badge-shadow);color:var(--login-badge-color);font-size:.76rem;font-weight:700;text-transform:uppercase}
 .login-page__preferences{gap:.5rem}
 .login-page__hero{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:clamp(1.35rem,3vw,2.5rem);align-items:start;padding:clamp(1.25rem,3vw,2rem) 0 clamp(2rem,8vw,4rem)}
 .login-page__access-card{order:2;animation:login-page-card-enter .22s ease-out}
 .login-page__intro{order:1;animation:login-page-intro-enter .24s ease-out .04s both}
 .login-page__eyebrow{margin:0;color:var(--ui-primary);font-size:.82rem;font-weight:800;text-transform:uppercase}
-.login-page__intro h1{margin:.65rem 0 0;font-size:clamp(2.6rem,6vw,4.7rem);font-weight:800;letter-spacing:-.05em;line-height:.94}
-.login-page__description{margin:1rem 0 0;color:var(--ui-text-muted);font-size:1.02rem;line-height:1.65}
+.login-page__intro h1{margin:.65rem 0 0;font-size:clamp(2.6rem,6vw,4.7rem);font-weight:800;letter-spacing:-.05em;line-height:.94;text-shadow:var(--login-title-shadow)}
+.login-page__description{margin:1rem 0 0;color:var(--login-description-color);font-size:1.02rem;line-height:1.65}
 .login-page__benefits{display:grid;gap:.85rem;margin:1.5rem 0 0;padding:0;list-style:none}
-.login-page__benefits li{display:flex;align-items:center;gap:.75rem;padding:1rem;border:1px solid color-mix(in srgb,var(--ui-border) 72%,transparent);border-radius:1rem;background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 76%,transparent),color-mix(in srgb,var(--ui-background) 84%,transparent));color:var(--ui-text);box-shadow:0 10px 24px color-mix(in srgb,var(--ui-background) 56%,transparent);animation:login-page-section-enter .22s ease-out .12s both}
-.login-page__access-card :where(.card){border:1px solid color-mix(in srgb,var(--ui-border) 80%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 92%,transparent),color-mix(in srgb,var(--ui-background) 86%,transparent)),var(--ui-surface);box-shadow:0 26px 58px color-mix(in srgb,var(--ui-background) 72%,transparent),inset 0 1px 0 color-mix(in srgb,white 18%,transparent);backdrop-filter:blur(10px)}
+.login-page__benefits li{display:flex;align-items:center;gap:.75rem;padding:1rem;border:1px solid var(--login-benefit-border);border-radius:1rem;background:var(--login-benefit-bg);color:var(--ui-text);box-shadow:var(--login-benefit-shadow);animation:login-page-section-enter .22s ease-out .12s both}
+.login-page__access-card :where(.card){border:1px solid var(--login-card-border);background:var(--login-card-bg);box-shadow:var(--login-card-shadow);backdrop-filter:blur(10px)}
 .login-page__tab-panel,.login-page__panel,.login-page__role-section{animation:login-page-section-enter .18s ease-out}
 .login-page__status-alert{margin-bottom:1rem}
 .login-page__panel{display:grid;gap:1.25rem;padding-top:1rem}
@@ -25,11 +59,11 @@
 .login-page__panel-copy p,.login-page__section-copy p{margin:.35rem 0 0;color:var(--ui-text-muted);line-height:1.55}
 .login-page__role-section{display:grid;gap:.9rem}
 .login-page__roles-grid{display:grid;grid-template-columns:1fr;gap:.75rem}
-.login-page__role{display:grid;grid-template-columns:3rem minmax(0,1fr) auto;gap:1rem;align-items:center;width:100%;min-height:5.6rem;padding:1rem 1.1rem;border:1px solid color-mix(in srgb,var(--ui-border) 86%,transparent);border-radius:1rem;background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 90%,transparent),color-mix(in srgb,var(--ui-background) 84%,transparent)),var(--ui-surface);color:inherit;text-align:left;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background-color .18s ease,box-shadow .18s ease}
-.login-page__role:hover:not(:disabled){border-color:color-mix(in srgb,var(--ui-primary) 48%,var(--ui-border));background:color-mix(in srgb,var(--ui-primary) 8%,var(--ui-surface));transform:translateY(-2px);box-shadow:0 14px 28px color-mix(in srgb,var(--ui-background) 74%,transparent)}
+.login-page__role{display:grid;grid-template-columns:3rem minmax(0,1fr) auto;gap:1rem;align-items:center;width:100%;min-height:5.6rem;padding:1rem 1.1rem;border:1px solid var(--login-role-border);border-radius:1rem;background:var(--login-role-bg);color:inherit;text-align:left;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background-color .18s ease,box-shadow .18s ease}
+.login-page__role:hover:not(:disabled){border-color:color-mix(in srgb,var(--ui-primary) 48%,var(--ui-border));background:var(--login-role-hover-bg);transform:translateY(-2px);box-shadow:var(--login-role-hover-shadow)}
 .login-page__role:focus-visible,.login-page__password-toggle:focus-visible,.login-page__input:focus-visible{outline:2px solid var(--ui-primary);outline-offset:2px}
 .login-page__role:disabled{opacity:.7;cursor:not-allowed}
-.login-page__role-avatar{display:inline-flex;align-items:center;justify-content:center;width:3rem;height:3rem;border-radius:.9rem;background:color-mix(in srgb,var(--ui-primary) 14%,var(--ui-surface));color:var(--ui-primary)}
+.login-page__role-avatar{display:inline-flex;align-items:center;justify-content:center;width:3rem;height:3rem;border-radius:.9rem;background:var(--login-role-avatar-bg);color:var(--login-role-avatar-color)}
 .login-page__role-copy{display:grid;min-width:0;align-self:center}
 .login-page__role-copy small{color:var(--ui-text-muted);font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}
 .login-page__role-action,.login-page__password-toggle,.login-page__seed-btn{display:inline-flex;align-items:center;justify-content:center}
@@ -38,45 +72,33 @@
 .login-page__form{display:grid;gap:1rem}
 .login-page__field{display:grid;gap:.45rem}
 .login-page__label{font-size:.92rem;font-weight:700}
-.login-page__input{width:100%;height:3rem;padding:0 .95rem;border:1px solid var(--ui-border);border-radius:.9rem;background:color-mix(in srgb,var(--ui-background) 75%,var(--ui-surface));color:var(--ui-text);box-shadow:inset 0 1px 0 color-mix(in srgb,white 10%,transparent);transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
+.login-page__input{width:100%;height:3rem;padding:0 .95rem;border:1px solid var(--login-input-border);border-radius:.9rem;background:var(--login-input-bg);color:var(--ui-text);box-shadow:var(--login-input-shadow);transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
 .login-page__input[aria-invalid='true']{border-color:var(--ui-danger)}
 .login-page__password-control{position:relative}
 .login-page__input--password{padding-right:3.4rem}
 .login-page__password-toggle{position:absolute;top:50%;right:.45rem;width:2.4rem;height:2.4rem;border:0;border-radius:.75rem;background:transparent;color:var(--ui-text-muted);cursor:pointer;transform:translateY(-50%)}
 .login-page__field-error,.login-page__error{margin:0;color:var(--ui-danger);font-size:.86rem;line-height:1.45}
 .login-page__error{padding:.85rem 1rem;border:1px solid color-mix(in srgb,var(--ui-danger) 28%,transparent);border-radius:.9rem;background:color-mix(in srgb,var(--ui-danger) 8%,transparent)}
-@keyframes login-page-card-enter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes login-page-intro-enter{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
-@keyframes login-page-section-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes login-page-spin{to{transform:rotate(360deg)}}
-@media (max-width:960px){.login-page__hero{grid-template-columns:1fr}.login-page__access-card{order:1}.login-page__intro{order:2}}
-@media (max-width:720px){.login-page__toolbar{align-items:flex-start;flex-direction:column}.login-page__preferences{width:100%;justify-content:flex-end}}
-.login-page__seed{display:grid;gap:.6rem;padding-top:1.25rem;border-top:1px solid var(--ui-border)}
-.login-page__seed-btn{gap:.5rem;width:100%;padding:.6rem 1rem;border:1px dashed var(--ui-border);border-radius:.9rem;background:transparent;color:var(--ui-text-muted);font-size:.85rem;cursor:pointer;transition:border-color .16s ease,color .16s ease,background-color .16s ease}
-.login-page__seed-btn:hover:not(:disabled){border-color:var(--ui-primary);color:var(--ui-primary);background:color-mix(in srgb,var(--ui-primary) 5%,transparent)}
+.login-page__seed{display:grid;gap:.6rem;padding-top:1.25rem;border-top:1px solid var(--login-seed-border)}
+.login-page__seed-btn{gap:.5rem;width:100%;padding:.6rem 1rem;border:1px dashed var(--login-seed-btn-border);border-radius:.9rem;background:var(--login-seed-btn-bg);color:var(--ui-text-muted);font-size:.85rem;cursor:pointer;transition:border-color .16s ease,color .16s ease,background-color .16s ease}
+.login-page__seed-btn:hover:not(:disabled){border-color:var(--ui-primary);color:var(--ui-primary);background:var(--login-seed-btn-hover-bg)}
 .login-page__seed-btn:disabled{opacity:.55;cursor:not-allowed}
 .login-page__seed-feedback{margin:0;font-size:.83rem;text-align:center}
 .login-page__seed-feedback--done{color:var(--ui-success,#22c55e)}
 .login-page__seed-feedback--error{color:var(--ui-danger)}
-[data-theme='dark'] :host{background:radial-gradient(circle at 12% 12%,color-mix(in srgb,var(--ui-primary) 18%,transparent),transparent 18rem),radial-gradient(circle at 84% 18%,color-mix(in srgb,var(--ui-violet) 16%,transparent),transparent 20rem),radial-gradient(circle at 50% 100%,color-mix(in srgb,var(--ui-primary) 10%,transparent),transparent 28rem),linear-gradient(180deg,color-mix(in srgb,var(--ui-bg) 84%,black),color-mix(in srgb,var(--ui-bg) 96%,black) 58%,black),var(--ui-bg)}
-[data-theme='dark'] .login-page__backdrop{background:radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--ui-primary) 15%,transparent),transparent 16rem),radial-gradient(circle at 78% 72%,color-mix(in srgb,var(--ui-violet) 12%,transparent),transparent 18rem),linear-gradient(90deg,color-mix(in srgb,var(--ui-bg) 18%,transparent),transparent 36%,color-mix(in srgb,black 30%,transparent))}
-[data-theme='dark'] .login-page__brand{color:color-mix(in srgb,var(--ui-fg) 92%,white)}
-[data-theme='dark'] .login-page__badge{border-color:color-mix(in srgb,var(--ui-border) 72%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 72%,transparent),color-mix(in srgb,var(--ui-bg) 42%,var(--ui-surface)));color:color-mix(in srgb,var(--ui-fg) 88%,white);box-shadow:inset 0 1px 0 color-mix(in srgb,white 10%,transparent),0 10px 24px color-mix(in srgb,black 24%,transparent)}
-[data-theme='dark'] .login-page__intro h1{text-shadow:0 10px 38px color-mix(in srgb,var(--ui-primary) 16%,transparent)}
-[data-theme='dark'] .login-page__description{color:color-mix(in srgb,var(--ui-fg) 74%,var(--ui-muted-fg))}
-[data-theme='dark'] .login-page__benefits li{border-color:color-mix(in srgb,var(--ui-border) 62%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 48%,transparent),color-mix(in srgb,var(--ui-bg) 84%,black));box-shadow:0 18px 40px color-mix(in srgb,black 34%,transparent)}
-[data-theme='dark'] .login-page__access-card :where(.card){border-color:color-mix(in srgb,var(--ui-border) 64%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 18%,var(--ui-bg)),color-mix(in srgb,var(--ui-bg) 76%,black) 52%,color-mix(in srgb,var(--ui-bg) 92%,black)),color-mix(in srgb,var(--ui-bg) 86%,black);box-shadow:0 30px 60px color-mix(in srgb,black 44%,transparent),inset 0 1px 0 color-mix(in srgb,white 11%,transparent)}
-[data-theme='dark'] .login-page__access-card :where(.tabs__list--pill){border-color:color-mix(in srgb,var(--ui-border) 66%,transparent);background:color-mix(in srgb,var(--ui-surface) 42%,var(--ui-bg))}
-[data-theme='dark'] .login-page__access-card :where(.tabs__list--pill .tabs__tab){color:color-mix(in srgb,var(--ui-fg) 52%,var(--ui-muted-fg))}
-[data-theme='dark'] .login-page__access-card :where(.tabs__list--pill .tabs__tab:hover:not(:disabled)){color:color-mix(in srgb,var(--ui-fg) 78%,white)}
-[data-theme='dark'] .login-page__access-card :where(.tabs__list--pill .tabs__tab--active){color:color-mix(in srgb,var(--ui-fg) 96%,white)}
-[data-theme='dark'] .login-page__access-card :where(.tabs__list--pill .tabs__indicator){border-color:color-mix(in srgb,var(--ui-border) 68%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 16%,var(--ui-bg)),color-mix(in srgb,var(--ui-bg) 88%,black));box-shadow:0 10px 24px color-mix(in srgb,black 28%,transparent),inset 0 1px 0 color-mix(in srgb,white 8%,transparent)}
-[data-theme='dark'] .login-page__role{border-color:color-mix(in srgb,var(--ui-border) 72%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 34%,transparent),color-mix(in srgb,var(--ui-bg) 88%,black)),var(--ui-bg)}
-[data-theme='dark'] .login-page__role:hover:not(:disabled){background:linear-gradient(180deg,color-mix(in srgb,var(--ui-primary) 12%,var(--ui-surface)),color-mix(in srgb,var(--ui-bg) 82%,black));box-shadow:0 18px 34px color-mix(in srgb,black 40%,transparent)}
-[data-theme='dark'] .login-page__role-avatar{background:color-mix(in srgb,var(--ui-primary) 22%,var(--ui-surface));color:color-mix(in srgb,var(--ui-primary) 88%,white)}
-[data-theme='dark'] .login-page__input{border-color:color-mix(in srgb,var(--ui-border) 82%,transparent);background:color-mix(in srgb,var(--ui-bg) 56%,var(--ui-surface));box-shadow:inset 0 1px 0 color-mix(in srgb,white 6%,transparent)}
-[data-theme='dark'] .login-page__seed{border-top-color:color-mix(in srgb,var(--ui-border) 62%,transparent)}
-[data-theme='dark'] .login-page__seed-btn{border-color:color-mix(in srgb,var(--ui-border) 68%,transparent);background:color-mix(in srgb,var(--ui-bg) 36%,transparent)}
-[data-theme='dark'] .login-page__seed-btn:hover:not(:disabled){background:color-mix(in srgb,var(--ui-primary) 10%,var(--ui-bg))}
-@media (prefers-color-scheme:dark){:root:not([data-theme='light']) :host{background:radial-gradient(circle at 12% 12%,color-mix(in srgb,var(--ui-primary) 18%,transparent),transparent 18rem),radial-gradient(circle at 84% 18%,color-mix(in srgb,var(--ui-violet) 16%,transparent),transparent 20rem),radial-gradient(circle at 50% 100%,color-mix(in srgb,var(--ui-primary) 10%,transparent),transparent 28rem),linear-gradient(180deg,color-mix(in srgb,var(--ui-bg) 84%,black),color-mix(in srgb,var(--ui-bg) 96%,black) 58%,black),var(--ui-bg)}:root:not([data-theme='light']) .login-page__backdrop{background:radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--ui-primary) 15%,transparent),transparent 16rem),radial-gradient(circle at 78% 72%,color-mix(in srgb,var(--ui-violet) 12%,transparent),transparent 18rem),linear-gradient(90deg,color-mix(in srgb,var(--ui-bg) 18%,transparent),transparent 36%,color-mix(in srgb,black 30%,transparent))}:root:not([data-theme='light']) .login-page__brand{color:color-mix(in srgb,var(--ui-fg) 92%,white)}:root:not([data-theme='light']) .login-page__badge{border-color:color-mix(in srgb,var(--ui-border) 72%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 72%,transparent),color-mix(in srgb,var(--ui-bg) 42%,var(--ui-surface)));color:color-mix(in srgb,var(--ui-fg) 88%,white);box-shadow:inset 0 1px 0 color-mix(in srgb,white 10%,transparent),0 10px 24px color-mix(in srgb,black 24%,transparent)}:root:not([data-theme='light']) .login-page__intro h1{text-shadow:0 10px 38px color-mix(in srgb,var(--ui-primary) 16%,transparent)}:root:not([data-theme='light']) .login-page__description{color:color-mix(in srgb,var(--ui-fg) 74%,var(--ui-muted-fg))}:root:not([data-theme='light']) .login-page__benefits li{border-color:color-mix(in srgb,var(--ui-border) 62%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 48%,transparent),color-mix(in srgb,var(--ui-bg) 84%,black));box-shadow:0 18px 40px color-mix(in srgb,black 34%,transparent)}:root:not([data-theme='light']) .login-page__access-card :where(.card){border-color:color-mix(in srgb,var(--ui-border) 64%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 18%,var(--ui-bg)),color-mix(in srgb,var(--ui-bg) 76%,black) 52%,color-mix(in srgb,var(--ui-bg) 92%,black)),color-mix(in srgb,var(--ui-bg) 86%,black);box-shadow:0 30px 60px color-mix(in srgb,black 44%,transparent),inset 0 1px 0 color-mix(in srgb,white 11%,transparent)}:root:not([data-theme='light']) .login-page__access-card :where(.tabs__list--pill){border-color:color-mix(in srgb,var(--ui-border) 66%,transparent);background:color-mix(in srgb,var(--ui-surface) 42%,var(--ui-bg))}:root:not([data-theme='light']) .login-page__access-card :where(.tabs__list--pill .tabs__tab){color:color-mix(in srgb,var(--ui-fg) 52%,var(--ui-muted-fg))}:root:not([data-theme='light']) .login-page__access-card :where(.tabs__list--pill .tabs__tab:hover:not(:disabled)){color:color-mix(in srgb,var(--ui-fg) 78%,white)}:root:not([data-theme='light']) .login-page__access-card :where(.tabs__list--pill .tabs__tab--active){color:color-mix(in srgb,var(--ui-fg) 96%,white)}:root:not([data-theme='light']) .login-page__access-card :where(.tabs__list--pill .tabs__indicator){border-color:color-mix(in srgb,var(--ui-border) 68%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 16%,var(--ui-bg)),color-mix(in srgb,var(--ui-bg) 88%,black));box-shadow:0 10px 24px color-mix(in srgb,black 28%,transparent),inset 0 1px 0 color-mix(in srgb,white 8%,transparent)}:root:not([data-theme='light']) .login-page__role{border-color:color-mix(in srgb,var(--ui-border) 72%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--ui-surface) 34%,transparent),color-mix(in srgb,var(--ui-bg) 88%,black)),var(--ui-bg)}:root:not([data-theme='light']) .login-page__role:hover:not(:disabled){background:linear-gradient(180deg,color-mix(in srgb,var(--ui-primary) 12%,var(--ui-surface)),color-mix(in srgb,var(--ui-bg) 82%,black));box-shadow:0 18px 34px color-mix(in srgb,black 40%,transparent)}:root:not([data-theme='light']) .login-page__role-avatar{background:color-mix(in srgb,var(--ui-primary) 22%,var(--ui-surface));color:color-mix(in srgb,var(--ui-primary) 88%,white)}:root:not([data-theme='light']) .login-page__input{border-color:color-mix(in srgb,var(--ui-border) 82%,transparent);background:color-mix(in srgb,var(--ui-bg) 56%,var(--ui-surface));box-shadow:inset 0 1px 0 color-mix(in srgb,white 6%,transparent)}:root:not([data-theme='light']) .login-page__seed{border-top-color:color-mix(in srgb,var(--ui-border) 62%,transparent)}:root:not([data-theme='light']) .login-page__seed-btn{border-color:color-mix(in srgb,var(--ui-border) 68%,transparent);background:color-mix(in srgb,var(--ui-bg) 36%,transparent)}:root:not([data-theme='light']) .login-page__seed-btn:hover:not(:disabled){background:color-mix(in srgb,var(--ui-primary) 10%,var(--ui-bg))}}
+
+.login-page__access-card :where(.tabs__list--pill){border-color:var(--login-tabs-list-border,initial);background:var(--login-tabs-list-bg,initial)}
+.login-page__access-card :where(.tabs__list--pill .tabs__tab){color:var(--login-tabs-tab-color,inherit)}
+.login-page__access-card :where(.tabs__list--pill .tabs__tab:hover:not(:disabled)){color:var(--login-tabs-tab-hover,inherit)}
+.login-page__access-card :where(.tabs__list--pill .tabs__tab--active){color:var(--login-tabs-tab-active,inherit)}
+.login-page__access-card :where(.tabs__list--pill .tabs__indicator){border-color:var(--login-tabs-indicator-border,transparent);background:var(--login-tabs-indicator-bg,transparent);box-shadow:var(--login-tabs-indicator-shadow,none)}
+
+@keyframes login-page-card-enter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes login-page-intro-enter{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes login-page-section-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes login-page-spin{to{transform:rotate(360deg)}}
+
+@media (max-width:960px){.login-page__hero{grid-template-columns:1fr}.login-page__access-card{order:1}.login-page__intro{order:2}}
+@media (max-width:720px){.login-page__toolbar{align-items:flex-start;flex-direction:column}.login-page__preferences{width:100%;justify-content:flex-end}}
+
 @media (prefers-reduced-motion:reduce){.login-page__access-card,.login-page__intro,.login-page__tab-panel,.login-page__panel,.login-page__role-section,.login-page__benefits li,.login-page__role-spinner{animation:none}.login-page__role,.login-page__role-action,.login-page__input,.login-page__password-toggle,.login-page__seed-btn{transition:none}}

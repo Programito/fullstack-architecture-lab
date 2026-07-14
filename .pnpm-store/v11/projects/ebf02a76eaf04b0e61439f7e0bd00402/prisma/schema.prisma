@@ -1,0 +1,928 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  firstName    String
+  lastName     String
+  passwordHash String
+  enabled      Boolean    @default(true)
+  accountType  AccountType @default(regular)
+  roles        UserRole[]
+  roleAssignments UserRoleAssignment[]
+  sessions     AuthSession[]
+  timeEntries  TimeEntry[] @relation("TimeEntryUser")
+  requestedTimeEntryChangeRequests TimeEntryChangeRequest[] @relation("RequestedTimeEntryChangeRequests")
+  reviewedTimeEntryChangeRequests TimeEntryChangeRequest[] @relation("ReviewedTimeEntryChangeRequests")
+  openedOrders  Order[]        @relation("OpenedOrders")
+  createdDiscounts OrderDiscount[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  enabled     Boolean          @default(true)
+  users       UserRole[]
+  userAssignments UserRoleAssignment[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  enabled     Boolean          @default(true)
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("permissions")
+}
+
+model AuthSession {
+  id                String    @id @default(uuid())
+  userId            String
+  refreshTokenHash  String
+  enabled           Boolean   @default(true)
+  expiresAt         DateTime
+  absoluteExpiresAt DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+  @@map("auth_sessions")
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model UserRoleAssignment {
+  id             String                      @id @default(uuid())
+  userId         String
+  roleId         String
+  scopeType      UserRoleAssignmentScopeType
+  organizationId String?
+  restaurantId   String?
+  createdAt      DateTime                    @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant?   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, roleId, scopeType, organizationId, restaurantId])
+  @@map("user_role_assignments")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  type        String
+  payload     Json
+  occurredAt  DateTime
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([processedAt, occurredAt])
+  @@map("outbox_events")
+}
+
+model AppLog {
+  id           String      @id @default(cuid())
+  timestamp    DateTime    @default(now())
+  source       LogSource
+  category     LogCategory
+  level        LogLevel
+  event        String
+  message      String
+  requestId    String?
+  organizationId String?
+  userId       String?
+  restaurantId String?
+  method       String?
+  path         String?
+  statusCode   Int?
+  durationMs   Int?
+  metadata     Json?
+
+  @@index([timestamp])
+  @@index([category, timestamp])
+  @@index([level, timestamp])
+  @@index([organizationId, timestamp])
+  @@index([userId, timestamp])
+  @@index([restaurantId, timestamp])
+  @@map("app_logs")
+}
+
+model Organization {
+  id            String                  @id @default(uuid())
+  name          String
+  legalName     String?
+  taxId         String?
+  accountType   OrganizationAccountType @default(regular)
+  restaurants   Restaurant[]
+  roleAssignments UserRoleAssignment[]
+  taxRates      TaxRate[]
+  products      Product[]
+  modifierGroups ModifierGroup[]
+  customers     Customer[]
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@unique([name])
+  @@map("organizations")
+}
+
+model Restaurant {
+  id              String                    @id @default(uuid())
+  organizationId  String
+  name            String
+  displayName     String?
+  address         String?
+  phone           String?
+  email           String?
+  timezone        String
+  currency        String
+  isActive        Boolean                   @default(true)
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  roleAssignments UserRoleAssignment[]
+  restaurantProducts RestaurantProduct[]
+  menus           RestaurantMenu[]
+  floors          RestaurantFloor[]
+  tables          RestaurantTable[]
+  orders          Order[]
+  reservations    Reservation[]
+  serviceWindows  RestaurantServiceWindow[]
+  timeEntries     TimeEntry[]
+  timeEntryChangeRequests TimeEntryChangeRequest[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("restaurants")
+}
+
+model RestaurantServiceWindow {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  startTime    String
+  endTime      String
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId])
+  @@map("restaurant_service_windows")
+}
+
+model TaxRate {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  ratePercent    Decimal      @db.Decimal(5, 2)
+  isActive       Boolean      @default(true)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  products       Product[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("tax_rates")
+}
+
+model Product {
+  id                      String           @id @default(uuid())
+  organizationId          String
+  name                    String
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name` (canonico,
+  // castellano). Aditivo, sin backfill. Resolucion de idioma siempre en
+  // cliente. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  nameI18n                Json?
+  description             String?
+  // Descripciones multiidioma (ES/CA/EN) opcionales junto a `description`
+  // (canonico, castellano). Mismo patron aditivo que `nameI18n`, sin
+  // backfill. Ver docs/superpowers/plans/2026-07-11-menu-multilingual-names.md.
+  descriptionI18n         Json?
+  productType             ProductType
+  defaultCourse           ProductCourse
+  defaultPreparationRoute PreparationRoute
+  allergens               Allergen[]       @default([])
+  taxRateId               String?
+  isActive                Boolean          @default(true)
+  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  taxRate                 TaxRate?         @relation(fields: [taxRateId], references: [id], onDelete: SetNull)
+  restaurantProducts      RestaurantProduct[]
+  comboDefinition         ComboDefinition?
+  platterDefinition       PlatterDefinition?
+  platterComponentRefs    PlatterComponent[]
+  orderLines              OrderLine[]
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, productType])
+  @@map("products")
+}
+
+model RestaurantProduct {
+  id                       String                          @id @default(uuid())
+  restaurantId             String
+  productId                String
+  displayName              String?
+  displayDescription       String?
+  imageUrl                 String?
+  priceCents               Int
+  currency                 String
+  isAvailable              Boolean                         @default(true)
+  isVisible                Boolean                         @default(true)
+  preparationRouteOverride PreparationRoute?
+  sortOrder                Int
+  restaurant               Restaurant                      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  product                  Product                         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  menuItems                MenuItem[]
+  modifierGroups           RestaurantProductModifierGroup[]
+  ownedModifierGroups      ModifierGroup[]
+  comboSlotOptions         ComboSlotOption[]
+  orderLines               OrderLine[]
+  createdAt                DateTime                        @default(now())
+  updatedAt                DateTime                        @updatedAt
+
+  @@unique([restaurantId, productId])
+  @@index([restaurantId, sortOrder])
+  @@map("restaurant_products")
+}
+
+model RestaurantMenu {
+  id          String        @id @default(uuid())
+  restaurantId String
+  name        String
+  isActive    Boolean       @default(false)
+  restaurant  Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  sections    MenuSection[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([restaurantId, name])
+  @@map("restaurant_menus")
+}
+
+model MenuSection {
+  id         String       @id @default(uuid())
+  menuId     String
+  name       String
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
+  nameI18n   Json?
+  sortOrder  Int
+  isVisible  Boolean      @default(true)
+  menu       RestaurantMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  items      MenuItem[]
+
+  @@unique([menuId, sortOrder])
+  @@unique([menuId, name])
+  @@map("menu_sections")
+}
+
+model MenuItem {
+  id                   String            @id @default(uuid())
+  menuSectionId        String
+  restaurantProductId  String
+  displayNameOverride  String?
+  priceOverrideCents   Int?
+  sortOrder            Int
+  isVisible            Boolean           @default(true)
+  menuSection          MenuSection       @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
+  restaurantProduct    RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+
+  @@unique([menuSectionId, restaurantProductId])
+  @@unique([menuSectionId, sortOrder])
+  @@map("menu_items")
+}
+
+model ModifierGroup {
+  id             String                 @id @default(uuid())
+  organizationId String
+  name           String
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
+  nameI18n       Json?
+  selectionType  ModifierSelectionType
+  minSelections  Int
+  maxSelections  Int
+  isRequired     Boolean                @default(false)
+  scope          ModifierGroupScope     @default(shared)
+  ownerRestaurantProductId String?
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerRestaurantProduct RestaurantProduct? @relation(fields: [ownerRestaurantProductId], references: [id], onDelete: Cascade)
+  options        ModifierOption[]
+  restaurantProducts RestaurantProductModifierGroup[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, scope])
+  @@map("modifier_groups")
+}
+
+model ModifierOption {
+  id             String        @id @default(uuid())
+  modifierGroupId String
+  name           String
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
+  nameI18n       Json?
+  priceDeltaCents Int          @default(0)
+  imageUrl       String?
+  isAvailable    Boolean       @default(true)
+  sortOrder      Int
+  modifierGroup  ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([modifierGroupId, name])
+  @@unique([modifierGroupId, sortOrder])
+  @@map("modifier_options")
+}
+
+model RestaurantProductModifierGroup {
+  id                String            @id @default(uuid())
+  restaurantProductId String
+  modifierGroupId   String
+  sortOrder         Int
+  restaurantProduct RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+  modifierGroup     ModifierGroup     @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantProductId, modifierGroupId])
+  @@unique([restaurantProductId, sortOrder])
+  @@map("restaurant_product_modifier_groups")
+}
+
+model ComboDefinition {
+  id             String          @id @default(uuid())
+  productId      String          @unique
+  pricingMode    ComboPricingMode
+  basePriceCents Int?
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  slots          ComboSlot[]
+
+  @@map("combo_definitions")
+}
+
+model ComboSlot {
+  id                String          @id @default(uuid())
+  comboDefinitionId String
+  name              String
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
+  nameI18n          Json?
+  minSelections     Int
+  maxSelections     Int
+  isRequired        Boolean         @default(false)
+  sortOrder         Int
+  comboDefinition   ComboDefinition @relation(fields: [comboDefinitionId], references: [id], onDelete: Cascade)
+  options           ComboSlotOption[]
+
+  @@unique([comboDefinitionId, sortOrder])
+  @@unique([comboDefinitionId, name])
+  @@map("combo_slots")
+}
+
+model ComboSlotOption {
+  id                  String            @id @default(uuid())
+  comboSlotId         String
+  restaurantProductId String
+  supplementPriceCents Int             @default(0)
+  isDefault           Boolean           @default(false)
+  isAvailable         Boolean           @default(true)
+  sortOrder           Int
+  comboSlot           ComboSlot         @relation(fields: [comboSlotId], references: [id], onDelete: Cascade)
+  restaurantProduct   RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+
+  @@unique([comboSlotId, restaurantProductId])
+  @@unique([comboSlotId, sortOrder])
+  @@map("combo_slot_options")
+}
+
+model PlatterDefinition {
+  id         String             @id @default(uuid())
+  productId  String             @unique
+  product    Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  components PlatterComponent[]
+
+  @@map("platter_definitions")
+}
+
+model PlatterComponent {
+  id                 String            @id @default(uuid())
+  platterDefinitionId String
+  componentProductId String?
+  name               String
+  // Nombres multiidioma (ES/CA/EN) opcionales junto a `name`. Ver Product.nameI18n.
+  nameI18n           Json?
+  quantity           Int?
+  isRemovable        Boolean           @default(false)
+  isReplaceable      Boolean           @default(false)
+  sortOrder          Int
+  platterDefinition  PlatterDefinition @relation(fields: [platterDefinitionId], references: [id], onDelete: Cascade)
+  componentProduct   Product?          @relation(fields: [componentProductId], references: [id], onDelete: SetNull)
+
+  @@unique([platterDefinitionId, sortOrder])
+  @@map("platter_components")
+}
+
+model Order {
+  id                  String            @id @default(uuid())
+  // Contador diario por restaurante (no unico a nivel de fila); ver open() en
+  // PrismaRestaurantOrderRepository. Solo para mostrar al cliente, no es clave de negocio.
+  dailyNumber         Int
+  restaurantId        String
+  tableId             String?
+  status              OrderStatus       @default(open)
+  openedByUserId      String
+  currency            String
+  guestCount          Int
+  subtotalCents       Int
+  taxCents            Int               @default(0)
+  discountTotalCents  Int               @default(0)
+  totalCents          Int
+  closedAt            DateTime?
+  restaurant          Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table               RestaurantTable?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  openedByUser        User              @relation("OpenedOrders", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  lines               OrderLine[]
+  discounts           OrderDiscount[]
+  payments            Payment[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([restaurantId, status, createdAt])
+  @@index([openedByUserId, createdAt])
+  // Partial unique index "orders_one_active_per_table" (tableId WHERE status IN
+  // ('open', 'pending_payment')) is added via raw SQL migration; Prisma's schema
+  // DSL cannot express filtered unique indexes.
+  @@map("orders")
+}
+
+model OrderLine {
+  id                           String             @id @default(uuid())
+  orderId                      String
+  restaurantProductId          String?
+  productId                    String?
+  productNameSnapshot          String
+  productTypeSnapshot          ProductType
+  courseSnapshot               ProductCourse
+  preparationRouteSnapshot     PreparationRoute
+  basePriceCentsSnapshot       Int
+  unitPriceCents               Int
+  quantity                     Int
+  subtotalCents                Int
+  taxRateNameSnapshot          String?
+  taxRatePercentSnapshot       Decimal?           @db.Decimal(5, 2)
+  taxCents                     Int                @default(0)
+  status                       OrderLineStatus    @default(pending)
+  kitchenNote                  String?
+  cancellationReason           String?
+  cancelledAt                  DateTime?
+  configurationSignature       String
+  order                        Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  restaurantProduct            RestaurantProduct? @relation(fields: [restaurantProductId], references: [id], onDelete: SetNull)
+  product                      Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+  modifiers                    OrderLineModifier[]
+  comboSlots                   OrderLineComboSlot[]
+  platterComponents            OrderLinePlatterComponent[]
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  @@index([orderId, status, createdAt])
+  @@index([orderId, configurationSignature])
+  @@map("order_lines")
+}
+
+model OrderLineModifier {
+  id                  String    @id @default(uuid())
+  orderLineId         String
+  groupNameSnapshot   String
+  optionNameSnapshot  String
+  priceDeltaCents     Int       @default(0)
+  quantity            Int       @default(1)
+  orderLine           OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+
+  @@index([orderLineId])
+  @@map("order_line_modifiers")
+}
+
+model OrderLineComboSlot {
+  id                          String    @id @default(uuid())
+  orderLineId                 String
+  slotNameSnapshot            String
+  selectedProductNameSnapshot String
+  supplementPriceCents        Int       @default(0)
+  quantity                    Int       @default(1)
+  orderLine                   OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+
+  @@index([orderLineId])
+  @@map("order_line_combo_slots")
+}
+
+model OrderLinePlatterComponent {
+  id                      String    @id @default(uuid())
+  orderLineId             String
+  componentNameSnapshot   String
+  removed                 Boolean   @default(false)
+  replacementNameSnapshot String?
+  priceDeltaCents         Int       @default(0)
+  orderLine               OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+
+  @@index([orderLineId])
+  @@map("order_line_platter_components")
+}
+
+model OrderDiscount {
+  id               String            @id @default(uuid())
+  orderId          String
+  type             OrderDiscountType
+  value            Decimal           @db.Decimal(10, 2)
+  reason           String?
+  createdByUserId  String
+  order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdByUser    User              @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime          @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_discounts")
+}
+
+model Payment {
+  id          String         @id @default(uuid())
+  orderId     String
+  method      PaymentMethod
+  amountCents Int
+  status      PaymentStatus
+  paidAt      DateTime?
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([orderId, status, createdAt])
+  @@map("payments")
+}
+
+model RestaurantFloor {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  name          String
+  rows          Int
+  columns       Int
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  elements      FloorElement[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([restaurantId, name])
+  @@map("restaurant_floors")
+}
+
+model RestaurantTable {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  tableNumber   Int
+  name          String?
+  capacity      Int
+  isActive      Boolean        @default(true)
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  floorElements FloorElement[]
+  reservationTables ReservationTable[]
+  orders        Order[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([restaurantId, tableNumber])
+  @@map("restaurant_tables")
+}
+
+model FloorElement {
+  id         String           @id @default(uuid())
+  floorId     String
+  type       FloorElementType
+  tableId     String?
+  label      String
+  x          Int
+  y          Int
+  width      Int
+  height     Int
+  shape      TableShape?
+  sortOrder  Int
+  floor      RestaurantFloor  @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  table      RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([floorId, label])
+  @@unique([floorId, sortOrder])
+  @@map("floor_elements")
+}
+
+model Customer {
+  id             String        @id @default(uuid())
+  organizationId String
+  name           String
+  phone          String?
+  email          String?
+  notes          String?
+  visitCount     Int           @default(0)
+  noShowCount    Int           @default(0)
+  cancelCount    Int           @default(0)
+  lateCount      Int           @default(0)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, name, phone])
+  @@unique([organizationId, email])
+  @@map("customers")
+}
+
+model Reservation {
+  id                    String              @id @default(uuid())
+  restaurantId          String
+  customerId            String?
+  customerNameSnapshot  String
+  customerPhoneSnapshot String?
+  partySize             Int
+  reservationAt         DateTime
+  durationMinutes       Int
+  status                ReservationStatus   @default(pending)
+  arrivedLate           Boolean?
+  notes                 String?
+  restaurant            Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer              Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  tables                ReservationTable[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([restaurantId, reservationAt, status])
+  @@map("reservations")
+}
+
+model ReservationTable {
+  reservationId  String
+  tableId        String
+  reservation    Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  table          RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@id([reservationId, tableId])
+  @@map("reservation_tables")
+}
+
+model TimeEntry {
+  id           String          @id @default(uuid())
+  userId       String
+  restaurantId String
+  clockInAt    DateTime
+  clockOutAt   DateTime?
+  clockInNote  String?
+  clockOutNote String?
+  status       TimeEntryStatus @default(open)
+  user         User            @relation("TimeEntryUser", fields: [userId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  changeRequests TimeEntryChangeRequest[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([restaurantId, userId, clockInAt])
+  @@index([restaurantId, status, createdAt])
+  @@map("time_entries")
+}
+
+model TimeEntryChangeRequest {
+  id                  String                       @id @default(uuid())
+  timeEntryId         String
+  restaurantId        String
+  requestedByUserId   String
+  requestedClockInAt  DateTime?
+  requestedClockOutAt DateTime?
+  requestedClockInNote String?
+  requestedClockOutNote String?
+  reason              String
+  status              TimeEntryChangeRequestStatus @default(pending)
+  reviewedByUserId    String?
+  reviewedAt          DateTime?
+  reviewNote          String?
+  timeEntry           TimeEntry                    @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  restaurant          Restaurant                   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  requestedByUser     User                         @relation("RequestedTimeEntryChangeRequests", fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  reviewedByUser      User?                        @relation("ReviewedTimeEntryChangeRequests", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+
+  @@index([restaurantId, status, createdAt])
+  @@index([timeEntryId, createdAt])
+  @@map("time_entry_change_requests")
+}
+
+enum AccountType {
+  regular
+  demo
+  system
+  test
+}
+
+enum UserRoleAssignmentScopeType {
+  organization
+  restaurant
+}
+
+enum OrganizationAccountType {
+  regular
+  demo
+  internal
+}
+
+enum ProductType {
+  simple
+  combo
+  platter
+}
+
+enum ProductCourse {
+  drinks
+  starter
+  main
+  dessert
+  other
+}
+
+enum PreparationRoute {
+  direct
+  bar
+  kitchen
+  cold_station
+  dessert_station
+}
+
+enum ModifierSelectionType {
+  single
+  multiple
+}
+
+// 'shared' = catalogo compartido, visible en la pestaña Modificadores y
+// enlazable a cualquier producto. 'product' = suplemento privado creado desde
+// el propio editor de producto: usa la misma infraestructura pero se oculta
+// del catalogo compartido y va ligado a un RestaurantProduct concreto.
+enum ModifierGroupScope {
+  shared
+  product
+}
+
+// Los 14 alergenos de declaracion obligatoria en la UE (Reglamento 1169/2011,
+// anexo II). Lista cerrada y comun a toda la UE: por eso vive como enum
+// nativo en Product (verdad a nivel organizacion), igual que defaultCourse o
+// defaultPreparationRoute, y no como catalogo+tabla-puente (ese patron, el de
+// ModifierGroup, esta pensado para catalogos abiertos que cada organizacion
+// define a su gusto).
+enum Allergen {
+  gluten
+  crustaceans
+  eggs
+  fish
+  peanuts
+  soybeans
+  milk
+  nuts
+  celery
+  mustard
+  sesame
+  sulphites
+  lupin
+  molluscs
+}
+
+enum ComboPricingMode {
+  fixed
+  base_plus_supplements
+}
+
+enum OrderStatus {
+  open
+  pending_payment
+  paid
+  cancelled
+}
+
+enum OrderLineStatus {
+  pending
+  preparing
+  ready
+  served
+  cancelled
+}
+
+enum OrderDiscountType {
+  percentage
+  fixed_amount
+}
+
+enum PaymentMethod {
+  cash
+  card
+  bizum
+  other
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
+enum FloorElementType {
+  table
+  bar
+  kitchen
+  bathroom
+  entrance
+  blocked
+  stool
+}
+
+enum TableShape {
+  round
+  square
+  rectangle
+  long
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  seated
+  cancelled
+  no_show
+}
+
+enum TimeEntryStatus {
+  open
+  closed
+  corrected
+}
+
+enum TimeEntryChangeRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum LogSource {
+  backend
+  frontend
+}
+
+enum LogCategory {
+  request
+  error
+  audit
+  client
+}
+
+enum LogLevel {
+  info
+  warn
+  error
+}
