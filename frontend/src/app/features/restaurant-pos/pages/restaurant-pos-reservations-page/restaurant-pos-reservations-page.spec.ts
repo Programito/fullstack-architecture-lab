@@ -146,6 +146,47 @@ describe('RestaurantPosReservationsPage', () => {
     expect(component.manualTables()).toEqual([]);
   });
 
+  it('shows suggested tables with fit labels and contextual capacity guidance', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    fireEvent.input(screen.getByLabelText('Comensales'), { target: { value: '4' } });
+
+    expect(screen.getByText('Mesas sugeridas')).toBeTruthy();
+    expect(screen.getByText('Encaje ideal')).toBeTruthy();
+
+    const component = fixture.componentInstance as unknown as {
+      toggleCreateTable(tableId: string, checked: boolean): void;
+      selectedTablesCapacity(): number | null;
+      capacityWarningDescription(): string;
+    };
+    component.toggleCreateTable('table-1', true);
+    fixture.detectChanges();
+
+    expect(component.selectedTablesCapacity()).toBe(2);
+    expect(screen.getByText(component.capacityWarningDescription())).toBeTruthy();
+  });
+
+  it('renders a service occupancy strip above the reservation lists', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    const occupancyStrip = screen.getByLabelText('Carga por servicio');
+    expect(within(occupancyStrip).getByText('Comidas')).toBeTruthy();
+    expect(within(occupancyStrip).getByText('Cenas')).toBeTruthy();
+  });
+
   it('derives a guided CTA state before submission', async () => {
     const i18n = provideI18nTesting();
     const apiMock = createApiMock();
