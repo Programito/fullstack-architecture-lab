@@ -493,7 +493,7 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         summaryUnassigned: 'Sin mesa',
         summaryOverdue: 'Pendientes',
         occupancyTitle: 'Carga por servicio',
-        occupancyHeading: 'Resumen de ocupación',
+        occupancyHeading: 'Vision operativa del dia',
         searchLabel: 'Buscar reserva',
         searchPlaceholder: 'Buscar por nombre de cliente o teléfono',
         statusFilter: 'Estado',
@@ -1383,10 +1383,21 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
           duration: 'Duration',
           notes: 'Notes',
           tables: 'Tables',
+          customerHelp: 'Find an existing guest or enter a new name.',
+          timeHelp: 'Start with a recommended time for this service.',
+          tableHelp: 'Select a suggested table or continue without assigning one.',
+          recommendedSlots: 'Recommended times',
+          otherSlots: 'More available times',
+          suggestedTables: 'Suggested tables',
           fit: {
             ideal: 'Ideal fit',
             tight: 'Tight fit',
             oversized: 'More space',
+          },
+          summaryTitle: 'Reservation summary',
+          cta: {
+            selectTime: 'Select a time',
+            optionalTable: 'Select a table or continue without assigning one',
           },
           submit: 'Save reservation',
           cancel: 'Close',
@@ -2090,10 +2101,21 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
           duration: 'Duracio',
           notes: 'Notes',
           tables: 'Taules',
+          customerHelp: 'Cerca un client existent o escriu un nom nou.',
+          timeHelp: 'Comenca per una hora recomanada per a aquest servei.',
+          tableHelp: 'Selecciona una taula suggerida o continua sense assignar-la.',
+          recommendedSlots: 'Hores recomanades',
+          otherSlots: 'Mes hores disponibles',
+          suggestedTables: 'Taules suggerides',
           fit: {
             ideal: 'Encaix ideal',
             tight: 'Encaix ajustat',
             oversized: 'Taula àmplia',
+          },
+          summaryTitle: 'Resum de la reserva',
+          cta: {
+            selectTime: 'Selecciona una hora',
+            optionalTable: 'Selecciona una taula o continua sense assignar',
           },
           submit: 'Guardar reserva',
           cancel: 'Tancar',
@@ -2313,7 +2335,12 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
 
 export const provideI18nTesting = (
   locale = DEFAULT_LOCALE,
-): { imports: Array<Type<unknown> | ModuleWithProviders<unknown>>; providers: Provider[]; storage: MemoryKeyValueStorage } => {
+): {
+  imports: Array<Type<unknown> | ModuleWithProviders<unknown>>;
+  providers: Provider[];
+  storage: MemoryKeyValueStorage;
+  translations: typeof TEST_TRANSLATIONS;
+} => {
   const storage = new MemoryKeyValueStorage();
   storage.setItem('locale', locale);
 
@@ -2332,6 +2359,7 @@ export const provideI18nTesting = (
     ],
     providers: [{ provide: KEY_VALUE_STORAGE, useValue: storage }],
     storage,
+    translations: TEST_TRANSLATIONS,
   };
 };
 

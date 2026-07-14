@@ -517,10 +517,20 @@
   gap: 0.75rem;
 }
 
-@media (max-width: 40rem) {
+@media (max-width: 767px) {
+  .reservations-page__drawer {
+    width: 100vw;
+    border-radius: 0;
+  }
+
   .reservations-page__drawer-footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .reservations-page__occupancy-grid,
+  .reservations-page__suggested-tables {
+    grid-template-columns: 1fr;
   }
 
   .reservations-page__drawer-actions {

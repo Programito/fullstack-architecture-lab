@@ -421,6 +421,34 @@ describe('RestaurantPosReservationsPage', () => {
     expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps the create flow available without selecting a table', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    fireEvent.input(screen.getByLabelText('Cliente'), { target: { value: 'Marina Soler' } });
+    fireEvent.click(screen.getByRole('button', { name: '13:30' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
+
+    expect(apiMock.createRestaurantReservation).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      expect.objectContaining({ tableIds: [] }),
+    );
+  });
+
+  it('provides translation entries for the drawer guidance labels', () => {
+    const i18n = provideI18nTesting();
+
+    expect(i18n.translations.es.restaurantPos.reservations.create.cta.selectTime).toBeTruthy();
+    expect(i18n.translations.es.restaurantPos.reservations.create.suggestedTables).toBeTruthy();
+    expect(i18n.translations.es.restaurantPos.reservations.occupancyHeading).toBe('Vision operativa del dia');
+  });
+
   it('shows validation when the customer name is empty', async () => {
     const i18n = provideI18nTesting();
 
