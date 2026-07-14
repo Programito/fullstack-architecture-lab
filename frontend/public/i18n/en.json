@@ -788,6 +788,8 @@
         },
         "summaryTitle": "Reservation summary",
         "cta": {
+          "selectCustomer": "Select a customer",
+          "selectPartySize": "Enter the party size",
           "selectTime": "Select a time",
           "optionalTable": "Select a table or continue unassigned"
         },

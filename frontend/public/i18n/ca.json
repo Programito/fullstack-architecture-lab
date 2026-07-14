@@ -788,6 +788,8 @@
         },
         "summaryTitle": "Resum de la reserva",
         "cta": {
+          "selectCustomer": "Selecciona un client",
+          "selectPartySize": "Indica els comensals",
           "selectTime": "Selecciona una hora",
           "optionalTable": "Selecciona una taula o continua sense assignar"
         },

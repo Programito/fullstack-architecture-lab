@@ -484,7 +484,7 @@
       [options]="serviceTabOptions()"
       [value]="serviceTab()"
       size="sm"
-      (valueChange)="serviceTab.set($any($event))"
+      (valueChange)="selectServiceWindow($any($event))"
     />
     <div class="reservations-page__slot-group">
       <p class="reservations-page__subheading">{{ 'restaurantPos.reservations.create.recommendedSlots' | transloco }}</p>
@@ -585,7 +585,17 @@
       }
       <div class="reservations-page__drawer-summary">
         <p class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.create.summaryTitle' | transloco }}</p>
-        <p class="theme-title text-sm font-semibold">{{ selectedDateLabel() }} · {{ creationForm().time }} · {{ creationForm().partySize }}</p>
+        <p class="theme-title text-sm font-semibold">
+          {{ selectedDateLabel() }} · {{ creationForm().time }} · {{ 'restaurantPos.reservations.partySize' | transloco: { count: creationForm().partySize } }}
+        </p>
+        @if (selectedTableLabels().length > 0) {
+          <p class="theme-title text-sm font-semibold">{{ selectedTableLabels().join(', ') }}</p>
+          <p class="theme-muted text-xs">
+            {{ 'restaurantPos.reservations.create.capacityHint' | transloco: { count: selectedTablesCapacity() } }}
+          </p>
+        } @else {
+          <p class="theme-muted text-xs">{{ 'restaurantPos.reservations.unassignedTable' | transloco }}</p>
+        }
       </div>
       <div class="reservations-page__drawer-actions">
         <button type="button" class="reservations-page__secondary-button" [disabled]="creationSubmitting()" (click)="closeCreateReservation()">{{ 'restaurantPos.reservations.create.cancel' | transloco }}</button>

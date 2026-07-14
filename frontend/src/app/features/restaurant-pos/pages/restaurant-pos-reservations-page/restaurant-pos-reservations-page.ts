@@ -136,6 +136,10 @@ export class RestaurantPosReservationsPage {
       .filter((t) => selectedIds.includes(t.id))
       .reduce((total, t) => total + t.capacity, 0);
   });
+  protected readonly selectedTableLabels = computed(() => {
+    const selectedIds = this.creationForm().tableIds;
+    return this.availableTables().filter((table) => selectedIds.includes(table.id)).map((table) => table.label);
+  });
   protected readonly suggestedTables = computed(() => {
     const partySize = this.creationForm().partySize;
     const selectedIds = this.creationForm().tableIds;
@@ -163,7 +167,9 @@ export class RestaurantPosReservationsPage {
     const hasSuggestedTable = form.tableIds.length > 0;
 
     let ctaLabelKey = 'restaurantPos.reservations.create.submit';
-    if (!hasTime) ctaLabelKey = 'restaurantPos.reservations.create.cta.selectTime';
+    if (!hasCustomer) ctaLabelKey = 'restaurantPos.reservations.create.cta.selectCustomer';
+    else if (!hasPartySize) ctaLabelKey = 'restaurantPos.reservations.create.cta.selectPartySize';
+    else if (!hasTime) ctaLabelKey = 'restaurantPos.reservations.create.cta.selectTime';
     else if (!hasSuggestedTable) ctaLabelKey = 'restaurantPos.reservations.create.cta.optionalTable';
 
     return { hasCustomer, hasPartySize, hasTime, hasSuggestedTable, ctaLabelKey };
@@ -210,7 +216,10 @@ export class RestaurantPosReservationsPage {
     { labelKey: 'restaurantPos.reservations.dinner', descKey: 'restaurantPos.reservations.dinnerDescription', reservations: this.dinnerReservations() },
   ]);
   protected readonly serviceLoadSummary = computed(() =>
-    this.serviceGroups().map((group) => {
+    [
+      { labelKey: 'restaurantPos.reservations.lunch', reservations: this.dayReservations().filter((reservation) => reservation.serviceBucket === 'lunch') },
+      { labelKey: 'restaurantPos.reservations.dinner', reservations: this.dayReservations().filter((reservation) => reservation.serviceBucket === 'dinner') },
+    ].map((group) => {
       const reservationCount = group.reservations.length;
       const unassignedCount = group.reservations.filter((reservation) => reservation.isUnassigned).length;
       const overdueCount = group.reservations.filter((reservation) => reservation.isOverdue).length;
@@ -419,6 +428,15 @@ export class RestaurantPosReservationsPage {
     value: ReservationCreateForm[K],
   ): void {
     this.creationForm.update((current) => ({ ...current, [field]: value }));
+  }
+
+  protected selectServiceWindow(serviceWindowId: string): void {
+    this.serviceTab.set(serviceWindowId);
+    const window = this.serviceWindows().find((candidate) => candidate.id === serviceWindowId);
+    const slots = window ? generateTimeSlots(window.startTime, window.endTime) : [];
+    if (!slots.includes(this.creationForm().time)) {
+      this.updateCreateField('time', slots[0] ?? '');
+    }
   }
 
   protected toggleCreateTable(tableId: string, checked: boolean): void {

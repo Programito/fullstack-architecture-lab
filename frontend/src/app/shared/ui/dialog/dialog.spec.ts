@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/angular';
+import { fireEvent, render, screen, waitFor } from '@testing-library/angular';
 import { Dialog } from './dialog';
 
 describe('Dialog', () => {
@@ -53,6 +53,64 @@ describe('Dialog', () => {
     const dialog = screen.getByRole('dialog', { name: 'Detalle' });
     expect(dialog.className).toContain('dialog__panel--lg');
     expect(dialog.className).toContain('dialog__panel--minimal');
+  });
+
+  it('applies the typed drawer variant to the dialog shell and panel', async () => {
+    await render('<app-dialog open title="Reserva" panelVariant="drawer">Contenido</app-dialog>', {
+      imports: [Dialog],
+    });
+
+    const dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    expect(dialog.getAttribute('data-variant')).toBe('drawer');
+    expect(dialog.className).toContain('dialog__panel--drawer');
+    expect(dialog.closest('.dialog')?.classList.contains('dialog--drawer')).toBe(true);
+  });
+
+  it('moves focus into the dialog on open and restores the opener on close', async () => {
+    await render(
+      `
+        <button type="button" (click)="open = true">Abrir dialogo</button>
+        <app-dialog [open]="open" title="Confirmar" (closed)="open = false">
+          <button type="button">Accion interior</button>
+        </app-dialog>
+      `,
+      {
+        imports: [Dialog],
+        componentProperties: { open: false },
+      },
+    );
+    const opener = screen.getByRole('button', { name: 'Abrir dialogo' });
+    opener.focus();
+
+    fireEvent.click(opener);
+
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar' });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar dialogo' }));
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+  });
+
+  it('traps forward and reverse tab navigation inside the open dialog', async () => {
+    await render(
+      `
+        <app-dialog open title="Confirmar">
+          <button type="button">Primera accion</button>
+          <button type="button">Ultima accion</button>
+        </app-dialog>
+      `,
+      { imports: [Dialog] },
+    );
+    const closeButton = screen.getByRole('button', { name: 'Cerrar dialogo' });
+    const lastButton = screen.getByRole('button', { name: 'Ultima accion' });
+
+    lastButton.focus();
+    fireEvent.keyDown(lastButton, { key: 'Tab' });
+    expect(document.activeElement).toBe(closeButton);
+
+    closeButton.focus();
+    fireEvent.keyDown(closeButton, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(lastButton);
   });
 
   it('renders optional actions', async () => {

@@ -9,12 +9,15 @@
     ></button>
 
     <section
+      #dialogPanel
       [class]="classes()"
       role="dialog"
+      tabindex="-1"
       aria-modal="true"
-      [attr.data-variant]="panelVariant() || null"
+      [attr.data-variant]="panelVariant()"
       [attr.aria-labelledby]="labelledBy()"
       [attr.aria-describedby]="describedBy()"
+      (keydown)="handleKeydown($event)"
     >
       <header class="dialog__header">
         <div class="dialog__heading">

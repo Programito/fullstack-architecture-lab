@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import type { ButtonFill, ButtonVariant } from '../button/button';
-import { Dialog, type DialogAppearance, type DialogSize } from './dialog';
+import { Dialog, type DialogAppearance, type DialogPanelVariant, type DialogSize } from './dialog';
 
 type DialogStoryArgs = {
   open: boolean;
@@ -8,6 +8,7 @@ type DialogStoryArgs = {
   description: string;
   size: DialogSize;
   appearance: DialogAppearance;
+  panelVariant: DialogPanelVariant;
   closeOnBackdrop: boolean;
   closeOnEscape: boolean;
   closeAriaLabel: string;
@@ -36,6 +37,10 @@ const meta: Meta<DialogStoryArgs> = {
       control: 'select',
       options: ['default', 'minimal'],
     },
+    panelVariant: {
+      control: 'inline-radio',
+      options: ['default', 'drawer'],
+    },
     cancelVariant: {
       control: 'select',
       options: ['primary', 'secondary', 'neutral', 'danger', 'violet'],
@@ -59,6 +64,7 @@ const meta: Meta<DialogStoryArgs> = {
     description: 'Revisa la informacion antes de guardar la configuracion.',
     size: 'md',
     appearance: 'default',
+    panelVariant: 'default',
     closeOnBackdrop: true,
     closeOnEscape: true,
     closeAriaLabel: 'Cerrar dialogo',
@@ -82,6 +88,7 @@ const meta: Meta<DialogStoryArgs> = {
         [description]="description"
         [size]="size"
         [appearance]="appearance"
+        [panelVariant]="panelVariant"
         [closeOnBackdrop]="closeOnBackdrop"
         [closeOnEscape]="closeOnEscape"
         [closeAriaLabel]="closeAriaLabel"
@@ -133,6 +140,15 @@ export const Minimal: Story = {
     appearance: 'minimal',
     title: 'Confirmacion ligera',
     description: 'Mismo dialogo con superficie y sombra mas discretas.',
+  },
+};
+
+export const Drawer: Story = {
+  args: {
+    panelVariant: 'drawer',
+    size: 'lg',
+    title: 'Crear reserva',
+    description: 'Completa los datos de la nueva reserva.',
   },
 };
 

@@ -841,6 +841,8 @@
         },
         "summaryTitle": "Resumen de la reserva",
         "cta": {
+          "selectCustomer": "Selecciona un cliente",
+          "selectPartySize": "Indica los comensales",
           "selectTime": "Selecciona una hora",
           "optionalTable": "Selecciona una mesa o continua sin asignar"
         },

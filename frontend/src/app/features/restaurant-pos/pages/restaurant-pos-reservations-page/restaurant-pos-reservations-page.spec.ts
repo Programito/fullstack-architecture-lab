@@ -187,6 +187,27 @@ describe('RestaurantPosReservationsPage', () => {
     expect(within(occupancyStrip).getByText('Cenas')).toBeTruthy();
   });
 
+  it('keeps service occupancy based on all day reservations when agenda filters change', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    const { fixture } = await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+    const component = fixture.componentInstance as unknown as {
+      statusFilter: { set(value: 'pending'): void };
+    };
+    const occupancyStrip = screen.getByLabelText('Carga por servicio');
+    const lunchCard = within(occupancyStrip).getByText('Comidas').closest('article');
+    const dinnerCard = within(occupancyStrip).getByText('Cenas').closest('article');
+
+    component.statusFilter.set('pending');
+    fixture.detectChanges();
+
+    expect(within(lunchCard as HTMLElement).getByText('1 reservas')).toBeTruthy();
+    expect(within(dinnerCard as HTMLElement).getByText('1 reservas')).toBeTruthy();
+  });
+
   it('localizes occupancy and table-fit labels', async () => {
     const i18n = provideI18nTesting('en');
     const apiMock = createApiMock();
@@ -203,7 +224,7 @@ describe('RestaurantPosReservationsPage', () => {
     expect(screen.getByText('Ideal fit')).toBeTruthy();
   });
 
-  it('derives a guided CTA state before submission', async () => {
+  it('derives the guided CTA from every required field while keeping tables optional', async () => {
     const i18n = provideI18nTesting();
     const apiMock = createApiMock();
     const { fixture } = await render(RestaurantPosReservationsPage, {
@@ -212,12 +233,26 @@ describe('RestaurantPosReservationsPage', () => {
     });
 
     const component = fixture.componentInstance as unknown as {
-      updateCreateField(field: 'time', value: string): void;
+      updateCreateField(field: 'customerNameSnapshot' | 'partySize' | 'time', value: string | number): void;
+      toggleCreateTable(tableId: string, checked: boolean): void;
       creationProgressState(): { ctaLabelKey: string };
     };
 
+    expect(component.creationProgressState().ctaLabelKey).toBe('restaurantPos.reservations.create.cta.selectCustomer');
+
+    component.updateCreateField('customerNameSnapshot', 'Marina Soler');
+    component.updateCreateField('partySize', 0);
+    expect(component.creationProgressState().ctaLabelKey).toBe('restaurantPos.reservations.create.cta.selectPartySize');
+
+    component.updateCreateField('partySize', 2);
     component.updateCreateField('time', '');
     expect(component.creationProgressState().ctaLabelKey).toBe('restaurantPos.reservations.create.cta.selectTime');
+
+    component.updateCreateField('time', '13:30');
+    expect(component.creationProgressState().ctaLabelKey).toBe('restaurantPos.reservations.create.cta.optionalTable');
+
+    component.toggleCreateTable('table-1', true);
+    expect(component.creationProgressState().ctaLabelKey).toBe('restaurantPos.reservations.create.submit');
   });
 
   it('renders the reservations day agenda grouped by service', async () => {
@@ -447,6 +482,10 @@ describe('RestaurantPosReservationsPage', () => {
     expect(i18n.translations.es.restaurantPos.reservations.create.cta.selectTime).toBeTruthy();
     expect(i18n.translations.es.restaurantPos.reservations.create.suggestedTables).toBeTruthy();
     expect(i18n.translations.es.restaurantPos.reservations.occupancyHeading).toBe('Vision operativa del dia');
+    expect(i18n.translations.en.restaurantPos.reservations.create.tableTitle).toBe('Table');
+    expect(i18n.translations.en.restaurantPos.reservations.create.manualTables).toBe('All tables');
+    expect(i18n.translations.ca.restaurantPos.reservations.create.tableTitle).toBe('Taula');
+    expect(i18n.translations.ca.restaurantPos.reservations.create.manualTables).toBe('Totes les taules');
   });
 
   it('shows validation when the customer name is empty', async () => {
@@ -458,7 +497,7 @@ describe('RestaurantPosReservationsPage', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selecciona un cliente' }));
 
     expect(screen.getByText('Introduce el nombre del cliente.')).toBeTruthy();
     expect(within(screen.getByRole('contentinfo')).getByText('Introduce el nombre del cliente.')).toBeTruthy();
@@ -735,7 +774,7 @@ describe('RestaurantPosReservationsPage', () => {
     expect(within(drawer).queryByText('Todas las mesas')).toBeNull();
   });
 
-  it('renders a sticky reservation summary and guided CTA label', async () => {
+  it('updates the sticky summary after changing time, party size, and table selection', async () => {
     const i18n = provideI18nTesting();
     const apiMock = createApiMock();
 
@@ -746,8 +785,42 @@ describe('RestaurantPosReservationsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
 
-    expect(screen.getByText('Resumen de la reserva')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Selecciona una mesa o continua sin asignar' })).toBeTruthy();
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+    const summary = drawer.querySelector('.reservations-page__drawer-summary') as HTMLElement;
+
+    expect(within(summary).getByText('Sin mesa asignada')).toBeTruthy();
+
+    fireEvent.click(within(drawer).getByRole('button', { name: '14:00' }));
+    fireEvent.input(within(drawer).getByLabelText('Comensales'), { target: { value: '4' } });
+    fireEvent.click(within(drawer).getByRole('checkbox', { name: /Mesa 2/ }));
+
+    expect(within(summary).getByText(/14:00/)).toBeTruthy();
+    expect(within(summary).getByText(/4 comensales/)).toBeTruthy();
+    expect(within(summary).getByText('Mesa 2')).toBeTruthy();
+    expect(within(summary).getByText('Capacidad total de las mesas seleccionadas: 4 plazas.')).toBeTruthy();
+    expect(within(drawer).getByRole('button', { name: 'Selecciona un cliente' })).toBeTruthy();
+  });
+
+  it('synchronizes the selected time when changing to another service window', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva reserva' }));
+    const drawer = screen.getByRole('dialog', { name: 'Crear reserva' });
+
+    fireEvent.click(within(drawer).getByRole('radio', { name: 'Cenas' }));
+
+    expect(within(drawer).getByRole('button', { name: '20:00' }).className).toContain(
+      'reservations-page__time-slot--selected',
+    );
+    expect(within(drawer).queryByText(/13:30/)).toBeNull();
+    const summary = drawer.querySelector('.reservations-page__drawer-summary') as HTMLElement;
+    expect(within(summary).getByText(/20:00/)).toBeTruthy();
   });
 
   it('shows time slot chips based on the service windows from the API', async () => {
