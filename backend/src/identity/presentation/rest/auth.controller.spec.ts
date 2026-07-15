@@ -74,4 +74,44 @@ describe('AuthController', () => {
       metadata: expect.objectContaining({ clientOrigin: 'apk-customer' }),
     }));
   });
+
+  it('sets refresh and developer cookies for cross-site web auth flows', async () => {
+    const login = vi.fn().mockResolvedValue(createAuthResult());
+    const auditRecord = vi.fn().mockResolvedValue(undefined);
+    const response = { cookie: vi.fn(), clearCookie: vi.fn() };
+    const controller = new AuthController(
+      { login } as never,
+      { accessTtlSeconds: 900, refreshTtlSeconds: 604800 } as never,
+      new ConfigService({ AUTH_COOKIE_SECURE: 'true' }),
+      { record: auditRecord } as never,
+      {} as never,
+    );
+
+    await controller.login(
+      { email: 'developer@mesaflow.demo', password: 'supersecret' },
+      { headers: {}, originalUrl: '/api/v1/auth/login', method: 'POST' },
+      response,
+    );
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'refresh-token',
+      expect.objectContaining({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        path: '/api/v1/auth',
+      }),
+    );
+    expect(response.cookie).toHaveBeenCalledWith(
+      'developer_access_token',
+      'access-token',
+      expect.objectContaining({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        path: '/developer',
+      }),
+    );
+  });
 });

@@ -217,7 +217,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: this.config.get<string>('AUTH_COOKIE_SECURE') === 'true',
-      sameSite: 'strict' as const,
+      sameSite: 'none' as const,
       path: '/api/v1/auth',
     };
   }
@@ -226,7 +226,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: this.config.get<string>('AUTH_COOKIE_SECURE') === 'true',
-      sameSite: 'strict' as const,
+      sameSite: 'none' as const,
       path: '/developer',
     };
   }
