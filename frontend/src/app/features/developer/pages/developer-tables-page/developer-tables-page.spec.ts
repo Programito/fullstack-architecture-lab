@@ -66,6 +66,18 @@ describe('DeveloperTablesPage', () => {
     expect(screen.getByText(/dominios activos/i)).toBeTruthy();
   });
 
+  it('includes the modifier option override table from the prisma snapshot', async () => {
+    await renderPage();
+
+    expect(
+      screen
+        .getAllByRole('row')
+        .some((row) =>
+          row.textContent?.replace(/\s+/g, ' ').includes('restaurant_product_modifier_option_overrides'),
+        ),
+    ).toBe(true);
+  });
+
   it('updates the detail panel when another table is selected', async () => {
     await renderPage();
 

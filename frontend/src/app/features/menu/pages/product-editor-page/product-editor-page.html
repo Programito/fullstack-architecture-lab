@@ -96,37 +96,73 @@
             <app-icon name="tune" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
             {{ 'menu.product.form.settingsTitle' | transloco }}
           </h2>
-          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <app-input
-              [label]="'menu.product.form.price' | transloco"
-              type="number"
-              [value]="priceEuros()"
-              [min]="0"
-              [step]="0.01"
-              (valueChange)="priceEuros.set($event)"
-            />
-            <app-select
-              [label]="'menu.product.form.course' | transloco"
-              [options]="courseOptions()"
-              [value]="course()"
-              (valueChange)="course.set($event)"
-            />
-            <app-select
-              [label]="'menu.product.form.category' | transloco"
-              [options]="categoryOptions()"
-              [value]="categoryId()"
-              (valueChange)="categoryId.set($event)"
-            />
-            <app-select
-              [label]="'menu.product.form.route' | transloco"
-              [options]="routeOptions()"
-              [value]="preparationRoute()"
-              (valueChange)="preparationRoute.set($event)"
-            />
+          <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+            <section
+              aria-labelledby="product-classification-title"
+              class="theme-soft-panel grid content-start gap-4 rounded-lg border p-4 shadow-sm"
+            >
+              <div class="grid gap-1">
+                <h3 id="product-classification-title" class="theme-title text-sm font-semibold">
+                  {{ 'menu.product.form.classificationTitle' | transloco }}
+                </h3>
+                <p class="theme-muted text-xs">
+                  {{ 'menu.product.form.classificationHint' | transloco }}
+                </p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <app-select
+                  [label]="'menu.product.form.category' | transloco"
+                  [options]="categoryOptions()"
+                  [value]="categoryId()"
+                  (valueChange)="categoryId.set($event)"
+                />
+                <app-select
+                  [label]="'menu.product.form.course' | transloco"
+                  [options]="courseOptions()"
+                  [value]="course()"
+                  (valueChange)="course.set($event)"
+                />
+                <app-select
+                  [label]="'menu.product.form.route' | transloco"
+                  [options]="routeOptions()"
+                  [value]="preparationRoute()"
+                  (valueChange)="preparationRoute.set($event)"
+                />
+              </div>
+              @if (!categoryId()) {
+                <p class="theme-muted text-xs">{{ 'menu.product.form.categoryRequiredHint' | transloco }}</p>
+              }
+            </section>
+            <section
+              aria-labelledby="product-sales-title"
+              class="theme-soft-panel grid content-start gap-4 rounded-lg border p-4 shadow-sm"
+            >
+              <div class="grid gap-1">
+                <h3 id="product-sales-title" class="theme-title text-sm font-semibold">
+                  {{ 'menu.product.form.salesTitle' | transloco }}
+                </h3>
+                <p class="theme-muted text-xs">
+                  {{ 'menu.product.form.salesHint' | transloco }}
+                </p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <app-input
+                  [label]="'menu.product.form.price' | transloco"
+                  type="number"
+                  [value]="priceEuros()"
+                  [min]="0"
+                  [step]="0.01"
+                  (valueChange)="priceEuros.set($event)"
+                />
+                <app-select
+                  [label]="'menu.product.form.taxRate' | transloco"
+                  [options]="taxRateOptions()"
+                  [value]="taxRateId()"
+                  (valueChange)="taxRateId.set($event)"
+                />
+              </div>
+            </section>
           </div>
-          @if (!categoryId()) {
-            <p class="theme-muted text-xs">{{ 'menu.product.form.categoryRequiredHint' | transloco }}</p>
-          }
         </section>
 
 
@@ -204,6 +240,78 @@
               </div>
             }
           </details>
+
+          @if (isEdit()) {
+            <details open class="theme-panel group grid gap-3 rounded-lg border p-4 shadow-sm">
+              <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
+                <span class="flex items-center gap-2">
+                  <app-icon name="price_change" size="sm" class="shrink-0 text-cyan-500 dark:text-cyan-400" [decorative]="true" />
+                  {{ 'menu.product.form.modifierOverrides.title' | transloco }}
+                </span>
+                <app-icon
+                  name="expand_more"
+                  size="sm"
+                  [decorative]="true"
+                  class="theme-muted transition-transform duration-200 group-open:rotate-180 group-open:text-cyan-500 dark:group-open:text-cyan-400"
+                />
+              </summary>
+              <p class="theme-muted text-xs">{{ 'menu.product.form.modifierOverrides.hint' | transloco }}</p>
+              @if (loadingModifierOptionOverrides()) {
+                <div class="flex items-center justify-center py-6">
+                  <app-spinner size="md" variant="primary" />
+                </div>
+              } @else if (modifierOptionOverridesByGroup().length) {
+                <div class="grid max-h-96 gap-4 overflow-y-auto pr-1">
+                  @for (group of modifierOptionOverridesByGroup(); track group.groupId) {
+                    <div class="grid gap-2">
+                      <p class="theme-title text-xs font-semibold uppercase">{{ group.groupName }}</p>
+                      @for (option of group.options; track option.modifierOptionId) {
+                        <div class="theme-field flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                          <div class="grid min-w-0 gap-0.5">
+                            <span class="theme-title truncate font-medium">{{ option.modifierOptionName }}</span>
+                            <span class="theme-muted text-xs">
+                              {{ 'menu.product.form.modifierOverrides.defaultPrice' | transloco }}: {{ option.defaultPriceDeltaCents / 100 }} EUR
+                              @if (option.isOverridden) {
+                                · {{ 'menu.product.form.modifierOverrides.overridden' | transloco }}
+                              }
+                            </span>
+                          </div>
+                          <div class="flex shrink-0 items-center gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              class="theme-field w-24 rounded-md border px-2 py-1 text-sm"
+                              [attr.aria-label]="option.modifierOptionName + ' — ' + ('menu.product.form.modifierOverrides.priceLabel' | transloco)"
+                              [value]="modifierOptionOverrideDraft(option)"
+                              [disabled]="savingModifierOptionOverrideId() === option.modifierOptionId"
+                              (input)="updateModifierOptionOverrideDraft(option.modifierOptionId, $any($event.target).value)"
+                              (blur)="saveModifierOptionOverride(option.modifierOptionId)"
+                            />
+                            @if (option.isOverridden) {
+                              <button
+                                type="button"
+                                class="theme-muted flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:text-cyan-500"
+                                [attr.aria-label]="'menu.product.form.modifierOverrides.reset' | transloco"
+                                [disabled]="savingModifierOptionOverrideId() === option.modifierOptionId"
+                                (click)="clearModifierOptionOverride(option.modifierOptionId)"
+                              >
+                                <app-icon name="restart_alt" size="sm" [decorative]="true" />
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="theme-muted rounded-md border border-dashed px-3 py-3 text-sm">
+                  {{ 'menu.product.form.modifierOverrides.empty' | transloco }}
+                </p>
+              }
+            </details>
+          }
 
           <details open class="theme-panel group grid gap-5 rounded-lg border p-5 shadow-sm">
             <summary class="theme-title flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">

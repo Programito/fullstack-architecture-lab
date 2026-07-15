@@ -695,6 +695,8 @@
       "chargeActionLabel": "Cobrar la taula seleccionada",
       "chargeWithTotal": "Cobrar {{total}}",
       "chargeWithTotalActionLabel": "Cobrar la taula seleccionada per {{total}}",
+      "taxableBase": "Base imposable",
+      "includedVat": "IVA inclòs",
       "setCashPaymentActionLabel": "Seleccionar pagament en efectiu per a la taula seleccionada",
       "setCardPaymentActionLabel": "Seleccionar pagament amb targeta per a la taula seleccionada",
       "cleaningActionLabel": "Marcar la taula seleccionada per a neteja",
@@ -715,7 +717,6 @@
       "summaryUnassigned": "Sense taula",
       "summaryOverdue": "Pendents",
       "occupancyTitle": "Càrrega per servei",
-      "occupancyHeading": "Resum d'ocupació",
       "occupancyHeading": "Resum d'ocupació",
       "occupancyReservationsOne": "{{count}} reserva",
       "occupancyReservationsOther": "{{count}} reserves",
@@ -1472,7 +1473,6 @@
       "deleteProductDescription": "Eliminar «{{name}}»? Aquesta acció no es pot desfer.",
       "confirmDeleteProduct": "Eliminar",
       "cancelDeleteProduct": "Cancel·lar",
-      "managementTitle": "Gestió",
       "preparationLabel": "Preparació",
       "noSection": "Sense secció del menú",
       "addToSection": "Assignar a secció",
@@ -1512,7 +1512,8 @@
       "sectionUpdateFailed": "No s'ha pogut actualitzar la secció.",
       "editModifierGroupAriaLabel": "Editar grup de modificadors",
       "visibleInApp": "Visible a l'app",
-      "hiddenFromApp": "Ocult de l'app"
+      "hiddenFromApp": "Ocult de l'app",
+      "noTaxRate": "Sense IVA assignat"
     },
     "customizer": {
       "title": "Personalitzar producte",
@@ -1587,6 +1588,10 @@
         "basicInfoTitle": "Informació bàsica",
         "contentTitle": "Contingut del producte",
         "settingsTitle": "Configuració del producte",
+        "classificationTitle": "Classificació",
+        "classificationHint": "Defineix on i com es gestiona aquest producte.",
+        "salesTitle": "Venda",
+        "salesHint": "Configura el preu i la fiscalitat.",
         "previewTitle": "Vista prèvia",
         "previewNoSectionHint": "Aquest producte encara no és a cap secció de la carta.",
         "previewNewProductHint": "Afegeix el producte a una secció des de la carta per veure'l aquí en context.",
@@ -1632,7 +1637,20 @@
           "noComponents": "Aquest plat encara no té components."
         },
         "category": "Categoria",
-        "categoryRequiredHint": "Tria una categoria perquè el producte aparegui a la carta."
+        "categoryRequiredHint": "Tria una categoria perquè el producte aparegui a la carta.",
+        "taxRateNone": "Sense IVA assignat",
+        "taxRate": "Tipus d'IVA",
+        "modifierOverrides": {
+          "title": "Preus de modificador per producte",
+          "hint": "Ajusta el preu d'un modificador només per a aquest producte. Si no el canvies, s'utilitza el preu per defecte del grup.",
+          "empty": "Aquest producte no té grups de modificadors assignats.",
+          "defaultPrice": "Preu per defecte",
+          "overridden": "preu propi",
+          "priceLabel": "Preu (EUR)",
+          "reset": "Restableix el preu per defecte",
+          "invalidPrice": "Introdueix un preu vàlid",
+          "saveFailed": "No s'ha pogut desar el preu"
+        }
       },
       "success": {
         "created": "Article creat correctament.",
@@ -1681,6 +1699,22 @@
         "deleteFailed": "No s'ha pogut eliminar el grup.",
         "inUse": "El grup està assignat a productes i no es pot eliminar."
       }
+    },
+    "taxRates": {
+      "pageTitle": "Tipus d'IVA",
+      "pageHint": "Gestiona els tipus d'IVA de la teva organització i el percentatge que aplica cadascun.",
+      "name": "Nom",
+      "ratePercent": "Percentatge",
+      "active": "Actiu",
+      "add": "Afegeix tipus d'IVA",
+      "edit": "Edita tipus d'IVA",
+      "deleteConfirm": "Segur que vols eliminar aquest tipus d'IVA? Aquesta acció no es pot desfer.",
+      "empty": "Encara no hi ha tipus d'IVA.",
+      "back": "Torna a la carta",
+      "save": "Desa",
+      "cancel": "Cancel·la",
+      "deleteTitle": "Elimina tipus d'IVA",
+      "deleteAriaLabel": "Elimina tipus d'IVA"
     }
   }
 }

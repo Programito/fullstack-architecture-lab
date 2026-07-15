@@ -695,6 +695,8 @@
       "chargeActionLabel": "Charge the selected table",
       "chargeWithTotal": "Charge {{total}}",
       "chargeWithTotalActionLabel": "Charge the selected table for {{total}}",
+      "taxableBase": "Taxable base",
+      "includedVat": "VAT included",
       "setCashPaymentActionLabel": "Select cash payment for the selected table",
       "setCardPaymentActionLabel": "Select card payment for the selected table",
       "cleaningActionLabel": "Mark the selected table for cleaning",
@@ -1471,7 +1473,6 @@
       "deleteProductDescription": "Delete «{{name}}»? This action cannot be undone.",
       "confirmDeleteProduct": "Delete",
       "cancelDeleteProduct": "Cancel",
-      "managementTitle": "Management",
       "preparationLabel": "Preparation",
       "noSection": "No menu section",
       "addToSection": "Assign to section",
@@ -1511,7 +1512,8 @@
       "sectionUpdateFailed": "Could not update the section.",
       "editModifierGroupAriaLabel": "Edit modifier group",
       "visibleInApp": "Visible in the app",
-      "hiddenFromApp": "Hidden from the app"
+      "hiddenFromApp": "Hidden from the app",
+      "noTaxRate": "No tax rate assigned"
     },
     "customizer": {
       "title": "Customize product",
@@ -1586,6 +1588,10 @@
         "basicInfoTitle": "Basic information",
         "contentTitle": "Product content",
         "settingsTitle": "Product settings",
+        "classificationTitle": "Classification",
+        "classificationHint": "Define where and how this product is handled.",
+        "salesTitle": "Sales",
+        "salesHint": "Set the price and tax setup.",
         "previewTitle": "Preview",
         "previewNoSectionHint": "This product isn't in any menu section yet.",
         "previewNewProductHint": "Add the product to a section from the menu to see it here in context.",
@@ -1631,7 +1637,20 @@
           "noComponents": "This platter has no components yet."
         },
         "category": "Category",
-        "categoryRequiredHint": "Pick a category so the product shows up in the menu."
+        "categoryRequiredHint": "Pick a category so the product shows up in the menu.",
+        "taxRateNone": "No tax rate assigned",
+        "taxRate": "Tax rate",
+        "modifierOverrides": {
+          "title": "Modifier prices for this product",
+          "hint": "Adjust a modifier price just for this product. If you leave it as is, the group default price is used.",
+          "empty": "This product has no modifier groups assigned.",
+          "defaultPrice": "Default price",
+          "overridden": "custom price",
+          "priceLabel": "Price (EUR)",
+          "reset": "Reset to default price",
+          "invalidPrice": "Enter a valid price",
+          "saveFailed": "Could not save the price"
+        }
       },
       "success": {
         "created": "Item created successfully.",
@@ -1680,6 +1699,22 @@
         "deleteFailed": "The group could not be deleted.",
         "inUse": "The group is assigned to products and cannot be deleted."
       }
+    },
+    "taxRates": {
+      "pageTitle": "Tax rates",
+      "pageHint": "Manage your organization's tax rates and the percentage each one applies.",
+      "name": "Name",
+      "ratePercent": "Percentage",
+      "active": "Active",
+      "add": "Add tax rate",
+      "edit": "Edit tax rate",
+      "deleteConfirm": "Are you sure you want to delete this tax rate? This action cannot be undone.",
+      "empty": "No tax rates yet.",
+      "back": "Back to menu",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteTitle": "Delete tax rate",
+      "deleteAriaLabel": "Delete tax rate"
     }
   }
 }

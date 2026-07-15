@@ -748,6 +748,8 @@
       "chargeActionLabel": "Cobrar la mesa seleccionada",
       "chargeWithTotal": "Cobrar {{total}}",
       "chargeWithTotalActionLabel": "Cobrar la mesa seleccionada por {{total}}",
+      "taxableBase": "Base imponible",
+      "includedVat": "IVA incluido",
       "setCashPaymentActionLabel": "Seleccionar pago en efectivo para la mesa seleccionada",
       "setCardPaymentActionLabel": "Seleccionar pago con tarjeta para la mesa seleccionada",
       "cleaningActionLabel": "Marcar la mesa seleccionada para limpieza",
@@ -768,7 +770,6 @@
       "summaryUnassigned": "Sin mesa",
       "summaryOverdue": "Pendientes",
       "occupancyTitle": "Carga por servicio",
-      "occupancyHeading": "Resumen de ocupación",
       "occupancyHeading": "Resumen de ocupación",
       "occupancyReservationsOne": "{{count}} reserva",
       "occupancyReservationsOther": "{{count}} reservas",
@@ -1536,7 +1537,6 @@
       "deleteProductDescription": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
       "confirmDeleteProduct": "Eliminar",
       "cancelDeleteProduct": "Cancelar",
-      "managementTitle": "Gestión",
       "preparationLabel": "Preparación",
       "noSection": "Sin sección del menú",
       "addToSection": "Asignar a sección",
@@ -1576,7 +1576,8 @@
       "sectionUpdateFailed": "No se pudo actualizar la sección.",
       "editModifierGroupAriaLabel": "Editar grupo de modificadores",
       "visibleInApp": "Visible en la app",
-      "hiddenFromApp": "Oculto de la app"
+      "hiddenFromApp": "Oculto de la app",
+      "noTaxRate": "Sin IVA asignado"
     },
     "customizer": {
       "title": "Personalizar producto",
@@ -1651,6 +1652,10 @@
         "basicInfoTitle": "Información básica",
         "contentTitle": "Contenido del producto",
         "settingsTitle": "Configuración del producto",
+        "classificationTitle": "Clasificación",
+        "classificationHint": "Define dónde y cómo se gestiona este producto.",
+        "salesTitle": "Venta",
+        "salesHint": "Configura el precio y la fiscalidad.",
         "previewTitle": "Vista previa",
         "previewNoSectionHint": "Este producto todavía no está en ninguna sección de la carta.",
         "previewNewProductHint": "Añade el producto a una sección desde la carta para verlo aquí en contexto.",
@@ -1696,7 +1701,20 @@
           "noComponents": "Este plato todavía no tiene componentes."
         },
         "category": "Categoría",
-        "categoryRequiredHint": "Elige una categoría para que el producto aparezca en la carta."
+        "categoryRequiredHint": "Elige una categoría para que el producto aparezca en la carta.",
+        "taxRateNone": "Sin IVA asignado",
+        "taxRate": "Tipo de IVA",
+        "modifierOverrides": {
+          "title": "Precios de modificador por producto",
+          "hint": "Ajusta el precio de un modificador solo para este producto. Si no lo cambias, se usa el precio por defecto del grupo.",
+          "empty": "Este producto no tiene grupos de modificadores asignados.",
+          "defaultPrice": "Precio por defecto",
+          "overridden": "precio propio",
+          "priceLabel": "Precio (EUR)",
+          "reset": "Restablecer precio por defecto",
+          "invalidPrice": "Introduce un precio válido",
+          "saveFailed": "No se pudo guardar el precio"
+        }
       },
       "success": {
         "created": "Artículo creado correctamente.",
@@ -1745,6 +1763,22 @@
         "deleteFailed": "No se pudo eliminar el grupo.",
         "inUse": "El grupo está asignado a productos y no puede eliminarse."
       }
+    },
+    "taxRates": {
+      "pageTitle": "Tipos de IVA",
+      "pageHint": "Gestiona los tipos de IVA de tu organización y el porcentaje que aplica cada uno.",
+      "name": "Nombre",
+      "ratePercent": "Porcentaje",
+      "active": "Activo",
+      "add": "Añadir tipo de IVA",
+      "edit": "Editar tipo de IVA",
+      "deleteConfirm": "¿Seguro que quieres eliminar este tipo de IVA? Esta acción no se puede deshacer.",
+      "empty": "Todavía no hay tipos de IVA.",
+      "back": "Volver a la carta",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "deleteTitle": "Eliminar tipo de IVA",
+      "deleteAriaLabel": "Eliminar tipo de IVA"
     }
   }
 }

@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { render, screen, fireEvent, within } from '@testing-library/angular';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
@@ -40,6 +40,9 @@ const MOCK_PRODUCT: RestaurantProductDetailDto = {
   isVisible: true,
   modifierGroupIds: ['burger-extras', 'burger-point'],
   allergens: ['gluten', 'milk'],
+  taxRateId: 'tax-1',
+  taxRateName: 'IVA General',
+  taxRatePercent: 21,
 };
 
 const MOCK_MODIFIER_GROUPS: ModifierGroup[] = [
@@ -90,6 +93,10 @@ describe('ProductEditorPage', () => {
   const getMenu = vi.fn();
   const listModifierGroups = vi.fn();
   const listProducts = vi.fn();
+  const listTaxRates = vi.fn();
+  const listModifierOptionOverrides = vi.fn();
+  const setModifierOptionPriceOverride = vi.fn();
+  const clearModifierOptionPriceOverride = vi.fn();
   const createProduct = vi.fn();
   const updateProduct = vi.fn();
   const createModifierGroup = vi.fn();
@@ -118,6 +125,10 @@ describe('ProductEditorPage', () => {
             getMenu,
             listModifierGroups,
             listProducts,
+            listTaxRates,
+            listModifierOptionOverrides,
+            setModifierOptionPriceOverride,
+            clearModifierOptionPriceOverride,
             createProduct,
             updateProduct,
             createModifierGroup,
@@ -140,6 +151,10 @@ describe('ProductEditorPage', () => {
     getMenu.mockReset().mockReturnValue(of(MOCK_MENU_DATA));
     listModifierGroups.mockReset().mockReturnValue(of(MOCK_MODIFIER_GROUPS));
     listProducts.mockReset().mockReturnValue(of([]));
+    listTaxRates.mockReset().mockReturnValue(of([{ id: 'tax-1', name: 'IVA General', ratePercent: 21, isActive: true }]));
+    listModifierOptionOverrides.mockReset().mockReturnValue(of([]));
+    setModifierOptionPriceOverride.mockReset();
+    clearModifierOptionPriceOverride.mockReset();
     createProduct.mockReset();
     updateProduct.mockReset();
     createModifierGroup.mockReset();
@@ -171,8 +186,254 @@ describe('ProductEditorPage', () => {
 
     const nameInput = (await screen.findByRole('textbox', { name: /^Nombre principal$/i })) as HTMLInputElement;
     expect(nameInput.value).toBe('Hamburguesa craft');
-    const priceInput = screen.getByRole('spinbutton', { name: /Precio/i }) as HTMLInputElement;
+    const priceInput = screen.getByRole('spinbutton', { name: /^Precio \(€\)$/i }) as HTMLInputElement;
     expect(priceInput.value).toBe('14.90');
+  });
+
+  it('pre-fills the assigned tax rate in edit mode', async () => {
+    getProduct.mockReturnValue(of(MOCK_PRODUCT));
+    await renderPage('rp-1');
+
+    const taxRateSelect = (await screen.findByRole('combobox', { name: /Tipo de IVA/i })) as HTMLSelectElement;
+    expect(taxRateSelect.value).toBe('tax-1');
+  });
+
+  it('groups product settings into classification and sales cards', async () => {
+    await renderPage(null);
+
+    const classificationCard = await screen.findByRole('region', { name: /Clasificación/i });
+    expect(within(classificationCard).getByRole('combobox', { name: /Categoría/i })).toBeTruthy();
+    expect(within(classificationCard).getByRole('combobox', { name: /Servicio/i })).toBeTruthy();
+    expect(within(classificationCard).getByRole('combobox', { name: /Ruta de preparación/i })).toBeTruthy();
+    expect(within(classificationCard).queryByRole('spinbutton', { name: /Precio/i })).toBeNull();
+
+    const salesCard = screen.getByRole('region', { name: /Venta/i });
+    expect(within(salesCard).getByRole('spinbutton', { name: /Precio/i })).toBeTruthy();
+    expect(within(salesCard).getByRole('combobox', { name: /Tipo de IVA/i })).toBeTruthy();
+    expect(within(salesCard).queryByRole('combobox', { name: /Categoría/i })).toBeNull();
+  });
+
+  it('shows modifier price rows for a newly selected modifier group before saving the product', async () => {
+    getProduct.mockReturnValue(of({ ...MOCK_PRODUCT, modifierGroupIds: [] }));
+    listModifierOptionOverrides.mockReturnValue(of([]));
+    listModifierGroups.mockReturnValue(
+      of([
+        ...MOCK_MODIFIER_GROUPS,
+        {
+          id: 'drink-size',
+          name: 'Tamaño de bebida',
+          type: 'single',
+          required: true,
+          minSelections: 1,
+          maxSelections: 1,
+          options: [{ id: 'opt-xl', name: 'Grande', priceDelta: 1.5 }],
+        },
+      ]),
+    );
+    await renderPage('rp-1');
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Tamaño de bebida/i }));
+
+    expect(screen.getAllByText('Tamaño de bebida').length).toBeGreaterThan(0);
+    const priceInput = screen.getByRole('spinbutton', { name: /Grande.*Precio \(EUR\)/i }) as HTMLInputElement;
+    expect(priceInput.value).toBe('1.50');
+    expect(screen.queryByText('Este producto no tiene grupos de modificadores asignados.')).toBeNull();
+  });
+
+  it('defaults the tax rate selector to "sin IVA asignado" when the product has none', async () => {
+    getProduct.mockReturnValue(of({ ...MOCK_PRODUCT, taxRateId: null, taxRateName: null, taxRatePercent: null }));
+    await renderPage('rp-1');
+
+    const taxRateSelect = (await screen.findByRole('combobox', { name: /Tipo de IVA/i })) as HTMLSelectElement;
+    expect(taxRateSelect.value).toBe('');
+  });
+
+  it('shows the modifier option price overrides for the product grouped by modifier group', async () => {
+    getProduct.mockReturnValue(of({ ...MOCK_PRODUCT, modifierGroupIds: ['group-size'] }));
+    listModifierGroups.mockReturnValue(
+      of([
+        ...MOCK_MODIFIER_GROUPS,
+        {
+          id: 'group-size',
+          name: 'Tamaño',
+          type: 'single',
+          required: false,
+          minSelections: 0,
+          maxSelections: 1,
+          options: [{ id: 'opt-xl', name: 'Grande', priceDelta: 1 }],
+        },
+      ]),
+    );
+    listModifierOptionOverrides.mockReturnValue(
+      of([
+        {
+          modifierOptionId: 'opt-xl',
+          modifierOptionName: 'Grande',
+          modifierGroupId: 'group-size',
+          modifierGroupName: 'Tamaño',
+          defaultPriceDeltaCents: 100,
+          overridePriceDeltaCents: 150,
+          effectivePriceDeltaCents: 150,
+          isOverridden: true,
+        },
+      ]),
+    );
+    await renderPage('rp-1');
+
+    expect(listModifierOptionOverrides).toHaveBeenCalledWith('rp-1');
+    expect(screen.getAllByText('Tamaño').length).toBeGreaterThan(0);
+    const priceInput = screen.getByRole('spinbutton', { name: /Grande.*Precio \(EUR\)/i }) as HTMLInputElement;
+    expect(priceInput.value).toBe('1.50');
+    expect(screen.getByRole('button', { name: /Restablecer precio por defecto/i })).toBeTruthy();
+  });
+
+  it('saves a modifier option price override when the price field loses focus', async () => {
+    getProduct.mockReturnValue(of({ ...MOCK_PRODUCT, modifierGroupIds: ['group-size'] }));
+    listModifierGroups.mockReturnValue(
+      of([
+        ...MOCK_MODIFIER_GROUPS,
+        {
+          id: 'group-size',
+          name: 'Tamaño',
+          type: 'single',
+          required: false,
+          minSelections: 0,
+          maxSelections: 1,
+          options: [{ id: 'opt-xl', name: 'Grande', priceDelta: 1 }],
+        },
+      ]),
+    );
+    listModifierOptionOverrides.mockReturnValue(
+      of([
+        {
+          modifierOptionId: 'opt-xl',
+          modifierOptionName: 'Grande',
+          modifierGroupId: 'group-size',
+          modifierGroupName: 'Tamaño',
+          defaultPriceDeltaCents: 100,
+          overridePriceDeltaCents: null,
+          effectivePriceDeltaCents: 100,
+          isOverridden: false,
+        },
+      ]),
+    );
+    setModifierOptionPriceOverride.mockReturnValue(
+      of({
+        modifierOptionId: 'opt-xl',
+        modifierOptionName: 'Grande',
+        modifierGroupId: 'group-size',
+        modifierGroupName: 'Tamaño',
+        defaultPriceDeltaCents: 100,
+        overridePriceDeltaCents: 175,
+        effectivePriceDeltaCents: 175,
+        isOverridden: true,
+      }),
+    );
+    await renderPage('rp-1');
+
+    const priceInput = await screen.findByRole('spinbutton', { name: /Grande.*Precio \(EUR\)/i });
+    fireEvent.input(priceInput, { target: { value: '1.75' } });
+    fireEvent.blur(priceInput);
+
+    await waitFor(() => expect(setModifierOptionPriceOverride).toHaveBeenCalledWith('rp-1', 'opt-xl', 175));
+  });
+
+  it('persists pending modifier option price overrides when saving the product without blurring the field', async () => {
+    getProduct.mockReturnValue(of({ ...MOCK_PRODUCT, modifierGroupIds: ['group-size'] }));
+    listModifierGroups.mockReturnValue(
+      of([
+        ...MOCK_MODIFIER_GROUPS,
+        {
+          id: 'group-size',
+          name: 'TamaÃ±o',
+          type: 'single',
+          required: false,
+          minSelections: 0,
+          maxSelections: 1,
+          options: [{ id: 'opt-xl', name: 'Grande', priceDelta: 1 }],
+        },
+      ]),
+    );
+    listModifierOptionOverrides.mockReturnValue(
+      of([
+        {
+          modifierOptionId: 'opt-xl',
+          modifierOptionName: 'Grande',
+          modifierGroupId: 'group-size',
+          modifierGroupName: 'TamaÃ±o',
+          defaultPriceDeltaCents: 100,
+          overridePriceDeltaCents: null,
+          effectivePriceDeltaCents: 100,
+          isOverridden: false,
+        },
+      ]),
+    );
+    setModifierOptionPriceOverride.mockReturnValue(
+      of({
+        modifierOptionId: 'opt-xl',
+        modifierOptionName: 'Grande',
+        modifierGroupId: 'group-size',
+        modifierGroupName: 'TamaÃ±o',
+        defaultPriceDeltaCents: 100,
+        overridePriceDeltaCents: 185,
+        effectivePriceDeltaCents: 185,
+        isOverridden: true,
+      }),
+    );
+    updateProduct.mockReturnValue(of(MOCK_PRODUCT));
+    await renderPage('rp-1');
+
+    const priceInput = await screen.findByRole('spinbutton', { name: /Grande.*Precio \(EUR\)/i });
+    fireEvent.input(priceInput, { target: { value: '1.85' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Guardar cambios/i }));
+
+    await waitFor(() => expect(setModifierOptionPriceOverride).toHaveBeenCalledWith('rp-1', 'opt-xl', 185));
+  });
+
+  it('clears a modifier option price override', async () => {
+    getProduct.mockReturnValue(of({ ...MOCK_PRODUCT, modifierGroupIds: ['group-size'] }));
+    listModifierGroups.mockReturnValue(
+      of([
+        ...MOCK_MODIFIER_GROUPS,
+        {
+          id: 'group-size',
+          name: 'Tamaño',
+          type: 'single',
+          required: false,
+          minSelections: 0,
+          maxSelections: 1,
+          options: [{ id: 'opt-xl', name: 'Grande', priceDelta: 1 }],
+        },
+      ]),
+    );
+    listModifierOptionOverrides.mockReturnValue(
+      of([
+        {
+          modifierOptionId: 'opt-xl',
+          modifierOptionName: 'Grande',
+          modifierGroupId: 'group-size',
+          modifierGroupName: 'Tamaño',
+          defaultPriceDeltaCents: 100,
+          overridePriceDeltaCents: 150,
+          effectivePriceDeltaCents: 150,
+          isOverridden: true,
+        },
+      ]),
+    );
+    clearModifierOptionPriceOverride.mockReturnValue(of(undefined));
+    await renderPage('rp-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: /Restablecer precio por defecto/i }));
+
+    await waitFor(() => expect(clearModifierOptionPriceOverride).toHaveBeenCalledWith('rp-1', 'opt-xl'));
+  });
+
+  it('does not show the modifier option overrides section when creating a new product', async () => {
+    await renderPage(null);
+
+    expect(listModifierOptionOverrides).not.toHaveBeenCalled();
+    expect(screen.queryByText('Precios de modificador por producto')).toBeNull();
   });
 
   /* Legacy order test kept here only as historical reference after the locale-order refactor.
@@ -563,10 +824,22 @@ describe('ProductEditorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
 
     expect(createProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Bocadillo', priceCents: 550, currency: 'EUR' }),
+      expect.objectContaining({ name: 'Bocadillo', priceCents: 550, currency: 'EUR', taxRateId: null }),
     );
     expect(navigateByUrl).toHaveBeenCalledWith('/restaurant-pos/menu');
     expect(toastSuccess).toHaveBeenCalled();
+  });
+
+  it('sends the selected tax rate id when creating a product', async () => {
+    createProduct.mockReturnValue(of(MOCK_PRODUCT));
+    await renderPage(null);
+
+    fireEvent.input(screen.getByRole('textbox', { name: /^Nombre principal$/i }), { target: { value: 'Bocadillo' } });
+    fireEvent.change(await screen.findByRole('combobox', { name: /Categoría/i }), { target: { value: 'cat-1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: /Tipo de IVA/i }), { target: { value: 'tax-1' } });
+    fireEvent.click(screen.getByRole('button', { name: /Crear producto/i }));
+
+    expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ taxRateId: 'tax-1' }));
   });
 
   it('updates a product and navigates back to the menu on save', async () => {
@@ -580,7 +853,7 @@ describe('ProductEditorPage', () => {
 
     expect(updateProduct).toHaveBeenCalledWith(
       'rp-1',
-      expect.objectContaining({ name: 'Hamburguesa premium', isAvailable: true }),
+      expect.objectContaining({ name: 'Hamburguesa premium', isAvailable: true, taxRateId: 'tax-1' }),
     );
     expect(patchEditedProduct).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'rp-1', name: 'Hamburguesa premium' }),

@@ -490,6 +490,8 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         chargeActionLabel: 'Cobrar la mesa seleccionada',
         chargeWithTotal: 'Cobrar {{total}}',
         chargeWithTotalActionLabel: 'Cobrar la mesa seleccionada por {{total}}',
+        taxableBase: 'Base imponible',
+        includedVat: 'IVA incluido',
         setCashPaymentActionLabel: 'Seleccionar pago en efectivo para la mesa seleccionada',
         setCardPaymentActionLabel: 'Seleccionar pago con tarjeta para la mesa seleccionada',
         cleaningActionLabel: 'Marcar la mesa seleccionada para limpieza',
@@ -1351,6 +1353,8 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         chargeActionLabel: 'Charge the selected table',
         chargeWithTotal: 'Charge {{total}}',
         chargeWithTotalActionLabel: 'Charge the selected table for {{total}}',
+        taxableBase: 'Taxable base',
+        includedVat: 'VAT included',
         setCashPaymentActionLabel: 'Select cash payment for the selected table',
         setCardPaymentActionLabel: 'Select card payment for the selected table',
         cleaningActionLabel: 'Mark the selected table for cleaning',
@@ -2063,6 +2067,8 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         nextActionStartService: 'Següent: iniciar servei',
         chargeWithTotal: 'Cobrar {{total}}',
         chargeWithTotalActionLabel: 'Cobrar la taula seleccionada per {{total}}',
+        taxableBase: 'Base imposable',
+        includedVat: 'IVA inclòs',
         dashboard: {
           occupied: 'Actives',
           kitchen: 'En cuina',
@@ -2498,6 +2504,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.page.duplicateProduct = 'Duplicar';
   clones['es'].menu.page.editProduct = 'Editar';
   clones['es'].menu.page.noSection = 'Sin sección del menú';
+  clones['es'].menu.page.noTaxRate = 'Sin IVA asignado';
   clones['es'].menu.page.addToSection = 'Asignar a sección';
   clones['es'].menu.page.addToSectionTitle = 'Asignar a sección';
   clones['es'].menu.page.managementTitle = 'Gestión';
@@ -2572,6 +2579,39 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['es'].menu.product.form.retryUploadShort = 'Reintentar';
   clones['es'].menu.product.form.contentTitle = 'Contenido del producto';
   clones['es'].menu.product.form.settingsTitle = 'Configuración del producto';
+  clones['es'].menu.product.form.classificationTitle = 'Clasificación';
+  clones['es'].menu.product.form.classificationHint = 'Define dónde y cómo se gestiona este producto.';
+  clones['es'].menu.product.form.salesTitle = 'Venta';
+  clones['es'].menu.product.form.salesHint = 'Configura el precio y la fiscalidad.';
+  clones['es'].menu.product.form.taxRate = 'Tipo de IVA';
+  clones['es'].menu.product.form.taxRateNone = 'Sin IVA asignado';
+  clones['es'].menu.product.form.modifierOverrides = {
+    title: 'Precios de modificador por producto',
+    hint: 'Ajusta el precio de un modificador solo para este producto. Si no lo cambias, se usa el precio por defecto del grupo.',
+    empty: 'Este producto no tiene grupos de modificadores asignados.',
+    defaultPrice: 'Precio por defecto',
+    overridden: 'precio propio',
+    priceLabel: 'Precio (EUR)',
+    reset: 'Restablecer precio por defecto',
+    invalidPrice: 'Introduce un precio válido',
+    saveFailed: 'No se pudo guardar el precio',
+  };
+  clones['es'].menu.taxRates = {
+    pageTitle: 'Tipos de IVA',
+    pageHint: 'Gestiona los tipos de IVA de tu organización y el porcentaje que aplica cada uno.',
+    name: 'Nombre',
+    ratePercent: 'Porcentaje',
+    active: 'Activo',
+    add: 'Añadir tipo de IVA',
+    edit: 'Editar tipo de IVA',
+    deleteConfirm: '¿Seguro que quieres eliminar este tipo de IVA? Esta acción no se puede deshacer.',
+    empty: 'Todavía no hay tipos de IVA.',
+    back: 'Volver a la carta',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    deleteTitle: 'Eliminar tipo de IVA',
+    deleteAriaLabel: 'Eliminar tipo de IVA',
+  };
   clones['es'].menu.product.form.invalidImageType = 'Usa una imagen JPG, PNG o WEBP.';
   clones['es'].menu.product.form.imageTooLarge = 'La imagen es demasiado pesada. Prueba con un archivo mas ligero.';
   clones['es'].menu.product.form.imageTooSmall = 'La imagen es demasiado pequena. Usa una resolucion mayor.';
@@ -2749,6 +2789,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.page.duplicateProduct = 'Duplicate';
   clones['en'].menu.page.editProduct = 'Edit';
   clones['en'].menu.page.noSection = 'No menu section';
+  clones['en'].menu.page.noTaxRate = 'No tax rate assigned';
   clones['en'].menu.page.addToSection = 'Assign to section';
   clones['en'].menu.page.addToSectionTitle = 'Assign to section';
   clones['en'].menu.page.managementTitle = 'Management';
@@ -2822,6 +2863,39 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['en'].menu.product.form.retryUploadShort = 'Retry';
   clones['en'].menu.product.form.contentTitle = 'Product content';
   clones['en'].menu.product.form.settingsTitle = 'Product settings';
+  clones['en'].menu.product.form.classificationTitle = 'Classification';
+  clones['en'].menu.product.form.classificationHint = 'Define where and how this product is handled.';
+  clones['en'].menu.product.form.salesTitle = 'Sales';
+  clones['en'].menu.product.form.salesHint = 'Set the price and tax setup.';
+  clones['en'].menu.product.form.taxRate = 'Tax rate';
+  clones['en'].menu.product.form.taxRateNone = 'No tax rate assigned';
+  clones['en'].menu.product.form.modifierOverrides = {
+    title: 'Modifier prices for this product',
+    hint: 'Adjust a modifier price just for this product. If you leave it as is, the group default price is used.',
+    empty: 'This product has no modifier groups assigned.',
+    defaultPrice: 'Default price',
+    overridden: 'custom price',
+    priceLabel: 'Price (EUR)',
+    reset: 'Reset to default price',
+    invalidPrice: 'Enter a valid price',
+    saveFailed: 'Could not save the price',
+  };
+  clones['en'].menu.taxRates = {
+    pageTitle: 'Tax rates',
+    pageHint: "Manage your organization's tax rates and the percentage each one applies.",
+    name: 'Name',
+    ratePercent: 'Percentage',
+    active: 'Active',
+    add: 'Add tax rate',
+    edit: 'Edit tax rate',
+    deleteConfirm: 'Are you sure you want to delete this tax rate? This action cannot be undone.',
+    empty: 'No tax rates yet.',
+    back: 'Back to menu',
+    save: 'Save',
+    cancel: 'Cancel',
+    deleteTitle: 'Delete tax rate',
+    deleteAriaLabel: 'Delete tax rate',
+  };
   clones['en'].menu.product.form.invalidImageType = 'Use a JPG, PNG, or WEBP image.';
   clones['en'].menu.product.form.imageTooLarge = 'The image is too large. Try a lighter file.';
   clones['en'].menu.product.form.imageTooSmall = 'The image is too small. Use a higher resolution image.';
@@ -3000,6 +3074,7 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['ca'].menu.page.duplicateProduct = 'Duplicar';
   clones['ca'].menu.page.editProduct = 'Editar';
   clones['ca'].menu.page.noSection = 'Sense secció del menú';
+  clones['ca'].menu.page.noTaxRate = 'Sense IVA assignat';
   clones['ca'].menu.page.addToSection = 'Assignar a secció';
   clones['ca'].menu.page.addToSectionTitle = 'Assignar a secció';
   clones['ca'].menu.page.managementTitle = 'Gestió';
@@ -3074,6 +3149,39 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
   clones['ca'].menu.product.form.retryUploadShort = 'Reintentar';
   clones['ca'].menu.product.form.contentTitle = 'Contingut del producte';
   clones['ca'].menu.product.form.settingsTitle = 'Configuració del producte';
+  clones['ca'].menu.product.form.classificationTitle = 'Classificació';
+  clones['ca'].menu.product.form.classificationHint = 'Defineix on i com es gestiona aquest producte.';
+  clones['ca'].menu.product.form.salesTitle = 'Venda';
+  clones['ca'].menu.product.form.salesHint = 'Configura el preu i la fiscalitat.';
+  clones['ca'].menu.product.form.taxRate = "Tipus d'IVA";
+  clones['ca'].menu.product.form.taxRateNone = 'Sense IVA assignat';
+  clones['ca'].menu.product.form.modifierOverrides = {
+    title: 'Preus de modificador per producte',
+    hint: 'Ajusta el preu d\'un modificador només per a aquest producte. Si no el canvies, s\'utilitza el preu per defecte del grup.',
+    empty: 'Aquest producte no té grups de modificadors assignats.',
+    defaultPrice: 'Preu per defecte',
+    overridden: 'preu propi',
+    priceLabel: 'Preu (EUR)',
+    reset: 'Restableix el preu per defecte',
+    invalidPrice: 'Introdueix un preu vàlid',
+    saveFailed: 'No s\'ha pogut desar el preu',
+  };
+  clones['ca'].menu.taxRates = {
+    pageTitle: "Tipus d'IVA",
+    pageHint: "Gestiona els tipus d'IVA de la teva organització i el percentatge que aplica cadascun.",
+    name: 'Nom',
+    ratePercent: 'Percentatge',
+    active: 'Actiu',
+    add: "Afegeix tipus d'IVA",
+    edit: "Edita tipus d'IVA",
+    deleteConfirm: "Segur que vols eliminar aquest tipus d'IVA? Aquesta acció no es pot desfer.",
+    empty: "Encara no hi ha tipus d'IVA.",
+    back: 'Torna a la carta',
+    save: 'Desa',
+    cancel: 'Cancel·la',
+    deleteTitle: "Elimina tipus d'IVA",
+    deleteAriaLabel: "Elimina tipus d'IVA",
+  };
   clones['ca'].menu.product.form.invalidImageType = 'Fes servir una imatge JPG, PNG o WEBP.';
   clones['ca'].menu.product.form.imageTooLarge = 'La imatge pesa massa. Prova amb un fitxer mes lleuger.';
   clones['ca'].menu.product.form.imageTooSmall = 'La imatge es massa petita. Fes servir una resolucio mes gran.';
@@ -3221,3 +3329,4 @@ function withAdditionalMenuImageTranslations<T extends Record<string, any>>(tran
 
   return clones;
 }
+   

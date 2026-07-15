@@ -861,10 +861,22 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
         "description": "Campo name documentado desde products."
       },
       {
+        "name": "nameI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo nameI18n documentado desde products."
+      },
+      {
         "name": "description",
         "type": "String",
         "nullable": true,
         "description": "Campo description documentado desde products."
+      },
+      {
+        "name": "descriptionI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo descriptionI18n documentado desde products."
       },
       {
         "name": "productType",
@@ -1130,6 +1142,12 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
         "description": "Campo name documentado desde menu_sections."
       },
       {
+        "name": "nameI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo nameI18n documentado desde menu_sections."
+      },
+      {
         "name": "sortOrder",
         "type": "Int",
         "nullable": false,
@@ -1247,6 +1265,12 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
         "description": "Campo name documentado desde modifier_groups."
       },
       {
+        "name": "nameI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo nameI18n documentado desde modifier_groups."
+      },
+      {
         "name": "selectionType",
         "type": "ModifierSelectionType",
         "nullable": false,
@@ -1339,6 +1363,12 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
         "description": "Campo name documentado desde modifier_options."
       },
       {
+        "name": "nameI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo nameI18n documentado desde modifier_options."
+      },
+      {
         "name": "priceDeltaCents",
         "type": "Int",
         "nullable": false,
@@ -1423,6 +1453,68 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
     ]
   },
   {
+    "id": "restaurant_product_modifier_option_overrides",
+    "name": "restaurant_product_modifier_option_overrides",
+    "feature": "restaurants",
+    "domain": "catalog",
+    "description": "Snapshot técnico derivado de Prisma para restaurant_product_modifier_option_overrides.",
+    "fields": [
+      {
+        "name": "id",
+        "type": "String",
+        "nullable": false,
+        "primaryKey": true,
+        "description": "Campo id documentado desde restaurant_product_modifier_option_overrides."
+      },
+      {
+        "name": "restaurantProductId",
+        "type": "String",
+        "nullable": false,
+        "reference": "restaurant_products.id",
+        "description": "Campo restaurantProductId documentado desde restaurant_product_modifier_option_overrides."
+      },
+      {
+        "name": "modifierOptionId",
+        "type": "String",
+        "nullable": false,
+        "reference": "modifier_options.id",
+        "description": "Campo modifierOptionId documentado desde restaurant_product_modifier_option_overrides."
+      },
+      {
+        "name": "priceDeltaCents",
+        "type": "Int",
+        "nullable": false,
+        "description": "Campo priceDeltaCents documentado desde restaurant_product_modifier_option_overrides."
+      },
+      {
+        "name": "createdAt",
+        "type": "DateTime",
+        "nullable": false,
+        "description": "Campo createdAt documentado desde restaurant_product_modifier_option_overrides."
+      },
+      {
+        "name": "updatedAt",
+        "type": "DateTime",
+        "nullable": false,
+        "description": "Campo updatedAt documentado desde restaurant_product_modifier_option_overrides."
+      }
+    ],
+    "relations": [
+      {
+        "source": "restaurant_product_modifier_option_overrides.restaurantProductId",
+        "target": "restaurant_products.id",
+        "reference": "restaurant_products.id",
+        "label": "restaurant_product_modifier_option_overrides.restaurantProductId -> restaurant_products.id"
+      },
+      {
+        "source": "restaurant_product_modifier_option_overrides.modifierOptionId",
+        "target": "modifier_options.id",
+        "reference": "modifier_options.id",
+        "label": "restaurant_product_modifier_option_overrides.modifierOptionId -> modifier_options.id"
+      }
+    ]
+  },
+  {
     "id": "combo_definitions",
     "name": "combo_definitions",
     "feature": "catalog",
@@ -1491,6 +1583,12 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
         "type": "String",
         "nullable": false,
         "description": "Campo name documentado desde combo_slots."
+      },
+      {
+        "name": "nameI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo nameI18n documentado desde combo_slots."
       },
       {
         "name": "minSelections",
@@ -1658,6 +1756,12 @@ export const DEVELOPER_TABLE_SCHEMAS: DeveloperSchemaTable[] = [
         "type": "String",
         "nullable": false,
         "description": "Campo name documentado desde platter_components."
+      },
+      {
+        "name": "nameI18n",
+        "type": "Json",
+        "nullable": true,
+        "description": "Campo nameI18n documentado desde platter_components."
       },
       {
         "name": "quantity",

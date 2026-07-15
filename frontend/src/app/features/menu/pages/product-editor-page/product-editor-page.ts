@@ -18,6 +18,8 @@ import { ImageDropzone } from '../../components/image-dropzone/image-dropzone';
 import { ALLERGEN_VALUES } from '../../models/allergen.model';
 import type { ModifierGroup } from '../../models/modifier-group.model';
 import type { Allergen, CreateProductInput, UpdateProductInput } from '../../models/product.model';
+import type { ModifierOptionOverride } from '../../models/modifier-option-override.model';
+import type { TaxRate } from '../../models/tax-rate.model';
 import type { RestaurantProductSummaryDto } from '../../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantContextStore } from '../../../restaurant-pos/state/restaurant-context.store';
 import {
@@ -152,6 +154,15 @@ export class ProductEditorPage {
   // aunque no haya tocado el nombre del producto.
   protected readonly loadingSupplementGroup = signal(this.isEdit());
   protected readonly saving = signal(false);
+
+  // Precios de modificador por producto (Fase 2): overrides de priceDeltaCents específicos de
+  // este restaurantProduct sobre las opciones de los grupos de modificadores compartidos que
+  // tenga asignados. Se guardan de forma independiente al resto del formulario (auto-save al
+  // salir del campo), igual que el switch de activo en la página de tipos de IVA.
+  protected readonly loadingModifierOptionOverrides = signal(this.isEdit());
+  protected readonly modifierOptionOverrides = signal<ModifierOptionOverride[]>([]);
+  protected readonly modifierOptionOverrideDrafts = signal<Record<string, string>>({});
+  protected readonly savingModifierOptionOverrideId = signal<string | null>(null);
   protected readonly existingProduct = signal<RestaurantProductDetailDto | null>(null);
   protected readonly modifierGroups = signal<ModifierGroup[]>([]);
 
@@ -211,6 +222,10 @@ export class ProductEditorPage {
   protected readonly priceEuros = signal('');
   protected readonly course = signal('main');
   protected readonly preparationRoute = signal('kitchen');
+  // '' = sin IVA asignado (producto sin tipo, no tributa hasta que se le asigne uno). Mismo
+  // patron que categoryId: string vacio en vez de null para encajar con app-select.
+  protected readonly taxRateId = signal('');
+  protected readonly taxRates = signal<TaxRate[]>([]);
   protected readonly available = signal(true);
   // Categoría/sección de la carta a la que pertenece el producto. Obligatoria: sin ella el
   // producto quedaría "solo catálogo" y no aparecería nunca en la app (ver
@@ -387,9 +402,59 @@ export class ProductEditorPage {
     ];
   });
 
+  // Opción vacía explícita ("Sin IVA asignado") en vez de dejar el select sin coincidencia: un
+  // producto puede no tener todavía tipo de IVA asignado (ver taxRateId = '' arriba).
+  protected readonly taxRateOptions = computed<SelectOption[]>(() => {
+    this.activeLang();
+    return [
+      { value: '', label: this.transloco.translate('menu.product.form.taxRateNone') },
+      ...this.taxRates().map((rate) => ({ value: rate.id, label: `${rate.name} (${rate.ratePercent}%)` })),
+    ];
+  });
+
   protected readonly sortedModifierGroups = computed(() =>
     [...this.modifierGroups()].sort((left, right) => this.getModifierGroupDisplayName(left).localeCompare(this.getModifierGroupDisplayName(right))),
   );
+
+  protected readonly modifierOptionsForEditing = computed<ModifierOptionOverride[]>(() => {
+    const overrideMap = new Map(this.modifierOptionOverrides().map((option) => [option.modifierOptionId, option]));
+
+    return this.selectedGroupsInOrder().flatMap((group) =>
+      group.options.map((option) => {
+        const existing = overrideMap.get(option.id);
+        if (existing) {
+          return existing;
+        }
+
+        const defaultPriceDeltaCents = Math.round(option.priceDelta * 100);
+        return {
+          modifierOptionId: option.id,
+          modifierOptionName: option.name,
+          modifierGroupId: group.id,
+          modifierGroupName: this.getModifierGroupDisplayName(group),
+          defaultPriceDeltaCents,
+          overridePriceDeltaCents: null,
+          effectivePriceDeltaCents: defaultPriceDeltaCents,
+          isOverridden: false,
+        } satisfies ModifierOptionOverride;
+      }),
+    );
+  });
+
+  // Agrupa las opciones (con su override, si lo tienen) por grupo de modificadores, para
+  // mostrarlas organizadas en el editor tal y como aparecen en el resto de la app.
+  protected readonly modifierOptionOverridesByGroup = computed<{ groupId: string; groupName: string; options: ModifierOptionOverride[] }[]>(() => {
+    const groups = new Map<string, { groupId: string; groupName: string; options: ModifierOptionOverride[] }>();
+    for (const option of this.modifierOptionsForEditing()) {
+      const existing = groups.get(option.modifierGroupId);
+      if (existing) {
+        existing.options.push(option);
+      } else {
+        groups.set(option.modifierGroupId, { groupId: option.modifierGroupId, groupName: option.modifierGroupName, options: [option] });
+      }
+    }
+    return [...groups.values()].sort((left, right) => left.groupName.localeCompare(right.groupName));
+  });
 
   // Grupos seleccionados en el orden en que se enviarán (= orden en que aparecen al vender).
   // El backend persiste el índice del array como sortOrder en la tabla puente.
@@ -452,6 +517,13 @@ export class ProductEditorPage {
 
     this.menuApi.listProducts().subscribe({
       next: (products) => this.availableProducts.set(products),
+    });
+
+    // No se filtra por isActive: un producto puede tener asignado un tipo de IVA que después se
+    // desactivó, y el select debe seguir pudiendo mostrarlo (y dejar que el admin lo cambie
+    // explícitamente) en vez de perderlo en silencio.
+    this.menuApi.listTaxRates().subscribe({
+      next: (rates) => this.taxRates.set(rates),
     });
 
     // Categorías disponibles para el selector obligatorio + sección/ítem actual del producto en
@@ -548,7 +620,75 @@ export class ProductEditorPage {
         },
         error: () => this.loadingSupplementGroup.set(false),
       });
+
+      // Precios de modificador por producto (Fase 2): solo aplica a un producto ya existente,
+      // porque el override se guarda contra su restaurantProductId. En modo creación no hay nada
+      // que cargar todavía (el admin podrá ajustar precios tras guardar el producto por primera vez).
+      this.loadingModifierOptionOverrides.set(true);
+      this.menuApi.listModifierOptionOverrides(id).subscribe({
+        next: (overrides) => {
+          this.modifierOptionOverrides.set(overrides);
+          this.loadingModifierOptionOverrides.set(false);
+        },
+        error: () => this.loadingModifierOptionOverrides.set(false),
+      });
     }
+  }
+
+  protected updateModifierOptionOverrideDraft(modifierOptionId: string, value: string): void {
+    this.modifierOptionOverrideDrafts.update((drafts) => ({ ...drafts, [modifierOptionId]: value }));
+  }
+
+  protected saveModifierOptionOverride(modifierOptionId: string): void {
+    if (!this.productId) return;
+    const draft = this.modifierOptionOverrideDrafts()[modifierOptionId];
+    const euros = Number.parseFloat((draft ?? '').replace(',', '.'));
+    if (Number.isNaN(euros) || euros < 0) {
+      this.toast.danger({ title: this.transloco.translate('menu.product.form.modifierOverrides.invalidPrice') });
+      return;
+    }
+    const priceDeltaCents = Math.round(euros * 100);
+    this.savingModifierOptionOverrideId.set(modifierOptionId);
+    this.menuApi.setModifierOptionPriceOverride(this.productId, modifierOptionId, priceDeltaCents).subscribe({
+      next: (updated) => {
+        this.upsertModifierOptionOverride(updated);
+        this.savingModifierOptionOverrideId.set(null);
+      },
+      error: () => {
+        this.savingModifierOptionOverrideId.set(null);
+        this.toast.danger({ title: this.transloco.translate('menu.product.form.modifierOverrides.saveFailed') });
+      },
+    });
+  }
+
+  protected clearModifierOptionOverride(modifierOptionId: string): void {
+    if (!this.productId) return;
+    this.savingModifierOptionOverrideId.set(modifierOptionId);
+    this.menuApi.clearModifierOptionPriceOverride(this.productId, modifierOptionId).subscribe({
+      next: () => {
+        this.modifierOptionOverrides.update((overrides) =>
+          overrides.map((o) =>
+            o.modifierOptionId === modifierOptionId
+              ? { ...o, overridePriceDeltaCents: null, effectivePriceDeltaCents: o.defaultPriceDeltaCents, isOverridden: false }
+              : o,
+          ),
+        );
+        this.modifierOptionOverrideDrafts.update((drafts) => {
+          const { [modifierOptionId]: _removed, ...rest } = drafts;
+          return rest;
+        });
+        this.savingModifierOptionOverrideId.set(null);
+      },
+      error: () => {
+        this.savingModifierOptionOverrideId.set(null);
+        this.toast.danger({ title: this.transloco.translate('menu.product.form.modifierOverrides.saveFailed') });
+      },
+    });
+  }
+
+  protected modifierOptionOverrideDraft(option: ModifierOptionOverride): string {
+    const draft = this.modifierOptionOverrideDrafts()[option.modifierOptionId];
+    return draft ?? (option.effectivePriceDeltaCents / 100).toFixed(2);
   }
 
   protected addSupplementOption(): void {
@@ -786,6 +926,7 @@ export class ProductEditorPage {
     this.priceEuros.set((product.priceCents / 100).toFixed(2));
     this.course.set(product.course);
     this.preparationRoute.set(product.preparationRoute);
+    this.taxRateId.set(product.taxRateId ?? '');
     this.available.set(product.isAvailable);
     this.selectedModifierGroupIds.set([...(product.modifierGroupIds ?? [])]);
     this.selectedAllergens.set([...(product.allergens ?? [])]);
@@ -837,6 +978,17 @@ export class ProductEditorPage {
     return group.nameI18n?.[locale] ?? group.name;
   }
 
+  private upsertModifierOptionOverride(updated: ModifierOptionOverride): void {
+    this.modifierOptionOverrides.update((overrides) => {
+      const index = overrides.findIndex((option) => option.modifierOptionId === updated.modifierOptionId);
+      if (index < 0) {
+        return [...overrides, updated];
+      }
+
+      return overrides.map((option, currentIndex) => (currentIndex === index ? updated : option));
+    });
+  }
+
   private uploadSelectedFile(file: File): void {
     this.uploadStatus.set('uploading');
     this.imageErrorMessage.set(null);
@@ -878,6 +1030,39 @@ export class ProductEditorPage {
     return { ...(ca ? { ca } : {}), ...(en ? { en } : {}), ...(es ? { es } : {}) };
   }
 
+  private persistPendingModifierOptionOverrides$(productId: string): Observable<void> | null {
+    const drafts = this.modifierOptionOverrideDrafts();
+    const optionsById = new Map(this.modifierOptionsForEditing().map((option) => [option.modifierOptionId, option]));
+    const updates: Observable<unknown>[] = [];
+
+    for (const [modifierOptionId, draft] of Object.entries(drafts)) {
+      const option = optionsById.get(modifierOptionId);
+      if (!option) continue;
+
+      const euros = Number.parseFloat(draft.replace(',', '.'));
+      if (Number.isNaN(euros) || euros < 0) {
+        this.toast.danger({ title: this.transloco.translate('menu.product.form.modifierOverrides.invalidPrice') });
+        return null;
+      }
+
+      const priceDeltaCents = Math.round(euros * 100);
+      if (priceDeltaCents === option.effectivePriceDeltaCents) {
+        continue;
+      }
+
+      updates.push(
+        this.menuApi.setModifierOptionPriceOverride(productId, modifierOptionId, priceDeltaCents).pipe(
+          map((updated) => {
+            this.upsertModifierOptionOverride(updated);
+            return undefined;
+          }),
+        ),
+      );
+    }
+
+    return updates.length > 0 ? forkJoin(updates).pipe(map(() => undefined)) : of(undefined);
+  }
+
   protected save(): void {
     if (this.saveDisabled() || this.saving()) return;
     const name = this.name().trim();
@@ -885,12 +1070,15 @@ export class ProductEditorPage {
     const priceCents = Math.round(parseFloat(this.priceEuros().replace(',', '.') || '0') * 100);
     const nameI18n = this.buildNameI18n();
     const descriptionI18n = this.buildDescriptionI18n();
+    const existing = this.existingProduct();
+    const pendingModifierOverrideSave$ = existing ? this.persistPendingModifierOptionOverrides$(existing.id) : of(undefined);
+    if (!pendingModifierOverrideSave$) return;
 
     this.saving.set(true);
-    const existing = this.existingProduct();
 
     const req$: Observable<RestaurantProductDetailDto | null> = existing
-      ? this.upsertSupplementGroup$(existing.id, name).pipe(
+      ? pendingModifierOverrideSave$.pipe(
+          switchMap(() => this.upsertSupplementGroup$(existing.id, name)),
           switchMap((supplementGroupId) =>
             this.menuApi.updateProduct(existing.id, {
               name,
@@ -904,6 +1092,7 @@ export class ProductEditorPage {
               course: this.course() as UpdateProductInput['course'],
               preparationRoute: this.preparationRoute() as UpdateProductInput['preparationRoute'],
               isAvailable: this.available(),
+              taxRateId: this.taxRateId() || null,
             } satisfies UpdateProductInput),
           ),
           switchMap((updatedProduct) =>
@@ -930,6 +1119,7 @@ export class ProductEditorPage {
             currency: 'EUR',
             course: this.course() as CreateProductInput['course'],
             preparationRoute: this.preparationRoute() as CreateProductInput['preparationRoute'],
+            taxRateId: this.taxRateId() || null,
           } satisfies CreateProductInput)
           .pipe(
             switchMap((created) =>
