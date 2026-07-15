@@ -5,7 +5,7 @@ import type { ServerOptions } from 'socket.io';
 export class ConfigDrivenIoAdapter extends IoAdapter {
   constructor(
     app: INestApplicationContext,
-    private readonly corsOrigin: string,
+    private readonly corsOrigin: string[],
   ) {
     super(app);
   }

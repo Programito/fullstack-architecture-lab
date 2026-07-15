@@ -11,6 +11,7 @@ import 'reflect-metadata';
 import { AppModule } from './app.module';
 import { DeveloperAccessService } from './identity/application/use-cases/developer-access.service';
 import { ConfigDrivenIoAdapter } from './realtime/infrastructure/config-driven-io-adapter';
+import { resolveAllowedOrigins } from './shared/http/allowed-origins';
 import { SENTRY_DSN } from './shared/observability/sentry.config';
 
 if (process.env.SENTRY_ENABLED === 'true') {
@@ -21,16 +22,16 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
   const developerAccess = app.get(DeveloperAccessService);
-  const frontendOrigin = config.get<string>('FRONTEND_ORIGIN') ?? 'http://localhost:4200';
+  const allowedOrigins = resolveAllowedOrigins(config.get<string>('FRONTEND_ORIGIN'));
 
-  app.useWebSocketAdapter(new ConfigDrivenIoAdapter(app, frontendOrigin));
+  app.useWebSocketAdapter(new ConfigDrivenIoAdapter(app, allowedOrigins));
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
   app.enableCors({
-    origin: frontendOrigin,
+    origin: allowedOrigins,
     credentials: true,
   });
   app.useGlobalPipes(
