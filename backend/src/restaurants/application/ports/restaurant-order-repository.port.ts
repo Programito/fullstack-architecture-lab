@@ -24,4 +24,5 @@ export interface RestaurantOrderRepository {
   sendPendingLinesToKitchen(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null>;
   markActiveLinesServed(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null>;
   registerPayment(command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView>;
+  clearActiveByTable(restaurantId: string, tableId: string): Promise<void>;
 }

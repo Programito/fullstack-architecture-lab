@@ -1,0 +1,114 @@
+<div class="mx-auto grid max-w-3xl gap-4 p-4 sm:p-6">
+  <div class="flex items-center justify-between gap-2">
+    <div class="grid gap-1">
+      <button
+        type="button"
+        class="theme-muted flex w-fit items-center gap-1 text-sm hover:text-cyan-500"
+        (click)="back()"
+      >
+        <app-icon name="arrow_back" size="sm" [decorative]="true" />
+        {{ 'menu.taxRates.back' | transloco }}
+      </button>
+      <h1 class="theme-title text-lg font-semibold">{{ 'menu.taxRates.pageTitle' | transloco }}</h1>
+      <p class="theme-muted text-sm">{{ 'menu.taxRates.pageHint' | transloco }}</p>
+    </div>
+    <app-button variant="primary" (click)="openCreateForm()">
+      <app-icon name="add" size="sm" [decorative]="true" />
+      {{ 'menu.taxRates.add' | transloco }}
+    </app-button>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-10">
+      <app-spinner size="md" variant="primary" />
+    </div>
+  } @else if (sortedTaxRates().length) {
+    <div class="theme-panel grid gap-2 rounded-lg border p-2 shadow-sm">
+      @for (taxRate of sortedTaxRates(); track taxRate.id) {
+        <div class="theme-field flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+          <div class="grid min-w-0 gap-0.5">
+            <span class="theme-title truncate font-medium">{{ taxRate.name }}</span>
+            <span class="theme-muted text-xs">{{ taxRate.ratePercent }}%</span>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <app-switch
+              [label]="'menu.taxRates.active' | transloco"
+              [checked]="taxRate.isActive"
+              (checkedChange)="toggleActive(taxRate, $event)"
+            />
+            <button
+              type="button"
+              class="theme-muted flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:text-cyan-500"
+              [attr.aria-label]="'menu.taxRates.edit' | transloco"
+              (click)="openEditForm(taxRate)"
+            >
+              <app-icon name="edit" size="sm" [decorative]="true" />
+            </button>
+            <button
+              type="button"
+              class="theme-muted flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:text-red-500"
+              [attr.aria-label]="'menu.taxRates.deleteAriaLabel' | transloco"
+              (click)="askDelete(taxRate)"
+            >
+              <app-icon name="delete" size="sm" [decorative]="true" />
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="theme-muted rounded-md border border-dashed px-3 py-6 text-center text-sm">
+      {{ 'menu.taxRates.empty' | transloco }}
+    </p>
+  }
+</div>
+
+<app-dialog
+  [open]="formOpen()"
+  [title]="formTitle()"
+  [showActions]="true"
+  [confirmLabel]="'menu.taxRates.save' | transloco"
+  [confirmDisabled]="!formValid()"
+  [confirmLoading]="formLoading()"
+  [cancelLabel]="'menu.taxRates.cancel' | transloco"
+  size="sm"
+  (confirmed)="submitForm()"
+  (closed)="cancelForm()"
+  (cancelled)="cancelForm()"
+>
+  <div class="grid gap-3">
+    <app-input
+      [label]="'menu.taxRates.name' | transloco"
+      [value]="formName()"
+      [disabled]="formLoading()"
+      (valueChange)="formName.set($event)"
+    />
+    <app-input
+      [label]="'menu.taxRates.ratePercent' | transloco"
+      type="number"
+      [min]="0"
+      [max]="100"
+      [step]="0.01"
+      [value]="formRatePercent()"
+      [disabled]="formLoading()"
+      (valueChange)="formRatePercent.set($event)"
+    />
+  </div>
+</app-dialog>
+
+<app-dialog
+  [open]="deleteOpen()"
+  [title]="'menu.taxRates.deleteTitle' | transloco"
+  [showActions]="true"
+  [confirmLabel]="'menu.page.confirmDelete' | transloco"
+  [confirmLoading]="deleteLoading()"
+  [cancelLabel]="'menu.page.cancelDelete' | transloco"
+  confirmVariant="danger"
+  size="sm"
+  (confirmed)="confirmDelete()"
+  (closed)="cancelDelete()"
+>
+  <p class="theme-muted text-sm">
+    {{ 'menu.taxRates.deleteConfirm' | transloco }}
+  </p>
+</app-dialog>

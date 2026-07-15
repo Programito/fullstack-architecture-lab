@@ -23,6 +23,9 @@ export class RestaurantProductDetailResponseDto {
   @ApiProperty() currency: string;
   @ApiProperty() isAvailable: boolean;
   @ApiProperty() isVisible: boolean;
+  @ApiProperty({ nullable: true }) taxRateId: string | null;
+  @ApiProperty({ nullable: true }) taxRateName: string | null;
+  @ApiProperty({ nullable: true }) taxRatePercent: number | null;
 
   static from(detail: RestaurantProductDetail): RestaurantProductDetailResponseDto {
     return {
@@ -46,6 +49,9 @@ export class RestaurantProductDetailResponseDto {
       currency: detail.currency,
       isAvailable: detail.isAvailable,
       isVisible: detail.isVisible,
+      taxRateId: detail.taxRateId,
+      taxRateName: detail.taxRateName,
+      taxRatePercent: detail.taxRatePercent,
     };
   }
 }

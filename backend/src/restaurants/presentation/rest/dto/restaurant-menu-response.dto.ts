@@ -97,6 +97,8 @@ class RestaurantMenuItemResponseDto {
   @ApiProperty({ example: 'main', required: false }) defaultCourse?: string;
   @ApiProperty({ example: 'kitchen', required: false }) preparationRoute?: string;
   @ApiProperty({ type: [String], required: false }) allergens?: string[];
+  @ApiProperty({ nullable: true, required: false, example: 'IVA General' }) taxRateName?: string | null;
+  @ApiProperty({ nullable: true, required: false, example: 21 }) taxRatePercent?: number | null;
   @ApiProperty({ type: [RestaurantMenuModifierGroupResponseDto] }) modifierGroups!: RestaurantMenuModifierGroupResponseDto[];
   @ApiProperty({ type: RestaurantMenuComboDefinitionResponseDto, nullable: true }) comboDefinition!: RestaurantMenuComboDefinitionResponseDto | null;
   @ApiProperty({ type: [RestaurantMenuPlatterComponentResponseDto] }) platterComponents!: RestaurantMenuPlatterComponentResponseDto[];
@@ -159,6 +161,8 @@ function mapItem(item: RestaurantMenuItem): RestaurantMenuItemResponseDto {
     defaultCourse: item.defaultCourse,
     preparationRoute: item.preparationRoute,
     allergens: item.allergens ?? [],
+    taxRateName: item.taxRateName ?? null,
+    taxRatePercent: item.taxRatePercent ?? null,
     modifierGroups: (item.modifierGroups ?? []).map(mapModifierGroup),
     comboDefinition: item.comboDefinition ? mapComboDefinition(item.comboDefinition) : null,
     platterComponents: (item.platterComponents ?? []).map(mapPlatterComponent),

@@ -7,7 +7,9 @@ import type {
   CreateModifierGroupRequest,
   CreatePlatterComponentRequest,
   CreateRestaurantProductRequest,
+  CreateTaxRateRequest,
   MenuSectionAdminDto,
+  ModifierOptionOverrideDto,
   PlatterComponentAdminDto,
   RestaurantMenuComboSlotDto,
   RestaurantMenuDto,
@@ -16,16 +18,21 @@ import type {
   RestaurantMenuPlatterComponentDto,
   RestaurantProductDetailDto,
   RestaurantProductSummaryDto,
+  SetModifierOptionPriceOverrideRequest,
+  TaxRateDto,
   UpdateComboSlotRequest,
   UpdateModifierGroupRequest,
   UpdatePlatterComponentRequest,
   UpdateRestaurantProductRequest,
+  UpdateTaxRateRequest,
 } from '../../restaurant-pos/api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../restaurant-pos/api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../restaurant-pos/state/restaurant-context.store';
 import { deriveModifierGroupDisplayType } from '../models/modifier-group.model';
 import type { ComboProductDefinition, MenuCategory, ModifierGroup, NameI18n, Product } from '../models/menu.models';
+import type { ModifierOptionOverride } from '../models/modifier-option-override.model';
 import type { ProductCourse, ProductPreparationRoute } from '../models/product.model';
+import type { TaxRate } from '../models/tax-rate.model';
 
 export type MenuData = {
   menuId: string;
@@ -51,6 +58,8 @@ export type {
   UpdateComboSlotRequest,
   UpdateRestaurantProductRequest,
   UpdatePlatterComponentRequest,
+  ModifierOptionOverrideDto,
+  SetModifierOptionPriceOverrideRequest,
 };
 
 // Datos crudos (combo slots / platter components) del producto tal y como los devuelve el
@@ -155,6 +164,42 @@ export class MenuApiService {
 
   listModifierGroups(scope?: 'shared' | 'product'): Observable<ModifierGroup[]> {
     return this.api.listModifierGroups(this.restaurantId, scope).pipe(map((groups) => groups.map(mapModifierGroupDto)));
+  }
+
+  // ── Tipos de IVA ─────────────────────────────────────────────────────────────
+
+  listTaxRates(): Observable<TaxRate[]> {
+    return this.api.listTaxRates(this.restaurantId).pipe(map((rates) => rates.map(mapTaxRateDto)));
+  }
+
+  createTaxRate(data: CreateTaxRateRequest): Observable<TaxRate> {
+    return this.api.createTaxRate(this.restaurantId, data).pipe(map(mapTaxRateDto));
+  }
+
+  updateTaxRate(taxRateId: string, data: UpdateTaxRateRequest): Observable<TaxRate> {
+    return this.api.updateTaxRate(this.restaurantId, taxRateId, data).pipe(map(mapTaxRateDto));
+  }
+
+  deleteTaxRate(taxRateId: string): Observable<void> {
+    return this.api.deleteTaxRate(this.restaurantId, taxRateId);
+  }
+
+  // ── Precios de modificador por producto (overrides) ─────────────────────────
+
+  listModifierOptionOverrides(productId: string): Observable<ModifierOptionOverride[]> {
+    return this.api
+      .listModifierOptionOverrides(this.restaurantId, productId)
+      .pipe(map((overrides) => overrides.map(mapModifierOptionOverrideDto)));
+  }
+
+  setModifierOptionPriceOverride(productId: string, modifierOptionId: string, priceDeltaCents: number): Observable<ModifierOptionOverride> {
+    return this.api
+      .setModifierOptionPriceOverride(this.restaurantId, productId, modifierOptionId, { priceDeltaCents })
+      .pipe(map(mapModifierOptionOverrideDto));
+  }
+
+  clearModifierOptionPriceOverride(productId: string, modifierOptionId: string): Observable<void> {
+    return this.api.clearModifierOptionPriceOverride(this.restaurantId, productId, modifierOptionId);
   }
 
   // ── Combo slots (admin) ─────────────────────────────────────────────────────
@@ -268,6 +313,28 @@ function mapApiMenuToMenuData(dto: RestaurantMenuDto): MenuData {
   return { menuId: dto.id, categories, products, modifierGroups, comboProductDefinitions };
 }
 
+function mapTaxRateDto(dto: TaxRateDto): TaxRate {
+  return {
+    id: dto.id,
+    name: dto.name,
+    ratePercent: dto.ratePercent,
+    isActive: dto.isActive,
+  };
+}
+
+function mapModifierOptionOverrideDto(dto: ModifierOptionOverrideDto): ModifierOptionOverride {
+  return {
+    modifierOptionId: dto.modifierOptionId,
+    modifierOptionName: dto.modifierOptionName,
+    modifierGroupId: dto.modifierGroupId,
+    modifierGroupName: dto.modifierGroupName,
+    defaultPriceDeltaCents: dto.defaultPriceDeltaCents,
+    overridePriceDeltaCents: dto.overridePriceDeltaCents,
+    effectivePriceDeltaCents: dto.effectivePriceDeltaCents,
+    isOverridden: dto.isOverridden,
+  };
+}
+
 function mapModifierGroupDto(mg: RestaurantMenuModifierGroupDto): ModifierGroup {
   return {
     id: mg.id,
@@ -314,6 +381,8 @@ function mapApiItemToProduct(item: RestaurantMenuItemDto, categoryId: string): P
     available: item.productAvailable,
     visible: item.isVisible,
     allergens: item.allergens ?? [],
+    taxRateName: item.taxRateName ?? null,
+    taxRatePercent: item.taxRatePercent ?? null,
     course: toProductCourse(item.defaultCourse),
     type: item.productType,
     modifierGroupIds: item.modifierGroups.map((mg) => mg.id),

@@ -77,6 +77,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'menu/tax-rates',
+        canActivate: [restaurantPosSectionGuard, restaurantScopeGuard],
+        data: { requiredPermission: 'menu' },
+        loadComponent: () =>
+          import('./features/menu/pages/tax-rates-page/tax-rates-page').then(
+            (module) => module.TaxRatesPage,
+          ),
+      },
+      {
         path: RESTAURANT_POS_ACCESS_PATH,
         loadComponent: () =>
           import('./features/restaurant-pos/pages/restaurant-pos-access-page').then(

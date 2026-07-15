@@ -3,7 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
-import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
+import { forkJoin, of, switchMap, tap } from 'rxjs';
+import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
 import { Icon } from '../../../../shared/ui/icon/icon';
@@ -556,9 +557,12 @@ export class RestaurantPosServicePage {
     });
   }
 
-  private chargeSelectedServicePoint(paymentMethod: PaymentMethod): void {
+  private chargeSelectedServicePoint(paymentMethod: Exclude<PaymentMethod, 'pending'>): void {
     const restaurant = this.restaurantContext.activeRestaurant();
     const tableId = this.store.selectedTableId();
+    const selectedOrder = this.store.selectedOrder();
+    const orderId = selectedOrder?.id;
+    const amountCents = Math.round(((selectedOrder?.balance ?? selectedOrder?.total ?? 0) * 100));
     const applyCharge = (): void => {
       this.store.setSelectedPaymentMethod(paymentMethod);
       this.store.chargeSelectedTable();
@@ -573,10 +577,36 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
-      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-      applyCharge();
-    });
+    if (!orderId || amountCents <= 0) {
+      this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        applyCharge();
+      });
+      return;
+    }
+
+    this.api
+      .chargeRestaurantServicePoint(restaurant.id, tableId)
+      .pipe(
+        tap((servicePoint) => {
+          this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        }),
+        switchMap(() => this.api.registerRestaurantOrderPayment(restaurant.id, orderId, amountCents, paymentMethod)),
+        switchMap((paidOrder) =>
+          forkJoin({
+            servicePoint: this.api.getRestaurantServicePoint(restaurant.id, tableId),
+            paidOrder: of(paidOrder),
+          }),
+        ),
+      )
+      .subscribe(({ servicePoint, paidOrder }) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        this.store.hydrateServicePointOrder(tableId, mapRestaurantOrder(paidOrder, paymentMethod));
+        this.store.setSelectedPaymentMethod(paymentMethod);
+        if (paymentMethod === 'card') {
+          this.cardGatewayOpen.set(false);
+        }
+      });
   }
 
   protected setPaymentMethod(paymentMethod: PaymentMethod): void {

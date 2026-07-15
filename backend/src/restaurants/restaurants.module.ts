@@ -90,6 +90,19 @@ import { DeletePlatterComponentUseCase } from './application/use-cases/delete-pl
 import { PLATTER_COMPONENT_REPOSITORY } from './application/ports/platter-component-repository.port';
 import { PrismaPlatterComponentRepository } from './infrastructure/persistence/prisma-platter-component.repository';
 import { RestaurantPlatterComponentsController } from './presentation/rest/restaurant-platter-components.controller';
+import { ListTaxRatesUseCase } from './application/use-cases/list-tax-rates.use-case';
+import { CreateTaxRateUseCase } from './application/use-cases/create-tax-rate.use-case';
+import { UpdateTaxRateUseCase } from './application/use-cases/update-tax-rate.use-case';
+import { DeleteTaxRateUseCase } from './application/use-cases/delete-tax-rate.use-case';
+import { TAX_RATE_REPOSITORY } from './application/ports/tax-rate-repository.port';
+import { PrismaTaxRateRepository } from './infrastructure/persistence/prisma-tax-rate.repository';
+import { RestaurantTaxRatesController } from './presentation/rest/restaurant-tax-rates.controller';
+import { ListModifierOptionOverridesUseCase } from './application/use-cases/list-modifier-option-overrides.use-case';
+import { SetModifierOptionPriceOverrideUseCase } from './application/use-cases/set-modifier-option-price-override.use-case';
+import { ClearModifierOptionPriceOverrideUseCase } from './application/use-cases/clear-modifier-option-price-override.use-case';
+import { MODIFIER_OPTION_OVERRIDE_REPOSITORY } from './application/ports/modifier-option-override-repository.port';
+import { PrismaModifierOptionOverrideRepository } from './infrastructure/persistence/prisma-modifier-option-override.repository';
+import { RestaurantModifierOptionOverridesController } from './presentation/rest/restaurant-modifier-option-overrides.controller';
 
 @Module({
   imports: [forwardRef(() => IdentityModule)],
@@ -106,6 +119,8 @@ import { RestaurantPlatterComponentsController } from './presentation/rest/resta
     RestaurantAnalyticsController,
     RestaurantComboSlotsController,
     RestaurantPlatterComponentsController,
+    RestaurantTaxRatesController,
+    RestaurantModifierOptionOverridesController,
   ],
   providers: [
     ListRestaurantsUseCase,
@@ -184,6 +199,23 @@ import { RestaurantPlatterComponentsController } from './presentation/rest/resta
     {
       provide: PLATTER_COMPONENT_REPOSITORY,
       useExisting: PrismaPlatterComponentRepository,
+    },
+    ListTaxRatesUseCase,
+    CreateTaxRateUseCase,
+    UpdateTaxRateUseCase,
+    DeleteTaxRateUseCase,
+    PrismaTaxRateRepository,
+    {
+      provide: TAX_RATE_REPOSITORY,
+      useExisting: PrismaTaxRateRepository,
+    },
+    ListModifierOptionOverridesUseCase,
+    SetModifierOptionPriceOverrideUseCase,
+    ClearModifierOptionPriceOverrideUseCase,
+    PrismaModifierOptionOverrideRepository,
+    {
+      provide: MODIFIER_OPTION_OVERRIDE_REPOSITORY,
+      useExisting: PrismaModifierOptionOverrideRepository,
     },
     {
       provide: CUSTOMER_REPOSITORY,

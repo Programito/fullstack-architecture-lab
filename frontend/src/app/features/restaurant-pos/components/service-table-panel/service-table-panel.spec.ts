@@ -46,6 +46,7 @@ describe('ServiceTablePanel', () => {
     tableId: 'table-1',
     status: 'open',
     paymentMethod: 'cash',
+    tax: 2.17,
     total: 12.5,
     lines: [
       {
@@ -307,6 +308,17 @@ describe('ServiceTablePanel', () => {
     const paymentButton = screen.getByRole('button', { name: /Cobrar la mesa seleccionada por 12,50\s?€/i });
     expect(paymentButton).toBeTruthy();
     expect(paymentButton.textContent).toContain('Cobrar 12,50');
+  });
+
+  it('shows a tax breakdown with taxable base, VAT, and total in the payment section', async () => {
+    await renderServiceTablePanel({ canCharge: true });
+
+    const paymentSection = screen.getByTestId('service-panel-payment-section');
+    expect(within(paymentSection).getByText('Base imponible')).toBeTruthy();
+    expect(within(paymentSection).getByText(/10,33/)).toBeTruthy();
+    expect(within(paymentSection).getByText('IVA incluido')).toBeTruthy();
+    expect(within(paymentSection).getByText(/2,17/)).toBeTruthy();
+    expect(within(paymentSection).getAllByText(/12,50/).length).toBeGreaterThan(0);
   });
 
   it('groups order lines by course and highlights the next service action', async () => {

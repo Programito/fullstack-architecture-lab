@@ -545,6 +545,31 @@ it('updates app visibility in place without reloading all cards', async () => {
   expect(screen.getAllByText('Oculto de la app').length).toBeGreaterThan(0);
 });
 
+it('shows the assigned tax rate on a product card', async () => {
+  const menuData = buildMockMenuData();
+  menuData.products[0] = { ...menuData.products[0], taxRateName: 'IVA General', taxRatePercent: 21 };
+
+  await renderPage({
+    getMenu: () => of(menuData),
+  });
+
+  const card = screen.getAllByRole('button', { name: menuData.products[0].name })[0];
+  expect(within(card).getByText(/IVA General/)).toBeTruthy();
+  expect(within(card).getByText(/21%/)).toBeTruthy();
+});
+
+it('shows "sin IVA asignado" on a product card without a tax rate', async () => {
+  const menuData = buildMockMenuData();
+  menuData.products[0] = { ...menuData.products[0], taxRateName: null, taxRatePercent: null };
+
+  await renderPage({
+    getMenu: () => of(menuData),
+  });
+
+  const card = screen.getAllByRole('button', { name: menuData.products[0].name })[0];
+  expect(within(card).getByText('Sin IVA asignado')).toBeTruthy();
+});
+
 it('keeps long product names clamped inside cards', async () => {
   const menuData = buildMockMenuData();
   const longName =

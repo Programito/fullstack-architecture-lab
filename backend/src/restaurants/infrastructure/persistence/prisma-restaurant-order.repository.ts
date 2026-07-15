@@ -103,6 +103,7 @@ type RawOrder = {
 type RawCatalogModifierOption = { id: string; name: string; priceDeltaCents: number };
 type RawCatalogModifierGroup = { id: string; name: string; options: RawCatalogModifierOption[] };
 type RawCatalogRpModifierGroup = { modifierGroupId: string; modifierGroup: RawCatalogModifierGroup };
+type RawCatalogModifierOptionOverride = { modifierOptionId: string; priceDeltaCents: number };
 
 type RawCatalogComboSlotOption = {
   id: string;
@@ -137,6 +138,7 @@ type RawCatalogRestaurantProduct = {
   preparationRouteOverride: string | null;
   product: RawCatalogProduct;
   modifierGroups: RawCatalogRpModifierGroup[];
+  modifierOptionOverrides: RawCatalogModifierOptionOverride[];
 };
 
 const ORDER_INCLUDE = {
@@ -183,6 +185,16 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       include: ORDER_INCLUDE,
     });
     return order ? this.mapOrder(order as unknown as RawOrder) : null;
+  }
+
+  async clearActiveByTable(restaurantId: string, tableId: string): Promise<void> {
+    await this.prisma.order.deleteMany({
+      where: {
+        restaurantId,
+        tableId,
+        status: { in: ['open', 'pending_payment'] },
+      },
+    });
   }
 
   async open(command: OpenRestaurantOrderCommand): Promise<RestaurantOrderView> {
@@ -261,6 +273,9 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
           modifierGroups: {
             include: { modifierGroup: { include: { options: true } } },
           },
+          modifierOptionOverrides: {
+            select: { modifierOptionId: true, priceDeltaCents: true },
+          },
         },
       }) as unknown as RawCatalogRestaurantProduct | null;
 
@@ -275,6 +290,10 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       }
 
       // 3. Validate modifier selections
+      // El precio del modificador puede sobrescribirse por producto (Fase 2: overrides de precio
+      // de modificador). Si existe override para este restaurantProduct, prevalece sobre el
+      // priceDeltaCents por defecto del ModifierOption.
+      const overrideByOptionId = new Map((rp.modifierOptionOverrides ?? []).map((o) => [o.modifierOptionId, o.priceDeltaCents]));
       const modifierSnapshots: Array<{ groupNameSnapshot: string; optionNameSnapshot: string; priceDeltaCents: number; quantity: number }> = [];
       for (const mod of command.modifiers) {
         const rpModGroup = rp.modifierGroups.find((g) => g.modifierGroupId === mod.modifierGroupId);
@@ -292,7 +311,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
         modifierSnapshots.push({
           groupNameSnapshot: rpModGroup.modifierGroup.name,
           optionNameSnapshot: option.name,
-          priceDeltaCents: option.priceDeltaCents,
+          priceDeltaCents: overrideByOptionId.get(option.id) ?? option.priceDeltaCents,
           quantity: mod.quantity,
         });
       }

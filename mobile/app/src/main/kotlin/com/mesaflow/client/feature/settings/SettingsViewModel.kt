@@ -2,6 +2,8 @@ package com.mesaflow.client.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.data.AuthRepository
+import com.mesaflow.client.core.data.OrderRepository
+import com.mesaflow.client.core.datastore.SessionStore
 import com.mesaflow.client.core.datastore.SettingsStore
 import com.mesaflow.client.core.model.AppLanguage
 import com.mesaflow.client.core.model.ThemeMode
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,6 +29,8 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settingsStore: SettingsStore,
     private val authRepository: AuthRepository,
+    private val sessionStore: SessionStore,
+    private val orderRepository: OrderRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -49,6 +54,9 @@ class SettingsViewModel @Inject constructor(
     /** Cierra la sesión de mesa (token, cookie y contexto de mesa) y vuelve a Entry. */
     fun onExitTableConfirmed() {
         viewModelScope.launch {
+            sessionStore.tableContext.first()?.let { table ->
+                runCatching { orderRepository.freeTable(table.restaurantId, table.tableId) }
+            }
             authRepository.logout()
             _exitTable.tryEmit(Unit)
         }

@@ -57,6 +57,8 @@ data class MenuItemDto(
     val defaultCourse: String? = null,
     val preparationRoute: String? = null,
     val allergens: List<String> = emptyList(),
+    val taxRateName: String? = null,
+    val taxRatePercent: Double? = null,
     val modifierGroups: List<ModifierGroupDto> = emptyList(),
     val comboDefinition: ComboDefinitionDto? = null,
     val platterComponents: List<PlatterComponentDto> = emptyList(),

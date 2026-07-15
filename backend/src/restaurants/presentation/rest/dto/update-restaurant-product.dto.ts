@@ -76,4 +76,9 @@ export class UpdateRestaurantProductDto {
   @IsEnum(ALLERGENS, { each: true })
   @IsOptional()
   allergens?: Allergen[];
+
+  @ApiPropertyOptional({ example: 'tax-1', description: 'Id del tipo de IVA (TaxRate) a asignar al producto. null para desasignar.', nullable: true })
+  @IsString()
+  @IsOptional()
+  taxRateId?: string | null;
 }

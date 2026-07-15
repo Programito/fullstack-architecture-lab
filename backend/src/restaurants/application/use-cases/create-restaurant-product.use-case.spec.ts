@@ -46,6 +46,9 @@ const PRODUCT_DETAIL = {
   isVisible: true,
   imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
   modifierGroupIds: ['burger-extras', 'burger-point'],
+  taxRateId: 'tax-1',
+  taxRateName: 'IVA General',
+  taxRatePercent: 21,
 };
 
 describe('CreateRestaurantProductUseCase', () => {
@@ -65,6 +68,7 @@ describe('CreateRestaurantProductUseCase', () => {
       imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
       modifierGroupIds: ['burger-extras', 'burger-point'],
       allergens: ['gluten', 'milk'],
+      taxRateId: 'tax-1',
     });
 
     expect(result).toEqual(ok(PRODUCT_DETAIL));
@@ -78,6 +82,7 @@ describe('CreateRestaurantProductUseCase', () => {
       imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
       modifierGroupIds: ['burger-extras', 'burger-point'],
       allergens: ['gluten', 'milk'],
+      taxRateId: 'tax-1',
     });
   });
 
@@ -98,6 +103,26 @@ describe('CreateRestaurantProductUseCase', () => {
     });
 
     expect(result).toEqual(err(expect.objectContaining({ code: 'product_name_taken' })));
+  });
+
+  it('returns tax_rate_not_found when the tax rate does not belong to the organization', async () => {
+    const repository = makeRepository();
+    vi.mocked(repository.createProduct).mockRejectedValue(
+      new ApplicationErrorException(applicationError('tax_rate_not_found', 'Tax rate "missing" was not found.')),
+    );
+    const useCase = new CreateRestaurantProductUseCase(repository);
+
+    const result = await useCase.execute({
+      restaurantId: 'r-1',
+      name: 'Hamburguesa craft',
+      course: 'main',
+      preparationRoute: 'kitchen',
+      priceCents: 1290,
+      currency: 'EUR',
+      taxRateId: 'missing',
+    });
+
+    expect(result).toEqual(err(expect.objectContaining({ code: 'tax_rate_not_found' })));
   });
 
   it('rethrows unexpected errors', async () => {

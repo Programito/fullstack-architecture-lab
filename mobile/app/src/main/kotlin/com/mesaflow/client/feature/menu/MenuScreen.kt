@@ -565,6 +565,18 @@ private fun MenuItemCard(item: MenuItem, onClick: () -> Unit) {
                 }
                 Spacer(Modifier.height(4.dp))
                 PriceText(amountCents = item.priceCents, currencyCode = item.currency)
+                Text(
+                    text = item.taxRatePercent?.let { percent ->
+                        val percentText = if (percent == percent.toLong().toDouble()) {
+                            percent.toLong().toString()
+                        } else {
+                            percent.toString()
+                        }
+                        stringResource(R.string.menu_tax_rate_label, percentText)
+                    } ?: stringResource(R.string.menu_no_tax_rate),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (item.allergens.isNotEmpty()) {
                     Spacer(Modifier.height(2.dp))
                     AllergenBadge(allergens = item.allergens)

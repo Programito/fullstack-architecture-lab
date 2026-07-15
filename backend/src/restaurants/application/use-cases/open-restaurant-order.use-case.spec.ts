@@ -45,6 +45,7 @@ function makeRepository(): RestaurantOrderRepository {
     sendPendingLinesToKitchen: vi.fn(),
     markActiveLinesServed: vi.fn(),
     registerPayment: vi.fn(),
+    clearActiveByTable: vi.fn(),
   };
 }
 

@@ -88,6 +88,9 @@ export type ServicePointOrderLineView = {
   quantity: number;
   unitPriceCents: number;
   subtotalCents: number;
+  taxRateName: string | null;
+  taxRatePercent: number | null;
+  taxCents: number;
   status: ServiceOrderLineStatus;
   course: ServicePhaseCourse;
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';

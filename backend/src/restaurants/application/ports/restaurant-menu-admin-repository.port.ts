@@ -16,6 +16,7 @@ export type CreateProductData = {
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: Allergen[];
+  taxRateId?: string | null;
 };
 
 export type UpdateProductData = {
@@ -31,6 +32,7 @@ export type UpdateProductData = {
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: Allergen[];
+  taxRateId?: string | null;
 };
 
 export interface RestaurantMenuAdminRepository {

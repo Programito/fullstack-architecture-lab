@@ -64,6 +64,9 @@ export interface OrderLine {
   selectedComboSlots?: SelectedComboSlotSnapshot[];
   platterComponents?: PlatterComponentSnapshot[];
   note?: string;
+  tax?: number;
+  taxRateName?: string | null;
+  taxRatePercent?: number | null;
   statusUpdatedAt?: string;
   sentToKitchenAt?: string;
   preparingAt?: string;
@@ -79,6 +82,9 @@ export interface TableOrder {
   id?: string;
   tableId: string;
   lines: OrderLine[];
+  tax?: number;
+  paid?: number;
+  balance?: number;
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;

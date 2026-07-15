@@ -145,6 +145,9 @@ export type ServicePointOrderLineDto = {
   quantity: number;
   unitPriceCents: number;
   subtotalCents: number;
+  taxRateName?: string | null;
+  taxRatePercent?: number | null;
+  taxCents?: number;
   status: ServiceOrderLineStatusDto;
   course: ServicePhaseCourseDto;
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
@@ -498,6 +501,8 @@ export type RestaurantMenuItemDto = {
   defaultCourse?: string;
   preparationRoute?: string;
   allergens?: AllergenDto[];
+  taxRateName?: string | null;
+  taxRatePercent?: number | null;
   modifierGroups: RestaurantMenuModifierGroupDto[];
   comboDefinition: RestaurantMenuComboDefinitionDto | null;
   platterComponents: RestaurantMenuPlatterComponentDto[];
@@ -578,6 +583,9 @@ export type RestaurantProductDetailDto = {
   currency: string;
   isAvailable: boolean;
   isVisible: boolean;
+  taxRateId: string | null;
+  taxRateName: string | null;
+  taxRatePercent: number | null;
 };
 
 export type CreateRestaurantProductRequest = {
@@ -592,6 +600,7 @@ export type CreateRestaurantProductRequest = {
   currency: string;
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';
   preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+  taxRateId?: string | null;
 };
 
 export type UpdateRestaurantProductRequest = {
@@ -607,6 +616,40 @@ export type UpdateRestaurantProductRequest = {
   preparationRoute?: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
   isAvailable?: boolean;
   isVisible?: boolean;
+  taxRateId?: string | null;
+};
+
+export type TaxRateDto = {
+  id: string;
+  name: string;
+  ratePercent: number;
+  isActive: boolean;
+};
+
+export type CreateTaxRateRequest = {
+  name: string;
+  ratePercent: number;
+};
+
+export type UpdateTaxRateRequest = {
+  name?: string;
+  ratePercent?: number;
+  isActive?: boolean;
+};
+
+export type ModifierOptionOverrideDto = {
+  modifierOptionId: string;
+  modifierOptionName: string;
+  modifierGroupId: string;
+  modifierGroupName: string;
+  defaultPriceDeltaCents: number;
+  overridePriceDeltaCents: number | null;
+  effectivePriceDeltaCents: number;
+  isOverridden: boolean;
+};
+
+export type SetModifierOptionPriceOverrideRequest = {
+  priceDeltaCents: number;
 };
 
 export type CreateProductImageUploadSignatureRequest = {

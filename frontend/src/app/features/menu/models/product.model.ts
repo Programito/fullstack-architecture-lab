@@ -69,6 +69,7 @@ export interface CreateProductInput {
   currency: string;
   course: ProductCourse;
   preparationRoute: ProductPreparationRoute;
+  taxRateId?: string | null;
 }
 
 export interface UpdateProductInput {
@@ -84,6 +85,7 @@ export interface UpdateProductInput {
   preparationRoute?: ProductPreparationRoute;
   isAvailable?: boolean;
   isVisible?: boolean;
+  taxRateId?: string | null;
 }
 
 export interface PlatterComponent {
@@ -125,4 +127,6 @@ export interface Product {
   platterComponents?: PlatterComponent[];
   category?: string;
   price?: Money;
+  taxRateName?: string | null;
+  taxRatePercent?: number | null;
 }

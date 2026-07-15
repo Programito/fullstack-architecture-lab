@@ -136,6 +136,20 @@
         <h3 id="service-panel-payment-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.payment' | transloco }}</h3>
         <p class="theme-title text-lg font-semibold">{{ formatCurrency(order()?.total ?? 0) }}</p>
       </div>
+      <div class="mt-3 grid gap-px overflow-hidden rounded-md border text-sm">
+        <div class="theme-soft-panel flex items-center justify-between px-3 py-2">
+          <span class="theme-muted">{{ 'restaurantPos.service.taxableBase' | transloco }}</span>
+          <span class="font-semibold">{{ formatCurrency(orderTaxableBase()) }}</span>
+        </div>
+        <div class="theme-soft-panel flex items-center justify-between px-3 py-2">
+          <span class="theme-muted">{{ 'restaurantPos.service.includedVat' | transloco }}</span>
+          <span class="font-semibold">{{ formatCurrency(orderTaxAmount()) }}</span>
+        </div>
+        <div class="theme-soft-panel flex items-center justify-between px-3 py-2">
+          <span class="theme-title font-semibold">{{ 'restaurantPos.service.total' | transloco }}</span>
+          <span class="theme-title font-semibold">{{ formatCurrency(order()?.total ?? 0) }}</span>
+        </div>
+      </div>
       <div class="mt-3 grid gap-2">
         <app-button variant="primary" expand="block" [size]="chargePriority() ? 'lg' : 'md'" [ariaLabel]="chargeButtonAriaLabel()" [disabled]="!canCharge()" (pressed)="charge.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="payments" size="sm" />{{ chargeButtonLabel() }}</span>

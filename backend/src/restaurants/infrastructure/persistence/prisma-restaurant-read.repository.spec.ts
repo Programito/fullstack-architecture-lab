@@ -38,6 +38,12 @@ describe('PrismaRestaurantReadRepository', () => {
                     currency: 'EUR',
                     isAvailable: true,
                     imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+                    modifierOptionOverrides: [
+                      {
+                        modifierOptionId: 'option-medium',
+                        priceDeltaCents: 120,
+                      },
+                    ],
                     product: {
                       id: 'product-burger',
                       name: 'Hamburguesa craft',
@@ -47,6 +53,10 @@ describe('PrismaRestaurantReadRepository', () => {
                       productType: 'simple',
                       defaultCourse: 'main',
                       defaultPreparationRoute: 'kitchen',
+                      taxRate: {
+                        name: 'IVA General',
+                        ratePercent: { toString: () => '21' },
+                      },
                       comboDefinition: null,
                       platterDefinition: null,
                     },
@@ -94,6 +104,7 @@ describe('PrismaRestaurantReadRepository', () => {
                     currency: 'EUR',
                     isAvailable: true,
                     imageUrl: null,
+                    modifierOptionOverrides: [],
                     product: {
                       id: 'product-combo',
                       name: 'Menu Classic Burger',
@@ -141,6 +152,8 @@ describe('PrismaRestaurantReadRepository', () => {
       descriptionI18n: { es: 'Carne madurada', ca: 'Carn madurada', en: 'Aged beef' },
       productType: 'simple',
       imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/burger.jpg',
+      taxRateName: 'IVA General',
+      taxRatePercent: 21,
     });
     expect(menu?.sections[0]?.items[0]?.modifierGroups).toEqual([
       expect.objectContaining({
@@ -150,6 +163,7 @@ describe('PrismaRestaurantReadRepository', () => {
           expect.objectContaining({
             name: 'Al punto',
             nameI18n: { es: 'Al punto', ca: 'Al punt', en: 'Medium' },
+            priceDeltaCents: 120,
           }),
         ],
       }),
@@ -193,6 +207,7 @@ describe('PrismaRestaurantReadRepository', () => {
                     currency: 'EUR',
                     isAvailable: true,
                     imageUrl: null,
+                    modifierOptionOverrides: [],
                     product: {
                       id: 'product-coke',
                       name: 'Coca-Cola',
@@ -202,6 +217,7 @@ describe('PrismaRestaurantReadRepository', () => {
                       productType: 'simple',
                       defaultCourse: 'drinks',
                       defaultPreparationRoute: 'bar',
+                      taxRate: null,
                       comboDefinition: null,
                       platterDefinition: null,
                     },
@@ -510,6 +526,9 @@ describe('PrismaRestaurantReadRepository', () => {
           quantity: 1,
           unitPriceCents: 1350,
           subtotalCents: 1350,
+          taxRateNameSnapshot: 'IVA General',
+          taxRatePercentSnapshot: { toString: () => '21' },
+          taxCents: 234,
           status: 'preparing',
           kitchenNote: 'Sin cebolla',
           updatedAt: new Date('2026-06-21T12:20:00.000Z'),
@@ -525,6 +544,9 @@ describe('PrismaRestaurantReadRepository', () => {
           quantity: 1,
           unitPriceCents: 1590,
           subtotalCents: 1590,
+          taxRateNameSnapshot: 'IVA General',
+          taxRatePercentSnapshot: { toString: () => '21' },
+          taxCents: 276,
           status: 'pending',
           kitchenNote: null,
           updatedAt: new Date('2026-06-21T12:24:00.000Z'),

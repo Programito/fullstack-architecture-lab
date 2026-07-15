@@ -86,6 +86,7 @@ export class RestaurantProductsController {
       imageUrl: body.imageUrl,
       modifierGroupIds: body.modifierGroupIds,
       allergens: body.allergens,
+      taxRateId: body.taxRateId,
     });
     const product = unwrapResultOrThrow(result);
     await this.audit.record({
@@ -96,7 +97,7 @@ export class RestaurantProductsController {
       entityType: 'product',
       entityId: product.id,
       entityLabel: product.displayName,
-      changedFields: ['name', 'nameI18n', 'description', 'descriptionI18n', 'course', 'preparationRoute', 'priceCents', 'currency', 'imageUrl', 'modifierGroupIds', 'allergens'],
+      changedFields: ['name', 'nameI18n', 'description', 'descriptionI18n', 'course', 'preparationRoute', 'priceCents', 'currency', 'imageUrl', 'modifierGroupIds', 'allergens', 'taxRateId'],
       metadata: { productId: product.id, name: product.displayName },
     });
     return RestaurantProductDetailResponseDto.from(product);
@@ -131,6 +132,7 @@ export class RestaurantProductsController {
       imageUrl: body.imageUrl,
       modifierGroupIds: body.modifierGroupIds,
       allergens: body.allergens,
+      taxRateId: body.taxRateId,
     });
     const product = unwrapResultOrThrow(result);
     await this.audit.record({
@@ -141,7 +143,7 @@ export class RestaurantProductsController {
       entityType: 'product',
       entityId: productId,
       entityLabel: product.displayName,
-      changedFields: collectChangedFields(body, ['name', 'nameI18n', 'description', 'descriptionI18n', 'course', 'preparationRoute', 'priceCents', 'isAvailable', 'isVisible', 'imageUrl', 'modifierGroupIds', 'allergens']),
+      changedFields: collectChangedFields(body, ['name', 'nameI18n', 'description', 'descriptionI18n', 'course', 'preparationRoute', 'priceCents', 'isAvailable', 'isVisible', 'imageUrl', 'modifierGroupIds', 'allergens', 'taxRateId']),
       metadata: { productId, name: product.displayName },
     });
     return RestaurantProductDetailResponseDto.from(product);

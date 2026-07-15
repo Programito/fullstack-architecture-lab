@@ -38,7 +38,14 @@ object FakeBackend {
     fun enqueueDemoLoginAndMenu(server: MockWebServer) {
         server.enqueue(readinessResponse())
         server.enqueue(demoLoginResponse())
+        server.enqueue(freeServicePointResponse())
         server.enqueue(menuResponse())
+        server.enqueue(menuResponse())
+    }
+
+    /** Igual que [enqueueDemoLoginAndMenu], pero reservando una respuesta extra para liberar la mesa antes de cargar la carta. */
+    fun enqueueDemoLoginFreeAndMenu(server: MockWebServer) {
+        enqueueDemoLoginAndMenu(server)
     }
 
     /** Encola abrir pedido + anadir linea + disparo a cocina (submitCart completo). */
@@ -92,6 +99,10 @@ object FakeBackend {
      */
     fun enqueueLogout(server: MockWebServer) {
         server.enqueue(jsonResponse(200, "{}"))
+    }
+
+    fun enqueueFreeServicePoint(server: MockWebServer) {
+        server.enqueue(freeServicePointResponse())
     }
 
     /**
@@ -179,6 +190,9 @@ object FakeBackend {
 
     /** Deserializa a `Unit` (kotlinx.serialization exige `{}` para eso). */
     private fun sendToKitchenResponse(): MockResponse = jsonResponse(201, "{}")
+
+    /** Deserializa a `Unit` (kotlinx.serialization exige `{}` para eso). */
+    private fun freeServicePointResponse(): MockResponse = jsonResponse(201, "{}")
 
     private fun jsonResponse(code: Int, body: String): MockResponse =
         MockResponse()

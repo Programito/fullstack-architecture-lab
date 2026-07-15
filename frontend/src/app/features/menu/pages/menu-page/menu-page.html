@@ -102,6 +102,9 @@
                   <app-icon name="swap_vert" size="sm" [decorative]="true" />
                 </app-button>
               }
+              <app-button variant="neutral" fill="outline" size="sm" [ariaLabel]="'menu.taxRates.pageTitle' | transloco" [title]="'menu.taxRates.pageTitle' | transloco" (pressed)="openTaxRates()">
+                <app-icon name="percent" size="sm" [decorative]="true" />
+              </app-button>
               <app-button variant="primary" fill="solid" size="sm" [ariaLabel]="'menu.page.newProduct' | transloco" (pressed)="openCreateProduct()">
                 <app-icon name="add" size="sm" [decorative]="true" />
               </app-button>
@@ -361,6 +364,17 @@
                   {{ 'menu.page.reorderMode' | transloco }}
                 </app-button>
               }
+              <app-button
+                variant="neutral"
+                fill="outline"
+                size="sm"
+                [ariaLabel]="'menu.taxRates.pageTitle' | transloco"
+                [title]="'menu.taxRates.pageTitle' | transloco"
+                (pressed)="openTaxRates()"
+              >
+                <app-icon name="percent" size="sm" [decorative]="true" />
+                {{ 'menu.taxRates.pageTitle' | transloco }}
+              </app-button>
               <app-button variant="primary" fill="solid" size="sm" (pressed)="openCreateProduct()">
                 <app-icon name="add" size="sm" [decorative]="true" />
                 {{ 'menu.page.newProduct' | transloco }}
@@ -457,6 +471,11 @@
                         <h2 class="theme-title line-clamp-2 min-w-0 flex-1 text-base font-semibold leading-tight">{{ product.name }}</h2>
                         <div class="shrink-0 text-right">
                           <p class="theme-title text-lg font-bold leading-tight tabular-nums">{{ product.basePrice | currency: 'EUR' }}</p>
+                          @if (product.taxRateName) {
+                            <p class="theme-muted text-xs tabular-nums">{{ product.taxRateName }} · {{ product.taxRatePercent }}%</p>
+                          } @else {
+                            <p class="theme-muted text-xs">{{ 'menu.page.noTaxRate' | transloco }}</p>
+                          }
                         </div>
                       </div>
                       <p class="theme-muted text-sm font-medium">{{ 'menu.page.preparationLabel' | transloco }}: {{ preparationRouteLabel(product) }}</p>
@@ -617,6 +636,11 @@
                       </div>
                       <div class="grid justify-items-end gap-2 self-start">
                         <span class="theme-title text-sm font-semibold tabular-nums">{{ product.basePrice | currency: 'EUR' }}</span>
+                        @if (product.taxRateName) {
+                          <span class="theme-muted text-xs tabular-nums">{{ product.taxRatePercent }}% IVA</span>
+                        } @else {
+                          <span class="theme-muted text-xs">{{ 'menu.page.noTaxRate' | transloco }}</span>
+                        }
                       </div>
                     </button>
                   </div>

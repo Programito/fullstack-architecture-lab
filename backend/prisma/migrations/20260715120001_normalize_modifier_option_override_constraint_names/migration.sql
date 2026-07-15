@@ -1,0 +1,8 @@
+-- RenameForeignKey
+ALTER TABLE "restaurant_product_modifier_option_overrides" RENAME CONSTRAINT "restaurant_product_modifier_option_overrides_modifierOptionId_f" TO "restaurant_product_modifier_option_overrides_modifierOptio_fkey";
+
+-- RenameForeignKey
+ALTER TABLE "restaurant_product_modifier_option_overrides" RENAME CONSTRAINT "restaurant_product_modifier_option_overrides_restaurantProductI" TO "restaurant_product_modifier_option_overrides_restaurantPro_fkey";
+
+-- RenameIndex
+ALTER INDEX "restaurant_product_modifier_option_overrides_restaurantPro_key" RENAME TO "restaurant_product_modifier_option_overrides_restaurantProd_key";

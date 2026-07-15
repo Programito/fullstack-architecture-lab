@@ -85,6 +85,10 @@ data class MenuItem(
     // vacia por defecto para no romper construcciones existentes (tests,
     // fixtures) que no dependen de este campo.
     val allergens: List<Allergen> = emptyList(),
+    // Nombre y porcentaje del tipo de IVA asignado al producto, si tiene uno. null cuando el
+    // producto no tiene IVA asignado.
+    val taxRateName: String? = null,
+    val taxRatePercent: Double? = null,
 )
 
 data class ModifierGroup(

@@ -283,6 +283,7 @@ model RestaurantProduct {
   menuItems                MenuItem[]
   modifierGroups           RestaurantProductModifierGroup[]
   ownedModifierGroups      ModifierGroup[]
+  modifierOptionOverrides  RestaurantProductModifierOptionOverride[]
   comboSlotOptions         ComboSlotOption[]
   orderLines               OrderLine[]
   createdAt                DateTime                        @default(now())
@@ -374,6 +375,7 @@ model ModifierOption {
   isAvailable    Boolean       @default(true)
   sortOrder      Int
   modifierGroup  ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  priceOverrides RestaurantProductModifierOptionOverride[]
 
   @@unique([modifierGroupId, name])
   @@unique([modifierGroupId, sortOrder])
@@ -391,6 +393,20 @@ model RestaurantProductModifierGroup {
   @@unique([restaurantProductId, modifierGroupId])
   @@unique([restaurantProductId, sortOrder])
   @@map("restaurant_product_modifier_groups")
+}
+
+model RestaurantProductModifierOptionOverride {
+  id                  String            @id @default(uuid())
+  restaurantProductId String
+  modifierOptionId    String
+  priceDeltaCents     Int
+  restaurantProduct   RestaurantProduct @relation(fields: [restaurantProductId], references: [id], onDelete: Cascade)
+  modifierOption      ModifierOption    @relation(fields: [modifierOptionId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([restaurantProductId, modifierOptionId])
+  @@map("restaurant_product_modifier_option_overrides")
 }
 
 model ComboDefinition {

@@ -19,6 +19,7 @@ export type CreateRestaurantProductCommand = {
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: Allergen[];
+  taxRateId?: string | null;
 };
 
 @Injectable()
@@ -41,6 +42,7 @@ export class CreateRestaurantProductUseCase {
         imageUrl: command.imageUrl,
         modifierGroupIds: command.modifierGroupIds,
         allergens: command.allergens,
+        taxRateId: command.taxRateId,
       });
       return ok(product);
     } catch (error) {

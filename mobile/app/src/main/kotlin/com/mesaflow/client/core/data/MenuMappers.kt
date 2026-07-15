@@ -47,6 +47,8 @@ internal fun RestaurantMenuDto.toDomain(): Menu = Menu(
                         currency = item.currency,
                         isAvailable = item.isAvailable,
                         allergens = item.allergens.map { it.toAllergenOrUnknown() },
+                        taxRateName = item.taxRateName,
+                        taxRatePercent = item.taxRatePercent,
                         modifierGroups = item.modifierGroups.map { group ->
                             ModifierGroup(
                                 id = group.id,

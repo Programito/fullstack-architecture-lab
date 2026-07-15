@@ -1,4 +1,5 @@
-import type { RestaurantMenuDto, ServiceFloorDto, ServicePhaseCourseDto, ServicePointOrderDto } from './restaurant-pos-api.models';
+import type { RestaurantMenuDto, RestaurantOrderDto, ServiceFloorDto, ServicePhaseCourseDto, ServicePointOrderDto } from './restaurant-pos-api.models';
+import type { PaymentMethod } from '../models/payment.models';
 import type { ComboProductDefinition } from '../../menu/models/combo.model';
 import type { ModifierGroup } from '../../menu/models/modifier-group.model';
 import type { FloorElement, Product, RestaurantTable, TableStatus } from '../models/restaurant-pos.models';
@@ -97,6 +98,8 @@ export function mapRestaurantMenuToProducts(menu: RestaurantMenuDto): Product[] 
       basePrice: item.priceCents / 100,
       price: item.priceCents / 100,
       available: item.isAvailable,
+      taxRateName: item.taxRateName ?? null,
+      taxRatePercent: item.taxRatePercent ?? null,
       course: (item.defaultCourse ?? 'other') as Product['course'],
       type: item.productType,
       modifierGroupIds: item.modifierGroups.map((g) => g.id),
@@ -181,12 +184,28 @@ function mapPreparationPolicy(preparationRoute: string): { route: 'direct' | 'ba
   return { route: preparationRoute as 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station', requiresReadyBeforeServe: requiresReady };
 }
 
+function mapRestaurantOrderCourse(course: string) {
+  switch (course) {
+    case 'drinks':
+      return 'drinks' as const;
+    case 'starter':
+      return 'starter' as const;
+    case 'main':
+      return 'main' as const;
+    case 'dessert':
+      return 'dessert' as const;
+    default:
+      return 'other' as const;
+  }
+}
+
 export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
   if (!serviceOrder.order) return null;
 
   return {
     id: serviceOrder.order.id,
     tableId: serviceOrder.order.tableId,
+    tax: serviceOrder.order.taxCents / 100,
     total: serviceOrder.order.totalCents / 100,
     status: serviceOrder.order.status,
     paymentMethod: 'pending' as const,
@@ -230,12 +249,92 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
           }],
         })),
         ...(line.kitchenNote ? { kitchenNote: line.kitchenNote, note: line.kitchenNote } : {}),
+        ...(line.taxRateName ? { taxRateName: line.taxRateName } : {}),
+        ...(line.taxRatePercent !== undefined && line.taxRatePercent !== null ? { taxRatePercent: line.taxRatePercent } : {}),
+        ...(line.taxCents !== undefined ? { tax: line.taxCents / 100 } : {}),
         unitPrice,
         subtotal,
         configurationSignature: `service-line:${line.id}`,
         course,
         status: line.status,
         statusUpdatedAt: line.updatedAt,
+      };
+    }),
+  };
+}
+
+export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMethod: PaymentMethod = 'pending') {
+  const status =
+    orderResponse.order.status === 'pending_payment'
+      ? ('payment_pending' as const)
+      : orderResponse.order.status === 'paid'
+        ? ('paid' as const)
+        : ('open' as const);
+
+  return {
+    id: orderResponse.order.id,
+    tableId: orderResponse.order.tableId ?? '',
+    tax: orderResponse.order.taxCents / 100,
+    paid: orderResponse.order.paidCents / 100,
+    balance: orderResponse.order.balanceCents / 100,
+    total: orderResponse.order.totalCents / 100,
+    status,
+    paymentMethod,
+    lines: orderResponse.lines.map((line) => {
+      const unitPrice = line.unitPriceCents / 100;
+      const subtotal = line.subtotalCents / 100;
+      const course = mapRestaurantOrderCourse(line.course);
+
+      return {
+        id: line.id,
+        productSnapshot: {
+          productId: line.productId ?? line.restaurantProductId ?? `order-product:${line.id}`,
+          productName: line.productName,
+          productType: line.productType,
+          basePrice: line.basePriceCents / 100,
+          course,
+          preparationPolicy: mapPreparationPolicy(line.preparationRoute),
+        },
+        productId: line.productId ?? line.restaurantProductId ?? `order-product:${line.id}`,
+        productName: line.productName,
+        quantity: line.quantity,
+        basePrice: line.basePriceCents / 100,
+        selectedModifiers: line.modifiers.map((modifier) => ({
+          groupId: modifier.groupName,
+          groupName: modifier.groupName,
+          optionId: modifier.optionName,
+          name: modifier.optionName,
+          priceDelta: modifier.priceDeltaCents / 100,
+          type: 'single' as const,
+        })),
+        selectedComboSlots: line.comboSlots.map((slot) => ({
+          slotId: slot.slotName,
+          slotName: slot.slotName,
+          selectedProducts: [{
+            productId: slot.selectedProductName,
+            productName: slot.selectedProductName,
+            productType: 'simple' as const,
+            course: 'other' as const,
+            preparationPolicy: { route: 'direct' as const, requiresReadyBeforeServe: false },
+            supplementPrice: slot.supplementPriceCents / 100,
+          }],
+        })),
+        platterComponents: line.platterComponents.map((component) => ({
+          id: component.componentName,
+          name: component.componentName,
+          removable: true,
+          replaceable: component.replacementName !== null,
+        })),
+        ...(line.kitchenNote ? { kitchenNote: line.kitchenNote, note: line.kitchenNote } : {}),
+        ...(line.taxRateName ? { taxRateName: line.taxRateName } : {}),
+        ...(line.taxRatePercent !== null ? { taxRatePercent: line.taxRatePercent } : {}),
+        tax: line.taxCents / 100,
+        unitPrice,
+        subtotal,
+        configurationSignature: line.configurationSignature,
+        course,
+        status: line.status,
+        ...(line.cancelledAt ? { statusUpdatedAt: line.cancelledAt } : {}),
       };
     }),
   };

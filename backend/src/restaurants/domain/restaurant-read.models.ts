@@ -104,6 +104,13 @@ export type RestaurantMenuItem = {
   modifierGroups?: RestaurantMenuModifierGroup[];
   comboDefinition?: RestaurantMenuComboDefinition | null;
   platterComponents?: RestaurantMenuPlatterComponent[];
+  // Nombre y porcentaje del TaxRate asignado al producto (Product.taxRateId), si tiene uno.
+  // Se exponen aqui (ademas de en RestaurantProductDetail, usado solo por el editor) para que
+  // tanto el listado de la carta en el admin como la app movil puedan mostrar el IVA sin tener
+  // que pedir el detalle de cada producto por separado. null cuando el producto no tiene IVA
+  // asignado.
+  taxRateName?: string | null;
+  taxRatePercent?: number | null;
 };
 
 export type RestaurantMenuSection = {
@@ -184,6 +191,9 @@ export type RestaurantProductDetail = {
   currency: string;
   isAvailable: boolean;
   isVisible: boolean;
+  taxRateId: string | null;
+  taxRateName: string | null;
+  taxRatePercent: number | null;
 };
 
 export type RestaurantMenuSectionView = {

@@ -43,6 +43,8 @@ type RawComboSlot = {
 };
 type RawComboDefinition = { id: string; slots: RawComboSlot[] };
 type RawPlatterComponent = { id: string; name: string; nameI18n?: unknown; isRemovable: boolean; isReplaceable: boolean; sortOrder: number };
+type RawModifierOptionOverride = { modifierOptionId: string; priceDeltaCents: number };
+
 type RawMenuItem = {
   id: string;
   displayNameOverride: string | null;
@@ -65,10 +67,12 @@ type RawMenuItem = {
       defaultCourse: string | null;
       defaultPreparationRoute: string | null;
       allergens: string[];
+      taxRate: { name: string; ratePercent: { toString(): string } } | null;
       comboDefinition: RawComboDefinition | null;
       platterDefinition: { components: RawPlatterComponent[] } | null;
     };
     modifierGroups: RawModifierGroup[];
+    modifierOptionOverrides: RawModifierOptionOverride[];
   };
 };
 
@@ -98,6 +102,7 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
                   include: {
                     product: {
                       include: {
+                        taxRate: { select: { name: true, ratePercent: true } },
                         comboDefinition: {
                           include: {
                             slots: {
@@ -125,6 +130,9 @@ export class PrismaRestaurantOrderCatalogRepository implements RestaurantOrderCa
                           include: { options: { orderBy: { sortOrder: 'asc' } } },
                         },
                       },
+                    },
+                    modifierOptionOverrides: {
+                      select: { modifierOptionId: true, priceDeltaCents: true },
                     },
                   },
                 },
@@ -182,7 +190,9 @@ function mapMenuItem(item: RawMenuItem) {
     defaultCourse: (product.defaultCourse ?? 'other') as 'drinks' | 'starter' | 'main' | 'dessert' | 'other',
     preparationRoute: (product.defaultPreparationRoute ?? 'direct') as 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station',
     allergens: (product.allergens ?? []) as RestaurantMenuItem['allergens'],
-    modifierGroups: rp.modifierGroups.map(mapModifierGroup),
+    taxRateName: product.taxRate?.name ?? null,
+    taxRatePercent: product.taxRate ? Number(product.taxRate.ratePercent.toString()) : null,
+    modifierGroups: rp.modifierGroups.map((rpMg) => mapModifierGroup(rpMg, buildOverrideMap(rp.modifierOptionOverrides ?? []))),
     comboDefinition: product.comboDefinition ? mapComboDefinition(product.comboDefinition) : null,
     platterComponents: product.platterDefinition
       ? product.platterDefinition.components.map(mapPlatterComponent)
@@ -190,7 +200,11 @@ function mapMenuItem(item: RawMenuItem) {
   };
 }
 
-function mapModifierGroup(rpMg: RawModifierGroup): RestaurantMenuModifierGroup {
+function buildOverrideMap(overrides: RawModifierOptionOverride[]): Map<string, number> {
+  return new Map(overrides.map((o) => [o.modifierOptionId, o.priceDeltaCents]));
+}
+
+function mapModifierGroup(rpMg: RawModifierGroup, overrideMap: Map<string, number>): RestaurantMenuModifierGroup {
   const mg = rpMg.modifierGroup;
   return {
     id: mg.id,
@@ -200,11 +214,14 @@ function mapModifierGroup(rpMg: RawModifierGroup): RestaurantMenuModifierGroup {
     minSelections: mg.minSelections,
     maxSelections: mg.maxSelections,
     isRequired: mg.isRequired,
+    // El precio del modificador puede sobrescribirse por producto (Fase 2: overrides de precio
+    // de modificador). Si existe override para este restaurantProduct, prevalece sobre el
+    // priceDeltaCents por defecto del ModifierOption (compartido en todo el catálogo).
     options: mg.options.map((opt) => ({
       id: opt.id,
       name: opt.name,
       nameI18n: asNameI18n(opt.nameI18n),
-      priceDeltaCents: opt.priceDeltaCents,
+      priceDeltaCents: overrideMap.get(opt.id) ?? opt.priceDeltaCents,
       isAvailable: opt.isAvailable,
     })),
   };

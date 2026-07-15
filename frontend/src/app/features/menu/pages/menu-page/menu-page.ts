@@ -1062,6 +1062,10 @@ export class MenuPage {
     this.router.navigateByUrl('/restaurant-pos/menu/products/new');
   }
 
+  protected openTaxRates(): void {
+    this.router.navigateByUrl('/restaurant-pos/menu/tax-rates');
+  }
+
   protected openEditProduct(product: Product): void {
     if (!product.restaurantProductId) return;
     this.router.navigateByUrl(`/restaurant-pos/menu/products/${product.restaurantProductId}/edit`);

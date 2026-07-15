@@ -51,7 +51,13 @@ export type ApplicationErrorCode =
   | 'time_entry_already_open'
   | 'time_entry_not_open'
   | 'time_entry_change_request_already_reviewed'
-  | 'forbidden_time_entry_access';
+  | 'forbidden_time_entry_access'
+  | 'tax_rate_not_found'
+  | 'tax_rate_name_taken'
+  | 'tax_rate_in_use'
+  | 'invalid_tax_rate'
+  | 'modifier_option_not_found'
+  | 'invalid_modifier_option_override';
 
 export type ApplicationError = {
   readonly code: ApplicationErrorCode;
@@ -235,4 +241,28 @@ export function timeEntryChangeRequestAlreadyReviewed(requestId: string): Applic
 
 export function forbiddenTimeEntryAccess(reason: string, details?: Record<string, unknown>): ApplicationError {
   return applicationError('forbidden_time_entry_access', `Time tracking access denied: ${reason}.`, details);
+}
+
+export function taxRateNotFound(taxRateId: string): ApplicationError {
+  return applicationError('tax_rate_not_found', `Tax rate "${taxRateId}" was not found.`, { taxRateId });
+}
+
+export function taxRateNameTaken(name: string): ApplicationError {
+  return applicationError('tax_rate_name_taken', `A tax rate named "${name}" already exists in this organization.`, { name });
+}
+
+export function taxRateInUse(taxRateId: string): ApplicationError {
+  return applicationError('tax_rate_in_use', `Tax rate "${taxRateId}" is assigned to products and cannot be deleted. Desactívalo en su lugar.`, { taxRateId });
+}
+
+export function invalidTaxRate(reason: string, details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_tax_rate', `Tax rate data is invalid: ${reason}.`, details);
+}
+
+export function modifierOptionNotFound(modifierOptionId: string): ApplicationError {
+  return applicationError('modifier_option_not_found', `Modifier option "${modifierOptionId}" was not found.`, { modifierOptionId });
+}
+
+export function invalidModifierOptionOverride(reason: string, details?: Record<string, unknown>): ApplicationError {
+  return applicationError('invalid_modifier_option_override', `Modifier option price override is invalid: ${reason}.`, details);
 }

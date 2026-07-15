@@ -54,6 +54,11 @@ import type {
   CreatePlatterComponentRequest,
   UpdatePlatterComponentRequest,
   PlatterComponentAdminDto,
+  TaxRateDto,
+  CreateTaxRateRequest,
+  UpdateTaxRateRequest,
+  ModifierOptionOverrideDto,
+  SetModifierOptionPriceOverrideRequest,
 } from './restaurant-pos-api.models';
 
 @Injectable({
@@ -399,5 +404,49 @@ export class RestaurantPosApiService {
 
   deletePlatterComponent(restaurantId: string, productId: string, componentId: string): Observable<void> {
     return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/products/${productId}/platter-components/${componentId}`);
+  }
+
+  // ── Tipos de IVA (admin) ────────────────────────────────────────────────────
+
+  listTaxRates(restaurantId: string): Observable<TaxRateDto[]> {
+    return this.http.get<TaxRateDto[]>(`${this.restaurantsUrl}/${restaurantId}/tax-rates`);
+  }
+
+  createTaxRate(restaurantId: string, body: CreateTaxRateRequest): Observable<TaxRateDto> {
+    return this.http.post<TaxRateDto>(`${this.restaurantsUrl}/${restaurantId}/tax-rates`, body);
+  }
+
+  updateTaxRate(restaurantId: string, taxRateId: string, body: UpdateTaxRateRequest): Observable<TaxRateDto> {
+    return this.http.patch<TaxRateDto>(`${this.restaurantsUrl}/${restaurantId}/tax-rates/${taxRateId}`, body);
+  }
+
+  deleteTaxRate(restaurantId: string, taxRateId: string): Observable<void> {
+    return this.http.delete<void>(`${this.restaurantsUrl}/${restaurantId}/tax-rates/${taxRateId}`);
+  }
+
+  // ── Precios de modificador por producto (overrides) ─────────────────────────
+
+  listModifierOptionOverrides(restaurantId: string, productId: string): Observable<ModifierOptionOverrideDto[]> {
+    return this.http.get<ModifierOptionOverrideDto[]>(
+      `${this.restaurantsUrl}/${restaurantId}/products/${productId}/modifier-option-overrides`,
+    );
+  }
+
+  setModifierOptionPriceOverride(
+    restaurantId: string,
+    productId: string,
+    modifierOptionId: string,
+    body: SetModifierOptionPriceOverrideRequest,
+  ): Observable<ModifierOptionOverrideDto> {
+    return this.http.put<ModifierOptionOverrideDto>(
+      `${this.restaurantsUrl}/${restaurantId}/products/${productId}/modifier-options/${modifierOptionId}/price-override`,
+      body,
+    );
+  }
+
+  clearModifierOptionPriceOverride(restaurantId: string, productId: string, modifierOptionId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.restaurantsUrl}/${restaurantId}/products/${productId}/modifier-options/${modifierOptionId}/price-override`,
+    );
   }
 }

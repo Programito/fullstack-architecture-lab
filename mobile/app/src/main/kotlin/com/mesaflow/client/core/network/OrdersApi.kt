@@ -45,6 +45,12 @@ interface OrdersApi {
         @Body body: RegisterPaymentRequestDto,
     ): OrderResponseDto
 
+    @POST("restaurants/{restaurantId}/service-points/{tableId}/free")
+    suspend fun freeServicePoint(
+        @Path("restaurantId") restaurantId: String,
+        @Path("tableId") tableId: String,
+    )
+
     /**
      * Estado del pedido activo de la mesa, con el estado de cada línea en
      * cocina (pending/sent_to_kitchen/preparing/ready/picked_up/served).

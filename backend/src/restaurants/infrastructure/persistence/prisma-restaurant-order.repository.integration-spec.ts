@@ -118,6 +118,33 @@ describe('PrismaRestaurantOrderRepository (integration)', () => {
     expect(result).toBeNull();
   });
 
+  it('clears the active order for a table', async () => {
+    const opened = await repository.open({ restaurantId, tableId, openedByUserId: userId, guestCount: 2 });
+    await prisma.orderLine.create({
+      data: {
+        orderId: opened.order.id,
+        productNameSnapshot: 'Coca-Cola',
+        productTypeSnapshot: 'simple',
+        courseSnapshot: 'drinks',
+        preparationRouteSnapshot: 'bar',
+        basePriceCentsSnapshot: 320,
+        unitPriceCents: 320,
+        quantity: 1,
+        subtotalCents: 320,
+        taxCents: 0,
+        status: 'pending',
+        configurationSignature: 'coke::medium',
+      },
+    });
+
+    await repository.clearActiveByTable(restaurantId, tableId);
+
+    const active = await repository.findActiveByTable(restaurantId, tableId);
+    const persisted = await prisma.order.findUnique({ where: { id: opened.order.id } });
+    expect(active).toBeNull();
+    expect(persisted).toBeNull();
+  });
+
   it('finds an order by id', async () => {
     const opened = await repository.open({ restaurantId, tableId, openedByUserId: userId, guestCount: 4 });
 
@@ -171,5 +198,73 @@ describe('PrismaRestaurantOrderRepository (integration)', () => {
     expect(paid.order.status).toBe('paid');
     expect(paid.lines).toHaveLength(1);
     expect(paid.lines[0]?.status).toBe('preparing');
+  });
+
+  it('applies a per-product modifier option price override instead of the default price when adding a line', async () => {
+    const organization = await prisma.restaurant.findUniqueOrThrow({
+      where: { id: restaurantId },
+      select: { organizationId: true },
+    });
+
+    const product = await prisma.product.create({
+      data: {
+        organizationId: organization.organizationId,
+        name: 'Coca-Cola',
+        productType: 'simple',
+        defaultCourse: 'drinks',
+        defaultPreparationRoute: 'bar',
+      },
+    });
+    const restaurantProduct = await prisma.restaurantProduct.create({
+      data: {
+        restaurantId,
+        productId: product.id,
+        priceCents: 250,
+        currency: 'EUR',
+        sortOrder: 1,
+      },
+    });
+    const modifierGroup = await prisma.modifierGroup.create({
+      data: {
+        organizationId: organization.organizationId,
+        name: 'Tamaño de bebida',
+        selectionType: 'single',
+        minSelections: 1,
+        maxSelections: 1,
+        isRequired: true,
+      },
+    });
+    const modifierOption = await prisma.modifierOption.create({
+      data: {
+        modifierGroupId: modifierGroup.id,
+        name: 'XL',
+        priceDeltaCents: 100,
+        sortOrder: 1,
+      },
+    });
+    await prisma.restaurantProductModifierGroup.create({
+      data: { restaurantProductId: restaurantProduct.id, modifierGroupId: modifierGroup.id, sortOrder: 1 },
+    });
+    await prisma.restaurantProductModifierOptionOverride.create({
+      data: { restaurantProductId: restaurantProduct.id, modifierOptionId: modifierOption.id, priceDeltaCents: 150 },
+    });
+
+    const opened = await repository.open({ restaurantId, tableId, openedByUserId: userId, guestCount: 1 });
+
+    const view = await repository.addLine({
+      restaurantId,
+      orderId: opened.order.id,
+      restaurantProductId: restaurantProduct.id,
+      quantity: 1,
+      kitchenNote: null,
+      modifiers: [{ modifierGroupId: modifierGroup.id, modifierOptionId: modifierOption.id, quantity: 1 }],
+      comboSlots: [],
+      platterComponents: [],
+    });
+
+    const line = view.lines[0];
+    // El override (150) debe prevalecer sobre el priceDeltaCents por defecto del modificador (100).
+    expect(line?.modifiers).toEqual([expect.objectContaining({ optionName: 'XL', priceDeltaCents: 150, quantity: 1 })]);
+    expect(line?.unitPriceCents).toBe(250 + 150);
   });
 });

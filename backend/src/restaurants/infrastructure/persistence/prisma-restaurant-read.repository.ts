@@ -69,6 +69,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
                   include: {
                     product: {
                       include: {
+                        taxRate: { select: { name: true, ratePercent: true } },
                         comboDefinition: {
                           include: {
                             slots: {
@@ -96,6 +97,9 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
                           include: { options: { orderBy: { sortOrder: 'asc' } } },
                         },
                       },
+                    },
+                    modifierOptionOverrides: {
+                      select: { modifierOptionId: true, priceDeltaCents: true },
                     },
                   },
                 },
@@ -148,12 +152,17 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
           currency: item.restaurantProduct.currency,
           isAvailable: item.restaurantProduct.isAvailable && item.isVisible,
           isVisible: item.isVisible,
+          productAvailable: item.restaurantProduct.isAvailable,
           defaultCourse: (item.restaurantProduct.product.defaultCourse ?? 'other') as
             | 'drinks'
             | 'starter'
             | 'main'
             | 'dessert'
             | 'other',
+          taxRateName: item.restaurantProduct.product.taxRate?.name ?? null,
+          taxRatePercent: item.restaurantProduct.product.taxRate
+            ? Number(item.restaurantProduct.product.taxRate.ratePercent.toString())
+            : null,
           preparationRoute: (item.restaurantProduct.product.defaultPreparationRoute ?? 'direct') as
             | 'direct'
             | 'bar'
@@ -172,7 +181,9 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
               id: option.id,
               name: option.name,
               nameI18n: asNameI18n(option.nameI18n),
-              priceDeltaCents: option.priceDeltaCents,
+              priceDeltaCents:
+                item.restaurantProduct.modifierOptionOverrides.find((override) => override.modifierOptionId === option.id)?.priceDeltaCents ??
+                option.priceDeltaCents,
               isAvailable: option.isAvailable,
             })),
           })),
@@ -586,6 +597,9 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         quantity: line.quantity,
         unitPriceCents: line.unitPriceCents,
         subtotalCents: line.subtotalCents,
+        taxRateName: line.taxRateNameSnapshot,
+        taxRatePercent: line.taxRatePercentSnapshot ? Number(line.taxRatePercentSnapshot.toString()) : null,
+        taxCents: line.taxCents,
         status: line.status as ServiceOrderLineStatus,
         course: this.mapServiceCourse(line.courseSnapshot),
         preparationRoute: line.preparationRouteSnapshot as ServicePointOrderView['lines'][number]['preparationRoute'],

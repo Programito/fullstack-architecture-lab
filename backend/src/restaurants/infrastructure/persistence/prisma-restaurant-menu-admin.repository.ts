@@ -2,11 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
-import { applicationError, menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken } from '../../../shared/errors/application-error';
+import { applicationError, menuSectionNameTaken, menuItemAlreadyInSection, productNameTaken, taxRateNotFound } from '../../../shared/errors/application-error';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { CreateProductData, RestaurantMenuAdminRepository, SortOrderItem, UpdateProductData } from '../../application/ports/restaurant-menu-admin-repository.port';
 import type { Allergen, NameI18n, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 import { asNameI18n, toNameI18nJson } from './name-i18n.mapper';
+
+const PRODUCT_SELECT_WITH_TAX = {
+  organizationId: true,
+  name: true,
+  nameI18n: true,
+  description: true,
+  descriptionI18n: true,
+  productType: true,
+  defaultCourse: true,
+  defaultPreparationRoute: true,
+  allergens: true,
+  taxRateId: true,
+  taxRate: { select: { name: true, ratePercent: true } },
+} as const;
 
 @Injectable()
 export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminRepository {
@@ -243,7 +257,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     const rp = await this.prisma.restaurantProduct.findFirst({
       where: { id: productId, restaurantId },
       include: {
-        product: { select: { organizationId: true, name: true, nameI18n: true, description: true, descriptionI18n: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+        product: { select: PRODUCT_SELECT_WITH_TAX },
         modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
@@ -264,6 +278,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     try {
       const rp = await this.prisma.$transaction(async (tx) => {
         const modifierGroups = await this.resolveModifierGroups(tx, restaurant.organizationId, data.modifierGroupIds);
+        const taxRateId = await this.resolveTaxRateId(tx, restaurant.organizationId, data.taxRateId);
         const product = await tx.product.create({
           data: {
             organizationId: restaurant.organizationId,
@@ -275,6 +290,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
             defaultCourse: data.course,
             defaultPreparationRoute: data.preparationRoute,
             allergens: data.allergens ?? [],
+            taxRateId,
           },
         });
 
@@ -298,7 +314,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
               : undefined,
           },
           include: {
-            product: { select: { organizationId: true, name: true, nameI18n: true, description: true, descriptionI18n: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+            product: { select: PRODUCT_SELECT_WITH_TAX },
             modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
           },
         });
@@ -330,7 +346,11 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
           throw new ApplicationErrorException(applicationError('restaurant_product_not_found', `Restaurant product "${productId}" was not found.`, { productId }));
         }
 
-        if (data.name !== undefined || data.nameI18n !== undefined || data.description !== undefined || data.descriptionI18n !== undefined || data.course !== undefined || data.preparationRoute !== undefined || data.allergens !== undefined) {
+        const taxRateId = data.taxRateId !== undefined
+          ? await this.resolveTaxRateId(tx, currentProduct.organizationId, data.taxRateId)
+          : undefined;
+
+        if (data.name !== undefined || data.nameI18n !== undefined || data.description !== undefined || data.descriptionI18n !== undefined || data.course !== undefined || data.preparationRoute !== undefined || data.allergens !== undefined || taxRateId !== undefined) {
           await tx.product.update({
             where: { id: existing.productId },
             data: {
@@ -341,6 +361,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
               ...(data.course !== undefined && { defaultCourse: data.course }),
               ...(data.preparationRoute !== undefined && { defaultPreparationRoute: data.preparationRoute }),
               ...(data.allergens !== undefined && { allergens: data.allergens }),
+              ...(taxRateId !== undefined && { taxRateId }),
             },
           });
         }
@@ -368,7 +389,7 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
             ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           },
           include: {
-            product: { select: { organizationId: true, name: true, nameI18n: true, description: true, descriptionI18n: true, productType: true, defaultCourse: true, defaultPreparationRoute: true, allergens: true } },
+            product: { select: PRODUCT_SELECT_WITH_TAX },
             modifierGroups: { select: { modifierGroupId: true }, orderBy: { sortOrder: 'asc' } },
           },
         });
@@ -430,6 +451,30 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
 
     return uniqueModifierGroupIds;
   }
+
+  // Devuelve el `taxRateId` validado (o `null` si se pide desasignar el IVA). Se valida que la
+  // tasa exista y pertenezca a la misma organizacion que el producto, igual que
+  // `resolveModifierGroups` hace con los grupos de modificadores: evita que un producto de una
+  // organizacion quede enlazado a un tipo de IVA de otra.
+  private async resolveTaxRateId(
+    tx: Prisma.TransactionClient,
+    organizationId: string,
+    requestedTaxRateId: string | null | undefined,
+  ): Promise<string | null> {
+    if (!requestedTaxRateId) {
+      return null;
+    }
+
+    const taxRate = await tx.taxRate.findFirst({
+      where: { id: requestedTaxRateId, organizationId },
+      select: { id: true },
+    });
+    if (!taxRate) {
+      throw new ApplicationErrorException(taxRateNotFound(requestedTaxRateId));
+    }
+
+    return taxRate.id;
+  }
 }
 
 function mapSection(section: { id: string; menuId: string; name: string; nameI18n?: unknown; sortOrder: number; isVisible: boolean }): RestaurantMenuSectionView {
@@ -477,6 +522,8 @@ type RpWithProduct = {
     defaultCourse: string;
     defaultPreparationRoute: string;
     allergens?: string[];
+    taxRateId?: string | null;
+    taxRate?: { name: string; ratePercent: Prisma.Decimal } | null;
   };
 };
 
@@ -502,5 +549,8 @@ function mapProductDetail(rp: RpWithProduct): RestaurantProductDetail {
     currency: rp.currency,
     isAvailable: rp.isAvailable,
     isVisible: rp.isVisible,
+    taxRateId: rp.product.taxRateId ?? null,
+    taxRateName: rp.product.taxRate?.name ?? null,
+    taxRatePercent: rp.product.taxRate ? Number(rp.product.taxRate.ratePercent.toString()) : null,
   };
 }

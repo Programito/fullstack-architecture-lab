@@ -83,6 +83,12 @@ export class ServiceTablePanel {
     const status = this.table()?.status;
     return this.serviceInfo()?.canCharge && (status === 'served' || status === 'payment_pending');
   });
+  protected readonly orderTaxAmount = computed(() => this.order()?.tax ?? 0);
+  protected readonly orderTaxableBase = computed(() => {
+    const order = this.order();
+    if (!order) return 0;
+    return Math.max(0, order.total - (order.tax ?? 0));
+  });
 
   protected tableStatusLabel(status: TableStatus): string {
     return this.translate(`restaurantPos.tableStatus.${status}`);

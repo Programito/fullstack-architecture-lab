@@ -85,21 +85,24 @@ describe('seedMesaFlowDemo', () => {
     expect(restaurantProductUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({
-          imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg',
+          imageUrl:
+            'https://res.cloudinary.com/dcveottyl/image/upload/v1783953592/restaurants/restaurant-mesaflow-centro/products/f0y9imzeuxg1plahzxrq.png',
         }),
       }),
     );
     expect(restaurantProductUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({
-          imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/menu-classic-burger.jpg',
+          imageUrl:
+            'https://res.cloudinary.com/dcveottyl/image/upload/v1783955513/restaurants/restaurant-mesaflow-centro/products/djwly9xwte1bv1gwvibc.png',
         }),
       }),
     );
     expect(restaurantProductUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({
-          imageUrl: null,
+          imageUrl:
+            'https://res.cloudinary.com/dcveottyl/image/upload/v1783954747/restaurants/restaurant-mesaflow-centro/products/zom194mygzyz75xukfc4.png',
         }),
       }),
     );

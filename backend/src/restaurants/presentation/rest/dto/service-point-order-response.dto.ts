@@ -64,6 +64,15 @@ class ServicePointOrderLineResponseDto {
   @ApiProperty({ example: 1350 })
   subtotalCents!: number;
 
+  @ApiPropertyOptional({ example: 'IVA General', nullable: true })
+  taxRateName!: string | null;
+
+  @ApiPropertyOptional({ example: 21, nullable: true })
+  taxRatePercent!: number | null;
+
+  @ApiProperty({ example: 234 })
+  taxCents!: number;
+
   @ApiProperty({ enum: ['pending', 'sent_to_kitchen', 'preparing', 'ready', 'picked_up', 'served', 'cancelled'] })
   status!: ServicePointOrderLineView['status'];
 

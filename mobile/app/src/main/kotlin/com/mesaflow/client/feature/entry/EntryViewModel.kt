@@ -6,6 +6,7 @@ import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.data.AuthRepository
 import com.mesaflow.client.core.data.CartRepository
+import com.mesaflow.client.core.data.OrderRepository
 import com.mesaflow.client.core.data.PlatformReadinessRepository
 import com.mesaflow.client.core.datastore.SessionStore
 import com.mesaflow.client.core.model.PlatformStatus
@@ -48,6 +49,7 @@ class EntryViewModel @Inject constructor(
     private val sessionStore: SessionStore,
     private val platformReadinessRepository: PlatformReadinessRepository,
     private val cartRepository: CartRepository,
+    private val orderRepository: OrderRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntryUiState())
@@ -119,9 +121,16 @@ class EntryViewModel @Inject constructor(
                     // aqui con el carrito todavia en Room) no debe colarse en la mesa recien
                     // elegida. El carrito esta indexado solo por restaurantId (ver CartRepository).
                     cartRepository.clear(context.restaurantId)
-                    sessionStore.saveTableContext(context)
-                    _uiState.update { it.copy(isLoading = false) }
-                    _navigateToMenu.tryEmit(Unit)
+                    when (val freeResult = orderRepository.freeTable(context.restaurantId, context.tableId)) {
+                        is AppResult.Success -> {
+                            sessionStore.saveTableContext(context)
+                            _uiState.update { it.copy(isLoading = false) }
+                            _navigateToMenu.tryEmit(Unit)
+                        }
+                        is AppResult.Error -> _uiState.update {
+                            it.copy(isLoading = false, error = freeResult.error.toEntryError())
+                        }
+                    }
                 }
                 is AppResult.Error -> _uiState.update {
                     it.copy(isLoading = false, error = result.error.toEntryError())

@@ -21,6 +21,7 @@ export type UpdateRestaurantProductCommand = {
   imageUrl?: string | null;
   modifierGroupIds?: string[];
   allergens?: Allergen[];
+  taxRateId?: string | null;
 };
 
 @Injectable()
@@ -44,6 +45,7 @@ export class UpdateRestaurantProductUseCase {
         imageUrl: command.imageUrl,
         modifierGroupIds: command.modifierGroupIds,
         allergens: command.allergens,
+        taxRateId: command.taxRateId,
       });
       if (!product) {
         return err(restaurantProductNotFound(command.productId));

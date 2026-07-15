@@ -12,9 +12,19 @@ import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 describe('RestaurantPosServicePage', () => {
   const createRestaurantPosApiMock = (): Pick<
     RestaurantPosApiService,
-    'listRestaurants' | 'getRestaurantMenu' | 'getRestaurantServiceFloor' | 'getRestaurantServicePoint' | 'getRestaurantServicePointOrder' | 'occupyRestaurantServicePoint' | 'sendRestaurantServicePointToKitchen' | 'markRestaurantServicePointServed' | 'chargeRestaurantServicePoint' | 'freeRestaurantServicePoint'
+    | 'listRestaurants'
+    | 'getRestaurantMenu'
+    | 'getRestaurantServiceFloor'
+    | 'getRestaurantServicePoint'
+    | 'getRestaurantServicePointOrder'
+    | 'occupyRestaurantServicePoint'
+    | 'sendRestaurantServicePointToKitchen'
+    | 'markRestaurantServicePointServed'
+    | 'chargeRestaurantServicePoint'
+    | 'registerRestaurantOrderPayment'
+    | 'freeRestaurantServicePoint'
   > => {
-    const tableStatuses = new Map<string, 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'paid'>([
+    const tableStatuses = new Map<string, 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'payment_pending' | 'paid'>([
       ['table-1', 'free'],
       ['table-2', 'free'],
       ['table-3', 'free'],
@@ -368,7 +378,18 @@ describe('RestaurantPosServicePage', () => {
       });
     }),
     chargeRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
-      tableStatuses.set(tableId, 'paid');
+      tableStatuses.set(tableId, 'payment_pending');
+      const currentOrder = serviceOrders.get(tableId);
+      if (currentOrder) {
+        serviceOrders.set(tableId, {
+          order: {
+            ...currentOrder.order,
+            status: 'payment_pending',
+            updatedAt: '2026-06-22T10:14:00.000Z',
+          },
+          lines: currentOrder.lines,
+        });
+      }
       const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === tableId)!;
       const element = MOCK_FLOOR_ELEMENTS.find((candidate) => candidate.tableId === tableId) ?? null;
 
@@ -378,7 +399,7 @@ describe('RestaurantPosServicePage', () => {
           tableNumber: table.number,
           name: null,
           capacity: table.capacity,
-          status: 'paid' as const,
+          status: 'payment_pending' as const,
           occupiedAt: '2026-06-22T10:15:00.000Z',
           serviceStartedAt: '2026-06-22T10:15:00.000Z',
         },
@@ -396,15 +417,63 @@ describe('RestaurantPosServicePage', () => {
           : null,
         serviceInfo: {
           guestCount: table.capacity,
-          lineCount: 0,
-          totalCents: 0,
+          lineCount: currentOrder?.lines.length ?? 0,
+          totalCents: currentOrder?.order.totalCents ?? 0,
           currency: 'EUR',
           servicePhase: {
-            course: 'none' as const,
-            status: 'no_order' as const,
+            course: 'mains' as const,
+            status: 'served' as const,
           },
           durationMinutes: 0,
         },
+      });
+    }),
+    registerRestaurantOrderPayment: vi.fn((_restaurantId: string, orderId: string, amountCents: number, method: 'cash' | 'card' | 'bizum') => {
+      const [tableId, currentOrder] =
+        [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId) ?? [];
+
+      if (!tableId || !currentOrder) {
+        throw new Error(`Missing order ${orderId}`);
+      }
+
+      tableStatuses.set(tableId, 'paid');
+      serviceOrders.set(tableId, {
+        order: {
+          ...currentOrder.order,
+          status: 'paid',
+          updatedAt: '2026-06-22T10:15:00.000Z',
+        },
+        lines: currentOrder.lines,
+      });
+
+      return of({
+        order: {
+          id: currentOrder.order.id,
+          restaurantId: 'restaurant-mesaflow-centro',
+          tableId,
+          status: 'paid' as const,
+          currency: currentOrder.order.currency,
+          guestCount: 4,
+          subtotalCents: currentOrder.order.subtotalCents,
+          taxCents: currentOrder.order.taxCents,
+          discountTotalCents: 0,
+          totalCents: currentOrder.order.totalCents,
+          paidCents: amountCents,
+          balanceCents: 0,
+          openedAt: currentOrder.order.openedAt,
+          updatedAt: '2026-06-22T10:15:00.000Z',
+          closedAt: '2026-06-22T10:15:00.000Z',
+        },
+        lines: [],
+        payments: [
+          {
+            id: 'payment-1',
+            method,
+            amountCents,
+            status: 'completed' as const,
+            paidAt: '2026-06-22T10:15:00.000Z',
+          },
+        ],
       });
     }),
     freeRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
@@ -659,6 +728,12 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     expect(apiMock.chargeRestaurantServicePoint).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(apiMock.registerRestaurantOrderPayment).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'order:table-1',
+      1250,
+      'cash',
+    );
     expect(store.selectedOrder()).toEqual(expect.objectContaining({ paymentMethod: 'cash', status: 'paid' }));
     expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'paid' }));
   });

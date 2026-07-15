@@ -29,6 +29,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'invalid_analytics_range':
     case 'invalid_combo_slot_configuration':
     case 'invalid_platter_component_configuration':
+    case 'invalid_tax_rate':
+    case 'invalid_modifier_option_override':
       return new BadRequestException(error.message);
 
     case 'user_not_found':
@@ -50,6 +52,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'modifier_group_not_found':
     case 'combo_slot_not_found':
     case 'platter_component_not_found':
+    case 'tax_rate_not_found':
+    case 'modifier_option_not_found':
       return new NotFoundException(error.message);
 
     case 'email_already_taken':
@@ -65,6 +69,8 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'time_entry_already_open':
     case 'time_entry_not_open':
     case 'time_entry_change_request_already_reviewed':
+    case 'tax_rate_name_taken':
+    case 'tax_rate_in_use':
       // Se incluye `code` en el cuerpo (ademas del `message` por defecto) para que los clientes
       // puedan distinguir el tipo exacto de conflicto (p.ej. `product_name_taken` vs.
       // `modifier_group_name_taken`) en vez de asumir que todo 409 es "nombre de producto duplicado".
