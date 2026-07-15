@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: proyecto-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    autoDeployTrigger: commit
+    buildCommand: pnpm install && pnpm build
+    preDeployCommand: pnpm prisma:deploy
+    startCommand: pnpm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: proyecto-api
+      - key: JWT_AUDIENCE
+        value: proyecto-frontend
+      - key: AUTH_COOKIE_SECURE
+        value: "true"
+      - key: DEMO_LOGIN_ENABLED
+        value: "false"
+      - key: SENTRY_ENABLED
+        value: "false"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

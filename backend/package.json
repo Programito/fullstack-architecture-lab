@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/src/main.js",
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "pnpm prisma:generate && nest build",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
