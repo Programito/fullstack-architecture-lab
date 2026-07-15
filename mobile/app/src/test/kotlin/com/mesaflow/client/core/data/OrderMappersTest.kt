@@ -73,7 +73,13 @@ class OrderMappersTest {
     @Test
     fun `mapea el estado del punto de servicio con lineas conocidas`() {
         val dto = ServicePointOrderResponseDto(
-            order = ServicePointOrderInfoDto(id = "order-1", tableId = "mesa-1", status = "sent_to_kitchen"),
+            order = ServicePointOrderInfoDto(
+                id = "order-1",
+                tableId = "mesa-1",
+                status = "sent_to_kitchen",
+                totalCents = 1_880L,
+                currency = "EUR",
+            ),
             lines = listOf(
                 ServicePointOrderLineDto(id = "line-1", productName = "Hamburguesa craft", quantity = 1, status = "preparing"),
                 ServicePointOrderLineDto(id = "line-2", productName = "Agua mineral", quantity = 2, status = "ready"),
@@ -84,6 +90,8 @@ class OrderMappersTest {
 
         assertEquals("order-1", status.orderId)
         assertEquals("sent_to_kitchen", status.status)
+        assertEquals(1_880L, status.totalCents)
+        assertEquals("EUR", status.currency)
         assertEquals(2, status.lines.size)
         assertEquals("Hamburguesa craft", status.lines[0].productName)
         assertEquals(OrderLineKitchenStatus.PREPARING, status.lines[0].status)
@@ -110,6 +118,8 @@ class OrderMappersTest {
 
         assertNull(status.orderId)
         assertNull(status.status)
+        assertEquals(0L, status.totalCents)
+        assertEquals("EUR", status.currency)
         assertTrue(status.lines.isEmpty())
     }
 }

@@ -30,6 +30,8 @@ data class SettingsKey(
 @Serializable
 data class CheckoutKey(
     val orderId: String,
+    val subtotalCents: Long,
+    val taxCents: Long,
     val totalCents: Long,
     val currency: String,
     val linesJson: String,

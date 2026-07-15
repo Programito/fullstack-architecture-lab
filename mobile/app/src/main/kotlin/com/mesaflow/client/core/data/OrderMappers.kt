@@ -50,6 +50,8 @@ fun CartLine.toAddLineRequest(): AddOrderLineRequestDto? {
 fun ServicePointOrderResponseDto.toServicePointOrderStatus(): ServicePointOrderStatus = ServicePointOrderStatus(
     orderId = order?.id,
     status = order?.status,
+    totalCents = order?.totalCents ?: 0L,
+    currency = order?.currency ?: "EUR",
     lines = lines.map { it.toServicePointOrderLine() },
 )
 

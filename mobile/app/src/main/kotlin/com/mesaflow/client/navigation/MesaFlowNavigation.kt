@@ -87,10 +87,11 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                     onBack = { backStack.removeLastOrNull() },
                     onSettingsClick = { backStack.add(SettingsKey()) },
                     onCheckout = { submitted, lines, tableLabel ->
-                        backStack.removeLastOrNull()
                         backStack.add(
                             CheckoutKey(
                                 orderId = submitted.orderId,
+                                subtotalCents = submitted.subtotalCents,
+                                taxCents = submitted.taxCents,
                                 totalCents = submitted.totalCents,
                                 currency = submitted.currency,
                                 linesJson = Json.encodeToString(lines),
@@ -115,12 +116,16 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
             entry<CheckoutKey> { key ->
                 CheckoutScreen(
                     orderId = key.orderId,
+                    subtotalCents = key.subtotalCents,
+                    taxCents = key.taxCents,
                     totalCents = key.totalCents,
                     currency = key.currency,
                     linesJson = key.linesJson,
                     dailyNumber = key.dailyNumber,
                     tableLabel = key.tableLabel,
-                    onBack = { backStack.removeLastOrNull() },
+                    onBack = {
+                        backStack.removeLastOrNull()
+                    },
                     onSettingsClick = { backStack.add(SettingsKey()) },
                     onDone = {
                         // Pago aceptado: vuelta limpia a la carta (sin carrito ni cobro detrás).

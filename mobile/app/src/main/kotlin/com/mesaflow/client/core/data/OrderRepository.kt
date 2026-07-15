@@ -79,6 +79,8 @@ class OrderRepository @Inject constructor(
                 orderId = orderId,
                 status = summary.status,
                 dailyNumber = summary.dailyNumber,
+                subtotalCents = summary.subtotalCents,
+                taxCents = summary.taxCents,
                 totalCents = summary.totalCents,
                 currency = summary.currency,
             ),
@@ -116,6 +118,9 @@ class OrderRepository @Inject constructor(
         }
     }
 
+    suspend fun freeTable(restaurantId: String, tableId: String): AppResult<Unit> =
+        safeApiCall { ordersApi.freeServicePoint(restaurantId, tableId) }
+
     /**
      * Estado en vivo (por sondeo, ver [com.mesaflow.client.feature.cart.CartViewModel])
      * del pedido activo de la mesa, con el estado de cada línea en cocina.
@@ -130,8 +135,11 @@ class OrderRepository @Inject constructor(
 
     private fun OrderLineDto.toPaidOrderLine(currency: String): PaidOrderLine =
         PaidOrderLine(
+            menuItemId = productId ?: restaurantProductId ?: id,
+            restaurantProductId = restaurantProductId,
             name = productName,
             quantity = quantity,
+            basePriceCents = basePriceCents,
             totalCents = subtotalCents,
             currency = currency,
             selections = CartSelections(

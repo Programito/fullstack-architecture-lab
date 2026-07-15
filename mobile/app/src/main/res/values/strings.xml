@@ -36,6 +36,8 @@
     <string name="menu_allergen_filter_title">Alérgenos a evitar</string>
     <string name="menu_allergen_filter_hint">Basado en los alérgenos que declara el restaurante. Ante una alergia grave, confírmalo también con el personal.</string>
     <string name="menu_contains_allergens">Contiene: %1$s</string>
+    <string name="menu_tax_rate_label">IVA: %1$s%%</string>
+    <string name="menu_no_tax_rate">Sin IVA asignado</string>
     <string name="allergen_gluten">Gluten</string>
     <string name="allergen_crustaceans">Crustáceos</string>
     <string name="allergen_eggs">Huevos</string>
@@ -68,6 +70,8 @@
     <string name="cart_remove_line">Eliminar producto</string>
     <string name="cart_edit_line">Editar producto</string>
     <string name="cart_clear">Vaciar pedido</string>
+    <string name="cart_open_order_total_label">Ya pendiente en la mesa</string>
+    <string name="cart_new_items_total_label">Nuevo pedido</string>
     <string name="cart_error_submit">No se ha podido enviar el pedido. Inténtalo de nuevo.</string>
     <string name="cart_error_server">No hemos podido conectar con el restaurante. Tu pedido sigue en el carrito; inténtalo de nuevo en unos segundos.</string>
     <string name="cart_submitted_title">Resumen del pedido</string>
@@ -87,6 +91,9 @@
     <string name="cart_go_to_checkout">Ir a pagar</string>
     <string name="checkout_title">Pago</string>
     <string name="checkout_amount_label">Total a pagar</string>
+    <string name="checkout_taxable_base_label">Base imponible</string>
+    <string name="checkout_tax_label">IVA</string>
+    <string name="checkout_total_label">Total</string>
     <string name="checkout_method_title">Método de pago</string>
     <string name="checkout_method_card">Tarjeta</string>
     <string name="checkout_method_bizum">Bizum</string>
@@ -121,7 +128,6 @@
     <string name="checkout_ticket_number">Pedido #%1$d</string>
     <string name="checkout_ticket_table_time">Mesa %1$s · %2$s</string>
     <string name="checkout_ticket_table">Mesa %1$s</string>
-    <string name="checkout_previous_balance_label">Saldo anterior de la mesa</string>
     <string name="checkout_paid_label">Pagado</string>
     <string name="checkout_paid_with">Pagado con %1$s</string>
     <string name="checkout_pending_label">Pendiente</string>

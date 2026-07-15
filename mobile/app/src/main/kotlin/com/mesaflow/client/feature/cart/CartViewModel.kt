@@ -32,6 +32,10 @@ data class CartUiState(
     val isSubmitting: Boolean = false,
     val submitError: AppError? = null,
     val submitted: SubmittedOrder? = null,
+    /** Total ya abierto en backend para esta mesa, si existe un pedido activo. */
+    val activeTableTotalCents: Long = 0L,
+    /** Moneda del pedido activo de mesa, para cuadrar el total pagable en UI. */
+    val activeTableCurrency: String = "EUR",
     /**
      * Foto de las líneas justo antes de enviarlas: el carrito real se vacía en cuanto el envío
      * tiene éxito, así que es la única fuente para el ticket detallado en Cobro/Pago aceptado.
@@ -82,6 +86,23 @@ class CartViewModel @Inject constructor(
             lines.collect { liveLines ->
                 _uiState.update { reconcileCartUiStateWithLines(it, liveLines) }
             }
+        }
+        viewModelScope.launch {
+            sessionStore.tableContext
+                .filterNotNull()
+                .collect { table ->
+                    when (val result = orderRepository.getServicePointOrder(table.restaurantId, table.tableId)) {
+                        is AppResult.Success -> _uiState.update {
+                            it.copy(
+                                activeTableTotalCents = result.data.totalCents,
+                                activeTableCurrency = result.data.currency,
+                            )
+                        }
+                        is AppResult.Error -> _uiState.update {
+                            it.copy(activeTableTotalCents = 0L, activeTableCurrency = "EUR")
+                        }
+                    }
+                }
         }
     }
 
@@ -144,6 +165,8 @@ class CartViewModel @Inject constructor(
                         it.copy(
                             isSubmitting = false,
                             submitted = result.data,
+                            activeTableTotalCents = result.data.totalCents,
+                            activeTableCurrency = result.data.currency,
                             submittedLines = linesSnapshot,
                             tableLabel = table.tableId,
                         )

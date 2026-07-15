@@ -117,6 +117,8 @@ private class FakeOrdersApi : OrdersApi {
     }
 
     var payments = mutableListOf<RegisterPaymentRequestDto>()
+    var freedServicePoints = mutableListOf<Pair<String, String>>()
+    var failOnFreeServicePoint = false
 
     override suspend fun registerPayment(
         restaurantId: String,
@@ -154,6 +156,11 @@ private class FakeOrdersApi : OrdersApi {
                 ),
             ),
         )
+    }
+
+    override suspend fun freeServicePoint(restaurantId: String, tableId: String) {
+        if (failOnFreeServicePoint) throw IOException("network down")
+        freedServicePoints += restaurantId to tableId
     }
 
     var servicePointOrderCalls = mutableListOf<Pair<String, String>>()
@@ -203,8 +210,10 @@ class OrderRepositoryTest {
 
         val result = repository.submitCart("rest-1", "mesa-1", lines)
 
-        assertTrue(result is AppResult.Success)
-        assertEquals("order-1", (result as AppResult.Success).data.orderId)
+        assertTrue(result is AppResult.Success<*>)
+        val submitted = (result as AppResult.Success).data
+        assertEquals("order-1", submitted.orderId)
+        assertEquals(3_000L, submitted.totalCents)
         assertEquals(1, api.openCalls)
         assertEquals(2, api.addedLines.size)
         assertEquals(2, api.addedLines.first().quantity)
@@ -224,6 +233,19 @@ class OrderRepositoryTest {
 
         assertTrue(result is AppResult.Success)
         assertFalse(cartRepository.hasFailedSubmission("rest-1").first())
+    }
+
+    @Test
+    fun `submitCart usa el total real confirmado por backend`() = runTest {
+        api.totalCents = 840L
+        cartRepository.add("rest-1", cartLine("item-1"))
+        val lines = cartRepository.cart("rest-1").first()
+
+        val result = repository.submitCart("rest-1", "mesa-1", lines)
+
+        assertTrue(result is AppResult.Success)
+        val submitted = (result as AppResult.Success).data
+        assertEquals(1_840L, submitted.totalCents)
     }
 
     @Test
@@ -274,6 +296,8 @@ class OrderRepositoryTest {
         assertEquals(2500, payment.paidCents)
         assertEquals(0, payment.balanceCents)
         assertEquals(2, payment.lines.size)
+        assertEquals("prod-item-1", payment.lines[0].menuItemId)
+        assertEquals("prod-item-1", payment.lines[0].restaurantProductId)
         assertEquals(320, payment.lines[0].totalCents)
         assertEquals("Mediana", payment.lines[0].selections.modifiers.single().optionName)
         assertEquals("Huevo extra", payment.lines[1].selections.comboOptions.single().optionName)
@@ -288,6 +312,24 @@ class OrderRepositoryTest {
         assertTrue(result is AppResult.Error)
         assertEquals(AppError.Validation, (result as AppResult.Error).error)
         assertTrue(api.payments.isEmpty())
+    }
+
+    @Test
+    fun `freeTable libera el punto de servicio en backend`() = runTest {
+        val result = repository.freeTable("rest-1", "mesa-1")
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(listOf("rest-1" to "mesa-1"), api.freedServicePoints)
+    }
+
+    @Test
+    fun `freeTable propaga errores de red`() = runTest {
+        api.failOnFreeServicePoint = true
+
+        val result = repository.freeTable("rest-1", "mesa-1")
+
+        assertTrue(result is AppResult.Error)
+        assertEquals(AppError.Network, (result as AppResult.Error).error)
     }
 
     @Test

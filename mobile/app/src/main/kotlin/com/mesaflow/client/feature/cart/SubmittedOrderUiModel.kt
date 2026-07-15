@@ -8,6 +8,11 @@ internal fun submittedOrderPrimaryTotalCents(
     fallbackTotalCents: Long,
 ): Long = submittedLines.sumOf { it.totalCents }.takeIf { it > 0L } ?: fallbackTotalCents
 
+internal fun cartPayableTotalCents(
+    liveLines: List<CartLine>,
+    activeTableTotalCents: Long,
+): Long = liveLines.sumOf { it.totalCents } + activeTableTotalCents
+
 internal fun reconcileCartUiStateWithLines(
     uiState: CartUiState,
     liveLines: List<CartLine>,

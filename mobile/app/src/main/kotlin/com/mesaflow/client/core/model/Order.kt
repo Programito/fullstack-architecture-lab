@@ -6,6 +6,8 @@ data class SubmittedOrder(
     val status: String,
     /** Número de ticket visible al cliente: contador diario por restaurante. */
     val dailyNumber: Int,
+    val subtotalCents: Long,
+    val taxCents: Long,
     val totalCents: Long,
     val currency: String,
 )
@@ -18,8 +20,11 @@ enum class PaymentMethod(val apiValue: String) {
 }
 
 data class PaidOrderLine(
+    val menuItemId: String,
+    val restaurantProductId: String?,
     val name: String,
     val quantity: Int,
+    val basePriceCents: Long,
     val totalCents: Long,
     val currency: String,
     val selections: CartSelections = CartSelections(),
@@ -71,5 +76,7 @@ data class ServicePointOrderLine(
 data class ServicePointOrderStatus(
     val orderId: String?,
     val status: String?,
+    val totalCents: Long,
+    val currency: String,
     val lines: List<ServicePointOrderLine>,
 )

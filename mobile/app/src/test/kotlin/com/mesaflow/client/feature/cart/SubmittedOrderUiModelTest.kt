@@ -26,6 +26,25 @@ class SubmittedOrderUiModelTest {
     }
 
     @Test
+    fun `adds the active table total to the new cart lines when calculating payable amount`() {
+        val liveLines = listOf(
+            cartLine(id = 1, name = "Coca-Cola", quantity = 2, basePriceCents = 320),
+            cartLine(id = 2, name = "Patatas", quantity = 1, basePriceCents = 240),
+        )
+
+        assertEquals(1_880L, cartPayableTotalCents(liveLines, activeTableTotalCents = 1_000L))
+    }
+
+    @Test
+    fun `uses only the new cart lines when there is no active table total`() {
+        val liveLines = listOf(
+            cartLine(id = 1, name = "Coca-Cola", quantity = 2, basePriceCents = 320),
+        )
+
+        assertEquals(640L, cartPayableTotalCents(liveLines, activeTableTotalCents = 0L))
+    }
+
+    @Test
     fun `filters kitchen progress to only newly submitted quantities`() {
         val submittedLines = listOf(
             cartLine(id = 1, name = "Classic Burger", quantity = 1, basePriceCents = 1_150),
@@ -78,6 +97,8 @@ class SubmittedOrderUiModelTest {
                 orderId = "order-1",
                 status = "OPEN",
                 dailyNumber = 12,
+                subtotalCents = 6_420L,
+                taxCents = 0L,
                 totalCents = 6_420L,
                 currency = "EUR",
             ),
@@ -102,6 +123,8 @@ class SubmittedOrderUiModelTest {
                 orderId = "order-1",
                 status = "OPEN",
                 dailyNumber = 12,
+                subtotalCents = 6_420L,
+                taxCents = 0L,
                 totalCents = 6_420L,
                 currency = "EUR",
             ),

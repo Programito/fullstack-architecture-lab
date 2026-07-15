@@ -93,6 +93,7 @@ data class OrderLinePlatterComponentDto(
 data class OrderLineDto(
     val id: String,
     val restaurantProductId: String? = null,
+    val productId: String? = null,
     val productName: String,
     val basePriceCents: Long = 0,
     val quantity: Int = 1,

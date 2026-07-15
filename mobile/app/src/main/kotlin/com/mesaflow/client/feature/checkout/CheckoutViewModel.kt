@@ -5,9 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.data.AuthRepository
+import com.mesaflow.client.core.data.CartRepository
 import com.mesaflow.client.core.data.OrderRepository
 import com.mesaflow.client.core.datastore.SessionStore
+import com.mesaflow.client.core.model.CartLine
+import com.mesaflow.client.core.model.CartSelections
 import com.mesaflow.client.core.model.PaymentMethod
+import com.mesaflow.client.core.model.PaidOrderLine
 import com.mesaflow.client.core.model.PaymentResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -42,6 +46,7 @@ data class CheckoutUiState(
  */
 @HiltViewModel
 class CheckoutViewModel @Inject constructor(
+    private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val sessionStore: SessionStore,
     private val authRepository: AuthRepository,
@@ -56,6 +61,12 @@ class CheckoutViewModel @Inject constructor(
      */
     private val _exitTable = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val exitTable: SharedFlow<Unit> = _exitTable.asSharedFlow()
+
+    private val _continueOrdering = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val continueOrdering: SharedFlow<Unit> = _continueOrdering.asSharedFlow()
+
+    private val _returnToCart = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val returnToCart: SharedFlow<Unit> = _returnToCart.asSharedFlow()
 
     fun onMethodSelected(method: PaymentMethod) {
         if (_uiState.value.isProcessing) return
@@ -100,14 +111,78 @@ class CheckoutViewModel @Inject constructor(
         }
     }
 
+    fun onKeepOrderingRequested() {
+        if (_uiState.value.isProcessing || _uiState.value.result == null) return
+        _uiState.update { it.copy(isProcessing = true, error = null) }
+
+        viewModelScope.launch {
+            val table = sessionStore.tableContext.first()
+            if (table == null) {
+                _uiState.update { it.copy(isProcessing = false) }
+                _continueOrdering.tryEmit(Unit)
+                return@launch
+            }
+
+            when (val result = orderRepository.freeTable(table.restaurantId, table.tableId)) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(isProcessing = false) }
+                    _continueOrdering.tryEmit(Unit)
+                }
+                is AppResult.Error -> _uiState.update {
+                    it.copy(isProcessing = false, error = result.error)
+                }
+            }
+        }
+    }
+
+    fun onReturnToCartRequested(lines: List<CartLine>) {
+        if (_uiState.value.isProcessing || _uiState.value.result != null) return
+        _uiState.update { it.copy(isProcessing = true, error = null) }
+
+        viewModelScope.launch {
+            val table = sessionStore.tableContext.first()
+            if (table == null) {
+                _uiState.update { it.copy(isProcessing = false) }
+                _returnToCart.tryEmit(Unit)
+                return@launch
+            }
+
+            when (val result = orderRepository.freeTable(table.restaurantId, table.tableId)) {
+                is AppResult.Success -> {
+                    lines.forEach { line -> cartRepository.add(table.restaurantId, line) }
+                    _uiState.update { it.copy(isProcessing = false) }
+                    _returnToCart.tryEmit(Unit)
+                }
+                is AppResult.Error -> _uiState.update {
+                    it.copy(isProcessing = false, error = result.error)
+                }
+            }
+        }
+    }
+
     /**
      * "Salir de la mesa" desde la pantalla de pago aceptado: cierra la sesión
      * de mesa (logout) y emite [exitTable] para que la navegación vuelva a Entry,
      * igual que hace Ajustes con SettingsViewModel.onExitTableConfirmed().
      */
     fun onExitTableRequested() {
+        if (_uiState.value.isProcessing) return
+        _uiState.update { it.copy(isProcessing = true, error = null) }
+
         viewModelScope.launch {
+            val table = sessionStore.tableContext.first()
+            if (table != null) {
+                when (val result = orderRepository.freeTable(table.restaurantId, table.tableId)) {
+                    is AppResult.Success -> Unit
+                    is AppResult.Error -> {
+                        _uiState.update { it.copy(isProcessing = false, error = result.error) }
+                        return@launch
+                    }
+                }
+            }
+
             authRepository.logout()
+            _uiState.update { it.copy(isProcessing = false) }
             _exitTable.tryEmit(Unit)
         }
     }
@@ -116,3 +191,14 @@ class CheckoutViewModel @Inject constructor(
         const val MOCK_GATEWAY_DELAY_MS = 1_200L
     }
 }
+
+private fun PaidOrderLine.toCartLine(): CartLine = CartLine(
+    menuItemId = menuItemId,
+    restaurantProductId = restaurantProductId,
+    name = name,
+    imageUrl = null,
+    basePriceCents = basePriceCents,
+    currency = currency,
+    quantity = quantity,
+    selections = selections,
+)

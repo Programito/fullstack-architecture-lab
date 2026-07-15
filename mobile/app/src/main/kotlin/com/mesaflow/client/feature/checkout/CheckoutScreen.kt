@@ -86,6 +86,8 @@ import kotlinx.serialization.json.Json
 @Composable
 fun CheckoutScreen(
     orderId: String,
+    subtotalCents: Long,
+    taxCents: Long,
     totalCents: Long,
     currency: String,
     linesJson: String,
@@ -107,24 +109,39 @@ fun CheckoutScreen(
     LaunchedEffect(Unit) {
         viewModel.exitTable.collect { onExitTable() }
     }
+    LaunchedEffect(Unit) {
+        viewModel.continueOrdering.collect { onDone() }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.returnToCart.collect { onBack() }
+    }
 
     // Sin esto, el botón/gesto atrás del sistema saldría de Checkout y dejaría ver de nuevo el
     // Carrito con su botón "Ir a cobrar" para un pedido que ya está pagado (el backend lo
     // rechazaría, pero solo tras un intento fallido confuso). Atrás en la pantalla de éxito debe
     // ser el mismo camino limpio que "Seguir pidiendo"; durante el cobro, se ignora para no
     // abandonar un pago a medias.
+    val snapshotLines = remember(linesJson) {
+        runCatching { Json.decodeFromString<List<CartLine>>(linesJson) }
+            .getOrDefault(emptyList())
+    }
+
     BackHandler(enabled = uiState.isProcessing) {}
-    BackHandler(enabled = uiState.result != null, onBack = onDone)
+    BackHandler(enabled = uiState.result != null, onBack = viewModel::onKeepOrderingRequested)
+    BackHandler(
+        enabled = uiState.result == null && !uiState.isProcessing,
+        onBack = { viewModel.onReturnToCartRequested(snapshotLines) },
+    )
 
     val errorMessage = uiState.error?.let { stringResource(it.toMessageRes()) }
-    val retryLabel = stringResource(R.string.action_retry)
+    val retryLabel = uiState.result?.let { null } ?: stringResource(R.string.action_retry)
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
             // El pago no se registra hasta que el backend confirma: reintentar
             // es solo volver a llamar a onPay con el mismo importe/método.
             val result = snackbarHostState.showSnackbar(errorMessage, actionLabel = retryLabel)
             viewModel.onErrorShown()
-            if (result == SnackbarResult.ActionPerformed) {
+            if (result == SnackbarResult.ActionPerformed && uiState.result == null) {
                 viewModel.onPay(orderId, totalCents)
             }
         }
@@ -138,7 +155,10 @@ fun CheckoutScreen(
                 title = { Text(stringResource(R.string.checkout_title)) },
                 navigationIcon = {
                     if (uiState.result == null) {
-                        IconButton(onClick = onBack, enabled = !uiState.isProcessing) {
+                        IconButton(
+                            onClick = { viewModel.onReturnToCartRequested(snapshotLines) },
+                            enabled = !uiState.isProcessing,
+                        ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.cart_back),
@@ -165,27 +185,29 @@ fun CheckoutScreen(
         ) {
             val contentModifier = Modifier.expandedContentMaxWidth(windowWidthSizeClass)
             val result = uiState.result
-            val snapshotLines = remember(linesJson) {
-                runCatching { Json.decodeFromString<List<CartLine>>(linesJson) }
-                    .getOrDefault(emptyList())
-                    .map(CartLine::toPaidOrderLine)
-            }
+            val paidSnapshotLines = remember(snapshotLines) { snapshotLines.map(CartLine::toPaidOrderLine) }
             if (result != null) {
                 PaymentAcceptedContent(
                     result = result,
-                    lines = remember(result.lines, snapshotLines) {
-                        if (snapshotLines.isNotEmpty()) snapshotLines else result.lines
+                    lines = remember(result.lines, paidSnapshotLines) {
+                        if (paidSnapshotLines.isNotEmpty()) paidSnapshotLines else result.lines
                     },
+                    taxableBaseCents = taxableBaseCents(totalCents = totalCents, taxCents = taxCents),
+                    taxCents = taxCents,
+                    totalCents = totalCents,
                     method = uiState.method,
                     dailyNumber = dailyNumber,
                     tableLabel = tableLabel,
                     paidAtMillis = uiState.paidAtMillis,
-                    onKeepOrdering = onDone,
+                    isFinalizing = uiState.isProcessing,
+                    onKeepOrdering = viewModel::onKeepOrderingRequested,
                     onExitTableConfirmed = viewModel::onExitTableRequested,
                     modifier = contentModifier,
                 )
             } else {
                 CheckoutContent(
+                    subtotalCents = subtotalCents,
+                    taxCents = taxCents,
                     totalCents = totalCents,
                     currency = currency,
                     selectedMethod = uiState.method,
@@ -201,6 +223,8 @@ fun CheckoutScreen(
 
 @Composable
 private fun CheckoutContent(
+    subtotalCents: Long,
+    taxCents: Long,
     totalCents: Long,
     currency: String,
     selectedMethod: PaymentMethod,
@@ -209,6 +233,10 @@ private fun CheckoutContent(
     onPay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val taxableBaseCents = remember(totalCents, taxCents) {
+        taxableBaseCents(totalCents = totalCents, taxCents = taxCents)
+    }
+
     Column(modifier = modifier.fillMaxSize().padding(24.dp)) {
         Card(
             colors = CardDefaults.cardColors(
@@ -231,6 +259,27 @@ private fun CheckoutContent(
                     currencyCode = currency,
                     style = MaterialTheme.typography.displaySmall,
                 )
+                // El desglose solo se pinta si el pedido tiene IVA calculado por el backend; sin
+                // esto (pedidos sin ningun producto con taxRateId asignado) taxCents llega a 0 y
+                // mostrar "IVA: 0,00 EUR" seria ruido sin informacion util.
+                if (taxCents > 0) {
+                    Spacer(Modifier.height(8.dp))
+                    CheckoutAmountBreakdownRow(
+                        label = stringResource(R.string.checkout_taxable_base_label),
+                        amountCents = taxableBaseCents,
+                        currency = currency,
+                    )
+                    CheckoutAmountBreakdownRow(
+                        label = stringResource(R.string.checkout_tax_label),
+                        amountCents = taxCents,
+                        currency = currency,
+                    )
+                    CheckoutAmountBreakdownRow(
+                        label = stringResource(R.string.checkout_total_label),
+                        amountCents = totalCents,
+                        currency = currency,
+                    )
+                }
             }
         }
 
@@ -288,6 +337,25 @@ private fun CheckoutContent(
 }
 
 @Composable
+private fun CheckoutAmountBreakdownRow(label: String, amountCents: Long, currency: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        PriceText(
+            amountCents = amountCents,
+            currencyCode = currency,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
 private fun PaymentMethodRow(
     label: String,
     selected: Boolean,
@@ -317,19 +385,19 @@ private fun PaymentMethodRow(
 private fun PaymentAcceptedContent(
     result: PaymentResult,
     lines: List<PaidOrderLine>,
+    taxableBaseCents: Long,
+    taxCents: Long,
+    totalCents: Long,
     method: PaymentMethod,
     dailyNumber: Int,
     tableLabel: String,
     paidAtMillis: Long?,
+    isFinalizing: Boolean,
     onKeepOrdering: () -> Unit,
     onExitTableConfirmed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showExitConfirm by remember { mutableStateOf(false) }
-    val displayedSubtotalCents = remember(lines) { lines.sumOf { it.totalCents } }
-    val previousBalancePaidCents = remember(result.paidCents, displayedSubtotalCents) {
-        (result.paidCents - displayedSubtotalCents).coerceAtLeast(0L)
-    }
 
     // Accesibilidad: con TalkBack, al llegar aquí el foco salta al título para
     // que el lector anuncie el éxito sin que el usuario tenga que explorar.
@@ -414,26 +482,23 @@ private fun PaymentAcceptedContent(
                 }
 
                 HorizontalDivider()
-                if (previousBalancePaidCents > 0L) {
+                if (taxCents > 0L) {
                     Spacer(Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.checkout_previous_balance_label),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        PriceText(
-                            amountCents = previousBalancePaidCents,
-                            currencyCode = result.currency,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
+                    CheckoutAmountBreakdownRow(
+                        label = stringResource(R.string.checkout_taxable_base_label),
+                        amountCents = taxableBaseCents,
+                        currency = result.currency,
+                    )
+                    CheckoutAmountBreakdownRow(
+                        label = stringResource(R.string.checkout_tax_label),
+                        amountCents = taxCents,
+                        currency = result.currency,
+                    )
+                    CheckoutAmountBreakdownRow(
+                        label = stringResource(R.string.checkout_total_label),
+                        amountCents = totalCents,
+                        currency = result.currency,
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(
@@ -488,7 +553,11 @@ private fun PaymentAcceptedContent(
         }
 
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onKeepOrdering, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onKeepOrdering,
+            enabled = !isFinalizing,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text(stringResource(R.string.checkout_keep_ordering))
         }
         // Con saldo pendiente no se ofrece cerrar la mesa: la cuenta no está saldada.
@@ -496,6 +565,7 @@ private fun PaymentAcceptedContent(
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick = { showExitConfirm = true },
+                enabled = !isFinalizing,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.settings_exit_table_button))
@@ -545,12 +615,18 @@ private fun TicketLineRow(line: PaidOrderLine) {
 
 private fun CartLine.toPaidOrderLine(): PaidOrderLine =
     PaidOrderLine(
+        menuItemId = menuItemId,
+        restaurantProductId = restaurantProductId,
         name = name,
         quantity = quantity,
+        basePriceCents = basePriceCents,
         totalCents = totalCents,
         currency = currency,
         selections = selections,
     )
+
+internal fun taxableBaseCents(totalCents: Long, taxCents: Long): Long =
+    (totalCents - taxCents).coerceAtLeast(0L)
 
 @Composable
 private fun paymentMethodLabel(method: PaymentMethod): String = stringResource(

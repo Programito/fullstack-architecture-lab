@@ -53,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mesaflow.client.R
 import com.mesaflow.client.core.common.AppError
-import com.mesaflow.client.core.common.PriceFormatter
 import com.mesaflow.client.core.designsystem.LocalWindowWidthSizeClass
 import com.mesaflow.client.core.designsystem.components.EmptyState
 import com.mesaflow.client.core.designsystem.components.LoadingAsyncImage
@@ -61,9 +60,6 @@ import com.mesaflow.client.core.designsystem.components.PriceText
 import com.mesaflow.client.core.designsystem.components.QuantityStepper
 import com.mesaflow.client.core.designsystem.expandedContentMaxWidth
 import com.mesaflow.client.core.model.CartLine
-import com.mesaflow.client.core.model.OrderLineKitchenStatus
-import com.mesaflow.client.core.model.ServicePointOrderLine
-import com.mesaflow.client.core.model.ServicePointOrderStatus
 import com.mesaflow.client.core.model.SubmittedOrder
 import com.mesaflow.client.core.model.isConfigurable
 import com.mesaflow.client.feature.product.ProductConfig

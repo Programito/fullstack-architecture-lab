@@ -35,6 +35,8 @@
     <string name="menu_allergen_filter_title">Allergens to avoid</string>
     <string name="menu_allergen_filter_hint">Based on the allergens the restaurant declares. For a severe allergy, please confirm with staff too.</string>
     <string name="menu_contains_allergens">Contains: %1$s</string>
+    <string name="menu_tax_rate_label">Tax: %1$s%%</string>
+    <string name="menu_no_tax_rate">No tax rate assigned</string>
     <string name="allergen_gluten">Gluten</string>
     <string name="allergen_crustaceans">Crustaceans</string>
     <string name="allergen_eggs">Eggs</string>
@@ -67,6 +69,8 @@
     <string name="cart_remove_line">Remove item</string>
     <string name="cart_edit_line">Edit item</string>
     <string name="cart_clear">Clear order</string>
+    <string name="cart_open_order_total_label">Already pending on the table</string>
+    <string name="cart_new_items_total_label">New items</string>
     <string name="cart_error_submit">The order could not be sent. Please try again.</string>
     <string name="cart_error_server">We couldn\'t reach the restaurant. Your order is still in the cart; please try again in a few seconds.</string>
     <string name="cart_submitted_title">Order summary</string>
@@ -86,6 +90,9 @@
     <string name="cart_go_to_checkout">Go to payment</string>
     <string name="checkout_title">Payment</string>
     <string name="checkout_amount_label">Total to pay</string>
+    <string name="checkout_taxable_base_label">Taxable base</string>
+    <string name="checkout_tax_label">Tax</string>
+    <string name="checkout_total_label">Total</string>
     <string name="checkout_method_title">Payment method</string>
     <string name="checkout_method_card">Card</string>
     <string name="checkout_method_bizum">Bizum</string>
@@ -120,7 +127,6 @@
     <string name="checkout_ticket_number">Order #%1$d</string>
     <string name="checkout_ticket_table_time">Table %1$s · %2$s</string>
     <string name="checkout_ticket_table">Table %1$s</string>
-    <string name="checkout_previous_balance_label">Previous table balance</string>
     <string name="checkout_paid_label">Paid</string>
     <string name="checkout_paid_with">Paid with %1$s</string>
     <string name="checkout_pending_label">Pending</string>
