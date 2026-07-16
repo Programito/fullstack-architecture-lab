@@ -3,6 +3,7 @@ import { of } from 'rxjs';
 import englishTranslations from '../../../../../../public/i18n/en.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
+import { mapServicePointOrder } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { OrderWriteService } from '../../state/order-write.service';
@@ -10,7 +11,36 @@ import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 
 describe('RestaurantPosServicePage', () => {
-  const createRestaurantPosApiMock = (): Pick<
+  type ServiceOrderRecord = {
+    order: {
+      id: string;
+      tableId: string;
+      status: 'open' | 'sent_to_kitchen' | 'served' | 'payment_pending' | 'paid';
+      openedAt: string;
+      updatedAt: string;
+      subtotalCents: number;
+      taxCents: number;
+      totalCents: number;
+      currency: string;
+    };
+    lines: Array<{
+      id: string;
+      productName: string;
+      productType: 'simple' | 'combo' | 'platter';
+      preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
+      quantity: number;
+      unitPriceCents: number;
+      subtotalCents: number;
+      status: 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
+      course: 'drinks' | 'starters' | 'mains' | 'desserts' | 'mixed' | 'none';
+      kitchenNote: string | null;
+      updatedAt: string;
+      modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
+      comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
+    }>;
+  };
+
+  type RestaurantPosApiMock = Pick<
     RestaurantPosApiService,
     | 'listRestaurants'
     | 'getRestaurantMenu'
@@ -20,10 +50,17 @@ describe('RestaurantPosServicePage', () => {
     | 'occupyRestaurantServicePoint'
     | 'sendRestaurantServicePointToKitchen'
     | 'markRestaurantServicePointServed'
+    | 'updateRestaurantOrderLineStatus'
+    | 'deleteRestaurantOrderLine'
+    | 'cancelRestaurantOrderLine'
     | 'chargeRestaurantServicePoint'
     | 'registerRestaurantOrderPayment'
     | 'freeRestaurantServicePoint'
-  > => {
+  > & {
+    __setServiceOrder: (tableId: string, record: ServiceOrderRecord) => void;
+  };
+
+  const createRestaurantPosApiMock = (): RestaurantPosApiMock => {
     const tableStatuses = new Map<string, 'free' | 'occupied' | 'waiting_kitchen' | 'served' | 'payment_pending' | 'paid'>([
       ['table-1', 'free'],
       ['table-2', 'free'],
@@ -33,37 +70,7 @@ describe('RestaurantPosServicePage', () => {
       ['stool-2', 'free'],
       ['stool-3', 'free'],
     ]);
-    const serviceOrders = new Map<
-      string,
-      {
-        order: {
-          id: string;
-          tableId: string;
-          status: 'open' | 'sent_to_kitchen' | 'served' | 'payment_pending' | 'paid';
-          openedAt: string;
-          updatedAt: string;
-          subtotalCents: number;
-          taxCents: number;
-          totalCents: number;
-          currency: string;
-        };
-        lines: Array<{
-          id: string;
-          productName: string;
-          productType: 'simple' | 'combo' | 'platter';
-          preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
-          quantity: number;
-          unitPriceCents: number;
-          subtotalCents: number;
-          status: 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
-          course: 'drinks' | 'starters' | 'mains' | 'desserts' | 'mixed' | 'none';
-          kitchenNote: string | null;
-          updatedAt: string;
-          modifiers: Array<{ groupName: string; optionName: string; priceDeltaCents: number; quantity: number }>;
-          comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
-        }>;
-      }
-    >([
+    const serviceOrders = new Map<string, ServiceOrderRecord>([
       [
         'table-1',
         {
@@ -82,6 +89,14 @@ describe('RestaurantPosServicePage', () => {
         },
       ],
     ]);
+
+    const setServiceOrder = (tableId: string, record: ServiceOrderRecord) => {
+      serviceOrders.set(tableId, record);
+      const hasKitchenLines = record.lines.some((line) =>
+        line.status === 'sent_to_kitchen' || line.status === 'preparing' || line.status === 'ready',
+      );
+      tableStatuses.set(tableId, hasKitchenLines ? 'waiting_kitchen' : 'occupied');
+    };
 
     return ({
     listRestaurants: vi.fn(() =>
@@ -377,6 +392,128 @@ describe('RestaurantPosServicePage', () => {
         },
       });
     }),
+    updateRestaurantOrderLineStatus: vi.fn((_restaurantId: string, orderId: string, lineId: string, status: 'sent_to_kitchen' | 'preparing' | 'ready' | 'served') => {
+      const entry = [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId);
+      if (!entry) {
+        throw new Error(`Missing order ${orderId}`);
+      }
+
+      const [tableId, currentOrder] = entry;
+      const nextLines = currentOrder.lines.map((line) =>
+        line.id === lineId
+          ? {
+              ...line,
+              status,
+              updatedAt: '2026-07-16T10:09:00.000Z',
+            }
+          : line,
+      );
+      const allServed = nextLines.every((line) => line.status === 'served' || line.status === 'cancelled');
+
+      serviceOrders.set(tableId, {
+        order: {
+          ...currentOrder.order,
+          status: allServed ? 'served' : currentOrder.order.status,
+          updatedAt: '2026-07-16T10:09:00.000Z',
+        },
+        lines: nextLines,
+      });
+      tableStatuses.set(tableId, allServed ? 'served' : (currentOrder.order.status === 'sent_to_kitchen' ? 'waiting_kitchen' : tableStatuses.get(tableId) ?? 'occupied'));
+
+      return of({
+        order: {
+          id: currentOrder.order.id,
+          restaurantId: 'restaurant-mesaflow-centro',
+          tableId,
+          status: allServed ? 'open' as const : 'open' as const,
+          currency: currentOrder.order.currency,
+          guestCount: 4,
+          subtotalCents: currentOrder.order.subtotalCents,
+          taxCents: currentOrder.order.taxCents,
+          discountTotalCents: 0,
+          totalCents: currentOrder.order.totalCents,
+          paidCents: 0,
+          balanceCents: currentOrder.order.totalCents,
+          openedAt: currentOrder.order.openedAt,
+          updatedAt: '2026-07-16T10:09:00.000Z',
+          closedAt: null,
+        },
+        lines: [],
+        payments: [],
+      });
+    }),
+    deleteRestaurantOrderLine: vi.fn((_restaurantId: string, orderId: string, lineId: string) => {
+      const entry = [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId);
+      if (!entry) {
+        return of(void 0);
+      }
+
+      const [tableId, currentOrder] = entry;
+      const targetLine = currentOrder.lines.find((line) => line.id === lineId);
+
+      if (!targetLine || targetLine.status !== 'pending') {
+        return of(void 0);
+      }
+
+      const nextLines = currentOrder.lines.filter((line) => line.id !== lineId);
+      serviceOrders.set(tableId, {
+        order: {
+          ...currentOrder.order,
+          updatedAt: '2026-06-22T10:08:00.000Z',
+          totalCents: nextLines.reduce((sum, line) => sum + line.subtotalCents, 0),
+          subtotalCents: nextLines.reduce((sum, line) => sum + line.subtotalCents, 0),
+        },
+        lines: nextLines,
+      });
+
+      return of(void 0);
+    }),
+    cancelRestaurantOrderLine: vi.fn((_restaurantId: string, orderId: string, lineId: string) => {
+      const entry = [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId);
+      if (!entry) {
+        throw new Error(`Missing order ${orderId}`);
+      }
+
+      const [tableId, currentOrder] = entry;
+      const nextLines = currentOrder.lines.map((line) =>
+        line.id === lineId
+          ? {
+              ...line,
+              status: 'cancelled' as const,
+              updatedAt: '2026-06-22T10:09:00.000Z',
+            }
+          : line,
+      );
+      serviceOrders.set(tableId, {
+        order: {
+          ...currentOrder.order,
+          updatedAt: '2026-06-22T10:09:00.000Z',
+        },
+        lines: nextLines,
+      });
+
+      return of({
+        order: {
+          id: currentOrder.order.id,
+          restaurantId: 'restaurant-mesaflow-centro',
+          tableId,
+          status: currentOrder.order.status === 'paid' ? 'paid' as const : 'open' as const,
+          currency: currentOrder.order.currency,
+          guestCount: 4,
+          subtotalCents: currentOrder.order.subtotalCents,
+          taxCents: currentOrder.order.taxCents,
+          discountTotalCents: 0,
+          totalCents: currentOrder.order.totalCents,
+          paidCents: 0,
+          balanceCents: currentOrder.order.totalCents,
+          openedAt: currentOrder.order.openedAt,
+          updatedAt: '2026-06-22T10:09:00.000Z',
+          closedAt: null,
+        },
+        lines: [],
+        payments: [],
+      });
+    }),
     chargeRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
       tableStatuses.set(tableId, 'payment_pending');
       const currentOrder = serviceOrders.get(tableId);
@@ -516,6 +653,7 @@ describe('RestaurantPosServicePage', () => {
         },
       });
     }),
+    __setServiceOrder: setServiceOrder,
   });
   };
 
@@ -536,6 +674,24 @@ describe('RestaurantPosServicePage', () => {
 
   const getProductDialog = () => screen.getByRole('dialog', { name: /Añadir productos/i });
   const queryProductDialog = () => screen.queryByRole('dialog', { name: /Añadir productos/i });
+
+  const createServiceOrderRecord = (
+    lines: ServiceOrderRecord['lines'],
+    status: ServiceOrderRecord['order']['status'] = 'open',
+  ): ServiceOrderRecord => ({
+    order: {
+      id: 'order:table-1',
+      tableId: 'table-1',
+      status,
+      openedAt: '2026-06-22T10:00:00.000Z',
+      updatedAt: '2026-06-22T10:00:00.000Z',
+      subtotalCents: lines.reduce((sum, line) => sum + line.subtotalCents, 0),
+      taxCents: 0,
+      totalCents: lines.reduce((sum, line) => sum + line.subtotalCents, 0),
+      currency: 'EUR',
+    },
+    lines,
+  });
 
   const addProductFromSearch = (fixture: { detectChanges: () => void }, productName: RegExp) => {
     fireEvent.click(screen.getByRole('button', { name: /Buscar producto/i }));
@@ -1095,19 +1251,276 @@ describe('RestaurantPosServicePage', () => {
   });
 
   it('removes a product line from the selected order', async () => {
-    const { fixture } = await renderServicePage();
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'pending',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-06-22T10:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+      {
+        id: 'line-lemonade',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 1,
+        unitPriceCents: 450,
+        subtotalCents: 450,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-06-22T10:01:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
-    addProductFromSearch(fixture, /^Hamburguesa craft/);
-    addProductFromSearch(fixture, /^Limonada con gas/);
+    apiMock.__setServiceOrder('table-1', record);
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Hamburguesa craft del pedido' }));
     fixture.detectChanges();
 
+    expect(apiMock.deleteRestaurantOrderLine).toHaveBeenCalledTimes(1);
     expect(store.selectedOrder()?.lines.map((line) => line.productName)).toEqual(['Limonada con gas']);
     expect(screen.queryByText('1 x Hamburguesa craft')).toBeNull();
     expect(screen.getByText('1 x Limonada con gas')).toBeTruthy();
+  });
+
+  it('cancels a line already sent to the kitchen so it does not reappear after reload', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'sent_to_kitchen',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-06-22T10:05:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'sent_to_kitchen');
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    apiMock.__setServiceOrder('table-1', record);
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Hamburguesa craft del pedido' }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar producto de cocina' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fixture.detectChanges();
+
+    expect(apiMock.cancelRestaurantOrderLine).toHaveBeenCalledTimes(1);
+    expect(apiMock.deleteRestaurantOrderLine).not.toHaveBeenCalled();
+    expect(screen.queryByText('1 x Hamburguesa craft')).toBeNull();
+    expect(store.selectedServiceInfo()?.courseGroups).toEqual([]);
+  });
+
+  it('marks kitchen lines older than 24 hours as served on refresh', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'sent_to_kitchen',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-07-14T09:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'sent_to_kitchen');
+
+    apiMock.__setServiceOrder('table-1', record);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fixture.detectChanges();
+
+    expect(apiMock.updateRestaurantOrderLineStatus).toHaveBeenCalledTimes(1);
+    expect(apiMock.updateRestaurantOrderLineStatus).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'order:table-1',
+      'line-burger',
+      'served',
+    );
+    expect(store.selectedOrder()?.lines[0]?.status).toBe('served');
+    expect(store.selectedTable()?.status).toBe('served');
+  });
+
+  it('keeps a cancelled kitchen line hidden even if the immediate order reload is stale', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'sent_to_kitchen',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-06-22T10:05:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'sent_to_kitchen');
+
+    apiMock.__setServiceOrder('table-1', record);
+    vi.mocked(apiMock.cancelRestaurantOrderLine).mockReturnValueOnce(
+      of({
+        order: {
+          id: 'order:table-1',
+          restaurantId: 'restaurant-mesaflow-centro',
+          tableId: 'table-1',
+          status: 'open',
+          currency: 'EUR',
+          guestCount: 4,
+          subtotalCents: 1250,
+          taxCents: 0,
+          discountTotalCents: 0,
+          totalCents: 1250,
+          paidCents: 0,
+          balanceCents: 1250,
+          openedAt: '2026-06-22T10:00:00.000Z',
+          updatedAt: '2026-06-22T10:09:00.000Z',
+          closedAt: null,
+        },
+        lines: [],
+        payments: [],
+      }),
+    );
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Hamburguesa craft del pedido' }));
+    fixture.detectChanges();
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fixture.detectChanges();
+
+    expect(screen.queryByText('1 x Hamburguesa craft')).toBeNull();
+    expect(store.selectedServiceInfo()?.courseGroups).toEqual([]);
+  });
+
+  it('hides a line when the cancel response keeps served status but includes cancelledAt', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-beer',
+        productName: 'Cerveza',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 2,
+        unitPriceCents: 350,
+        subtotalCents: 700,
+        status: 'served',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-06-22T10:05:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'served');
+
+    apiMock.__setServiceOrder('table-1', record);
+    vi.mocked(apiMock.cancelRestaurantOrderLine).mockReturnValueOnce(
+      of({
+        order: {
+          id: 'order:table-1',
+          restaurantId: 'restaurant-mesaflow-centro',
+          tableId: 'table-1',
+          status: 'open',
+          currency: 'EUR',
+          guestCount: 4,
+          subtotalCents: 700,
+          taxCents: 0,
+          discountTotalCents: 0,
+          totalCents: 700,
+          paidCents: 0,
+          balanceCents: 700,
+          openedAt: '2026-06-22T10:00:00.000Z',
+          updatedAt: '2026-06-22T10:09:00.000Z',
+          closedAt: null,
+        },
+        lines: [
+          {
+            id: 'line-beer',
+            restaurantProductId: 'rp-beer',
+            productId: 'product-beer',
+            productName: 'Cerveza',
+            productType: 'simple',
+            course: 'drinks',
+            preparationRoute: 'bar',
+            basePriceCents: 350,
+            unitPriceCents: 350,
+            quantity: 2,
+            subtotalCents: 700,
+            taxRateName: null,
+            taxRatePercent: null,
+            taxCents: 0,
+            status: 'served',
+            kitchenNote: null,
+            cancellationReason: 'removed_by_staff',
+            cancelledAt: '2026-06-22T10:09:00.000Z',
+            configurationSignature: 'beer::',
+            modifiers: [],
+            comboSlots: [],
+            platterComponents: [],
+          },
+        ],
+        payments: [],
+      }),
+    );
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Cerveza del pedido' }));
+    fixture.detectChanges();
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fixture.detectChanges();
+
+    expect(screen.queryByText('2 x Cerveza')).toBeNull();
+    expect(store.selectedServiceInfo()?.courseGroups).toEqual([]);
   });
 
   it('opens a simulated card gateway and accepts or rejects payment without losing the order', async () => {
@@ -1116,6 +1529,8 @@ describe('RestaurantPosServicePage', () => {
 
     fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
     addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Tarjeta/i }));
     fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
     fixture.detectChanges();
@@ -1127,8 +1542,8 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     expect(screen.getByText(/Pago rechazado/i)).toBeTruthy();
-    expect(store.selectedTable()?.status).toBe('occupied');
-    expect(store.selectedOrder()?.status).toBe('open');
+    expect(store.selectedTable()?.status).toBe('waiting_kitchen');
+    expect(store.selectedOrder()?.status).toBe('sent_to_kitchen');
     expect(store.selectedOrder()?.lines.length).toBe(1);
 
     fireEvent.click(screen.getByRole('button', { name: /Aceptar pago/i }));
@@ -1138,6 +1553,50 @@ describe('RestaurantPosServicePage', () => {
     expect(store.selectedOrder()?.status).toBe('paid');
     expect(store.selectedTable()?.status).toBe('paid');
     expect(screen.queryByRole('dialog', { name: /Pasarela bancaria/i })).toBeNull();
+  });
+
+  it('asks for confirmation before charging when there are items pending to send to the kitchen', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: 'Enviar a cocina antes de cobrar' });
+    expect(dialog).toBeTruthy();
+    expect(within(dialog).getByText(/se enviará directamente a cocina/i)).toBeTruthy();
+
+    fireEvent.click(within(dialog).getAllByRole('button', { name: 'Cancelar cobro' })[1]);
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('dialog', { name: 'Enviar a cocina antes de cobrar' })).toBeNull();
+    expect(store.selectedTable()?.status).toBe('occupied');
+    expect(store.selectedOrder()?.status).toBe('open');
+    expect(apiMock.sendRestaurantServicePointToKitchen).not.toHaveBeenCalled();
+    expect(apiMock.chargeRestaurantServicePoint).not.toHaveBeenCalled();
+  });
+
+  it('sends pending items to the kitchen and then continues charging after confirmation', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: 'Enviar a cocina antes de cobrar' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Enviar y continuar' }));
+    fixture.detectChanges();
+
+    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledTimes(1);
+    expect(apiMock.chargeRestaurantServicePoint).toHaveBeenCalledTimes(1);
+    expect(store.selectedTable()?.status).toBe('paid');
+    expect(screen.queryByRole('dialog', { name: 'Enviar a cocina antes de cobrar' })).toBeNull();
   });
 
   it('searches a table or stool, selects it, and focuses it in the floor plan', async () => {

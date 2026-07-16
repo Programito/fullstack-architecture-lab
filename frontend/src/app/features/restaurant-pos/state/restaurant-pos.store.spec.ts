@@ -579,6 +579,32 @@ describe('RestaurantPosStore', () => {
     );
   });
 
+  it('adds the same product as a new pending line when the existing one is already preparing', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.sendSelectedOrderToKitchen();
+    store.markOrderLinePreparing('table-1', 'product-1');
+
+    store.addProductToSelectedTable('product-1');
+
+    const burgerLines = store.ordersByTable()['table-1'].lines.filter((line) => line.productId === 'product-1');
+
+    expect(burgerLines).toHaveLength(2);
+    expect(burgerLines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: 'preparing', quantity: 1 }),
+        expect.objectContaining({ status: 'pending', quantity: 1 }),
+      ]),
+    );
+    expect(store.preparationBoardColumns().find((column) => column.id === 'pending')?.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          line: expect.objectContaining({ productId: 'product-1', status: 'pending' }),
+        }),
+      ]),
+    );
+  });
+
   it('archives ready kitchen lines without marking them as served', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
@@ -687,6 +713,56 @@ describe('RestaurantPosStore', () => {
     );
   });
 
+  it('keeps waiting kitchen lines visible in pending even when backend hydrates them as pending', () => {
+    store.hydrateServiceFloor({
+      floorId: 'floor-main',
+      floorName: 'Sala principal',
+      rows: 12,
+      columns: 16,
+      floorElements: [{ id: 'service-element-1', type: 'table', label: 'M1', x: 1, y: 1, width: 2, height: 2, tableId: 'table-1' }],
+      restaurantTables: [{ id: 'table-1', number: 1, capacity: 4, status: 'waiting_kitchen', total: 12.5, openDuration: '10m' }],
+    });
+    store.hydrateServicePointOrder('table-1', {
+      id: 'order-1',
+      tableId: 'table-1',
+      total: 12.5,
+      status: 'open',
+      paymentMethod: 'pending',
+      lines: [
+        {
+          id: 'line-1',
+          productSnapshot: {
+            productId: 'service-product:line-1',
+            productName: 'Hamburguesa craft',
+            productType: 'simple',
+            basePrice: 12.5,
+            course: 'main',
+            preparationPolicy: { route: 'kitchen', requiresReadyBeforeServe: true },
+          },
+          productId: 'service-product:line-1',
+          productName: 'Hamburguesa craft',
+          quantity: 1,
+          basePrice: 12.5,
+          selectedModifiers: [],
+          unitPrice: 12.5,
+          subtotal: 12.5,
+          configurationSignature: 'service-line:line-1',
+          course: 'main',
+          status: 'pending',
+        },
+      ],
+    });
+
+    expect(store.preparationBoardColumns().find((column) => column.id === 'pending')?.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tableId: 'table-1',
+          line: expect.objectContaining({ id: 'line-1', status: 'pending' }),
+        }),
+      ]),
+    );
+  });
+
   it('moves a pending preparation line to preparing', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
@@ -741,6 +817,24 @@ describe('RestaurantPosStore', () => {
     expect(store.servedPreparationCards()).toEqual([]);
   });
 
+  it('excludes cancelled lines from the visible order so they cannot be "deleted" forever', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.sendSelectedOrderToKitchen();
+    store.movePreparationLine('table-1', 'product-1', 'ready');
+    store.markSelectedOrderLineServed('product-1');
+    store.cancelPreparationLine('table-1', 'product-1');
+
+    const serviceInfo = store.selectedServiceInfo();
+
+    expect(serviceInfo?.courseGroups).toEqual([]);
+    expect(serviceInfo?.pendingKitchenCount).toBe(0);
+    expect(serviceInfo?.canMarkServed).toBe(false);
+    // The only line on the order is the cancelled one, so once it's excluded
+    // there is no active line left — this must read as "no order", not as
+    // "ready to charge" (which would let staff charge for nothing).
+    expect(serviceInfo?.servicePhase).toEqual({ course: null, status: 'no_order' });
+  });
 
   it('removes an order line and keeps order totals in sync', () => {
     store.selectTable('table-1');

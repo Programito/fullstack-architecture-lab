@@ -484,7 +484,12 @@
       "productUnavailable": "El producte no està disponible.",
       "cannotPlaceElement": "No es pot col·locar l'element aquí.",
       "cannotResizeGrid": "No es pot redimensionar el plànol perquè alguns elements quedarien fora de la matriu.",
-      "addLineFailed": "No s'ha pogut afegir el producte. Revisa l'estat de la taula."
+      "addLineFailed": "No s'ha pogut afegir el producte. Revisa l'estat de la taula.",
+      "sendToKitchenFailed": "No s'ha pogut enviar la comanda a cuina. Torna-ho a provar.",
+      "updateLineFailed": "No s'ha pogut actualitzar la línia de la comanda. S'ha recarregat la comanda.",
+      "chargeFailed": "No s'ha pogut completar el cobrament. Revisa l'estat de la taula i torna-ho a provar.",
+      "servicePointActionFailed": "No s'ha pogut completar l'acció sobre la taula. Torna-ho a provar.",
+      "loadFailed": "No s'han pogut carregar les dades del restaurant. Revisa la sessió i la connexió."
     },
     "layout": {
       "title": "Plànol del restaurant",
@@ -659,8 +664,8 @@
       "soldOut": "Esgotat",
       "favoriteBadge": "Preferit",
       "bestSellerBadge": "Més venut",
-      "sendKitchen": "Cuina",
-      "markServed": "Servit",
+      "sendKitchen": "Enviar a cuina",
+      "markServed": "Marcar com a servit",
       "charge": "Cobrar",
       "cleaning": "Neteja",
       "freeTable": "Alliberar taula",
@@ -692,9 +697,17 @@
       "markProductReadyActionLabel": "Marcar {{name}} com a preparat",
       "markProductServedActionLabel": "Marcar {{name}} com a servit",
       "removeProductActionLabel": "Eliminar {{name}} de la comanda",
+      "removeNonPendingConfirmTitle": "Cancel·lar producte de cuina",
+      "removeNonPendingConfirmDescription": "{{name}} ja no està pendent. Si continues, es cancel·larà a la comanda en lloc d'eliminar-se directament.",
+      "confirmRemoveNonPending": "Sí, cancel·lar producte",
+      "cancelRemoveNonPending": "Mantenir producte",
       "chargeActionLabel": "Cobrar la taula seleccionada",
       "chargeWithTotal": "Cobrar {{total}}",
       "chargeWithTotalActionLabel": "Cobrar la taula seleccionada per {{total}}",
+      "chargeKitchenConfirmTitle": "Enviar a cuina abans de cobrar",
+      "chargeKitchenConfirmDescription": "Hi ha {{count}} producte pendent de cuina. Si continues, s'enviarà directament a cuina i després continuarà el cobrament.",
+      "confirmChargeKitchenConfirm": "Enviar i continuar",
+      "cancelChargeKitchenConfirm": "Cancel·lar cobrament",
       "taxableBase": "Base imposable",
       "includedVat": "IVA inclòs",
       "setCashPaymentActionLabel": "Seleccionar pagament en efectiu per a la taula seleccionada",
@@ -859,7 +872,8 @@
         "seated": "Asseguda",
         "cancelled": "Cancel·lada",
         "no_show": "No show"
-      }
+      },
+      "customerAppChip": "Des de l'app"
     },
     "kitchen": {
       "eyebrow": "Producció",
@@ -926,7 +940,8 @@
       "cancelLineConfirm": "Cancel·lar aquesta línia? Aquesta acció no es pot desfer.",
       "cancelLineConfirmAction": "Sí, cancel·lar",
       "cancelLineAbort": "Tornar",
-      "elapsedMinutes": "{{count}} min"
+      "elapsedMinutes": "{{count}} min",
+      "customerAppChip": "App client"
     },
     "tableStatus": {
       "free": "Lliure",

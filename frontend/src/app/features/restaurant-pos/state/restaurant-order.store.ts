@@ -142,7 +142,7 @@ export class RestaurantOrderStore {
     const selectedModifiers = this.menuPricing.buildSelectedModifiers(product, selectedModifierOptionIds, this.menu.modifierGroups());
     const unitPrice = this.menuPricing.calculateCustomizedProductPrice(product, selectedModifiers);
     const configurationSignature = this.menuPricing.createConfigurationSignature(product.id, selectedModifierOptionIds, kitchenNote);
-    const lineId = this.createOrderLineId(configurationSignature);
+    const lineId = this.createOrderLineId(order.lines, configurationSignature);
     const normalizedKitchenNote = kitchenNote.trim();
     const productSnapshot = this.createProductSnapshot(product);
     const nextLines = this.addProductLine(order.lines, {
@@ -164,7 +164,7 @@ export class RestaurantOrderStore {
     const total = this.calculateOrderTotal(nextLines);
     this.setOrder(tableId, { ...order, lines: nextLines, total });
     this.floor.updateTable(tableId, {
-      status: 'occupied',
+      status: table?.status === 'waiting_kitchen' ? 'waiting_kitchen' : 'occupied',
       total,
       occupiedAt: table?.occupiedAt ?? now,
       serviceStartedAt: table?.serviceStartedAt ?? now,
@@ -187,7 +187,7 @@ export class RestaurantOrderStore {
     const now = this.nowIso();
     const unitPrice = this.menuPricing.calculateComboTotalPrice(comboProduct, comboDef, normalized);
     const configSig = this.menuPricing.createComboConfigurationSignature(comboProduct.id, normalized);
-    const lineId = this.createOrderLineId(configSig);
+    const lineId = this.createOrderLineId(order.lines, configSig);
     const selectedComboSlots = this.buildSelectedComboSlotsSnapshot(comboDef, normalized);
     const productSnapshot = this.createProductSnapshot(comboProduct, this.deriveComboPreparationPolicy(comboProduct, selectedComboSlots));
     const nextLines = this.addProductLine(order.lines, {
@@ -208,7 +208,7 @@ export class RestaurantOrderStore {
     const total = this.calculateOrderTotal(nextLines);
     this.setOrder(tableId, { ...order, lines: nextLines, total });
     this.floor.updateTable(tableId, {
-      status: 'occupied',
+      status: table?.status === 'waiting_kitchen' ? 'waiting_kitchen' : 'occupied',
       total,
       occupiedAt: table?.occupiedAt ?? now,
       serviceStartedAt: table?.serviceStartedAt ?? now,
@@ -471,17 +471,14 @@ export class RestaurantOrderStore {
   }
 
   private addProductLine(lines: OrderLine[], next: OrderLine): OrderLine[] {
-    const existing = lines.find((l) => l.configurationSignature === next.configurationSignature);
+    const existing = lines.find((l) => l.configurationSignature === next.configurationSignature && l.status === 'pending');
     if (!existing) return [...lines, next];
     return lines.map((l) =>
-      l.configurationSignature === next.configurationSignature
+      l.id === existing.id
         ? {
             ...l,
             quantity: l.quantity + 1,
             subtotal: this.round((l.quantity + 1) * l.unitPrice),
-            status: l.status === 'served' ? 'pending' : l.status,
-            servedAt: l.status === 'served' ? undefined : l.servedAt,
-            pickedUpAt: l.status === 'served' ? undefined : l.pickedUpAt,
           }
         : l,
     );
@@ -506,7 +503,7 @@ export class RestaurantOrderStore {
         const table = this.floor.restaurantTables().find((t) => t.id === o.tableId);
         if (!table) return [];
         return o.lines
-          .filter((l) => l.status !== 'cancelled' && l.status !== 'pending')
+          .filter((l) => this.isVisibleInPreparationBoard(l, table.status))
           .map((l) => {
             const flow = this.getPreparationFlow(l);
             return {
@@ -515,6 +512,7 @@ export class RestaurantOrderStore {
               line: l,
               preparationFlow: flow,
               requiresReadyBeforeServed: flow === 'kitchen',
+              fromCustomerApp: o.clientOrigin === 'apk-customer',
               ...(flow === 'kitchen' ? { station: 'Cocina' } : {}),
             };
           });
@@ -524,8 +522,17 @@ export class RestaurantOrderStore {
   private getPreparationColumnId(status: OrderLine['status']): PreparationBoardColumnId | null {
     if (status === 'ready' || status === 'picked_up') return 'ready';
     if (status === 'preparing') return 'preparing';
-    if (status === 'sent_to_kitchen') return 'pending';
+    if (status === 'sent_to_kitchen' || status === 'pending') return 'pending';
     return null;
+  }
+
+  private isVisibleInPreparationBoard(
+    line: OrderLine,
+    tableStatus: import('../models/restaurant-pos.models').TableStatus,
+  ): boolean {
+    if (line.status === 'cancelled') return false;
+    if (line.status === 'pending') return tableStatus === 'waiting_kitchen';
+    return true;
   }
 
   private getPreparationFlow(line: OrderLine): PreparationFlow {
@@ -604,8 +611,19 @@ export class RestaurantOrderStore {
       .flatMap((g) => g.options.filter((o) => o.selectedByDefault).map((o) => o.id));
   }
 
-  private createOrderLineId(sig: string): string {
-    return `line-${this.hashText(sig)}`;
+  private createOrderLineId(lines: OrderLine[], sig: string): string {
+    const mergeCandidate = lines.find((line) => line.configurationSignature === sig && line.status === 'pending');
+    if (mergeCandidate) return mergeCandidate.id;
+
+    const baseId = `line-${this.hashText(sig)}`;
+    if (!lines.some((line) => line.id === baseId)) return baseId;
+
+    let suffix = 2;
+    while (lines.some((line) => line.id === `${baseId}-${suffix}`)) {
+      suffix += 1;
+    }
+
+    return `${baseId}-${suffix}`;
   }
 
   private hashText(value: string): string {

@@ -2,11 +2,12 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
-import { forkJoin, of, switchMap, tap } from 'rxjs';
+import type { ServicePointDetailDto, ServicePointOrderDto } from '../../api/restaurant-pos-api.models';
+import { forkJoin, switchMap, tap, type Observable } from 'rxjs';
 import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { SelectOption } from '../../../../shared/ui/select/select';
 import { KEY_VALUE_STORAGE } from '../../../../shared/utils/storage/key-value-storage';
@@ -44,6 +45,7 @@ const isServicePointStatusFilter = (value: string): value is ServicePointStatusF
   imports: [
     Button,
     ComboCustomizerDialog,
+    Dialog,
     FloorPlan,
     Icon,
     PaymentGatewayDialog,
@@ -83,6 +85,7 @@ export class RestaurantPosServicePage {
   protected readonly floorFocusRequest = signal<FloorPlanFocusRequest | null>(null);
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
+  protected readonly chargeKitchenConfirmOpen = signal(false);
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
     const servicePoints = this.store.servicePoints();
@@ -194,21 +197,31 @@ export class RestaurantPosServicePage {
     effect(() => {
       const restaurant = this.restaurantContext.activeRestaurant();
       if (!restaurant) return;
-      this.api.getRestaurantServiceFloor(restaurant.id).subscribe((serviceFloor) => {
-        this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
+      this.api.getRestaurantServiceFloor(restaurant.id).subscribe({
+        next: (serviceFloor) => {
+          this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
+        },
+        error: () => {
+          this.store.reportApiError('restaurantPos.errors.loadFailed');
+        },
       });
     });
 
     effect(() => {
       const restaurant = this.restaurantContext.activeRestaurant();
       if (!restaurant) return;
-      this.api.getRestaurantMenu(restaurant.id).subscribe((menu) => {
-        const products = mapRestaurantMenuToProducts(menu);
-        if (products.length > 0) {
-          this.store.hydrateProducts(products);
-          this.menu.hydrateModifierGroups(mapRestaurantMenuModifierGroups(menu));
-          this.menu.hydrateComboDefinitions(mapRestaurantMenuComboDefinitions(menu));
-        }
+      this.api.getRestaurantMenu(restaurant.id).subscribe({
+        next: (menu) => {
+          const products = mapRestaurantMenuToProducts(menu);
+          if (products.length > 0) {
+            this.store.hydrateProducts(products);
+            this.menu.hydrateModifierGroups(mapRestaurantMenuModifierGroups(menu));
+            this.menu.hydrateComboDefinitions(mapRestaurantMenuComboDefinitions(menu));
+          }
+        },
+        error: () => {
+          this.store.reportApiError('restaurantPos.errors.loadFailed');
+        },
       });
     });
 
@@ -220,13 +233,7 @@ export class RestaurantPosServicePage {
         return;
       }
 
-      this.api.getRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
-        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-      });
-
-      this.api.getRestaurantServicePointOrder(restaurant.id, tableId).subscribe((serviceOrder) => {
-        this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
-      });
+      this.reloadServicePointAndOrder(restaurant.id, tableId);
     });
   }
 
@@ -239,8 +246,14 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.api.occupyRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
-      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+    this.api.occupyRestaurantServicePoint(restaurant.id, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      },
     });
   }
 
@@ -404,19 +417,38 @@ export class RestaurantPosServicePage {
   }
 
   protected sendToKitchen(): void {
-    const restaurant = this.restaurantContext.activeRestaurant();
-    const tableId = this.store.selectedTableId();
+    this.sendToKitchenAndReload();
+  }
 
-    if (!restaurant || !tableId) {
-      this.store.sendSelectedOrderToKitchen();
+  protected chargeTable(): void {
+    if (!this.store.selectedServiceInfo()?.canCharge) {
       return;
     }
 
-    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe((servicePoint) => {
-      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-      this.api.getRestaurantServicePointOrder(restaurant.id, tableId).subscribe((serviceOrder) => {
-        this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
-      });
+    if (this.hasPendingKitchenItems()) {
+      this.chargeKitchenConfirmOpen.set(true);
+      return;
+    }
+
+    this.continueChargeTable();
+  }
+
+  protected cancelChargeKitchenConfirm(): void {
+    this.chargeKitchenConfirmOpen.set(false);
+  }
+
+  protected confirmChargeKitchenConfirm(): void {
+    this.chargeKitchenConfirmOpen.set(false);
+    this.sendToKitchenAndReload(() => this.continueChargeTable());
+  }
+
+  protected chargeKitchenPendingCount(): number {
+    return this.store.selectedServiceInfo()?.pendingKitchenCount ?? 0;
+  }
+
+  protected chargeKitchenConfirmDescription(): string {
+    return this.translate('restaurantPos.service.chargeKitchenConfirmDescription', {
+      count: this.chargeKitchenPendingCount(),
     });
   }
 
@@ -429,9 +461,15 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.api.markRestaurantServicePointServed(restaurant.id, tableId).subscribe((servicePoint) => {
-      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-      this.store.markSelectedOrderAsServed();
+    this.api.markRestaurantServicePointServed(restaurant.id, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        this.store.markSelectedOrderAsServed();
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      },
     });
   }
 
@@ -439,7 +477,9 @@ export class RestaurantPosServicePage {
     const ctx = this.resolveApiLine(productId);
     this.store.increaseSelectedOrderLine(productId);
     if (ctx) {
-      this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 }).subscribe();
+      this.api
+        .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 })
+        .subscribe(this.lineMutationObserver(ctx.restaurantId));
     }
   }
 
@@ -448,9 +488,13 @@ export class RestaurantPosServicePage {
     this.store.decreaseSelectedOrderLine(productId);
     if (ctx) {
       if (ctx.line.quantity <= 1) {
-        this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe();
+        this.api
+          .deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id)
+          .subscribe(this.lineMutationObserver(ctx.restaurantId));
       } else {
-        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 }).subscribe();
+        this.api
+          .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 })
+          .subscribe(this.lineMutationObserver(ctx.restaurantId));
       }
     }
   }
@@ -461,7 +505,9 @@ export class RestaurantPosServicePage {
     this.store.increaseSelectedOrderLine(lineId);
     this.lastAddedProductId.set(line?.productId ?? null);
     if (ctx) {
-      this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 }).subscribe();
+      this.api
+        .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 })
+        .subscribe(this.lineMutationObserver(ctx.restaurantId));
     }
   }
 
@@ -470,9 +516,13 @@ export class RestaurantPosServicePage {
     this.store.decreaseSelectedOrderLine(lineId);
     if (ctx) {
       if (ctx.line.quantity <= 1) {
-        this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe();
+        this.api
+          .deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id)
+          .subscribe(this.lineMutationObserver(ctx.restaurantId));
       } else {
-        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 }).subscribe();
+        this.api
+          .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 })
+          .subscribe(this.lineMutationObserver(ctx.restaurantId));
       }
     }
   }
@@ -489,7 +539,31 @@ export class RestaurantPosServicePage {
     const ctx = this.resolveApiLine(productId);
     this.store.removeSelectedOrderLine(productId);
     if (ctx) {
-      this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe();
+      const tableId = this.store.selectedTableId();
+      if (ctx.line.status !== 'pending') {
+        this.api.cancelRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, 'removed_by_staff').subscribe({
+          next: (order) => {
+            if (tableId) {
+              this.store.hydrateServicePointOrder(tableId, mapRestaurantOrder(order, this.store.selectedOrder()?.paymentMethod ?? 'pending'));
+              this.api.getRestaurantServicePoint(ctx.restaurantId, tableId).subscribe({
+                next: (servicePoint) => {
+                  this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+                },
+                error: () => undefined,
+              });
+            }
+          },
+          error: () => {
+            this.store.reportApiError('restaurantPos.errors.updateLineFailed');
+            if (tableId) {
+              this.reloadServicePointAndOrder(ctx.restaurantId, tableId, { autoServeStale: false });
+            }
+          },
+        });
+        return;
+      }
+
+      this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe(this.lineMutationObserver(ctx.restaurantId));
     }
   }
 
@@ -497,24 +571,10 @@ export class RestaurantPosServicePage {
     const ctx = this.resolveApiLine(change.lineId);
     this.store.updateSelectedOrderLineNote(change.lineId, change.note);
     if (ctx) {
-      this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { kitchenNote: change.note }).subscribe();
+      this.api
+        .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { kitchenNote: change.note })
+        .subscribe(this.lineMutationObserver(ctx.restaurantId));
     }
-  }
-
-  protected chargeTable(): void {
-    if (!this.store.selectedServiceInfo()?.canCharge) {
-      return;
-    }
-
-    const paymentMethod = this.store.selectedOrder()?.paymentMethod;
-
-    if (paymentMethod === 'card') {
-      this.cardGatewayStatus.set('connecting');
-      this.cardGatewayOpen.set(true);
-      return;
-    }
-
-    this.chargeSelectedServicePoint('cash');
   }
 
   protected acceptCardPayment(): void {
@@ -551,10 +611,55 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.api.freeRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
-      this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-      this.store.freeSelectedTable();
+    this.api.freeRestaurantServicePoint(restaurant.id, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        this.store.freeSelectedTable();
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      },
     });
+  }
+
+  private sendToKitchenAndReload(afterSuccess?: () => void): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+
+    if (!restaurant || !tableId) {
+      this.store.sendSelectedOrderToKitchen();
+      afterSuccess?.();
+      return;
+    }
+
+    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        this.reloadOrder(restaurant.id, tableId, { autoServeStale: false });
+        afterSuccess?.();
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.sendToKitchenFailed');
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      },
+    });
+  }
+
+  private continueChargeTable(): void {
+    const paymentMethod = this.store.selectedOrder()?.paymentMethod;
+
+    if (paymentMethod === 'card') {
+      this.cardGatewayStatus.set('connecting');
+      this.cardGatewayOpen.set(true);
+      return;
+    }
+
+    this.chargeSelectedServicePoint('cash');
+  }
+
+  private hasPendingKitchenItems(): boolean {
+    return (this.store.selectedServiceInfo()?.pendingKitchenCount ?? 0) > 0;
   }
 
   private chargeSelectedServicePoint(paymentMethod: Exclude<PaymentMethod, 'pending'>): void {
@@ -571,6 +676,15 @@ export class RestaurantPosServicePage {
         this.cardGatewayOpen.set(false);
       }
     };
+    const onChargeError = (): void => {
+      if (paymentMethod === 'card') {
+        this.cardGatewayStatus.set('rejected');
+      }
+      this.store.reportApiError('restaurantPos.errors.chargeFailed');
+      if (restaurant && tableId) {
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      }
+    };
 
     if (!restaurant || !tableId) {
       applyCharge();
@@ -578,9 +692,12 @@ export class RestaurantPosServicePage {
     }
 
     if (!orderId || amountCents <= 0) {
-      this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe((servicePoint) => {
-        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-        applyCharge();
+      this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe({
+        next: (servicePoint) => {
+          this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+          applyCharge();
+        },
+        error: onChargeError,
       });
       return;
     }
@@ -593,20 +710,95 @@ export class RestaurantPosServicePage {
         }),
         switchMap(() => this.api.registerRestaurantOrderPayment(restaurant.id, orderId, amountCents, paymentMethod)),
         switchMap((paidOrder) =>
-          forkJoin({
-            servicePoint: this.api.getRestaurantServicePoint(restaurant.id, tableId),
-            paidOrder: of(paidOrder),
-          }),
+          this.api.getRestaurantServicePoint(restaurant.id, tableId).pipe(
+            tap((servicePoint) => {
+              this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+              this.store.hydrateServicePointOrder(tableId, mapRestaurantOrder(paidOrder, paymentMethod));
+            }),
+          ),
         ),
       )
-      .subscribe(({ servicePoint, paidOrder }) => {
-        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-        this.store.hydrateServicePointOrder(tableId, mapRestaurantOrder(paidOrder, paymentMethod));
-        this.store.setSelectedPaymentMethod(paymentMethod);
-        if (paymentMethod === 'card') {
-          this.cardGatewayOpen.set(false);
-        }
+      .subscribe({
+        next: () => {
+          this.store.setSelectedPaymentMethod(paymentMethod);
+          if (paymentMethod === 'card') {
+            this.cardGatewayOpen.set(false);
+          }
+        },
+        error: onChargeError,
       });
+  }
+
+  private lineMutationObserver(restaurantId: string): { next: () => void; error: () => void } {
+    const tableId = this.store.selectedTableId();
+    return {
+      next: () => {
+        if (tableId) this.reloadOrder(restaurantId, tableId, { autoServeStale: false });
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.updateLineFailed');
+        if (tableId) this.reloadOrder(restaurantId, tableId, { autoServeStale: false });
+      },
+    };
+  }
+
+  private reloadOrder(restaurantId: string, tableId: string, options: { autoServeStale?: boolean } = {}): void {
+    this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
+      next: (serviceOrder) => {
+        if (options.autoServeStale !== false && this.autoServeStaleLinesOnRefresh(restaurantId, tableId, serviceOrder)) {
+          return;
+        }
+        this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
+      },
+      error: () => undefined,
+    });
+  }
+
+  private reloadServicePointAndOrder(restaurantId: string, tableId: string, options: { autoServeStale?: boolean } = {}): void {
+    this.api.getRestaurantServicePoint(restaurantId, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+      },
+      error: () => undefined,
+    });
+    this.reloadOrder(restaurantId, tableId, options);
+  }
+
+  private autoServeStaleLinesOnRefresh(restaurantId: string, tableId: string, serviceOrder: ServicePointOrderDto): boolean {
+    const orderId = serviceOrder.order?.id;
+    if (!orderId) {
+      return false;
+    }
+
+    const staleLineIds = serviceOrder.lines.filter((line) => this.shouldAutoServeStaleLine(line)).map((line) => line.id);
+    if (staleLineIds.length === 0) {
+      return false;
+    }
+
+    forkJoin(staleLineIds.map((lineId) => this.api.updateRestaurantOrderLineStatus(restaurantId, orderId, lineId, 'served'))).subscribe({
+      next: () => {
+        this.reloadServicePointAndOrder(restaurantId, tableId, { autoServeStale: false });
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
+        this.reloadServicePointAndOrder(restaurantId, tableId, { autoServeStale: false });
+      },
+    });
+
+    return true;
+  }
+
+  private shouldAutoServeStaleLine(line: ServicePointOrderDto['lines'][number]): boolean {
+    if (!['sent_to_kitchen', 'preparing', 'ready', 'picked_up'].includes(line.status)) {
+      return false;
+    }
+
+    const updatedAtMs = Date.parse(line.updatedAt);
+    if (Number.isNaN(updatedAtMs)) {
+      return false;
+    }
+
+    return Date.now() - updatedAtMs >= 24 * 60 * 60 * 1000;
   }
 
   protected setPaymentMethod(paymentMethod: PaymentMethod): void {

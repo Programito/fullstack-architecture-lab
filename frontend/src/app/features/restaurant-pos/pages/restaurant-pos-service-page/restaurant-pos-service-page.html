@@ -146,3 +146,17 @@
   (accepted)="acceptCardPayment()"
   (rejectedPayment)="rejectCardPayment()"
 />
+
+<app-dialog
+  [open]="chargeKitchenConfirmOpen()"
+  [title]="'restaurantPos.service.chargeKitchenConfirmTitle' | transloco"
+  [description]="chargeKitchenConfirmDescription()"
+  [closeAriaLabel]="'restaurantPos.service.cancelChargeKitchenConfirm' | transloco"
+  [cancelLabel]="'restaurantPos.service.cancelChargeKitchenConfirm' | transloco"
+  [confirmLabel]="'restaurantPos.service.confirmChargeKitchenConfirm' | transloco"
+  showActions
+  size="sm"
+  (closed)="cancelChargeKitchenConfirm()"
+  (cancelled)="cancelChargeKitchenConfirm()"
+  (confirmed)="confirmChargeKitchenConfirm()"
+/>

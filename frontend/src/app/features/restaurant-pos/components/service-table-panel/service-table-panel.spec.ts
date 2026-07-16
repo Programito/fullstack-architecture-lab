@@ -542,7 +542,59 @@ describe('ServiceTablePanel', () => {
     fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Craft Burger' }), { target: { value: 'Muy hecho' } });
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
 
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar producto de cocina' });
+    expect(dialog).toBeTruthy();
+    expect(removeProduct).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getAllByRole('button', { name: 'Cancelar producto' })[1]);
+
     expect(updateProductNote).toHaveBeenCalledWith({ lineId: 'line-burger', note: 'Muy hecho' });
+    expect(removeProduct).not.toHaveBeenCalled();
+  });
+
+  it('confirms removal when the line is no longer pending', async () => {
+    const i18n = provideI18nTesting();
+    const removeProduct = vi.fn();
+    const kitchenOrder: TableOrder = {
+      ...order,
+      lines: [
+        {
+          ...order.lines[0],
+          status: 'ready',
+        },
+      ],
+    };
+
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, kitchenOrder, {
+          canSendToKitchen: false,
+          canMarkServed: true,
+        }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar producto de cocina' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar producto' }));
+
+    expect(removeProduct).toHaveBeenCalledWith('line-burger');
+  });
+
+  it('removes pending lines without confirmation', async () => {
+    const { fixture } = await renderServiceTablePanel();
+    const removeProduct = vi.fn();
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Cancelar producto de cocina' })).toBeNull();
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
   });
 

@@ -209,6 +209,7 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
     total: serviceOrder.order.totalCents / 100,
     status: serviceOrder.order.status,
     paymentMethod: 'pending' as const,
+    clientOrigin: serviceOrder.order.clientOrigin ?? null,
     lines: serviceOrder.lines.map((line) => {
       const unitPrice = line.unitPriceCents / 100;
       const subtotal = line.subtotalCents / 100;
@@ -274,6 +275,7 @@ export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMet
   return {
     id: orderResponse.order.id,
     tableId: orderResponse.order.tableId ?? '',
+    clientOrigin: orderResponse.order.clientOrigin ?? null,
     tax: orderResponse.order.taxCents / 100,
     paid: orderResponse.order.paidCents / 100,
     balance: orderResponse.order.balanceCents / 100,
@@ -284,6 +286,7 @@ export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMet
       const unitPrice = line.unitPriceCents / 100;
       const subtotal = line.subtotalCents / 100;
       const course = mapRestaurantOrderCourse(line.course);
+      const status = line.cancelledAt ? ('cancelled' as const) : line.status;
 
       return {
         id: line.id,
@@ -333,7 +336,7 @@ export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMet
         subtotal,
         configurationSignature: line.configurationSignature,
         course,
-        status: line.status,
+        status,
         ...(line.cancelledAt ? { statusUpdatedAt: line.cancelledAt } : {}),
       };
     }),

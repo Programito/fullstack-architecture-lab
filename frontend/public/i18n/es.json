@@ -537,7 +537,12 @@
       "productUnavailable": "El producto no está disponible.",
       "cannotPlaceElement": "No se puede colocar el elemento aquí.",
       "cannotResizeGrid": "No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz.",
-      "addLineFailed": "No se pudo añadir el producto. Revisa el estado de la mesa."
+      "addLineFailed": "No se pudo añadir el producto. Revisa el estado de la mesa.",
+      "sendToKitchenFailed": "No se pudo enviar el pedido a cocina. Inténtalo de nuevo.",
+      "updateLineFailed": "No se pudo actualizar la línea del pedido. Se ha recargado el pedido.",
+      "chargeFailed": "No se pudo completar el cobro. Revisa el estado de la mesa e inténtalo de nuevo.",
+      "servicePointActionFailed": "No se pudo completar la acción sobre la mesa. Inténtalo de nuevo.",
+      "loadFailed": "No se pudieron cargar los datos del restaurante. Revisa tu sesión y la conexión."
     },
     "layout": {
       "title": "Plano del restaurante",
@@ -712,8 +717,8 @@
       "soldOut": "Agotado",
       "favoriteBadge": "Favorito",
       "bestSellerBadge": "Más vendido",
-      "sendKitchen": "Cocina",
-      "markServed": "Servido",
+      "sendKitchen": "Enviar a cocina",
+      "markServed": "Marcar servido",
       "charge": "Cobrar",
       "cleaning": "Limpieza",
       "freeTable": "Liberar mesa",
@@ -745,9 +750,17 @@
       "markProductReadyActionLabel": "Marcar {{name}} como preparado",
       "markProductServedActionLabel": "Marcar {{name}} como servido",
       "removeProductActionLabel": "Eliminar {{name}} del pedido",
+      "removeNonPendingConfirmTitle": "Cancelar producto de cocina",
+      "removeNonPendingConfirmDescription": "{{name}} ya no está pendiente. Si continúas, se cancelará en el pedido en lugar de eliminarse directamente.",
+      "confirmRemoveNonPending": "Sí, cancelar producto",
+      "cancelRemoveNonPending": "Cancelar producto",
       "chargeActionLabel": "Cobrar la mesa seleccionada",
       "chargeWithTotal": "Cobrar {{total}}",
       "chargeWithTotalActionLabel": "Cobrar la mesa seleccionada por {{total}}",
+      "chargeKitchenConfirmTitle": "Enviar a cocina antes de cobrar",
+      "chargeKitchenConfirmDescription": "Hay {{count}} producto pendiente de cocina. Si continúas, se enviará directamente a cocina y después seguirá el cobro.",
+      "confirmChargeKitchenConfirm": "Enviar y continuar",
+      "cancelChargeKitchenConfirm": "Cancelar cobro",
       "taxableBase": "Base imponible",
       "includedVat": "IVA incluido",
       "setCashPaymentActionLabel": "Seleccionar pago en efectivo para la mesa seleccionada",
@@ -912,7 +925,8 @@
         "seated": "Sentada",
         "cancelled": "Cancelada",
         "no_show": "No show"
-      }
+      },
+      "customerAppChip": "Desde la app"
     },
     "kitchen": {
       "eyebrow": "Producción",
@@ -979,7 +993,8 @@
       "cancelLineConfirm": "¿Cancelar esta línea? Esta acción no se puede deshacer.",
       "cancelLineConfirmAction": "Sí, cancelar",
       "cancelLineAbort": "Volver",
-      "elapsedMinutes": "{{count}} min"
+      "elapsedMinutes": "{{count}} min",
+      "customerAppChip": "App cliente"
     },
     "tableStatus": {
       "free": "Libre",

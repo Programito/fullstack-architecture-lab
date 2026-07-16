@@ -40,6 +40,8 @@ export class ServiceTablePanel {
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly freeTableConfirmOpen = signal(false);
+  protected readonly removeProductConfirmOpen = signal(false);
+  protected readonly pendingRemovalLine = signal<OrderLine | null>(null);
   protected readonly table = computed(() => this.serviceInfo()?.table ?? null);
   protected readonly order = computed(() => this.serviceInfo()?.order ?? null);
   protected readonly guidesToOrder = computed(() => {
@@ -338,6 +340,35 @@ export class ServiceTablePanel {
 
   protected updateLineNote(lineId: string, event: Event): void {
     this.updateProductNote.emit({ lineId, note: (event.target as HTMLTextAreaElement).value });
+  }
+
+  protected requestRemoveProduct(line: OrderLine): void {
+    if (line.status === 'pending') {
+      this.removeProduct.emit(line.id);
+      return;
+    }
+
+    this.pendingRemovalLine.set(line);
+    this.removeProductConfirmOpen.set(true);
+  }
+
+  protected closeRemoveProductConfirm(): void {
+    this.removeProductConfirmOpen.set(false);
+    this.pendingRemovalLine.set(null);
+  }
+
+  protected confirmRemoveProduct(): void {
+    const line = this.pendingRemovalLine();
+    if (line) {
+      this.removeProduct.emit(line.id);
+    }
+    this.closeRemoveProductConfirm();
+  }
+
+  protected removeProductConfirmDescription(): string {
+    return this.translate('restaurantPos.service.removeNonPendingConfirmDescription', {
+      name: this.pendingRemovalLine()?.productName ?? '',
+    });
   }
 
   protected requestFreeTable(): void {
