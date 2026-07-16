@@ -158,6 +158,11 @@
   color: var(--ui-title, #0f172a);
 }
 
+.reservations-page__badge--customer-app {
+  background: color-mix(in srgb, var(--ui-violet, #7c3aed) 12%, transparent);
+  color: var(--ui-title, #0f172a);
+}
+
 .reservations-page__time {
   font-size: 0.875rem;
   font-weight: 700;

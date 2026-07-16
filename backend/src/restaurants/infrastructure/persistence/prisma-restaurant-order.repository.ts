@@ -92,6 +92,7 @@ type RawOrder = {
   discountTotalCents: number;
   totalCents: number;
   closedAt: Date | null;
+  clientOrigin: string | null;
   createdAt: Date;
   updatedAt: Date;
   lines: RawOrderLine[];
@@ -221,6 +222,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
           currency: restaurant.currency,
           guestCount: command.guestCount,
           dailyNumber: ordersToday + 1,
+          clientOrigin: command.clientOrigin ?? null,
           subtotalCents: 0,
           taxCents: 0,
           discountTotalCents: 0,
@@ -746,6 +748,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
         openedAt: raw.createdAt.toISOString(),
         updatedAt: raw.updatedAt.toISOString(),
         closedAt: raw.closedAt?.toISOString() ?? null,
+        clientOrigin: raw.clientOrigin ?? null,
       },
       lines: raw.lines.map((line) => this.mapLine(line)),
       payments: raw.payments.map((p) => this.mapPayment(p)),

@@ -383,18 +383,25 @@ export class RestaurantPosStore {
 
   // === private helpers ===
   private buildServiceTableInfo(table: RestaurantTable, orderVal: TableOrder): ServiceTableInfo {
-    const pendingKitchenCount = orderVal.lines
+    // Las líneas canceladas se conservan en el backend para auditoría (nunca se
+    // borran de verdad), pero para el pedido activo son peso muerto: no deben
+    // mostrarse, contarse, ni bloquear "todo servido"/"listo para cobrar" —
+    // si no, el panel sigue ofreciendo un botón Eliminar que el backend
+    // rechaza para siempre (el DELETE solo admite líneas en estado
+    // 'pending', y una línea cancelada ya no lo está).
+    const activeLines = orderVal.lines.filter((l) => l.status !== 'cancelled');
+    const pendingKitchenCount = activeLines
       .filter((l) => l.status === 'pending')
       .reduce((sum, l) => sum + l.quantity, 0);
     const canSendToKitchen = pendingKitchenCount > 0;
-    const canMarkServed = orderVal.lines.some((l) => l.status !== 'served');
+    const canMarkServed = activeLines.some((l) => l.status !== 'served');
     const canCharge = orderVal.total > 0 && table.status !== 'paid' && table.status !== 'cleaning';
     const canMarkCleaning =
       table.status === 'occupied' || table.status === 'served' || table.status === 'payment_pending' || table.status === 'paid';
     const canFreeTable = table.status === 'paid' || table.status === 'cleaning';
 
     const courseGroups = COURSE_SERVICE_ORDER.map((course) => {
-      const lines = orderVal.lines.filter((l) => l.course === course);
+      const lines = activeLines.filter((l) => l.course === course);
       return {
         course,
         lines,
@@ -404,10 +411,10 @@ export class RestaurantPosStore {
     }).filter((g) => g.lines.length > 0);
 
     const pendingLine = COURSE_SERVICE_ORDER.map((course) =>
-      orderVal.lines.find((l) => l.course === course && l.status !== 'served'),
+      activeLines.find((l) => l.course === course && l.status !== 'served'),
     ).find(Boolean);
     const servicePhase: ServiceTableInfo['servicePhase'] =
-      orderVal.lines.length === 0
+      activeLines.length === 0
         ? { course: null, status: 'no_order' }
         : pendingLine
           ? { course: pendingLine.course, status: 'pending' }

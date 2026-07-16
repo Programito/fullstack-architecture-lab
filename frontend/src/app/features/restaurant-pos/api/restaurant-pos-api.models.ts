@@ -168,6 +168,8 @@ export type ServicePointOrderDto = {
     taxCents: number;
     totalCents: number;
     currency: string;
+    /** Origen del cliente que abrio el pedido (p. ej. 'apk-customer'); null en pedidos antiguos. */
+    clientOrigin?: string | null;
   } | null;
   lines: ServicePointOrderLineDto[];
 };
@@ -190,6 +192,8 @@ export type RestaurantReservationDto = {
   notes: string | null;
   tableIds: string[];
   tables: RestaurantReservationTableDto[];
+  /** Origen del cliente que creo la reserva (p. ej. 'apk-customer'); null en reservas antiguas. */
+  clientOrigin?: string | null;
 };
 
 export type TimeEntryStatusDto = 'open' | 'closed' | 'corrected';
@@ -333,6 +337,8 @@ export type RestaurantOrderDto = {
     openedAt: string;
     updatedAt: string;
     closedAt: string | null;
+    /** Origen del cliente que abrio el pedido (p. ej. 'apk-customer'); null en pedidos antiguos. */
+    clientOrigin?: string | null;
   };
   lines: RestaurantOrderLineDto[];
   payments: RestaurantOrderPaymentDto[];

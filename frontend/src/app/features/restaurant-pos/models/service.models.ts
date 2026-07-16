@@ -59,6 +59,8 @@ export interface PreparationBoardCard {
   preparationFlow: PreparationFlow;
   requiresReadyBeforeServed: boolean;
   station?: string;
+  /** true cuando el pedido se abrio desde la app cliente Android (X-Client-Origin: apk-customer). */
+  fromCustomerApp?: boolean;
 }
 
 export interface PreparationBoardColumn {

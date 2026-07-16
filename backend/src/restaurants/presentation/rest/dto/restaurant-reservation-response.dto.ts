@@ -42,6 +42,9 @@ export class RestaurantReservationResponseDto {
   @ApiPropertyOptional({ example: '2026-06-21T13:00:00.000Z', nullable: true })
   depositPaidAt!: string | null;
 
+  @ApiPropertyOptional({ nullable: true, example: 'apk-customer', description: "Origen del cliente que creo la reserva; null en reservas antiguas." })
+  clientOrigin?: string | null;
+
   static fromDomain(reservation: RestaurantReservation): RestaurantReservationResponseDto {
     return {
       ...reservation,

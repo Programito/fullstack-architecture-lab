@@ -8,6 +8,7 @@ import { PermissionsGuard, RequirePermissions } from '../../../identity/presenta
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { AuditService } from '../../../observability/application/audit.service';
 import { auditContext } from '../../../observability/application/audit-context';
+import { resolveClientOrigin } from '../../../observability/application/client-origin';
 import { ListRestaurantReservationsUseCase } from '../../application/use-cases/list-restaurant-reservations.use-case';
 import { GetRestaurantReservationUseCase } from '../../application/use-cases/get-restaurant-reservation.use-case';
 import { CreateRestaurantReservationUseCase } from '../../application/use-cases/create-restaurant-reservation.use-case';
@@ -80,6 +81,7 @@ export class RestaurantReservationsController {
         notes: body.notes ?? null,
         tableIds: body.tableIds ?? [],
         paymentMethod: body.paymentMethod,
+        clientOrigin: resolveClientOrigin(request, 'backend'),
       }),
     );
     await this.audit.record({

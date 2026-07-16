@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { API_BASE_URL } from '../../../core/api/api.config';
 import { RestaurantAnalyticsApiService } from './restaurant-analytics-api.service';
 import type { RestaurantAnalyticsReportDto } from './restaurant-analytics.models';
 
@@ -25,7 +26,9 @@ function makeReport(): RestaurantAnalyticsReportDto {
 describe('RestaurantAnalyticsApiService', () => {
   const setup = () => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // Pin a relative base URL so the spec is independent from the absolute
+      // host configured in src/environments/environment.ts.
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: API_BASE_URL, useValue: '/api/v1' }],
     });
 
     return {

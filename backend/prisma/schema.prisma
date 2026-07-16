@@ -497,6 +497,9 @@ model Order {
   discountTotalCents  Int               @default(0)
   totalCents          Int
   closedAt            DateTime?
+  // Origen del cliente que abrio el pedido (header X-Client-Origin):
+  // 'web-pos', 'apk-customer', etc. Null en filas anteriores a la columna.
+  clientOrigin        String?
   restaurant          Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   table               RestaurantTable?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
   openedByUser        User              @relation("OpenedOrders", fields: [openedByUserId], references: [id], onDelete: Restrict)
@@ -708,6 +711,8 @@ model Reservation {
   notes                 String?
   depositAmountCents    Int                 @default(0)
   depositPaidAt         DateTime?
+  // Origen del cliente que creo la reserva (header X-Client-Origin).
+  clientOrigin          String?
   restaurant            Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   customer              Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
   tables                ReservationTable[]

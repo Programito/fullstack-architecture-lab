@@ -4,12 +4,15 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { API_BASE_URL } from '../../../core/api/api.config';
 import { RestaurantPosApiService } from './restaurant-pos-api.service';
 
 describe('RestaurantPosApiService', () => {
   const setup = () => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // Pin a relative base URL so the spec is independent from the absolute
+      // host configured in src/environments/environment.ts.
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: API_BASE_URL, useValue: '/api/v1' }],
     });
 
     return {

@@ -1,6 +1,6 @@
 import { DestroyRef, inject, Injectable } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { debounceTime, EMPTY, filter, merge, switchMap, timer } from 'rxjs';
+import { catchError, debounceTime, EMPTY, filter, merge, switchMap, timer } from 'rxjs';
 import { mapServiceFloor, mapServicePointOrder } from '../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
@@ -29,7 +29,9 @@ export class OrderSyncService {
           debounceTime(REALTIME_INVALIDATION_DEBOUNCE_MS),
         );
         return merge(poll$, invalidated$).pipe(
-          switchMap(() => this.api.getRestaurantServiceFloor(restaurant.id)),
+          // A single failed request (e.g. an expired session mid-refresh) must not
+          // kill the polling stream for the rest of the session.
+          switchMap(() => this.api.getRestaurantServiceFloor(restaurant.id).pipe(catchError(() => EMPTY))),
         );
       }),
     ).subscribe((serviceFloor) => {
@@ -42,7 +44,7 @@ export class OrderSyncService {
         .filter((sp) => sp.summary.lineCount > 0)
         .forEach((sp) => {
           this.api.getRestaurantServicePointOrder(restaurant.id, sp.table.id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(takeUntilDestroyed(this.destroyRef), catchError(() => EMPTY))
             .subscribe((order) => {
               this.store.hydrateServicePointOrder(sp.table.id, mapServicePointOrder(order));
             });

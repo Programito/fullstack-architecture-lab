@@ -153,4 +153,8 @@
     <string name="reservation_status_seated">Ja ets a la teva taula</string>
     <string name="reservation_status_cancelled">Reserva cancel·lada</string>
     <string name="reservation_status_no_show">Reserva no presentada</string>
-    <string name="reservation_status_unknown">Actualitzant l\'estat de la teva reserva…</
+    <string name="reservation_status_unknown">Actualitzant l\'estat de la teva reserva…</string>
+    <string name="reservation_error_not_found">No hem trobat aquesta reserva.</string>
+    <string name="reservation_error_validation">Revisa les dades de la reserva i torna-ho a provar.</string>
+    <string name="reservation_error_payment_declined">La targeta ha estat rebutjada. Prova amb una altra.</string>
+</resources>

@@ -154,4 +154,7 @@
     <string name="reservation_status_cancelled">Reservation cancelled</string>
     <string name="reservation_status_no_show">Reservation marked as no-show</string>
     <string name="reservation_status_unknown">Updating your reservation status…</string>
-  
+    <string name="reservation_error_not_found">We could not find that reservation.</string>
+    <string name="reservation_error_validation">Check the reservation details and try again.</string>
+    <string name="reservation_error_payment_declined">The card was declined. Try a different one.</string>
+</resources>

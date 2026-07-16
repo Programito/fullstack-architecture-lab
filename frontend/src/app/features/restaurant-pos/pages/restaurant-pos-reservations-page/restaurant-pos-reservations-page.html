@@ -198,6 +198,9 @@
                     @if (reservation.isUnassigned) {
                       <span class="reservations-page__badge">{{ 'restaurantPos.reservations.unassignedBadge' | transloco }}</span>
                     }
+                    @if (reservation.fromCustomerApp) {
+                      <span class="reservations-page__badge reservations-page__badge--customer-app">{{ 'restaurantPos.reservations.customerAppChip' | transloco }}</span>
+                    }
                   </div>
                   <h3 class="theme-title text-base font-semibold">{{ reservation.customerName }}</h3>
                   @if (reservation.customerPhone) {

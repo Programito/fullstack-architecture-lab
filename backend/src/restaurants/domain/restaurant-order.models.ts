@@ -7,6 +7,8 @@ export type OpenRestaurantOrderCommand = {
   tableId: string;
   openedByUserId: string;
   guestCount: number;
+  /** Origen del cliente que abre el pedido (header X-Client-Origin), p. ej. 'web-pos' o 'apk-customer'. */
+  clientOrigin?: string | null;
 };
 
 export type AddOrderLineCommand = {
@@ -127,6 +129,8 @@ export type RestaurantOrderView = {
     openedAt: string;
     updatedAt: string;
     closedAt: string | null;
+    /** Origen del cliente que abrio el pedido; null en pedidos antiguos. */
+    clientOrigin?: string | null;
   };
   lines: RestaurantOrderLineView[];
   payments: RestaurantOrderPaymentView[];

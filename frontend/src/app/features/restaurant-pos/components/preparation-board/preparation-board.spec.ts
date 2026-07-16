@@ -64,6 +64,7 @@ describe('PreparationBoard', () => {
           tableNumber: 2,
           preparationFlow: 'kitchen',
           requiresReadyBeforeServed: true,
+          fromCustomerApp: true,
           line: {
             id: 'line-combo',
             productSnapshot: productSnapshot('product-16', 'Classic Burger Menu', 'combo', 13.5, 'main'),
@@ -155,6 +156,22 @@ describe('PreparationBoard', () => {
     expect(screen.getByText(/huevo, patatas, ensalada/)).toBeTruthy();
     expect(screen.getByText(/Burger:/)).toBeTruthy();
     expect(screen.getByText(/Truffle Burger \+2,00/)).toBeTruthy();
+  });
+
+  it('shows a customer app chip only on cards whose order came from the mobile client', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [], warning: null },
+    });
+
+    const preparingColumn = screen.getByText('Preparándose', { selector: 'h3' }).closest('section') as HTMLElement;
+    expect(within(preparingColumn).getByText('App cliente')).toBeTruthy();
+
+    const pendingColumn = screen.getByText('Pendiente', { selector: 'h3' }).closest('section') as HTMLElement;
+    expect(within(pendingColumn).queryByText('App cliente')).toBeNull();
   });
 
   it('renders remove modifiers as red pills', async () => {

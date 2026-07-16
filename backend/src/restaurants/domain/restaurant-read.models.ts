@@ -275,6 +275,8 @@ export type RestaurantReservation = {
   // crear la reserva).
   depositAmountCents: number;
   depositPaidAt: string | null;
+  /** Origen del cliente que creo la reserva (header X-Client-Origin); null en reservas antiguas. */
+  clientOrigin?: string | null;
 };
 
 export type CreateRestaurantReservationInput = {
@@ -287,6 +289,7 @@ export type CreateRestaurantReservationInput = {
   tableIds: string[];
   depositAmountCents: number;
   depositPaidAt: string | null;
+  clientOrigin?: string | null;
 };
 
 export type ServiceWindow = {

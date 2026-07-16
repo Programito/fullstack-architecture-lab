@@ -60,7 +60,15 @@
               <div class="p-3">
                 <!-- Mesa + timer -->
                 <div class="flex items-center justify-between gap-2">
-                  <p class="text-sm font-bold">{{ 'restaurantPos.preparationBoard.tableLabel' | transloco: { number: card.tableNumber } }}</p>
+                  <p class="flex items-center gap-1.5 text-sm font-bold">
+                    {{ 'restaurantPos.preparationBoard.tableLabel' | transloco: { number: card.tableNumber } }}
+                    @if (card.fromCustomerApp) {
+                      <span class="inline-flex items-center gap-0.5 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800 dark:bg-violet-950/40 dark:text-violet-300">
+                        <app-icon name="smartphone" size="sm" />
+                        {{ 'restaurantPos.preparationBoard.customerAppChip' | transloco }}
+                      </span>
+                    }
+                  </p>
                   @if (elapsedMinutes(card); as mins) {
                     <span
                       class="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold"

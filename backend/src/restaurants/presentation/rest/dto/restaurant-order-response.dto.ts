@@ -145,6 +145,8 @@ export class RestaurantOrderSummaryResponseDto {
   @ApiProperty() openedAt!: string;
   @ApiProperty() updatedAt!: string;
   @ApiPropertyOptional({ nullable: true }) closedAt!: string | null;
+  @ApiPropertyOptional({ nullable: true, description: "Origen del cliente que abrio el pedido (p. ej. 'web-pos' o 'apk-customer'); null en pedidos antiguos." })
+  clientOrigin?: string | null;
 }
 
 export class RestaurantOrderResponseDto {

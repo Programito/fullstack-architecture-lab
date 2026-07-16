@@ -111,6 +111,8 @@ export type ServicePointOrderView = {
     taxCents: number;
     totalCents: number;
     currency: string;
+    /** Origen del cliente que abrio el pedido; null en pedidos antiguos. */
+    clientOrigin?: string | null;
   } | null;
   lines: ServicePointOrderLineView[];
 };

@@ -155,4 +155,7 @@
     <string name="reservation_status_cancelled">Reserva cancelada</string>
     <string name="reservation_status_no_show">Reserva no presentada</string>
     <string name="reservation_status_unknown">Actualizando el estado de tu reserva…</string>
- 
+    <string name="reservation_error_not_found">No hemos encontrado esa reserva.</string>
+    <string name="reservation_error_validation">Revisa los datos de la reserva e inténtalo de nuevo.</string>
+    <string name="reservation_error_payment_declined">La tarjeta ha sido rechazada. Prueba con otra.</string>
+</resources>

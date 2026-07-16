@@ -398,6 +398,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         notes: reservation.notes,
         depositAmountCents: reservation.depositAmountCents,
         depositPaidAt: reservation.depositPaidAt ? new Date(reservation.depositPaidAt) : null,
+        clientOrigin: reservation.clientOrigin ?? null,
         tables: {
           create: reservation.tableIds.map((tableId) => ({ tableId })),
         },
@@ -599,6 +600,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         taxCents: order.taxCents,
         totalCents: order.totalCents,
         currency: order.currency,
+        clientOrigin: order.clientOrigin ?? null,
       },
       lines: order.lines.map((line) => ({
         id: line.id,
@@ -969,6 +971,7 @@ function mapReservation(
     tables: Array<{ tableId: string; table: { id: string; tableNumber: number; name: string | null } }>;
     depositAmountCents: number;
     depositPaidAt: Date | null;
+    clientOrigin?: string | null;
   },
 ): RestaurantReservation {
   return {
@@ -989,6 +992,7 @@ function mapReservation(
     })),
     depositAmountCents: reservation.depositAmountCents,
     depositPaidAt: reservation.depositPaidAt ? reservation.depositPaidAt.toISOString() : null,
+    clientOrigin: reservation.clientOrigin ?? null,
   };
 }
 

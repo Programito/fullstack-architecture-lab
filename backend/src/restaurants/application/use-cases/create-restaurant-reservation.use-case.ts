@@ -38,6 +38,8 @@ type CreateRestaurantReservationCommand = {
   // pedido, ver RegisterRestaurantOrderPaymentUseCase); nunca se persiste,
   // solo se usa para el cobro fake antes de crear la reserva.
   paymentMethod: PaymentMethod;
+  /** Origen del cliente que crea la reserva (header X-Client-Origin). */
+  clientOrigin?: string | null;
 };
 
 @Injectable()
@@ -124,6 +126,7 @@ export class CreateRestaurantReservationUseCase {
         tableIds: command.tableIds,
         depositAmountCents,
         depositPaidAt: new Date().toISOString(),
+        clientOrigin: command.clientOrigin ?? null,
       });
 
       return reservation ? ok(reservation) : err(restaurantNotFound(command.restaurantId));

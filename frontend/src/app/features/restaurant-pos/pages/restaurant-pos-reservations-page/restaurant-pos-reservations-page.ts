@@ -57,6 +57,8 @@ type ReservationAgendaItem = {
   isUpcoming: boolean;
   isOverdue: boolean;
   isUnassigned: boolean;
+  /** true cuando la reserva se creo desde la app cliente Android (X-Client-Origin: apk-customer). */
+  fromCustomerApp: boolean;
   availableActions: ReservationAction[];
 };
 
@@ -623,6 +625,7 @@ export class RestaurantPosReservationsPage {
         }).format(new Date(r.reservationAt)),
         customerPhone: r.customerPhoneSnapshot,
         customerName: r.customerNameSnapshot,
+        fromCustomerApp: r.clientOrigin === 'apk-customer',
         reservationAt: r.reservationAt,
         partySize: r.partySize,
         status: r.status,

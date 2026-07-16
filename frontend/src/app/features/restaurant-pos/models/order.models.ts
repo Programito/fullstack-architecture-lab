@@ -88,6 +88,8 @@ export interface TableOrder {
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
+  /** Origen del cliente que abrio el pedido (p. ej. 'apk-customer'); null/undefined si se desconoce. */
+  clientOrigin?: string | null;
 }
 
 export type OrdersByTable = Record<string, TableOrder>;

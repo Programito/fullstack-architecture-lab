@@ -80,6 +80,7 @@ describe('RestaurantPosReservationsPage', () => {
         notes: 'Mesa tranquila.',
         tableIds: ['table-1'],
         tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+        clientOrigin: 'apk-customer',
       },
       {
         id: 'reservation-demo-group',
@@ -143,6 +144,22 @@ describe('RestaurantPosReservationsPage', () => {
       cancelRestaurantReservation: vi.fn(() => of(updateReservationStatus(reservations[1]!, 'cancelled'))),
     });
   };
+
+  it('shows a customer app badge only on reservations created from the mobile client', async () => {
+    const i18n = provideI18nTesting();
+    const apiMock = createApiMock();
+    await render(RestaurantPosReservationsPage, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers, { provide: RestaurantPosApiService, useValue: apiMock }],
+    });
+
+    // La reserva de Laura viene con clientOrigin 'apk-customer'; la de Diego no.
+    const lauraCard = screen.getByText('Laura Gomez').closest('article') as HTMLElement;
+    expect(within(lauraCard).getByText('Desde la app')).toBeTruthy();
+
+    const diegoCard = screen.getByText('Diego Martin').closest('article') as HTMLElement;
+    expect(within(diegoCard).queryByText('Desde la app')).toBeNull();
+  });
 
   it('shows recommended slots and suggested tables in the creation flow', async () => {
     const i18n = provideI18nTesting();

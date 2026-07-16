@@ -102,6 +102,15 @@ IDENTITY_MEMORY_SEED=true
 
 With `IDENTITY_MEMORY_SEED=true` the backend starts without PostgreSQL, using in-memory adapters.
 
+`FRONTEND_ORIGIN` accepts a comma-separated list of hosts. In production the frontend and backend run on different hosts, so it must include the deployed frontend origin, and `AUTH_COOKIE_SECURE=true` is required so the auth cookies (`SameSite=None; Secure`) are accepted cross-site:
+
+```txt
+FRONTEND_ORIGIN="http://localhost:4200,https://fullstack-architecture-lab-crao.vercel.app"
+AUTH_COOKIE_SECURE=true
+```
+
+Locally keep `AUTH_COOKIE_SECURE=false`: cookies are then sent with `SameSite=Lax`, which works over plain HTTP on localhost.
+
 ### Local database
 
 ```bash
@@ -241,6 +250,15 @@ IDENTITY_MEMORY_SEED=true
 ```
 
 Con `IDENTITY_MEMORY_SEED=true` el backend arranca sin PostgreSQL usando adaptadores en memoria.
+
+`FRONTEND_ORIGIN` acepta una lista de hosts separados por comas. En producción el frontend y el backend viven en hosts distintos, así que debe incluir el origen del frontend desplegado, y hace falta `AUTH_COOKIE_SECURE=true` para que las cookies de autenticación (`SameSite=None; Secure`) se acepten entre sitios:
+
+```txt
+FRONTEND_ORIGIN="http://localhost:4200,https://fullstack-architecture-lab-crao.vercel.app"
+AUTH_COOKIE_SECURE=true
+```
+
+En local mantén `AUTH_COOKIE_SECURE=false`: las cookies se envían con `SameSite=Lax`, que funciona sobre HTTP plano en localhost.
 
 ### Base de datos local
 

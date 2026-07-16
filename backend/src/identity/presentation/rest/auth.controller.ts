@@ -214,19 +214,25 @@ export class AuthController {
   }
 
   private cookieOptions() {
+    // Cross-site prod deployments (frontend and backend on different hosts) need
+    // SameSite=None, which browsers only accept together with Secure. On local
+    // HTTP (AUTH_COOKIE_SECURE=false) SameSite=None would be rejected by the
+    // browser, so fall back to Lax (localhost:4200 -> localhost:3000 is same-site).
+    const secure = this.config.get<string>('AUTH_COOKIE_SECURE') === 'true';
     return {
       httpOnly: true,
-      secure: this.config.get<string>('AUTH_COOKIE_SECURE') === 'true',
-      sameSite: 'none' as const,
+      secure,
+      sameSite: secure ? ('none' as const) : ('lax' as const),
       path: '/api/v1/auth',
     };
   }
 
   private developerCookieOptions() {
+    const secure = this.config.get<string>('AUTH_COOKIE_SECURE') === 'true';
     return {
       httpOnly: true,
-      secure: this.config.get<string>('AUTH_COOKIE_SECURE') === 'true',
-      sameSite: 'none' as const,
+      secure,
+      sameSite: secure ? ('none' as const) : ('lax' as const),
       path: '/developer',
     };
   }

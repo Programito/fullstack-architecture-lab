@@ -43,6 +43,9 @@ class ServicePointOrderInfoResponseDto {
 
   @ApiProperty({ example: 'EUR' })
   currency!: string;
+
+  @ApiPropertyOptional({ nullable: true, example: 'apk-customer', description: "Origen del cliente que abrio el pedido; null en pedidos antiguos." })
+  clientOrigin?: string | null;
 }
 
 class ServicePointOrderLineResponseDto {

@@ -10,6 +10,7 @@ import { RestaurantAccessGuard } from '../../../identity/presentation/rest/resta
 import { RequireRestaurantScope } from '../../../identity/presentation/rest/require-restaurant-scope.decorator';
 import { AuditService } from '../../../observability/application/audit.service';
 import { auditContext } from '../../../observability/application/audit-context';
+import { resolveClientOrigin } from '../../../observability/application/client-origin';
 import {
   REALTIME_ORDER_EVENT_PUBLISHER,
   type RealtimeOrderEventPublisher,
@@ -75,6 +76,7 @@ export class RestaurantOrderController {
         tableId,
         openedByUserId: request.auth.userId,
         guestCount: body.guestCount ?? 1,
+        clientOrigin: resolveClientOrigin(request, 'backend'),
       }),
     );
     await this.audit.record({
