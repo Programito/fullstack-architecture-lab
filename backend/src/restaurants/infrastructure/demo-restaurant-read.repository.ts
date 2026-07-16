@@ -202,6 +202,8 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
         notes: 'Mesa tranquila.',
         tableIds: ['table-1'],
         tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+        depositAmountCents: 1000,
+        depositPaidAt: '2026-06-20T18:00:00.000Z',
       },
       {
         id: 'reservation-demo-group',
@@ -218,6 +220,8 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
           { id: 'table-3', tableNumber: 3, name: 'Mesa 3' },
           { id: 'table-4', tableNumber: 4, name: 'Mesa 4' },
         ],
+        depositAmountCents: 4000,
+        depositPaidAt: '2026-06-20T19:30:00.000Z',
       },
     ],
   ],
@@ -518,6 +522,13 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     return date ? sorted.filter((r) => r.reservationAt.startsWith(date)) : sorted;
   }
 
+  async findReservationById(restaurantId: string, reservationId: string): Promise<RestaurantReservation | null> {
+    const reservations = new Map(this.reservations).get(restaurantId);
+    if (!reservations) return null;
+    const reservation = reservations.find((r) => r.id === reservationId);
+    return reservation ? structuredClone(reservation) : null;
+  }
+
   async findConflictingReservations(restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]> {
     const reservations = new Map(this.reservations).get(restaurantId) ?? [];
     return reservations
@@ -576,6 +587,8 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
         tableNumber: table!.tableNumber,
         name: table!.name,
       })),
+      depositAmountCents: reservation.depositAmountCents,
+      depositPaidAt: reservation.depositPaidAt,
     };
 
     reservations.push(created);

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, HttpException, InternalServerErrorException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import type { ApplicationError } from '../errors/application-error';
 import type { Result } from '../result/result';
@@ -81,6 +81,11 @@ export function toHttpException(error: ApplicationError): HttpException {
     case 'insufficient_table_capacity':
     case 'outside_service_hours':
       return new UnprocessableEntityException(error.message);
+
+    case 'payment_declined':
+      // 402 Payment Required: no hay excepcion dedicada en @nestjs/common,
+      // así que se construye a mano (ver HttpStatus.PAYMENT_REQUIRED).
+      return new HttpException(error.message, HttpStatus.PAYMENT_REQUIRED);
 
     case 'forbidden_time_entry_access':
       return new ForbiddenException(error.message);

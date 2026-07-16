@@ -11,6 +11,10 @@ data object EntryKey : NavKey
 @Serializable
 data object MenuKey : NavKey
 
+/** Reserva propia del cliente: crear, ver estado y cancelar (sin listado, ver ReservationsApi). */
+@Serializable
+data object ReservationKey : NavKey
+
 @Serializable
 data object CartKey : NavKey
 

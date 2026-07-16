@@ -43,9 +43,9 @@ describe('RestaurantScopeService', () => {
     await expect(service.canAccessRestaurant(auth, 'nonexistent')).resolves.toBe(false);
   });
 
-  it('grants access when the user has no scopes configured', async () => {
+  it('denies access when the user has no scopes configured', async () => {
     const auth = { scopes: { organizations: [], restaurants: [] } };
-    await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(true);
+    await expect(service.canAccessRestaurant(auth, 'rest-1')).resolves.toBe(false);
     expect(listRestaurants).not.toHaveBeenCalled();
   });
 });

@@ -36,6 +36,12 @@ export class RestaurantReservationResponseDto {
   @ApiProperty({ type: [String], example: ['table-1'] })
   tableIds!: string[];
 
+  @ApiProperty({ example: 1000, description: 'Fake deposit charged when the reservation was created, in cents.' })
+  depositAmountCents!: number;
+
+  @ApiPropertyOptional({ example: '2026-06-21T13:00:00.000Z', nullable: true })
+  depositPaidAt!: string | null;
+
   static fromDomain(reservation: RestaurantReservation): RestaurantReservationResponseDto {
     return {
       ...reservation,

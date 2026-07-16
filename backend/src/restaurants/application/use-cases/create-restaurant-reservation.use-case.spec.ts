@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { invalidReservationCreation, invalidReservationState, restaurantNotFound } from '../../../shared/errors/application-error';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
+import { FakeReservationPaymentGateway } from '../../infrastructure/fake-reservation-payment.gateway';
+import { RESERVATION_DEPOSIT_PER_PERSON_CENTS } from '../../domain/reservation-pricing';
 import type { RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
+import type { ReservationPaymentGateway } from '../ports/reservation-payment-gateway.port';
 import type { RestaurantServiceWindowsRepository } from '../ports/restaurant-service-windows-repository.port';
 import type { RestaurantReservation, ServiceWindow, UpdateServiceWindowInput } from '../../domain/restaurant-read.models';
 import { CreateRestaurantReservationUseCase } from './create-restaurant-reservation.use-case';
@@ -22,6 +25,7 @@ class InMemoryReservationReadRepository implements Partial<RestaurantReadReposit
   async findMenuByRestaurantId(): Promise<null> { return null; }
   async findFloorsByRestaurantId(): Promise<null> { return null; }
   async listReservationsByRestaurantId(): Promise<[]> { return []; }
+  async findReservationById(): Promise<null> { return null; }
 
   async findConflictingReservations(_restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]> {
     return this.reservations
@@ -49,6 +53,8 @@ class InMemoryReservationReadRepository implements Partial<RestaurantReadReposit
       notes: string | null;
       tableIds: string[];
       customerPhoneSnapshot: string | null;
+      depositAmountCents: number;
+      depositPaidAt: string | null;
     },
   ): Promise<RestaurantReservation | null> {
     if (!this.restaurantExists) return null;
@@ -64,6 +70,8 @@ class InMemoryReservationReadRepository implements Partial<RestaurantReadReposit
       notes: input.notes,
       tableIds: input.tableIds,
       tables: [],
+      depositAmountCents: input.depositAmountCents,
+      depositPaidAt: input.depositPaidAt,
     };
     this.reservations.push(reservation);
     return reservation;
@@ -102,10 +110,15 @@ class InMemoryServiceWindowsRepository implements RestaurantServiceWindowsReposi
   }
 }
 
-function makeUseCase(readRepo: InMemoryReservationReadRepository, serviceWindowsRepo: InMemoryServiceWindowsRepository) {
+function makeUseCase(
+  readRepo: InMemoryReservationReadRepository,
+  serviceWindowsRepo: InMemoryServiceWindowsRepository,
+  paymentGateway: ReservationPaymentGateway = new FakeReservationPaymentGateway(),
+) {
   return new CreateRestaurantReservationUseCase(
     readRepo as unknown as RestaurantReadRepository,
     serviceWindowsRepo,
+    paymentGateway,
   );
 }
 
@@ -128,6 +141,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 90,
       notes: null,
       tableIds: [],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
@@ -148,6 +162,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 90,
       notes: null,
       tableIds: [],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
@@ -169,6 +184,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 90,
       notes: null,
       tableIds: ['table-1'],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
@@ -188,6 +204,8 @@ describe('CreateRestaurantReservationUseCase', () => {
       notes: null,
       tableIds: ['table-1'],
       tables: [],
+      depositAmountCents: 1000,
+      depositPaidAt: '2026-01-01T00:00:00.000Z',
     };
     const readRepo = new InMemoryReservationReadRepository();
     readRepo.seed([conflictingRes]);
@@ -203,6 +221,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 90,
       notes: null,
       tableIds: ['table-1'],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
@@ -225,6 +244,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 90,
       notes: null,
       tableIds: [],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
@@ -245,6 +265,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 30,
       notes: null,
       tableIds: [],
+      paymentMethod: 'bizum',
     });
 
     expect(result.ok).toBe(true);
@@ -265,12 +286,15 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 90,
       notes: 'Mesa tranquila',
       tableIds: ['table-1'],
+      paymentMethod: 'cash',
     });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.customerNameSnapshot).toBe('Ana Lopez');
       expect(result.value.partySize).toBe(2);
+      expect(result.value.depositAmountCents).toBe(2 * RESERVATION_DEPOSIT_PER_PERSON_CENTS);
+      expect(result.value.depositPaidAt).toEqual(expect.any(String));
     }
   });
 
@@ -289,6 +313,7 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 60,
       notes: null,
       tableIds: [],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
@@ -312,9 +337,64 @@ describe('CreateRestaurantReservationUseCase', () => {
       durationMinutes: 60,
       notes: null,
       tableIds: [],
+      paymentMethod: 'card',
     });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('invalid_reservation_state');
+  });
+
+  it('returns payment_declined and does not create a reservation when the gateway declines the charge', async () => {
+    // FakeReservationPaymentGateway siempre aprueba (igual que el cobro
+    // mock de pedidos, ver checkout_mock_note), así que este camino se
+    // ejercita con un gateway inyectado en vez del real: el objetivo es
+    // proteger CreateRestaurantReservationUseCase para el día que se
+    // sustituya el fake por una pasarela real que sí pueda rechazar.
+    const readRepo = new InMemoryReservationReadRepository();
+    readRepo.seed([], new Map([['table-1', 4]]));
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+    const createSpy = vi.spyOn(readRepo, 'createReservation');
+    const decliningGateway: ReservationPaymentGateway = {
+      charge: vi.fn().mockResolvedValue({ approved: false, paymentReference: null }),
+    };
+
+    const result = await makeUseCase(readRepo, windowsRepo, decliningGateway).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: 'Declined Guest',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 90,
+      notes: null,
+      tableIds: ['table-1'],
+      paymentMethod: 'card',
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('payment_declined');
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not charge the deposit when an earlier validation already rejects the reservation', async () => {
+    const readRepo = new InMemoryReservationReadRepository();
+    const windowsRepo = new InMemoryServiceWindowsRepository();
+    windowsRepo.seed(null);
+    const chargeSpy = vi.fn().mockResolvedValue({ approved: true, paymentReference: 'unused' });
+
+    const result = await makeUseCase(readRepo, windowsRepo, { charge: chargeSpy }).execute({
+      restaurantId: 'r1',
+      customerNameSnapshot: '',
+      customerPhoneSnapshot: null,
+      partySize: 2,
+      reservationAt: FUTURE_ISO,
+      durationMinutes: 90,
+      notes: null,
+      tableIds: [],
+      paymentMethod: 'card',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(chargeSpy).not.toHaveBeenCalled();
   });
 });

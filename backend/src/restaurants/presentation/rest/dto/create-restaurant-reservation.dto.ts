@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsDateString, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+
+import type { PaymentMethod } from '../../../domain/restaurant-order.models';
 
 export class CreateRestaurantReservationDto {
   @ApiProperty({ description: 'Customer name snapshot.', example: 'Laura Gomez' })
@@ -36,4 +38,12 @@ export class CreateRestaurantReservationDto {
   @IsArray()
   @IsString({ each: true })
   tableIds?: string[];
+
+  @ApiProperty({
+    description: 'Payment method used to charge the (fake) reservation deposit. No real payment gateway is involved.',
+    enum: ['cash', 'card', 'bizum', 'other'],
+    example: 'card',
+  })
+  @IsIn(['cash', 'card', 'bizum', 'other'])
+  paymentMethod!: PaymentMethod;
 }

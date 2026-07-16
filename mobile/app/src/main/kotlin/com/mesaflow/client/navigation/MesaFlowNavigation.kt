@@ -15,6 +15,7 @@ import com.mesaflow.client.feature.cart.CartScreen
 import com.mesaflow.client.feature.checkout.CheckoutScreen
 import com.mesaflow.client.feature.entry.EntryScreen
 import com.mesaflow.client.feature.menu.MenuScreen
+import com.mesaflow.client.feature.reservation.ReservationScreen
 import com.mesaflow.client.feature.settings.SettingsScreen
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -74,6 +75,12 @@ fun MesaFlowNavigation(viewModel: MainViewModel = viewModel()) {
                         backStack.add(MenuKey)
                     },
                     onSettingsClick = { backStack.add(SettingsKey(fromEntry = true)) },
+                    onReservationClick = { backStack.add(ReservationKey) },
+                )
+            }
+            entry<ReservationKey> {
+                ReservationScreen(
+                    onBack = { backStack.removeLastOrNull() },
                 )
             }
             entry<MenuKey> {

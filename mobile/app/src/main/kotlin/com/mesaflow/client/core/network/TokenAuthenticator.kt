@@ -1,5 +1,6 @@
 package com.mesaflow.client.core.network
 
+import com.mesaflow.client.core.datastore.SessionStore
 import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +20,8 @@ class TokenAuthenticator @Inject constructor(
     private val tokenHolder: TokenHolder,
     private val refreshApi: Lazy<RefreshApi>,
     private val sessionEvents: SessionEvents,
+    private val cookieJar: SessionCookieJar,
+    private val sessionStore: SessionStore,
 ) : Authenticator {
 
     override fun authenticate(route: Route?, response: Response): Request? {
@@ -54,8 +57,19 @@ class TokenAuthenticator @Inject constructor(
         }
     }
 
+    /**
+     * Limpia token en memoria, cookie de refresco y la sesión persistida.
+     * Antes solo se limpiaba el token en memoria: la sesión persistida
+     * (SessionStore) seguía ahí, así que cualquier pantalla que reutilizara
+     * "si hay sesión guardada, no vuelvas a hacer login" (ver
+     * ReservationViewModel.ensureRestaurantId) encontraba la misma sesión
+     * muerta una y otra vez y nunca disparaba un login nuevo — la app
+     * quedaba en un bucle de 401 sin salida hasta forzar un logout manual.
+     */
     private fun expireSession() {
         tokenHolder.clear()
+        cookieJar.clear()
+        runBlocking { sessionStore.clear() }
         sessionEvents.notifySessionExpired()
     }
 

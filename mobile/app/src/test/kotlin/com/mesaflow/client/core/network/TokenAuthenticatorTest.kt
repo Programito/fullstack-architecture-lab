@@ -1,5 +1,13 @@
 package com.mesaflow.client.core.network
 
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.mesaflow.client.core.datastore.SessionStore
+import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -26,6 +34,10 @@ class TokenAuthenticatorTest {
     private lateinit var server: MockWebServer
     private lateinit var tokenHolder: TokenHolder
     private lateinit var sessionEvents: SessionEvents
+    private lateinit var cookieJar: SessionCookieJar
+    private lateinit var sessionStore: SessionStore
+    private lateinit var scope: CoroutineScope
+    private lateinit var tmpFile: File
     private lateinit var client: OkHttpClient
 
     private val authBody = """
@@ -47,6 +59,12 @@ class TokenAuthenticatorTest {
 
         tokenHolder = TokenHolder().apply { accessToken = "token-caducado" }
         sessionEvents = SessionEvents()
+        cookieJar = SessionCookieJar()
+
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        tmpFile = File.createTempFile("token-authenticator-test", ".preferences_pb").also { it.delete() }
+        val dataStore = PreferenceDataStoreFactory.create(scope = scope, produceFile = { tmpFile })
+        sessionStore = SessionStore(dataStore)
 
         val json = Json { ignoreUnknownKeys = true }
         val refreshApi = Retrofit.Builder()
@@ -59,6 +77,8 @@ class TokenAuthenticatorTest {
             tokenHolder = tokenHolder,
             refreshApi = { refreshApi },
             sessionEvents = sessionEvents,
+            cookieJar = cookieJar,
+            sessionStore = sessionStore,
         )
 
         client = OkHttpClient.Builder()
@@ -70,6 +90,8 @@ class TokenAuthenticatorTest {
     @After
     fun tearDown() {
         server.shutdown()
+        scope.cancel()
+        tmpFile.delete()
     }
 
     @Test
@@ -100,6 +122,36 @@ class TokenAuthenticatorTest {
 
         assertEquals(401, response.code)
         assertNull(tokenHolder.accessToken)
+    }
+
+    @Test
+    fun `si el refresh falla tambien se borra la sesion persistida, no solo el token en memoria`() {
+        // Regresion: antes solo se limpiaba TokenHolder (en memoria). La sesion
+        // persistida en SessionStore seguia ahi, asi que cualquier pantalla que
+        // reutilizara "si hay sesion guardada, no vuelvas a hacer login" (ver
+        // ReservationViewModel.ensureRestaurantId) encontraba la misma sesion
+        // muerta una y otra vez y nunca disparaba un login nuevo.
+        runBlocking {
+            sessionStore.saveSession(
+                session = com.mesaflow.client.core.model.Session(
+                    accessToken = "token-caducado",
+                    userId = "u1",
+                    email = "customer@mesaflow.demo",
+                    displayName = "Cliente Demo",
+                    roles = listOf("customer"),
+                    permissions = listOf("service"),
+                    restaurantScopes = listOf("restaurant-mesaflow-centro"),
+                ),
+                refreshCookie = null,
+            )
+        }
+
+        server.enqueue(MockResponse().setResponseCode(401))
+        server.enqueue(MockResponse().setResponseCode(401))
+
+        client.newCall(request("/api/v1/restaurants/r1/reservations")).execute()
+
+        assertNull(runBlocking { sessionStore.currentSession() })
     }
 
     @Test

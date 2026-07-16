@@ -50,4 +50,17 @@ describe('InMemoryUserRoleAssignmentRepository', () => {
       expect.objectContaining({ scopeType: 'restaurant', organizationId: 'org-demo', restaurantId: 'restaurant-mesaflow-centro' }),
     ]);
   });
+
+  it('grants the customer (mobile) role restaurant scope, matching waiter/kitchen', async () => {
+    const role = Role.create({ name: 'customer', permissionIds: [] });
+    await roles.save(role);
+    const user = User.create({ email: 'c@example.com', firstName: 'C', lastName: 'D', passwordHash: 'x', roleIds: [role.id] });
+    await users.save(user);
+
+    const assignments = await repository.findByUserId(user.id);
+
+    expect(assignments).toEqual([
+      expect.objectContaining({ scopeType: 'restaurant', organizationId: 'org-demo', restaurantId: 'restaurant-mesaflow-centro' }),
+    ]);
+  });
 });

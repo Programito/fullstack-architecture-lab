@@ -77,6 +77,12 @@ pnpm dev
 
 Open the `mobile/` folder in Android Studio and run on an emulator or device (API 26+). See [mobile/README.md](mobile/README.md) for setup details.
 
+### Production
+
+- **Frontend:** https://fullstack-architecture-lab-crao.vercel.app
+- **Backend:** https://fullstack-architecture-lab.onrender.com
+- **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
+
 ### Backend environment variables
 
 ```bash
@@ -210,6 +216,12 @@ pnpm dev
 #### Mobile
 
 Abre la carpeta `mobile/` en Android Studio y ejecuta en un emulador o dispositivo (API 26+). Consulta [mobile/README.md](mobile/README.md) para el detalle de la configuración.
+
+### Producción
+
+- **Frontend:** https://fullstack-architecture-lab-crao.vercel.app
+- **Backend:** https://fullstack-architecture-lab.onrender.com
+- **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
 
 ### Variables de entorno del backend
 

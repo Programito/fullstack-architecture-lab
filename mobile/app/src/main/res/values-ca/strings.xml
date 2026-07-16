@@ -132,4 +132,25 @@
     <string name="checkout_pending_label">Pendent</string>
     <string name="checkout_pending_hint">Queda un import pendent. Avisa el personal per completar el pagament.</string>
     <string name="checkout_keep_ordering">Continua demanant</string>
-</resources>
+
+    <string name="entry_reservation_open">Reserva una taula</string>
+    <string name="reservation_title">La meva reserva</string>
+    <string name="reservation_back">Enrere</string>
+    <string name="reservation_name_label">Nom</string>
+    <string name="reservation_phone_label">Telèfon (opcional)</string>
+    <string name="reservation_party_size_label">Comensals</string>
+    <string name="reservation_party_size">Taula per a %1$d comensals</string>
+    <string name="reservation_notes_label">Notes (opcional)</string>
+    <string name="reservation_pick_date">Tria la data</string>
+    <string name="reservation_pick_time">Hora: %1$02d:%2$02d</string>
+    <string name="reservation_pick_confirm">Accepta</string>
+    <string name="reservation_deposit_notice">Fiança: %1$s. És un cobrament simulat, no es fa cap pagament real.</string>
+    <string name="reservation_deposit_paid">Fiança pagada: %1$s</string>
+    <string name="reservation_submit">Paga la fiança i reserva</string>
+    <string name="reservation_cancel">Cancel·la la reserva</string>
+    <string name="reservation_status_pending">Reserva pendent de confirmar</string>
+    <string name="reservation_status_confirmed">Reserva confirmada</string>
+    <string name="reservation_status_seated">Ja ets a la teva taula</string>
+    <string name="reservation_status_cancelled">Reserva cancel·lada</string>
+    <string name="reservation_status_no_show">Reserva no presentada</string>
+    <string name="reservation_status_unknown">Actualitzant l\'estat de la teva reserva…</

@@ -19,6 +19,8 @@ function makeReservation(status: 'pending' | 'confirmed' | 'seated' | 'cancelled
     notes: 'Mesa tranquila.',
     tableIds: ['table-1'],
     tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+    depositAmountCents: 1000,
+    depositPaidAt: '2026-06-27T13:00:00.000Z',
   } as const;
 }
 
@@ -28,6 +30,7 @@ function makeRepository(): RestaurantReadRepository {
     findMenuByRestaurantId: vi.fn(),
     findFloorsByRestaurantId: vi.fn(),
     listReservationsByRestaurantId: vi.fn(),
+    findReservationById: vi.fn(),
     updateReservationStatus: vi.fn(),
     findServiceFloorByRestaurantId: vi.fn(),
     findServicePointByRestaurantId: vi.fn(),

@@ -79,6 +79,19 @@ describe('DemoRestaurantReadRepository', () => {
     ]);
   });
 
+  it('finds a single reservation by id scoped to the restaurant', async () => {
+    const repository = new DemoRestaurantReadRepository();
+
+    const found = await repository.findReservationById('restaurant-mesaflow-centro', 'reservation-demo-lunch');
+    expect(found).toMatchObject({ id: 'reservation-demo-lunch', customerNameSnapshot: 'Laura Gomez' });
+
+    const missing = await repository.findReservationById('restaurant-mesaflow-centro', 'missing-reservation');
+    expect(missing).toBeNull();
+
+    const wrongRestaurant = await repository.findReservationById('restaurant-other-tenant', 'reservation-demo-lunch');
+    expect(wrongRestaurant).toBeNull();
+  });
+
   it('updates one reservation status when the transition is allowed', async () => {
     const repository = new DemoRestaurantReadRepository();
 
@@ -110,6 +123,8 @@ describe('DemoRestaurantReadRepository', () => {
       durationMinutes: 90,
       notes: 'Ventana',
       tableIds: ['table-1'],
+      depositAmountCents: 2000,
+      depositPaidAt: '2026-06-21T13:00:00.000Z',
     });
 
     expect(created).toEqual(
@@ -124,6 +139,8 @@ describe('DemoRestaurantReadRepository', () => {
         notes: 'Ventana',
         tableIds: ['table-1'],
         tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+        depositAmountCents: 2000,
+        depositPaidAt: '2026-06-21T13:00:00.000Z',
       }),
     );
 
@@ -147,6 +164,8 @@ describe('DemoRestaurantReadRepository', () => {
         durationMinutes: 90,
         notes: null,
         tableIds: ['missing-table'],
+        depositAmountCents: 2000,
+        depositPaidAt: '2026-06-21T13:00:00.000Z',
       }),
     ).rejects.toMatchObject({
       applicationError: expect.objectContaining({

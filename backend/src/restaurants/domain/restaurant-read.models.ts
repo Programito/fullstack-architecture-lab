@@ -266,6 +266,15 @@ export type RestaurantReservation = {
     tableNumber: number;
     name: string | null;
   }>;
+  // Fianza fake cobrada al crear la reserva (ver reservation-pricing.ts y
+  // FakeReservationPaymentGateway): nunca hay un cobro real, pero se
+  // persiste el importe y el momento en que el pago fake fue aprobado para
+  // que el TPV y la app cliente puedan mostrarlo. depositPaidAt es no-null
+  // en toda reserva creada por CreateRestaurantReservationUseCase (el pago
+  // se cobra antes de persistir; si el banco fake declina, no se llega a
+  // crear la reserva).
+  depositAmountCents: number;
+  depositPaidAt: string | null;
 };
 
 export type CreateRestaurantReservationInput = {
@@ -276,6 +285,8 @@ export type CreateRestaurantReservationInput = {
   durationMinutes: number;
   notes: string | null;
   tableIds: string[];
+  depositAmountCents: number;
+  depositPaidAt: string | null;
 };
 
 export type ServiceWindow = {

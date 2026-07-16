@@ -12,10 +12,6 @@ export class RestaurantScopeService {
   ) {}
 
   async canAccessRestaurant(auth: ScopedAuth, restaurantId: string): Promise<boolean> {
-    if (auth.scopes.organizations.length === 0 && auth.scopes.restaurants.length === 0) {
-      return true;
-    }
-
     if (auth.scopes.restaurants.includes(restaurantId)) {
       return true;
     }

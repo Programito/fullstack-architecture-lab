@@ -14,6 +14,7 @@ function makeRepository(): RestaurantReadRepository {
     findMenuByRestaurantId: vi.fn(),
     findFloorsByRestaurantId: vi.fn(),
     listReservationsByRestaurantId: vi.fn(),
+    findReservationById: vi.fn(),
     findConflictingReservations: vi.fn(),
     findTableCapacity: vi.fn(),
     createReservation: vi.fn(),

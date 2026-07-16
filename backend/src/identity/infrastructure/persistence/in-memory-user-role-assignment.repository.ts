@@ -86,7 +86,7 @@ export class InMemoryUserRoleAssignmentRepository implements UserRoleAssignmentR
       ];
     }
 
-    if (roleName === 'waiter' || roleName === 'kitchen') {
+    if (roleName === 'waiter' || roleName === 'kitchen' || roleName === 'customer') {
       return [
         {
           id: `${userId}:${roleId}:restaurant`,

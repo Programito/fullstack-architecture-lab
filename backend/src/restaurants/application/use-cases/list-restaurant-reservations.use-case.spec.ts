@@ -17,6 +17,8 @@ function makeReservation(overrides: { reservationAt?: string } = {}) {
     notes: null,
     tableIds: ['table-1'],
     tables: [{ id: 'table-1', tableNumber: 1, name: 'Mesa 1' }],
+    depositAmountCents: 1000,
+    depositPaidAt: '2026-06-27T11:00:00.000Z',
   };
 }
 
@@ -26,6 +28,7 @@ function makeRepository(): RestaurantReadRepository {
     findMenuByRestaurantId: vi.fn(),
     findFloorsByRestaurantId: vi.fn(),
     listReservationsByRestaurantId: vi.fn(),
+    findReservationById: vi.fn(),
     createReservation: vi.fn(),
     updateReservationStatus: vi.fn(),
     findServiceFloorByRestaurantId: vi.fn(),

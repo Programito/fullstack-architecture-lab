@@ -65,4 +65,16 @@ describe('PrismaRestaurantReadRepository', () => {
       }),
     );
   });
+
+  it('finds a single reservation by id scoped to the restaurant', async () => {
+    const reservations = await repository.listReservationsByRestaurantId('restaurant-mesaflow-centro');
+    const seeded = reservations?.[0];
+    expect(seeded).toBeTruthy();
+
+    const found = await repository.findReservationById('restaurant-mesaflow-centro', seeded!.id);
+    expect(found).toEqual(seeded);
+
+    const missing = await repository.findReservationById('restaurant-mesaflow-centro', 'missing-reservation');
+    expect(missing).toBeNull();
+  });
 });

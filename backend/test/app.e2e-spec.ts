@@ -1994,7 +1994,7 @@ describe('App e2e with in-memory identity seed', () => {
       .expect(400);
   });
 
-  it('allows reservations access when the token has organization scope for the active restaurant', async () => {
+  it('rejects reservations list access when the token has scope but lacks the reservations permission', async () => {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/demo-login')
       .send({ role: 'developer' })
@@ -2003,7 +2003,7 @@ describe('App e2e with in-memory identity seed', () => {
     await request(app.getHttpServer())
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
-      .expect(200);
+      .expect(403);
   });
 
   it('allows reservations access when the token has restaurant scope', async () => {
@@ -2016,6 +2016,102 @@ describe('App e2e with in-memory identity seed', () => {
       .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
       .expect(200);
+  });
+
+  it('lets the customer (mobile) role create, fetch and cancel its own reservation, but never list every reservation', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'customer' })
+      .expect(200);
+    const token = login.body.accessToken;
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        customerNameSnapshot: 'Cliente Movil',
+        customerPhoneSnapshot: '+34 600 000 000',
+        partySize: 2,
+        reservationAt: '2026-08-01T20:00:00.000Z',
+        durationMinutes: 90,
+        paymentMethod: 'card',
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({
+      customerNameSnapshot: 'Cliente Movil',
+      status: 'pending',
+      depositAmountCents: 1000,
+    });
+    expect(created.body.depositPaidAt).toEqual(expect.any(String));
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/restaurants/restaurant-mesaflow-centro/reservations/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toMatchObject({ id: created.body.id, customerNameSnapshot: 'Cliente Movil' });
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/restaurants/restaurant-mesaflow-centro/reservations/${created.body.id}/cancel`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.status).toBe('cancelled');
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/restaurants/restaurant-mesaflow-centro/reservations/${created.body.id}/confirm`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+  });
+
+  it('returns 404 when fetching a reservation id that does not belong to the restaurant', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'customer' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/restaurants/restaurant-mesaflow-centro/reservations/missing-reservation')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .expect(404);
+  });
+
+  it('rejects reservation creation when paymentMethod is missing or not a recognized method', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'customer' })
+      .expect(200);
+    const token = login.body.accessToken;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        customerNameSnapshot: 'Cliente Sin Metodo',
+        partySize: 2,
+        reservationAt: '2026-08-01T20:00:00.000Z',
+        durationMinutes: 90,
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/restaurants/restaurant-mesaflow-centro/reservations')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        customerNameSnapshot: 'Cliente Metodo Invalido',
+        partySize: 2,
+        reservationAt: '2026-08-01T20:00:00.000Z',
+        durationMinutes: 90,
+        paymentMethod: 'crypto',
+      })
+      .expect(400);
   });
 
   it('allows service-floor access when the token has organization scope for the active restaurant', async () => {

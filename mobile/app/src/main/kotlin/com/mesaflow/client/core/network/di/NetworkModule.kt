@@ -12,6 +12,7 @@ import com.mesaflow.client.core.network.ClientOriginInterceptor
 import com.mesaflow.client.core.network.HealthApi
 import com.mesaflow.client.core.network.MenuApi
 import com.mesaflow.client.core.network.OrdersApi
+import com.mesaflow.client.core.network.ReservationsApi
 import com.mesaflow.client.core.network.RefreshApi
 import com.mesaflow.client.core.network.SessionCookieJar
 import com.mesaflow.client.core.network.TokenAuthenticator
@@ -127,6 +128,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOrdersApi(retrofit: Retrofit): OrdersApi = retrofit.create(OrdersApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideReservationsApi(retrofit: Retrofit): ReservationsApi = retrofit.create(ReservationsApi::class.java)
 
     @Provides
     @Singleton

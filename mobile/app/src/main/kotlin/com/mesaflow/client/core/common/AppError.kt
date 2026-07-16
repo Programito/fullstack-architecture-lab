@@ -17,6 +17,14 @@ sealed interface AppError {
     /** Petición inválida (400/422). */
     data object Validation : AppError
 
+    /**
+     * Fianza de reserva rechazada (402, ver FakeReservationPaymentGateway
+     * en el backend). Categoría propia en vez de caer en Validation: la
+     * UI necesita distinguir "datos mal introducidos" de "la tarjeta fake
+     * fue rechazada" para mostrar el mensaje correcto.
+     */
+    data object PaymentDeclined : AppError
+
     /** Error del servidor (5xx). */
     data object Server : AppError
 
@@ -40,6 +48,7 @@ fun Throwable.toAppError(): AppError = when (this) {
         401, 403 -> AppError.Unauthorized
         404 -> AppError.NotFound
         400, 422 -> AppError.Validation
+        402 -> AppError.PaymentDeclined
         in 500..599 -> AppError.Server
         else -> AppError.Unknown(message())
     }

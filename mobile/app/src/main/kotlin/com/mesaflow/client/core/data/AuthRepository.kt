@@ -33,7 +33,7 @@ class AuthRepository @Inject constructor(
     private val sessionStore: SessionStore,
     private val tokenHolder: TokenHolder,
     private val cookieJar: SessionCookieJar,
-    @Named("baseUrl") private val baseUrl: String,
+    @param:Named("baseUrl") private val baseUrl: String,
 ) {
 
     val session: Flow<Session?> = sessionStore.session

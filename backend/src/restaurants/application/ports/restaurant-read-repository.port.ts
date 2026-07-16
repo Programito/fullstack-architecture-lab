@@ -15,6 +15,7 @@ export interface RestaurantReadRepository {
   findMenuByRestaurantId(restaurantId: string): Promise<RestaurantMenu | null>;
   findFloorsByRestaurantId(restaurantId: string): Promise<RestaurantFloors | null>;
   listReservationsByRestaurantId(restaurantId: string, date?: string): Promise<RestaurantReservation[] | null>;
+  findReservationById(restaurantId: string, reservationId: string): Promise<RestaurantReservation | null>;
   findConflictingReservations(restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]>;
   findTableCapacity(restaurantId: string, tableId: string): Promise<number | null>;
   createReservation(

@@ -315,6 +315,14 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
     return reservations.map(mapReservation);
   }
 
+  async findReservationById(restaurantId: string, reservationId: string): Promise<RestaurantReservation | null> {
+    const reservation = await this.prisma.reservation.findFirst({
+      where: { id: reservationId, restaurantId },
+      include: { tables: { include: { table: true } } },
+    });
+    return reservation ? mapReservation(reservation) : null;
+  }
+
   async findConflictingReservations(restaurantId: string, tableId: string, startTime: Date, endTime: Date): Promise<string[]> {
     const conflicts = await this.prisma.reservationTable.findMany({
       where: {
@@ -388,6 +396,8 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         durationMinutes: reservation.durationMinutes,
         status: 'pending',
         notes: reservation.notes,
+        depositAmountCents: reservation.depositAmountCents,
+        depositPaidAt: reservation.depositPaidAt ? new Date(reservation.depositPaidAt) : null,
         tables: {
           create: reservation.tableIds.map((tableId) => ({ tableId })),
         },
@@ -957,6 +967,8 @@ function mapReservation(
     status: string;
     notes: string | null;
     tables: Array<{ tableId: string; table: { id: string; tableNumber: number; name: string | null } }>;
+    depositAmountCents: number;
+    depositPaidAt: Date | null;
   },
 ): RestaurantReservation {
   return {
@@ -975,6 +987,8 @@ function mapReservation(
       tableNumber: table.tableNumber,
       name: table.name ?? '',
     })),
+    depositAmountCents: reservation.depositAmountCents,
+    depositPaidAt: reservation.depositPaidAt ? reservation.depositPaidAt.toISOString() : null,
   };
 }
 

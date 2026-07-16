@@ -132,4 +132,26 @@
     <string name="checkout_pending_label">Pending</string>
     <string name="checkout_pending_hint">There is an outstanding amount. Please ask the staff to complete the payment.</string>
     <string name="checkout_keep_ordering">Keep ordering</string>
-</resources>
+
+    <string name="entry_reservation_open">Book a table</string>
+    <string name="reservation_title">My reservation</string>
+    <string name="reservation_back">Back</string>
+    <string name="reservation_name_label">Name</string>
+    <string name="reservation_phone_label">Phone (optional)</string>
+    <string name="reservation_party_size_label">Guests</string>
+    <string name="reservation_party_size">Table for %1$d guests</string>
+    <string name="reservation_notes_label">Notes (optional)</string>
+    <string name="reservation_pick_date">Pick a date</string>
+    <string name="reservation_pick_time">Time: %1$02d:%2$02d</string>
+    <string name="reservation_pick_confirm">Confirm</string>
+    <string name="reservation_deposit_notice">Deposit: %1$s. This is a simulated charge, no real payment is made.</string>
+    <string name="reservation_deposit_paid">Deposit paid: %1$s</string>
+    <string name="reservation_submit">Pay deposit and book</string>
+    <string name="reservation_cancel">Cancel reservation</string>
+    <string name="reservation_status_pending">Reservation awaiting confirmation</string>
+    <string name="reservation_status_confirmed">Reservation confirmed</string>
+    <string name="reservation_status_seated">You are already seated</string>
+    <string name="reservation_status_cancelled">Reservation cancelled</string>
+    <string name="reservation_status_no_show">Reservation marked as no-show</string>
+    <string name="reservation_status_unknown">Updating your reservation status…</string>
+  

@@ -58,6 +58,7 @@ import com.mesaflow.client.core.model.PlatformStatus
 fun EntryScreen(
     onEnter: () -> Unit,
     onSettingsClick: () -> Unit,
+    onReservationClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EntryViewModel = viewModel(),
 ) {
@@ -180,6 +181,17 @@ fun EntryScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(stringResource(R.string.entry_demo_mode))
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    // Reservar no exige haber escaneado ninguna mesa: se puede
+                    // reservar antes de llegar al restaurante. Usa su propio
+                    // login (rol customer) igual que el resto de esta pantalla,
+                    // ver ReservationViewModel.ensureRestaurantId.
+                    TextButton(
+                        onClick = onReservationClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.entry_reservation_open))
                     }
                 }
             }

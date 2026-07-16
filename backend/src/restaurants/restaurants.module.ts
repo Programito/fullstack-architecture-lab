@@ -9,6 +9,7 @@ import { GetRestaurantServiceFloorUseCase } from './application/use-cases/get-re
 import { GetRestaurantServicePointOrderUseCase } from './application/use-cases/get-restaurant-service-point-order.use-case';
 import { GetRestaurantServicePointUseCase } from './application/use-cases/get-restaurant-service-point.use-case';
 import { ListRestaurantReservationsUseCase } from './application/use-cases/list-restaurant-reservations.use-case';
+import { GetRestaurantReservationUseCase } from './application/use-cases/get-restaurant-reservation.use-case';
 import { ListRestaurantsUseCase } from './application/use-cases/list-restaurants.use-case';
 import { MarkRestaurantServicePointOrderServedUseCase } from './application/use-cases/mark-restaurant-service-point-order-served.use-case';
 import { OccupyRestaurantServicePointUseCase } from './application/use-cases/occupy-restaurant-service-point.use-case';
@@ -40,6 +41,8 @@ import { CreateRestaurantReservationUseCase } from './application/use-cases/crea
 import { GetRestaurantServiceWindowsUseCase } from './application/use-cases/get-restaurant-service-windows.use-case';
 import { UpdateRestaurantServiceWindowsUseCase } from './application/use-cases/update-restaurant-service-windows.use-case';
 import { RESTAURANT_SERVICE_WINDOWS_REPOSITORY } from './application/ports/restaurant-service-windows-repository.port';
+import { RESERVATION_PAYMENT_GATEWAY } from './application/ports/reservation-payment-gateway.port';
+import { FakeReservationPaymentGateway } from './infrastructure/fake-reservation-payment.gateway';
 import { SearchCustomersUseCase } from './application/use-cases/search-customers.use-case';
 import { CreateCustomerUseCase } from './application/use-cases/create-customer.use-case';
 import { CUSTOMER_REPOSITORY } from './application/ports/customer-repository.port';
@@ -144,6 +147,7 @@ import { RestaurantModifierOptionOverridesController } from './presentation/rest
     SendRestaurantServicePointOrderToKitchenUseCase,
     MarkRestaurantServicePointOrderServedUseCase,
     ListRestaurantReservationsUseCase,
+    GetRestaurantReservationUseCase,
     CreateFloorElementUseCase,
     ReorderFloorElementsUseCase,
     UpdateFloorElementUseCase,
@@ -249,6 +253,11 @@ import { RestaurantModifierOptionOverridesController } from './presentation/rest
     {
       provide: PRODUCT_IMAGE_SIGNING_PORT,
       useExisting: CloudinaryProductImageSigner,
+    },
+    FakeReservationPaymentGateway,
+    {
+      provide: RESERVATION_PAYMENT_GATEWAY,
+      useExisting: FakeReservationPaymentGateway,
     },
   ],
   exports: [RESTAURANT_READ_REPOSITORY],

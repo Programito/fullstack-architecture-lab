@@ -40,6 +40,7 @@ export type ApplicationErrorCode =
   | 'reservation_in_past'
   | 'insufficient_table_capacity'
   | 'outside_service_hours'
+  | 'payment_declined'
   | 'modifier_group_not_found'
   | 'modifier_group_name_taken'
   | 'modifier_group_in_use'
@@ -181,6 +182,10 @@ export function insufficientTableCapacity(tableId: string, required: number, ava
 
 export function outsideServiceHours(): ApplicationError {
   return applicationError('outside_service_hours', 'Reservation does not fall within any active service window.');
+}
+
+export function paymentDeclined(): ApplicationError {
+  return applicationError('payment_declined', 'The deposit payment was declined.');
 }
 
 export function modifierGroupNotFound(groupId: string): ApplicationError {

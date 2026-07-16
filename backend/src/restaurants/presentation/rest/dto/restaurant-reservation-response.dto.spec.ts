@@ -19,6 +19,8 @@ describe('RestaurantReservationResponseDto', () => {
         { id: 'table-1', tableNumber: 1, name: 'Mesa 1' },
         { id: 'table-4', tableNumber: 4, name: 'Mesa 4' },
       ],
+      depositAmountCents: 2000,
+      depositPaidAt: '2026-06-27T13:00:00.000Z',
     });
 
     expect(dto.tableIds).toEqual(['table-1', 'table-4']);

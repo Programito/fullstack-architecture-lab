@@ -706,6 +706,8 @@ model Reservation {
   status                ReservationStatus   @default(pending)
   arrivedLate           Boolean?
   notes                 String?
+  depositAmountCents    Int                 @default(0)
+  depositPaidAt         DateTime?
   restaurant            Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   customer              Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
   tables                ReservationTable[]

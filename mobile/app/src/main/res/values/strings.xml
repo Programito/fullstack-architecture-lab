@@ -133,4 +133,26 @@
     <string name="checkout_pending_label">Pendiente</string>
     <string name="checkout_pending_hint">Queda un importe pendiente. Avisa al personal para completar el pago.</string>
     <string name="checkout_keep_ordering">Seguir pidiendo</string>
-</resources>
+
+    <string name="entry_reservation_open">Reservar mesa</string>
+    <string name="reservation_title">Mi reserva</string>
+    <string name="reservation_back">Volver</string>
+    <string name="reservation_name_label">Nombre</string>
+    <string name="reservation_phone_label">Teléfono (opcional)</string>
+    <string name="reservation_party_size_label">Comensales</string>
+    <string name="reservation_party_size">Mesa para %1$d personas</string>
+    <string name="reservation_notes_label">Notas (opcional)</string>
+    <string name="reservation_pick_date">Elegir fecha</string>
+    <string name="reservation_pick_time">Hora: %1$02d:%2$02d</string>
+    <string name="reservation_pick_confirm">Aceptar</string>
+    <string name="reservation_deposit_notice">Fianza: %1$s. Es un cobro simulado, no se realiza ningún pago real.</string>
+    <string name="reservation_deposit_paid">Fianza pagada: %1$s</string>
+    <string name="reservation_submit">Pagar fianza y reservar</string>
+    <string name="reservation_cancel">Cancelar reserva</string>
+    <string name="reservation_status_pending">Reserva pendiente de confirmar</string>
+    <string name="reservation_status_confirmed">Reserva confirmada</string>
+    <string name="reservation_status_seated">Ya estás en tu mesa</string>
+    <string name="reservation_status_cancelled">Reserva cancelada</string>
+    <string name="reservation_status_no_show">Reserva no presentada</string>
+    <string name="reservation_status_unknown">Actualizando el estado de tu reserva…</string>
+ 

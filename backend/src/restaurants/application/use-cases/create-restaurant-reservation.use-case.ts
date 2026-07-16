@@ -4,6 +4,7 @@ import {
   insufficientTableCapacity,
   invalidReservationCreation,
   outsideServiceHours,
+  paymentDeclined,
   reservationConflict,
   reservationInPast,
   restaurantNotFound,
@@ -11,8 +12,14 @@ import {
 } from '../../../shared/errors/application-error';
 import { ApplicationErrorException } from '../../../shared/errors/application-error-exception';
 import { err, ok, type Result } from '../../../shared/result/result';
-import type { CreateRestaurantReservationInput, RestaurantReservation } from '../../domain/restaurant-read.models';
+import { calculateReservationDepositCents } from '../../domain/reservation-pricing';
+import type { PaymentMethod } from '../../domain/restaurant-order.models';
+import type { RestaurantReservation } from '../../domain/restaurant-read.models';
 import { RESTAURANT_READ_REPOSITORY, type RestaurantReadRepository } from '../ports/restaurant-read-repository.port';
+import {
+  RESERVATION_PAYMENT_GATEWAY,
+  type ReservationPaymentGateway,
+} from '../ports/reservation-payment-gateway.port';
 import {
   RESTAURANT_SERVICE_WINDOWS_REPOSITORY,
   type RestaurantServiceWindowsRepository,
@@ -20,13 +27,25 @@ import {
 
 type CreateRestaurantReservationCommand = {
   restaurantId: string;
-} & CreateRestaurantReservationInput;
+  customerNameSnapshot: string;
+  customerPhoneSnapshot: string | null;
+  partySize: number;
+  reservationAt: string;
+  durationMinutes: number;
+  notes: string | null;
+  tableIds: string[];
+  // Método elegido para pagar la fianza (mismo selector que al pagar un
+  // pedido, ver RegisterRestaurantOrderPaymentUseCase); nunca se persiste,
+  // solo se usa para el cobro fake antes de crear la reserva.
+  paymentMethod: PaymentMethod;
+};
 
 @Injectable()
 export class CreateRestaurantReservationUseCase {
   constructor(
     @Inject(RESTAURANT_READ_REPOSITORY) private readonly restaurants: RestaurantReadRepository,
     @Inject(RESTAURANT_SERVICE_WINDOWS_REPOSITORY) private readonly serviceWindows: RestaurantServiceWindowsRepository,
+    @Inject(RESERVATION_PAYMENT_GATEWAY) private readonly paymentGateway: ReservationPaymentGateway,
   ) {}
 
   async execute(
@@ -82,6 +101,18 @@ export class CreateRestaurantReservationUseCase {
       }
     }
 
+    // La fianza se cobra justo antes de persistir, una vez pasadas todas las
+    // demas validaciones: así no se cobra por una reserva que de todos modos
+    // iba a rechazarse (mesa sin hueco, fuera de horario, etc.).
+    const depositAmountCents = calculateReservationDepositCents(command.partySize);
+    const charge = await this.paymentGateway.charge({
+      amountCents: depositAmountCents,
+      method: command.paymentMethod,
+    });
+    if (!charge.approved) {
+      return err(paymentDeclined());
+    }
+
     try {
       const reservation = await this.restaurants.createReservation(command.restaurantId, {
         customerNameSnapshot: command.customerNameSnapshot.trim(),
@@ -91,6 +122,8 @@ export class CreateRestaurantReservationUseCase {
         durationMinutes: command.durationMinutes,
         notes: command.notes?.trim() || null,
         tableIds: command.tableIds,
+        depositAmountCents,
+        depositPaidAt: new Date().toISOString(),
       });
 
       return reservation ? ok(reservation) : err(restaurantNotFound(command.restaurantId));
