@@ -128,8 +128,8 @@
         @if (servedSelectionMode()) {
           <div class="sm:col-span-2 grid gap-2 rounded-md border p-3">
             <div class="flex items-center justify-between gap-2">
-              <p class="theme-title text-sm font-semibold">Selecciona los productos servidos</p>
-              <button type="button" class="text-sm font-semibold underline" (click)="allServedLinesSelected.emit()">Seleccionar todos</button>
+              <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.servedSelectionTitle' | transloco }}</p>
+              <button type="button" class="text-sm font-semibold underline" (click)="allServedLinesSelected.emit()">{{ 'restaurantPos.service.selectAllServedLines' | transloco }}</button>
             </div>
             @for (line of servableLines(); track line.id) {
               <label class="theme-field flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
@@ -137,8 +137,8 @@
                 <span>{{ line.quantity }} x {{ line.productName }}</span>
               </label>
             }
-            <app-button variant="secondary" expand="block" size="sm" ariaLabel="Confirmar servido" (pressed)="servedSelectionConfirmed.emit()">
-              <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />Confirmar servido</span>
+            <app-button variant="secondary" expand="block" size="sm" [ariaLabel]="actionLabel('confirmServedSelection')" (pressed)="servedSelectionConfirmed.emit()">
+              <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.confirmServedSelection' | transloco }}</span>
             </app-button>
           </div>
         } @else {

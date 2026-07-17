@@ -243,6 +243,7 @@ export class RestaurantPosServicePage {
 
       this.reloadServicePointAndOrder(restaurant.id, tableId);
     });
+
   }
 
   protected occupySelectedTable(): void {
@@ -311,6 +312,7 @@ export class RestaurantPosServicePage {
       return;
     }
 
+    this.clearServedSelectionForTableChange(element.tableId);
     this.rememberCurrentServicePoint(element.tableId);
     this.store.selectTable(element.tableId);
     this.floorFocusRequest.set({ elementId: element.id, requestId: Date.now() });
@@ -319,6 +321,7 @@ export class RestaurantPosServicePage {
 
   protected selectServicePointFromFloor(element: FloorElement): void {
     if (element.tableId) {
+      this.clearServedSelectionForTableChange(element.tableId);
       this.rememberCurrentServicePoint(element.tableId);
     }
   }
@@ -883,6 +886,13 @@ export class RestaurantPosServicePage {
     const selectedTableId = this.store.selectedTableId();
     if (selectedTableId && selectedTableId !== nextTableId) {
       this.lastSelectedTableId.set(selectedTableId);
+    }
+  }
+
+  private clearServedSelectionForTableChange(nextTableId: string): void {
+    if (this.store.selectedTableId() !== nextTableId) {
+      this.servedSelectionMode.set(false);
+      this.selectedServedLineIds.set([]);
     }
   }
 

@@ -926,6 +926,39 @@ describe('RestaurantPosServicePage', () => {
     );
   });
 
+  it('clears served selection before it can be confirmed for a different table', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    apiMock.__setServiceOrder('table-1', createServiceOrderRecord([
+      {
+        id: 'line-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'ready',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T10:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'sent_to_kitchen'));
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText(/M1 mesa/i));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Hamburguesa craft/i }));
+    fireEvent.click(screen.getByLabelText('M2 mesa, Libre'));
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('button', { name: /Confirmar servido/i })).toBeNull();
+    expect(apiMock.markRestaurantServicePointServed).not.toHaveBeenCalled();
+  });
+
   it('shows a loading state only on the charge button while charging', async () => {
     const apiMock = createRestaurantPosApiMock();
     const deferredCharge$ = new Subject<ServicePointDetailDto>();
