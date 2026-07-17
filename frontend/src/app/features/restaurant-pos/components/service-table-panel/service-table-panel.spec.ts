@@ -310,6 +310,59 @@ describe('ServiceTablePanel', () => {
     expect(paymentButton.textContent).toContain('Cobrar 12,50');
   });
 
+  it('emits cancellation from served-selection mode without changing the selected lines', async () => {
+    const i18n = provideI18nTesting();
+    const readyLine = { ...order.lines[0], status: 'ready' as const };
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, { ...order, lines: [readyLine] }),
+        title: 'Mesa 1',
+        errorMessage: null,
+        servedSelectionMode: true,
+        servedLineIds: [readyLine.id],
+        servableLines: [readyLine],
+      },
+    });
+    const cancelServedSelection = vi.fn();
+    fixture.componentInstance.cancelServedSelection.subscribe(cancelServedSelection);
+
+    expect((screen.getByRole('checkbox', { name: 'Craft Burger' }) as HTMLInputElement).checked).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(cancelServedSelection).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the last completed payment summary for a paid table', async () => {
+    const paidOrder: TableOrder = {
+      ...order,
+      status: 'paid',
+      lastCompletedPayment: {
+        id: 'payment-1',
+        method: 'card',
+        amount: 12.5,
+        status: 'completed',
+        paidAt: '2026-07-17T12:30:00.000Z',
+      },
+    };
+
+    await renderServiceTablePanel({
+      table: { ...table, status: 'paid' },
+      order: paidOrder,
+      paidSummary: {
+        isPaid: true,
+        lastPayment: paidOrder.lastCompletedPayment,
+      },
+    });
+
+    const paidSummary = screen.getByTestId('paid-summary');
+    expect(within(paidSummary).getByText('Pagado')).toBeTruthy();
+    expect(within(paidSummary).getByText('Tarjeta')).toBeTruthy();
+    expect(within(paidSummary).getByText(/12,50/)).toBeTruthy();
+  });
+
   it('shows a tax breakdown with taxable base, VAT, and total in the payment section', async () => {
     await renderServiceTablePanel({ canCharge: true });
 

@@ -33,6 +33,7 @@ export class ServiceTablePanel {
   readonly servedLineToggled = output<string>();
   readonly allServedLinesSelected = output<void>();
   readonly servedSelectionConfirmed = output<void>();
+  readonly cancelServedSelection = output<void>();
   readonly increaseProduct = output<string>();
   readonly decreaseProduct = output<string>();
   readonly markProductReady = output<string>();
@@ -218,6 +219,10 @@ export class ServiceTablePanel {
 
   protected paymentMethodClass(paymentMethod: PaymentMethod): string {
     return this.order()?.paymentMethod === paymentMethod ? 'border-cyan-600 bg-cyan-50 text-cyan-950' : 'theme-field';
+  }
+
+  protected paymentMethodLabel(paymentMethod: PaymentMethod | 'other'): string {
+    return this.translate(`restaurantPos.payment.${paymentMethod}`);
   }
 
   protected canSendToKitchen(): boolean {

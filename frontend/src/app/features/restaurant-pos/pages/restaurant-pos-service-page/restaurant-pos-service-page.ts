@@ -478,6 +478,11 @@ export class RestaurantPosServicePage {
     this.selectedServedLineIds.set(this.servableSelectedOrderLines().map((line) => line.id));
   }
 
+  protected cancelServedSelection(): void {
+    this.servedSelectionMode.set(false);
+    this.selectedServedLineIds.set([]);
+  }
+
   protected confirmMarkServedSelection(): void {
     const lineIds = this.selectedServedLineIds();
     if (lineIds.length === 0) {
