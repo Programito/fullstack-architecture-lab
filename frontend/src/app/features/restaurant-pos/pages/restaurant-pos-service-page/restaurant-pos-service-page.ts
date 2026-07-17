@@ -2,8 +2,8 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import type { ServicePointDetailDto, ServicePointOrderDto } from '../../api/restaurant-pos-api.models';
-import { forkJoin, switchMap, tap, type Observable } from 'rxjs';
+import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
+import { switchMap, tap, type Observable } from 'rxjs';
 import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
@@ -21,7 +21,7 @@ import type { ProductPickerConfiguredLineInput } from '../../components/product-
 import { ProductSearchDialog, type ProductPickerSection } from '../../components/product-search-dialog/product-search-dialog';
 import { ServicePointSearchDialog } from '../../components/service-point-search-dialog/service-point-search-dialog';
 import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
-import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableStatus } from '../../models/restaurant-pos.models';
+import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableOrder, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { OrderWriteService } from '../../state/order-write.service';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
@@ -85,10 +85,11 @@ export class RestaurantPosServicePage {
   protected readonly floorFocusRequest = signal<FloorPlanFocusRequest | null>(null);
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
-  protected readonly chargeKitchenConfirmOpen = signal(false);
   protected readonly servedSelectionMode = signal(false);
   protected readonly selectedServedLineIds = signal<readonly string[]>([]);
+  protected readonly chargeKitchenConfirmOpen = signal(false);
   protected readonly isCharging = signal(false);
+  private readonly pendingChargePaymentMethod = signal<Exclude<PaymentMethod, 'pending'> | null>(null);
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
     const servicePoints = this.store.servicePoints();
@@ -115,15 +116,20 @@ export class RestaurantPosServicePage {
 
     return products.filter((product) => this.productMatchesSection(product, this.activeProductSection()));
   });
+  // Las líneas canceladas se conservan en el pedido para auditoría, pero no
+  // cuentan como "añadidas": sin este filtro, quitar un plato ya enviado y
+  // volver a añadirlo mostraba cantidad 2 en el buscador con solo 1 activo.
   protected readonly productQuantities = computed<Record<string, number>>(() =>
-    (this.store.selectedOrder()?.lines ?? []).reduce<Record<string, number>>((quantities, line) => {
-      quantities[line.productId] = (quantities[line.productId] ?? 0) + line.quantity;
-      return quantities;
-    }, {}),
+    (this.store.selectedOrder()?.lines ?? [])
+      .filter((line) => line.status !== 'cancelled')
+      .reduce<Record<string, number>>((quantities, line) => {
+        quantities[line.productId] = (quantities[line.productId] ?? 0) + line.quantity;
+        return quantities;
+      }, {}),
   );
   protected readonly configuredProductLines = computed<readonly ProductPickerConfiguredLineInput[]>(() =>
     (this.store.selectedOrder()?.lines ?? [])
-      .filter((line) => this.isConfigurableOrderLine(line))
+      .filter((line) => line.status !== 'cancelled' && this.isConfigurableOrderLine(line))
       .map((line) => ({
         lineId: line.id,
         productId: line.productId,
@@ -177,11 +183,6 @@ export class RestaurantPosServicePage {
         })
       : '';
   });
-  protected readonly servableSelectedOrderLines = computed(() =>
-    (this.store.selectedOrder()?.lines ?? []).filter((line) =>
-      ['pending', 'sent_to_kitchen', 'preparing', 'ready', 'picked_up'].includes(line.status),
-    ),
-  );
   protected readonly selectedTableTitle = computed(() => {
     const table = this.store.selectedTable();
     const servicePoint = this.store.selectedServicePoint();
@@ -194,6 +195,11 @@ export class RestaurantPosServicePage {
       ? this.compactServicePointLabel(servicePoint.element)
       : this.translate('restaurantPos.service.tableTitle', { number: table.number });
   });
+  protected readonly servableSelectedOrderLines = computed<readonly OrderLine[]>(() =>
+    (this.store.selectedOrder()?.lines ?? []).filter((line) =>
+      line.status === 'sent_to_kitchen' || line.status === 'preparing' || line.status === 'ready' || line.status === 'picked_up',
+    ),
+  );
 
   constructor() {
     this.restaurantContext.load();
@@ -244,6 +250,11 @@ export class RestaurantPosServicePage {
       this.reloadServicePointAndOrder(restaurant.id, tableId);
     });
 
+    effect(() => {
+      this.store.selectedTableId();
+      this.cancelServedSelection();
+      this.cancelChargeKitchenConfirm();
+    });
   }
 
   protected occupySelectedTable(): void {
@@ -312,7 +323,6 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.clearServedSelectionForTableChange(element.tableId);
     this.rememberCurrentServicePoint(element.tableId);
     this.store.selectTable(element.tableId);
     this.floorFocusRequest.set({ elementId: element.id, requestId: Date.now() });
@@ -321,7 +331,6 @@ export class RestaurantPosServicePage {
 
   protected selectServicePointFromFloor(element: FloorElement): void {
     if (element.tableId) {
-      this.clearServedSelectionForTableChange(element.tableId);
       this.rememberCurrentServicePoint(element.tableId);
     }
   }
@@ -428,38 +437,23 @@ export class RestaurantPosServicePage {
   }
 
   protected sendToKitchen(): void {
-    this.sendToKitchenAndReload();
-  }
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
 
-  protected chargeTable(): void {
-    if (!this.store.selectedServiceInfo()?.canCharge || this.isCharging()) {
+    if (!restaurant || !tableId) {
+      this.store.sendSelectedOrderToKitchen();
       return;
     }
 
-    if (this.hasPendingKitchenItems()) {
-      this.chargeKitchenConfirmOpen.set(true);
-      return;
-    }
-
-    this.continueChargeTable();
-  }
-
-  protected cancelChargeKitchenConfirm(): void {
-    this.chargeKitchenConfirmOpen.set(false);
-  }
-
-  protected confirmChargeKitchenConfirm(): void {
-    this.chargeKitchenConfirmOpen.set(false);
-    this.sendToKitchenAndReload(() => this.continueChargeTable());
-  }
-
-  protected chargeKitchenPendingCount(): number {
-    return this.store.selectedServiceInfo()?.pendingKitchenCount ?? 0;
-  }
-
-  protected chargeKitchenConfirmDescription(): string {
-    return this.translate('restaurantPos.service.chargeKitchenConfirmDescription', {
-      count: this.chargeKitchenPendingCount(),
+    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        this.reloadOrder(restaurant.id, tableId);
+      },
+      error: () => {
+        this.store.reportApiError('restaurantPos.errors.sendToKitchenFailed');
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      },
     });
   }
 
@@ -469,13 +463,16 @@ export class RestaurantPosServicePage {
   }
 
   protected toggleServedLine(lineId: string): void {
-    this.selectedServedLineIds.update((ids) =>
-      ids.includes(lineId) ? ids.filter((id) => id !== lineId) : [...ids, lineId],
+    this.selectedServedLineIds.update((lineIds) =>
+      lineIds.includes(lineId) ? lineIds.filter((currentLineId) => currentLineId !== lineId) : [...lineIds, lineId],
     );
   }
 
   protected selectAllServedLines(): void {
-    this.selectedServedLineIds.set(this.servableSelectedOrderLines().map((line) => line.id));
+    const servableLineIds = this.servableSelectedOrderLines().map((line) => line.id);
+    this.selectedServedLineIds.set(
+      servableLineIds.length > 0 && servableLineIds.length === this.selectedServedLineIds().length ? [] : servableLineIds,
+    );
   }
 
   protected cancelServedSelection(): void {
@@ -484,40 +481,29 @@ export class RestaurantPosServicePage {
   }
 
   protected confirmMarkServedSelection(): void {
-    const lineIds = this.selectedServedLineIds();
-    if (lineIds.length === 0) {
-      this.store.reportApiError('restaurantPos.errors.selectProductsToMarkServed');
-      return;
-    }
-    this.markServed(lineIds);
-  }
-
-  protected markServed(lineIds?: readonly string[]): void {
     const restaurant = this.restaurantContext.activeRestaurant();
     const tableId = this.store.selectedTableId();
+    const selectedLineIds = this.selectedServedLineIds();
 
-    if (!restaurant || !tableId) {
-      if (lineIds) {
-        lineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
-      } else {
-        this.store.markSelectedOrderAsServed();
-      }
+    if (selectedLineIds.length === 0) {
       return;
     }
 
-    this.api.markRestaurantServicePointServed(restaurant.id, tableId, lineIds ? { lineIds: [...lineIds] } : undefined).subscribe({
+    if (!restaurant || !tableId) {
+      selectedLineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
+      this.cancelServedSelection();
+      return;
+    }
+
+    this.api.markRestaurantServicePointServed(restaurant.id, tableId, { lineIds: [...selectedLineIds] }).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-        if (lineIds) {
-          lineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
-          this.servedSelectionMode.set(false);
-          this.selectedServedLineIds.set([]);
-        } else {
-          this.store.markSelectedOrderAsServed();
-        }
+        selectedLineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
+        this.cancelServedSelection();
       },
       error: () => {
         this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
+        this.cancelServedSelection();
         this.reloadServicePointAndOrder(restaurant.id, tableId);
       },
     });
@@ -589,31 +575,13 @@ export class RestaurantPosServicePage {
     const ctx = this.resolveApiLine(productId);
     this.store.removeSelectedOrderLine(productId);
     if (ctx) {
-      const tableId = this.store.selectedTableId();
-      if (ctx.line.status !== 'pending') {
-        this.api.cancelRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, 'removed_by_staff').subscribe({
-          next: (order) => {
-            if (tableId) {
-              this.store.hydrateServicePointOrder(tableId, mapRestaurantOrder(order, this.store.selectedOrder()?.paymentMethod ?? 'pending'));
-              this.api.getRestaurantServicePoint(ctx.restaurantId, tableId).subscribe({
-                next: (servicePoint) => {
-                  this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-                },
-                error: () => undefined,
-              });
-            }
-          },
-          error: () => {
-            this.store.reportApiError('restaurantPos.errors.updateLineFailed');
-            if (tableId) {
-              this.reloadServicePointAndOrder(ctx.restaurantId, tableId, { autoServeStale: false });
-            }
-          },
-        });
-        return;
-      }
-
-      this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id).subscribe(this.lineMutationObserver(ctx.restaurantId));
+      // Backend only allows DELETE on pending lines; once a line is preparing or
+      // ready it has to be cancelled instead so the deletion actually persists.
+      const removal$: Observable<unknown> =
+        ctx.line.status === 'preparing' || ctx.line.status === 'ready'
+          ? this.api.cancelRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, 'removed_by_staff')
+          : this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id);
+      removal$.subscribe(this.lineMutationObserver(ctx.restaurantId));
     }
   }
 
@@ -627,7 +595,36 @@ export class RestaurantPosServicePage {
     }
   }
 
+  protected chargeTable(): void {
+    if (!this.store.selectedServiceInfo()?.canCharge || this.isCharging()) {
+      return;
+    }
+
+    const paymentMethod = this.store.selectedOrder()?.paymentMethod;
+
+    if (paymentMethod !== 'cash' && paymentMethod !== 'card') {
+      return;
+    }
+
+    if ((this.store.selectedOrder()?.lines ?? []).some((line) => line.status === 'pending')) {
+      this.pendingChargePaymentMethod.set(paymentMethod);
+      this.chargeKitchenConfirmOpen.set(true);
+      return;
+    }
+
+    if (paymentMethod === 'card') {
+      this.cardGatewayStatus.set('connecting');
+      this.cardGatewayOpen.set(true);
+      return;
+    }
+
+    this.chargeSelectedServicePoint(paymentMethod);
+  }
+
   protected acceptCardPayment(): void {
+    if (this.isCharging()) {
+      return;
+    }
     this.chargeSelectedServicePoint('card');
   }
 
@@ -636,8 +633,63 @@ export class RestaurantPosServicePage {
   }
 
   protected closeCardGateway(): void {
+    if (this.isCharging()) {
+      return;
+    }
     this.cardGatewayOpen.set(false);
     this.cardGatewayStatus.set('connecting');
+  }
+
+  protected chargeKitchenConfirmDescription(): string {
+    return this.translate('restaurantPos.service.chargeKitchenConfirmDescription');
+  }
+
+  protected cancelChargeKitchenConfirm(): void {
+    this.chargeKitchenConfirmOpen.set(false);
+    this.pendingChargePaymentMethod.set(null);
+  }
+
+  protected confirmChargeKitchenConfirm(): void {
+    const paymentMethod = this.pendingChargePaymentMethod();
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const tableId = this.store.selectedTableId();
+    this.chargeKitchenConfirmOpen.set(false);
+    this.pendingChargePaymentMethod.set(null);
+
+    if (!paymentMethod || this.isCharging()) {
+      return;
+    }
+
+    if (!restaurant || !tableId) {
+      this.store.sendSelectedOrderToKitchen();
+      if (paymentMethod === 'card') {
+        this.cardGatewayStatus.set('connecting');
+        this.cardGatewayOpen.set(true);
+        return;
+      }
+      this.chargeSelectedServicePoint(paymentMethod);
+      return;
+    }
+
+    this.isCharging.set(true);
+    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe({
+      next: (servicePoint) => {
+        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
+        this.reloadOrder(restaurant.id, tableId);
+        if (paymentMethod === 'card') {
+          this.isCharging.set(false);
+          this.cardGatewayStatus.set('connecting');
+          this.cardGatewayOpen.set(true);
+          return;
+        }
+        this.chargeSelectedServicePoint(paymentMethod);
+      },
+      error: () => {
+        this.isCharging.set(false);
+        this.store.reportApiError('restaurantPos.errors.sendToKitchenFailed');
+        this.reloadServicePointAndOrder(restaurant.id, tableId);
+      },
+    });
   }
 
   protected markCleaning(): void {
@@ -673,45 +725,6 @@ export class RestaurantPosServicePage {
     });
   }
 
-  private sendToKitchenAndReload(afterSuccess?: () => void): void {
-    const restaurant = this.restaurantContext.activeRestaurant();
-    const tableId = this.store.selectedTableId();
-
-    if (!restaurant || !tableId) {
-      this.store.sendSelectedOrderToKitchen();
-      afterSuccess?.();
-      return;
-    }
-
-    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe({
-      next: (servicePoint) => {
-        this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-        this.reloadOrder(restaurant.id, tableId, { autoServeStale: false });
-        afterSuccess?.();
-      },
-      error: () => {
-        this.store.reportApiError('restaurantPos.errors.sendToKitchenFailed');
-        this.reloadServicePointAndOrder(restaurant.id, tableId);
-      },
-    });
-  }
-
-  private continueChargeTable(): void {
-    const paymentMethod = this.store.selectedOrder()?.paymentMethod;
-
-    if (paymentMethod === 'card') {
-      this.cardGatewayStatus.set('connecting');
-      this.cardGatewayOpen.set(true);
-      return;
-    }
-
-    this.chargeSelectedServicePoint('cash');
-  }
-
-  private hasPendingKitchenItems(): boolean {
-    return (this.store.selectedServiceInfo()?.pendingKitchenCount ?? 0) > 0;
-  }
-
   private chargeSelectedServicePoint(paymentMethod: Exclude<PaymentMethod, 'pending'>): void {
     const restaurant = this.restaurantContext.activeRestaurant();
     const tableId = this.store.selectedTableId();
@@ -721,14 +734,12 @@ export class RestaurantPosServicePage {
     const applyCharge = (): void => {
       this.store.setSelectedPaymentMethod(paymentMethod);
       this.store.chargeSelectedTable();
-      this.isCharging.set(false);
 
       if (paymentMethod === 'card') {
         this.cardGatewayOpen.set(false);
       }
     };
     const onChargeError = (): void => {
-      this.isCharging.set(false);
       if (paymentMethod === 'card') {
         this.cardGatewayStatus.set('rejected');
       }
@@ -743,19 +754,23 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.isCharging.set(true);
-
     if (!orderId || amountCents <= 0) {
+      this.isCharging.set(true);
       this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe({
         next: (servicePoint) => {
           this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
           applyCharge();
+          this.isCharging.set(false);
         },
-        error: onChargeError,
+        error: () => {
+          this.isCharging.set(false);
+          onChargeError();
+        },
       });
       return;
     }
 
+    this.isCharging.set(true);
     this.api
       .chargeRestaurantServicePoint(restaurant.id, tableId)
       .pipe(
@@ -775,12 +790,16 @@ export class RestaurantPosServicePage {
       .subscribe({
         next: () => {
           this.store.setSelectedPaymentMethod(paymentMethod);
-          this.isCharging.set(false);
+          this.store.chargeSelectedTable();
           if (paymentMethod === 'card') {
             this.cardGatewayOpen.set(false);
           }
+          this.isCharging.set(false);
         },
-        error: onChargeError,
+        error: () => {
+          this.isCharging.set(false);
+          onChargeError();
+        },
       });
   }
 
@@ -788,72 +807,36 @@ export class RestaurantPosServicePage {
     const tableId = this.store.selectedTableId();
     return {
       next: () => {
-        if (tableId) this.reloadOrder(restaurantId, tableId, { autoServeStale: false });
+        if (tableId) this.reloadOrder(restaurantId, tableId);
       },
       error: () => {
         this.store.reportApiError('restaurantPos.errors.updateLineFailed');
-        if (tableId) this.reloadOrder(restaurantId, tableId, { autoServeStale: false });
+        if (tableId) this.reloadOrder(restaurantId, tableId);
       },
     };
   }
 
-  private reloadOrder(restaurantId: string, tableId: string, options: { autoServeStale?: boolean } = {}): void {
+  private reloadOrder(restaurantId: string, tableId: string): void {
     this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
       next: (serviceOrder) => {
-        if (options.autoServeStale !== false && this.autoServeStaleLinesOnRefresh(restaurantId, tableId, serviceOrder)) {
-          return;
+        const mappedOrder = mapServicePointOrder(serviceOrder);
+        this.store.hydrateServicePointOrder(tableId, mappedOrder);
+        if (mappedOrder) {
+          this.autoServeStaleKitchenLines(restaurantId, tableId, mappedOrder);
         }
-        this.store.hydrateServicePointOrder(tableId, mapServicePointOrder(serviceOrder));
       },
       error: () => undefined,
     });
   }
 
-  private reloadServicePointAndOrder(restaurantId: string, tableId: string, options: { autoServeStale?: boolean } = {}): void {
+  private reloadServicePointAndOrder(restaurantId: string, tableId: string): void {
     this.api.getRestaurantServicePoint(restaurantId, tableId).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
       },
       error: () => undefined,
     });
-    this.reloadOrder(restaurantId, tableId, options);
-  }
-
-  private autoServeStaleLinesOnRefresh(restaurantId: string, tableId: string, serviceOrder: ServicePointOrderDto): boolean {
-    const orderId = serviceOrder.order?.id;
-    if (!orderId) {
-      return false;
-    }
-
-    const staleLineIds = serviceOrder.lines.filter((line) => this.shouldAutoServeStaleLine(line)).map((line) => line.id);
-    if (staleLineIds.length === 0) {
-      return false;
-    }
-
-    forkJoin(staleLineIds.map((lineId) => this.api.updateRestaurantOrderLineStatus(restaurantId, orderId, lineId, 'served'))).subscribe({
-      next: () => {
-        this.reloadServicePointAndOrder(restaurantId, tableId, { autoServeStale: false });
-      },
-      error: () => {
-        this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
-        this.reloadServicePointAndOrder(restaurantId, tableId, { autoServeStale: false });
-      },
-    });
-
-    return true;
-  }
-
-  private shouldAutoServeStaleLine(line: ServicePointOrderDto['lines'][number]): boolean {
-    if (!['sent_to_kitchen', 'preparing', 'ready', 'picked_up'].includes(line.status)) {
-      return false;
-    }
-
-    const updatedAtMs = Date.parse(line.updatedAt);
-    if (Number.isNaN(updatedAtMs)) {
-      return false;
-    }
-
-    return Date.now() - updatedAtMs >= 24 * 60 * 60 * 1000;
+    this.reloadOrder(restaurantId, tableId);
   }
 
   protected setPaymentMethod(paymentMethod: PaymentMethod): void {
@@ -891,13 +874,6 @@ export class RestaurantPosServicePage {
     const selectedTableId = this.store.selectedTableId();
     if (selectedTableId && selectedTableId !== nextTableId) {
       this.lastSelectedTableId.set(selectedTableId);
-    }
-  }
-
-  private clearServedSelectionForTableChange(nextTableId: string): void {
-    if (this.store.selectedTableId() !== nextTableId) {
-      this.servedSelectionMode.set(false);
-      this.selectedServedLineIds.set([]);
     }
   }
 
@@ -1009,6 +985,35 @@ export class RestaurantPosServicePage {
     const line = order.lines.find((l) => l.id === lineIdOrProductId || l.productId === lineIdOrProductId) ?? null;
     if (!line || line.id.startsWith('line:')) return null;
     return { line, orderId: order.id, restaurantId: restaurant.id };
+  }
+
+  private autoServeStaleKitchenLines(restaurantId: string, tableId: string, order: TableOrder): void {
+    const staleLineIds = order.lines
+      .filter((line) => this.isStaleKitchenLine(line))
+      .map((line) => line.id);
+
+    if (staleLineIds.length === 0) {
+      return;
+    }
+
+    staleLineIds.forEach((lineId) => {
+      this.api.updateRestaurantOrderLineStatus(restaurantId, order.id!, lineId, 'served').subscribe({
+        next: (updatedOrder) => {
+          this.store.hydrateServicePointOrder(tableId, mapRestaurantOrder(updatedOrder, this.store.selectedOrder()?.paymentMethod));
+          this.store.markOrderLineServed(tableId, lineId);
+        },
+        error: () => undefined,
+      });
+    });
+  }
+
+  private isStaleKitchenLine(line: OrderLine): boolean {
+    if (line.status !== 'sent_to_kitchen' && line.status !== 'preparing' && line.status !== 'ready') {
+      return false;
+    }
+
+    const lastUpdatedAt = line.statusUpdatedAt ?? line.sentToKitchenAt ?? line.preparingAt ?? line.readyAt;
+    return !!lastUpdatedAt && Date.now() - new Date(lastUpdatedAt).getTime() >= 24 * 60 * 60 * 1000;
   }
 
   private mapServicePointDetail(servicePoint: ServicePointDetailDto): { table: RestaurantTable; floorElement?: FloorElement | null } {

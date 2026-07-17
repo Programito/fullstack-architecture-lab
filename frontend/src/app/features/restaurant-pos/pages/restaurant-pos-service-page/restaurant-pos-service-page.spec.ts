@@ -51,6 +51,7 @@ describe('RestaurantPosServicePage', () => {
     | 'occupyRestaurantServicePoint'
     | 'sendRestaurantServicePointToKitchen'
     | 'markRestaurantServicePointServed'
+    | 'updateRestaurantOrderLine'
     | 'updateRestaurantOrderLineStatus'
     | 'deleteRestaurantOrderLine'
     | 'cancelRestaurantOrderLine'
@@ -98,6 +99,28 @@ describe('RestaurantPosServicePage', () => {
       );
       tableStatuses.set(tableId, hasKitchenLines ? 'waiting_kitchen' : 'occupied');
     };
+
+    const toRestaurantOrderDto = (tableId: string, currentOrder: ServiceOrderRecord) => ({
+      order: {
+        id: currentOrder.order.id,
+        restaurantId: 'restaurant-mesaflow-centro',
+        tableId,
+        status: currentOrder.order.status === 'paid' ? 'paid' as const : 'open' as const,
+        currency: currentOrder.order.currency,
+        guestCount: 4,
+        subtotalCents: currentOrder.order.subtotalCents,
+        taxCents: currentOrder.order.taxCents,
+        discountTotalCents: 0,
+        totalCents: currentOrder.order.totalCents,
+        paidCents: currentOrder.order.status === 'paid' ? currentOrder.order.totalCents : 0,
+        balanceCents: currentOrder.order.status === 'paid' ? 0 : currentOrder.order.totalCents,
+        openedAt: currentOrder.order.openedAt,
+        updatedAt: currentOrder.order.updatedAt,
+        closedAt: currentOrder.order.status === 'paid' ? currentOrder.order.updatedAt : null,
+      },
+      lines: [],
+      payments: [],
+    });
 
     return ({
     listRestaurants: vi.fn(() =>
@@ -393,6 +416,54 @@ describe('RestaurantPosServicePage', () => {
         },
       });
     }),
+    updateRestaurantOrderLine: vi.fn((_restaurantId: string, orderId: string, lineId: string, body: { quantity?: number; kitchenNote?: string | null }) => {
+      const entry = [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId);
+      if (!entry) {
+        throw new Error(`Missing order ${orderId}`);
+      }
+
+      const [tableId, currentOrder] = entry;
+      const nextLines = currentOrder.lines
+        .map((line) => {
+          if (line.id !== lineId) {
+            return line;
+          }
+
+          if (body.quantity !== undefined && body.quantity <= 0) {
+            return null;
+          }
+
+          const quantity = body.quantity ?? line.quantity;
+          const unitPriceCents = line.quantity > 0 ? Math.round(line.subtotalCents / line.quantity) : line.unitPriceCents;
+          return {
+            ...line,
+            quantity,
+            subtotalCents: unitPriceCents * quantity,
+            kitchenNote: body.kitchenNote !== undefined ? body.kitchenNote : line.kitchenNote,
+            updatedAt: '2026-07-17T10:09:00.000Z',
+          };
+        })
+        .filter((line): line is ServiceOrderRecord['lines'][number] => line !== null);
+      const nextTotalCents = nextLines.reduce((sum, line) => sum + line.subtotalCents, 0);
+      const nextStatus =
+        currentOrder.order.status === 'sent_to_kitchen' || currentOrder.order.status === 'served' || currentOrder.order.status === 'paid'
+          ? currentOrder.order.status
+          : 'open';
+
+      const nextOrder: ServiceOrderRecord = {
+        order: {
+          ...currentOrder.order,
+          status: nextStatus,
+          subtotalCents: nextTotalCents,
+          totalCents: nextTotalCents,
+          updatedAt: '2026-07-17T10:09:00.000Z',
+        },
+        lines: nextLines,
+      };
+      serviceOrders.set(tableId, nextOrder);
+
+      return of(toRestaurantOrderDto(tableId, nextOrder));
+    }),
     updateRestaurantOrderLineStatus: vi.fn((_restaurantId: string, orderId: string, lineId: string, status: 'sent_to_kitchen' | 'preparing' | 'ready' | 'served') => {
       const entry = [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId);
       if (!entry) {
@@ -421,27 +492,7 @@ describe('RestaurantPosServicePage', () => {
       });
       tableStatuses.set(tableId, allServed ? 'served' : (currentOrder.order.status === 'sent_to_kitchen' ? 'waiting_kitchen' : tableStatuses.get(tableId) ?? 'occupied'));
 
-      return of({
-        order: {
-          id: currentOrder.order.id,
-          restaurantId: 'restaurant-mesaflow-centro',
-          tableId,
-          status: allServed ? 'open' as const : 'open' as const,
-          currency: currentOrder.order.currency,
-          guestCount: 4,
-          subtotalCents: currentOrder.order.subtotalCents,
-          taxCents: currentOrder.order.taxCents,
-          discountTotalCents: 0,
-          totalCents: currentOrder.order.totalCents,
-          paidCents: 0,
-          balanceCents: currentOrder.order.totalCents,
-          openedAt: currentOrder.order.openedAt,
-          updatedAt: '2026-07-16T10:09:00.000Z',
-          closedAt: null,
-        },
-        lines: [],
-        payments: [],
-      });
+      return of(toRestaurantOrderDto(tableId, serviceOrders.get(tableId)!));
     }),
     deleteRestaurantOrderLine: vi.fn((_restaurantId: string, orderId: string, lineId: string) => {
       const entry = [...serviceOrders.entries()].find(([, order]) => order.order.id === orderId);
@@ -493,27 +544,7 @@ describe('RestaurantPosServicePage', () => {
         lines: nextLines,
       });
 
-      return of({
-        order: {
-          id: currentOrder.order.id,
-          restaurantId: 'restaurant-mesaflow-centro',
-          tableId,
-          status: currentOrder.order.status === 'paid' ? 'paid' as const : 'open' as const,
-          currency: currentOrder.order.currency,
-          guestCount: 4,
-          subtotalCents: currentOrder.order.subtotalCents,
-          taxCents: currentOrder.order.taxCents,
-          discountTotalCents: 0,
-          totalCents: currentOrder.order.totalCents,
-          paidCents: 0,
-          balanceCents: currentOrder.order.totalCents,
-          openedAt: currentOrder.order.openedAt,
-          updatedAt: '2026-06-22T10:09:00.000Z',
-          closedAt: null,
-        },
-        lines: [],
-        payments: [],
-      });
+      return of(toRestaurantOrderDto(tableId, serviceOrders.get(tableId)!));
     }),
     chargeRestaurantServicePoint: vi.fn((_restaurantId: string, tableId: string) => {
       tableStatuses.set(tableId, 'payment_pending');
@@ -863,7 +894,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar todo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
 
@@ -993,7 +1024,7 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
     fixture.detectChanges();
-    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar todo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
     vi.mocked(apiMock.chargeRestaurantServicePoint).mockReturnValue(deferredCharge$);
@@ -1015,7 +1046,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar todo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Efectivo/i }));
@@ -1375,7 +1406,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Hamburguesa craft' }), { target: { value: 'Sin cebolla' } });
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
     fixture.detectChanges();
-    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar todo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
 
@@ -1739,6 +1770,63 @@ describe('RestaurantPosServicePage', () => {
     expect(apiMock.chargeRestaurantServicePoint).toHaveBeenCalledTimes(1);
     expect(store.selectedTable()?.status).toBe('paid');
     expect(screen.queryByRole('dialog', { name: 'Enviar a cocina antes de cobrar' })).toBeNull();
+  });
+
+  it('shows the charge spinner immediately after confirming send to kitchen before the charge request starts', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const deferredSendToKitchen$ = new Subject<ServicePointDetailDto>();
+    vi.mocked(apiMock.sendRestaurantServicePointToKitchen).mockReturnValue(deferredSendToKitchen$);
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: 'Enviar a cocina antes de cobrar' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Enviar y continuar' }));
+    fixture.detectChanges();
+
+    expect(screen.getByRole('button', { name: /Cobrar/i }).getAttribute('aria-busy')).toBe('true');
+    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledTimes(1);
+    expect(apiMock.chargeRestaurantServicePoint).not.toHaveBeenCalled();
+
+    deferredSendToKitchen$.next({
+      table: {
+        id: 'table-1',
+        tableNumber: 1,
+        name: null,
+        capacity: 4,
+        status: 'waiting_kitchen',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: {
+        id: 'floor-element-table-1',
+        label: 'M1',
+        type: 'table',
+        x: 1,
+        y: 1,
+        width: 3,
+        height: 3,
+        shape: 'rectangle',
+      },
+      serviceInfo: {
+        guestCount: 4,
+        lineCount: 1,
+        totalCents: 1250,
+        currency: 'EUR',
+        servicePhase: {
+          course: 'mains',
+          status: 'pending',
+        },
+        durationMinutes: 0,
+      },
+    });
+    deferredSendToKitchen$.complete();
+    fixture.detectChanges();
+
+    expect(apiMock.chargeRestaurantServicePoint).toHaveBeenCalledTimes(1);
   });
 
   it('searches a table or stool, selects it, and focuses it in the floor plan', async () => {

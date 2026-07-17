@@ -31,6 +31,18 @@
           <p class="theme-muted mt-1 text-sm">{{ 'restaurantPos.kitchen.queueDescription' | transloco }}</p>
         </div>
 
+        <label class="theme-soft-panel flex items-center gap-2 rounded-md border px-3 py-2 sm:min-w-72">
+          <app-icon name="search" size="sm" class="theme-muted shrink-0" />
+          <input
+            type="search"
+            class="w-full bg-transparent text-sm focus:outline-none"
+            [value]="searchQuery()"
+            [placeholder]="'restaurantPos.kitchen.searchPlaceholder' | transloco"
+            [attr.aria-label]="'restaurantPos.kitchen.searchLabel' | transloco"
+            (input)="searchQuery.set($any($event.target).value ?? '')"
+          />
+        </label>
+
         <dl class="theme-soft-panel grid grid-cols-3 gap-3 rounded-md border px-3 py-2 text-sm sm:min-w-80">
           <div>
             <dt class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.pending' | transloco }}</dt>
@@ -49,10 +61,11 @@
     </section>
 
     <app-preparation-board
-      [columns]="store.preparationBoardColumns()"
+      [columns]="filteredPreparationColumns()"
       [servedCards]="store.servedPreparationCards()"
       [warning]="preparationWarning()"
       (lineMoved)="movePreparationLine($event)"
+      (lineServed)="servePreparationLine($event)"
       (lineCancelled)="cancelPreparationLine($event)"
     />
   </div>

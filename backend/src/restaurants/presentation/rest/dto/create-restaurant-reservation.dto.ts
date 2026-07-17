@@ -43,7 +43,9 @@ export class CreateRestaurantReservationDto {
     description: 'Payment method used to charge the (fake) reservation deposit. No real payment gateway is involved.',
     enum: ['cash', 'card', 'bizum', 'other'],
     example: 'card',
+    required: false,
   })
+  @IsOptional()
   @IsIn(['cash', 'card', 'bizum', 'other'])
-  paymentMethod!: PaymentMethod;
+  paymentMethod?: PaymentMethod;
 }

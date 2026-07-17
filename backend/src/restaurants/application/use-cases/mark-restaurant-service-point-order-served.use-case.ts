@@ -46,7 +46,12 @@ export class MarkRestaurantServicePointOrderServedUseCase {
         .map((line) => line.id);
       const normalizedLineIds = lineIds?.length
         ? persistentOrder.lines
-          .filter((line) => line.status === 'pending' || line.status === 'preparing' || line.status === 'ready')
+          .filter((line) =>
+            line.status === 'pending' ||
+            line.status === 'sent_to_kitchen' ||
+            line.status === 'preparing' ||
+            line.status === 'ready',
+          )
           .map((line) => line.id)
           .filter((lineId) => lineIds.includes(lineId))
         : undefined;

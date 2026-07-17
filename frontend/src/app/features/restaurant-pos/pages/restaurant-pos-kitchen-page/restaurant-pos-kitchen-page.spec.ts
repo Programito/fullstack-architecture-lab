@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
-import { NEVER, of } from 'rxjs';
+import { NEVER } from 'rxjs';
 import { vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from '../../api/restaurant-pos-api.models';
@@ -47,6 +47,9 @@ describe('RestaurantPosKitchenPage', () => {
   const getPreparationColumn = (name: string): HTMLElement =>
     screen.getByRole('heading', { name }).closest('section')!;
 
+  const getLineArticle = (name: string): HTMLElement =>
+    screen.getByRole('heading', { name }).closest('article')!;
+
   it('renders the preparation board with the three new columns', async () => {
     await renderKitchenPage();
 
@@ -66,17 +69,40 @@ describe('RestaurantPosKitchenPage', () => {
     expect(within(getPreparationColumn('Pendiente')).getByRole('heading', { name: 'Hamburguesa craft' })).toBeTruthy();
     expect(screen.getByText(/Sin salsa/)).toBeTruthy();
 
-    fireEvent.click(within(screen.getByRole('heading', { name: 'Hamburguesa craft' }).closest('article')!).getByRole('button', { name: 'Preparándose' }));
+    fireEvent.click(within(getLineArticle('Hamburguesa craft')).getByRole('button', { name: 'Preparándose' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('preparing');
     expect(within(getPreparationColumn('Preparándose')).getByRole('heading', { name: 'Hamburguesa craft' })).toBeTruthy();
 
-    fireEvent.click(within(screen.getByRole('heading', { name: 'Hamburguesa craft' }).closest('article')!).getByRole('button', { name: 'Preparado' }));
+    fireEvent.click(within(getLineArticle('Hamburguesa craft')).getByRole('button', { name: 'Preparado' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar como preparado' }));
     fixture.detectChanges();
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('ready');
     expect(within(getPreparationColumn('Preparado')).getByRole('heading', { name: 'Hamburguesa craft' })).toBeTruthy();
+  });
+
+  it('can mark a preparing line directly as served from the ready dialog', async () => {
+    const { fixture } = await renderKitchenPage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    sendTableOrderToKitchen(store);
+    fixture.detectChanges();
+
+    fireEvent.click(within(getLineArticle('Hamburguesa craft')).getByRole('button', { name: 'Preparándose' }));
+    fixture.detectChanges();
+
+    fireEvent.click(within(getLineArticle('Hamburguesa craft')).getByRole('button', { name: 'Preparado' }));
+    fixture.detectChanges();
+
+    expect(screen.getByRole('heading', { name: 'Finalizar preparación' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar como servido' }));
+    fixture.detectChanges();
+
+    expect(store.ordersByTable()['table-1'].lines[0].status).toBe('served');
+    expect(screen.getByRole('button', { name: /servido/i })).toBeTruthy();
   });
 
   it('shows kitchen lines when the store is hydrated with backend data', async () => {

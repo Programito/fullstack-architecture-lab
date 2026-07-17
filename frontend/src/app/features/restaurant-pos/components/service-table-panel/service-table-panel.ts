@@ -5,7 +5,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
-import type { OrderCourse, OrderCourseGroup, OrderLine, OrderLineStatus, PaymentMethod, RestaurantTable, ServiceTableInfo, TableStatus } from '../../models/restaurant-pos.models';
+import type { OrderCourse, OrderCourseGroup, OrderLine, OrderLineStatus, PaymentMethod, RestaurantTable, ServiceTableInfo, TableOrder, TableStatus } from '../../models/restaurant-pos.models';
 
 export interface OrderLineNoteChange {
   lineId: string;
@@ -49,6 +49,7 @@ export class ServiceTablePanel {
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly freeTableConfirmOpen = signal(false);
   protected readonly removeProductConfirmOpen = signal(false);
+  protected readonly paymentHistoryExpanded = signal(false);
   protected readonly pendingRemovalLine = signal<OrderLine | null>(null);
   protected readonly table = computed(() => this.serviceInfo()?.table ?? null);
   protected readonly order = computed(() => this.serviceInfo()?.order ?? null);
@@ -98,6 +99,10 @@ export class ServiceTablePanel {
     const order = this.order();
     if (!order) return 0;
     return Math.max(0, order.total - (order.tax ?? 0));
+  });
+  protected readonly hasSelectedPaymentMethod = computed(() => {
+    const paymentMethod = this.order()?.paymentMethod;
+    return paymentMethod === 'cash' || paymentMethod === 'card';
   });
 
   protected tableStatusLabel(status: TableStatus): string {
@@ -225,6 +230,40 @@ export class ServiceTablePanel {
     return this.translate(`restaurantPos.payment.${paymentMethod}`);
   }
 
+  protected paidOrders(): TableOrder[] {
+    return this.serviceInfo()?.paidOrders ?? [];
+  }
+
+  protected paidOrderAmount(order: TableOrder): number {
+    return order.lastCompletedPayment?.amount ?? order.total;
+  }
+
+  protected paidOrderTimestamp(order: TableOrder): string {
+    const paidAt = order.lastCompletedPayment?.paidAt;
+    if (!paidAt) {
+      return this.translate('restaurantPos.service.paymentHistoryUnknownDate');
+    }
+
+    return new Intl.DateTimeFormat(this.activeLang(), {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(paidAt));
+  }
+
+  protected totalPaidAmount(): number {
+    return this.paidOrders().reduce((sum, paidOrder) => sum + this.paidOrderAmount(paidOrder), 0);
+  }
+
+  protected paymentHistoryCountLabel(): string {
+    return this.translate('restaurantPos.service.paymentHistoryCount', { count: this.paidOrders().length });
+  }
+
+  protected togglePaymentHistory(): void {
+    this.paymentHistoryExpanded.update((expanded) => !expanded);
+  }
+
   protected canSendToKitchen(): boolean {
     return this.serviceInfo()?.canSendToKitchen ?? false;
   }
@@ -235,6 +274,14 @@ export class ServiceTablePanel {
 
   protected canCharge(): boolean {
     return this.serviceInfo()?.canCharge ?? false;
+  }
+
+  protected canSubmitCharge(): boolean {
+    return this.canCharge() && this.hasSelectedPaymentMethod() && !this.isCharging();
+  }
+
+  protected shouldShowPaymentMethodHint(): boolean {
+    return this.canCharge() && !this.hasSelectedPaymentMethod();
   }
 
   protected canMarkCleaning(): boolean {

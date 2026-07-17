@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.mesaflow.client.core.common.AppError
 import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.datastore.ReservationStore
+import com.mesaflow.client.core.model.OwnReservationRef
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.model.ReservationStatus
 import com.mesaflow.client.core.network.ReservationsApi
@@ -49,6 +50,8 @@ class ReservationRepositoryTest {
         }
     """.trimIndent()
 
+    private val secondReservationBody = reservationBody.replace("reservation-abc", "reservation-def")
+
     @Before
     fun setUp() {
         server = MockWebServer()
@@ -76,6 +79,17 @@ class ReservationRepositoryTest {
         tmpFile.delete()
     }
 
+    private fun createReservation(name: String = "Cliente Movil") = runBlocking {
+        repository.create(
+            restaurantId = "restaurant-mesaflow-centro",
+            customerName = name,
+            customerPhone = null,
+            partySize = 2,
+            reservationAt = "2026-08-01T20:00:00.000Z",
+            paymentMethod = PaymentMethod.CARD,
+        )
+    }
+
     @Test
     fun `crear una reserva la mapea a dominio, incluyendo la fianza, y guarda su referencia`() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
@@ -96,9 +110,10 @@ class ReservationRepositoryTest {
         assertEquals(1000, reservation.depositAmountCents)
         assertEquals("2026-08-01T19:00:00.000Z", reservation.depositPaidAt)
 
-        val saved = reservationStore.currentOwnReservation()
-        assertEquals("reservation-abc", saved?.reservationId)
-        assertEquals("restaurant-mesaflow-centro", saved?.restaurantId)
+        val saved = reservationStore.currentOwnReservations()
+        assertEquals(1, saved.size)
+        assertEquals("reservation-abc", saved[0].reservationId)
+        assertEquals("restaurant-mesaflow-centro", saved[0].restaurantId)
 
         val request = server.takeRequest()
         assertTrue(request.path!!.endsWith("/restaurants/restaurant-mesaflow-centro/reservations"))
@@ -106,21 +121,28 @@ class ReservationRepositoryTest {
     }
 
     @Test
+    fun `crear una segunda reserva conserva la referencia de la primera`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
+        createReservation()
+        server.takeRequest()
+
+        server.enqueue(MockResponse().setResponseCode(201).setBody(secondReservationBody))
+        createReservation(name = "Cliente Movil 2")
+        server.takeRequest()
+
+        val saved = reservationStore.currentOwnReservations()
+        assertEquals(listOf("reservation-abc", "reservation-def"), saved.map { it.reservationId })
+    }
+
+    @Test
     fun `un fallo al crear no guarda ninguna referencia`() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(400).setBody("{}"))
 
-        val result = repository.create(
-            restaurantId = "restaurant-mesaflow-centro",
-            customerName = "Cliente Movil",
-            customerPhone = null,
-            partySize = 2,
-            reservationAt = "2026-08-01T20:00:00.000Z",
-            paymentMethod = PaymentMethod.CARD,
-        )
+        val result = createReservation()
 
         assertTrue(result is AppResult.Error)
         assertEquals(AppError.Validation, (result as AppResult.Error).error)
-        assertNull(reservationStore.currentOwnReservation())
+        assertTrue(reservationStore.currentOwnReservations().isEmpty())
     }
 
     @Test
@@ -132,74 +154,137 @@ class ReservationRepositoryTest {
         // pagada, gateway real futuro, etc.).
         server.enqueue(MockResponse().setResponseCode(402).setBody("{\"message\":\"The deposit payment was declined.\"}"))
 
-        val result = repository.create(
-            restaurantId = "restaurant-mesaflow-centro",
-            customerName = "Cliente Movil",
-            customerPhone = null,
-            partySize = 2,
-            reservationAt = "2026-08-01T20:00:00.000Z",
-            paymentMethod = PaymentMethod.CARD,
-        )
+        val result = createReservation()
 
         assertTrue(result is AppResult.Error)
         assertEquals(AppError.PaymentDeclined, (result as AppResult.Error).error)
-        assertNull(reservationStore.currentOwnReservation())
+        assertTrue(reservationStore.currentOwnReservations().isEmpty())
     }
 
     @Test
-    fun `refreshOwnReservation devuelve null cuando no hay ninguna reserva guardada`() = runBlocking {
-        assertNull(repository.refreshOwnReservation())
+    fun `refreshOwnReservations devuelve null cuando no hay ninguna reserva guardada`() = runBlocking {
+        assertNull(repository.refreshOwnReservations())
     }
 
     @Test
-    fun `refreshOwnReservation consulta la reserva guardada por id`() = runBlocking {
+    fun `refreshOwnReservations consulta cada reserva guardada por id`() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
-        repository.create(
-            restaurantId = "restaurant-mesaflow-centro",
-            customerName = "Cliente Movil",
-            customerPhone = null,
-            partySize = 2,
-            reservationAt = "2026-08-01T20:00:00.000Z",
-            paymentMethod = PaymentMethod.CARD,
-        )
+        createReservation()
+        server.takeRequest()
+        server.enqueue(MockResponse().setResponseCode(201).setBody(secondReservationBody))
+        createReservation(name = "Cliente Movil 2")
         server.takeRequest()
 
         server.enqueue(MockResponse().setResponseCode(200).setBody(reservationBody))
-        val result = repository.refreshOwnReservation()
+        server.enqueue(MockResponse().setResponseCode(200).setBody(secondReservationBody))
+        // "Hoy" fijo al día de la reserva para que el test no caduque cuando
+        // la fecha del fixture quede en el pasado real.
+        val todayStart = java.time.Instant.parse("2026-08-01T00:00:00Z").toEpochMilli()
+        val result = repository.refreshOwnReservations(todayStartUtcMillis = todayStart)
 
         assertTrue(result is AppResult.Success)
-        val request = server.takeRequest()
-        assertTrue(request.path!!.endsWith("/restaurants/restaurant-mesaflow-centro/reservations/reservation-abc"))
+        assertEquals(listOf("reservation-abc", "reservation-def"), (result as AppResult.Success).data.map { it.id })
+        assertTrue(server.takeRequest().path!!.endsWith("/restaurants/restaurant-mesaflow-centro/reservations/reservation-abc"))
+        assertTrue(server.takeRequest().path!!.endsWith("/restaurants/restaurant-mesaflow-centro/reservations/reservation-def"))
     }
 
     @Test
-    fun `cancelOwnReservation cancela y limpia la referencia guardada`() = runBlocking {
+    fun `refreshOwnReservations olvida las reservas cerradas desde el panel y las inexistentes`() = runBlocking {
+        // Simula una reserva cancelada desde Angular y otra borrada del backend:
+        // ninguna debe seguir en el almacén local ni mostrarse como activa.
         server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
-        repository.create(
-            restaurantId = "restaurant-mesaflow-centro",
-            customerName = "Cliente Movil",
-            customerPhone = null,
-            partySize = 2,
-            reservationAt = "2026-08-01T20:00:00.000Z",
-            paymentMethod = PaymentMethod.CARD,
-        )
+        createReservation()
+        server.takeRequest()
+        server.enqueue(MockResponse().setResponseCode(201).setBody(secondReservationBody))
+        createReservation(name = "Cliente Movil 2")
+        server.takeRequest()
+
+        val cancelledBody = reservationBody.replace("\"status\": \"pending\"", "\"status\": \"cancelled\"")
+        server.enqueue(MockResponse().setResponseCode(200).setBody(cancelledBody))
+        server.enqueue(MockResponse().setResponseCode(404).setBody("{}"))
+        val result = repository.refreshOwnReservations()
+
+        assertTrue(result is AppResult.Success)
+        assertTrue((result as AppResult.Success).data.isEmpty())
+        assertTrue(reservationStore.currentOwnReservations().isEmpty())
+    }
+
+    @Test
+    fun `refreshOwnReservations olvida las reservas de un dia ya pasado`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
+        createReservation()
+        server.takeRequest()
+        server.enqueue(MockResponse().setResponseCode(201).setBody(secondReservationBody))
+        createReservation(name = "Cliente Movil 2")
+        server.takeRequest()
+
+        // reservation-abc queda en un día pasado ("hoy" es el 2 de agosto);
+        // reservation-def se mueve al día 3, así que sigue activa.
+        val futureBody = secondReservationBody.replace("2026-08-01T20:00:00.000Z", "2026-08-03T20:00:00.000Z")
+        server.enqueue(MockResponse().setResponseCode(200).setBody(reservationBody))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(futureBody))
+        val todayStart = java.time.Instant.parse("2026-08-02T00:00:00Z").toEpochMilli()
+
+        val result = repository.refreshOwnReservations(todayStartUtcMillis = todayStart)
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(listOf("reservation-def"), (result as AppResult.Success).data.map { it.id })
+        assertEquals(listOf("reservation-def"), reservationStore.currentOwnReservations().map { it.reservationId })
+    }
+
+    @Test
+    fun `una reserva de hoy no se considera pasada aunque su hora ya haya vencido`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
+        createReservation()
+        server.takeRequest()
+
+        // "Hoy" es el mismo 1 de agosto: aunque las 20:00 ya hayan pasado,
+        // la reserva es de hoy y debe seguir visible.
+        server.enqueue(MockResponse().setResponseCode(200).setBody(reservationBody))
+        val todayStart = java.time.Instant.parse("2026-08-01T00:00:00Z").toEpochMilli()
+
+        val result = repository.refreshOwnReservations(todayStartUtcMillis = todayStart)
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(listOf("reservation-abc"), (result as AppResult.Success).data.map { it.id })
+    }
+
+    @Test
+    fun `cancelOwnReservation cancela esa reserva y solo olvida su referencia`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
+        createReservation()
+        server.takeRequest()
+        server.enqueue(MockResponse().setResponseCode(201).setBody(secondReservationBody))
+        createReservation(name = "Cliente Movil 2")
         server.takeRequest()
 
         val cancelledBody = reservationBody.replace("\"status\": \"pending\"", "\"status\": \"cancelled\"")
         server.enqueue(MockResponse().setResponseCode(200).setBody(cancelledBody))
 
-        val result = repository.cancelOwnReservation()
+        val result = repository.cancelOwnReservation(
+            OwnReservationRef(restaurantId = "restaurant-mesaflow-centro", reservationId = "reservation-abc"),
+        )
 
         assertTrue(result is AppResult.Success)
         assertEquals(ReservationStatus.CANCELLED, (result as AppResult.Success).data.status)
-        assertNull(reservationStore.currentOwnReservation())
+        assertEquals(listOf("reservation-def"), reservationStore.currentOwnReservations().map { it.reservationId })
 
         val request = server.takeRequest()
         assertTrue(request.path!!.endsWith("/restaurants/restaurant-mesaflow-centro/reservations/reservation-abc/cancel"))
     }
 
     @Test
-    fun `cancelOwnReservation devuelve null cuando no hay ninguna reserva guardada`() = runBlocking {
-        assertNull(repository.cancelOwnReservation())
+    fun `un fallo al cancelar conserva la referencia guardada`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(201).setBody(reservationBody))
+        createReservation()
+        server.takeRequest()
+
+        server.enqueue(MockResponse().setResponseCode(500).setBody("{}"))
+        val result = repository.cancelOwnReservation(
+            OwnReservationRef(restaurantId = "restaurant-mesaflow-centro", reservationId = "reservation-abc"),
+        )
+
+        assertTrue(result is AppResult.Error)
+        assertEquals(listOf("reservation-abc"), reservationStore.currentOwnReservations().map { it.reservationId })
     }
 }

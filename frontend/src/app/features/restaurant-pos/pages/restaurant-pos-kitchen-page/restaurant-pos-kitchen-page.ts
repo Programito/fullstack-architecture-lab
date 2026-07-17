@@ -2,7 +2,7 @@ import { Component, computed, DestroyRef, effect, inject, signal, untracked } fr
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
-import { PreparationBoard, type PreparationLineCancel, type PreparationLineMove } from '../../components/preparation-board/preparation-board';
+import { PreparationBoard, type PreparationLineCancel, type PreparationLineMove, type PreparationLineServe } from '../../components/preparation-board/preparation-board';
 import type { PreparationBoardColumn, PreparationBoardColumnId } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
@@ -24,9 +24,25 @@ export class RestaurantPosKitchenPage {
 
   protected readonly preparationWarning = signal<string | null>(null);
   protected readonly soundEnabled = signal(false);
+  /** Búsqueda por nombre de plato (o número de mesa) para localizar una comanda de un vistazo. */
+  protected readonly searchQuery = signal('');
 
   private readonly knownLineIds = new Set<string>();
   private warmupDone = false;
+
+  protected readonly filteredPreparationColumns = computed<readonly PreparationBoardColumn[]>(() => {
+    const query = this.normalizeSearch(this.searchQuery());
+    const columns = this.store.preparationBoardColumns();
+    if (!query) return columns;
+    return columns.map((column) => ({
+      ...column,
+      cards: column.cards.filter(
+        (card) =>
+          this.normalizeSearch(card.line.productName).includes(query) ||
+          `${card.tableNumber}` === query,
+      ),
+    }));
+  });
 
   protected readonly pendingLineCount = computed(() =>
     this.countPreparationCards('pending'),
@@ -72,6 +88,23 @@ export class RestaurantPosKitchenPage {
     if (!apiStatus) return;
 
     this.api.updateRestaurantOrderLineStatus(restaurant.id, orderId, move.lineId, apiStatus)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
+  }
+
+  /**
+   * Atajo de cocina: marca la línea como servida directamente desde el
+   * tablero (columna "Preparado"), sin pasar por la página de Servicio.
+   * El tablero ya ha pedido confirmación antes de emitir este evento.
+   */
+  protected servePreparationLine(serve: PreparationLineServe): void {
+    this.store.markOrderLineServed(serve.tableId, serve.lineId);
+
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const orderId = this.store.ordersByTable()[serve.tableId]?.id;
+    if (!restaurant || !orderId) return;
+
+    this.api.updateRestaurantOrderLineStatus(restaurant.id, orderId, serve.lineId, 'served')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe();
   }
@@ -126,5 +159,13 @@ export class RestaurantPosKitchenPage {
 
   private countPreparationCards(columnId: PreparationBoardColumnId): number {
     return this.store.preparationBoardColumns().find((column) => column.id === columnId)?.cards.length ?? 0;
+  }
+
+  private normalizeSearch(value: string): string {
+    return value
+      .trim()
+      .toLocaleLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 }

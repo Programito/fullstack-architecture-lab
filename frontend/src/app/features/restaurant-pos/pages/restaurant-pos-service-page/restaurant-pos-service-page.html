@@ -1,5 +1,5 @@
 <main class="service-page min-h-dvh bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--ui-primary)_12%,transparent),transparent_30rem)]">
-  <header class="service-page__header theme-header sticky top-0 z-30 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
+  <header class="service-page__header theme-header sticky top-0 z-50 border-b px-4 py-3 shadow-sm backdrop-blur lg:px-6">
     <div class="service-page__header-inner mx-auto grid w-full max-w-[100rem] gap-4 2xl:grid-cols-[minmax(14rem,1fr)_minmax(30rem,auto)_minmax(15rem,1fr)] 2xl:items-center">
       <div class="service-page__title-block min-w-0">
         <p class="service-page__eyebrow theme-muted text-xs font-bold tracking-[0.16em] uppercase">{{ 'restaurantPos.service.eyebrow' | transloco }}</p>
@@ -56,7 +56,7 @@
       </div>
     </div>
 
-    <div data-testid="service-workflow-panel-shell" class="service-page__workflow-shell theme-panel w-full overflow-hidden rounded-xl border p-2 shadow-sm 2xl:sticky 2xl:top-24">
+    <div data-testid="service-workflow-panel-shell" class="service-page__workflow-shell theme-panel relative z-[80] w-full overflow-visible rounded-xl border p-2 shadow-sm 2xl:sticky 2xl:top-24">
       <app-service-table-panel
         class="w-full"
         [serviceInfo]="store.selectedServiceInfo()"
@@ -100,6 +100,7 @@
   [lastAddedProductId]="lastAddedProductId()"
   [productQuantities]="productQuantities()"
   [configuredLines]="configuredProductLines()"
+  [selectedOrderTotal]="store.selectedOrder()?.total ?? null"
   (closed)="closeProductSearch()"
   (finished)="closeProductSearch()"
   (queryChanged)="updateProductSearch($event)"
@@ -150,6 +151,7 @@
   [tableTitle]="selectedTableTitle()"
   [statusLabel]="cardGatewayStatusLabel()"
   [rejected]="cardGatewayStatus() === 'rejected'"
+  [loading]="isCharging()"
   (closed)="closeCardGateway()"
   (accepted)="acceptCardPayment()"
   (rejectedPayment)="rejectCardPayment()"

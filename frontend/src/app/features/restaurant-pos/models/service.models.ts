@@ -14,9 +14,11 @@ export interface OrderCourseGroup {
 export interface ServiceTableInfo {
   table: RestaurantTable;
   order: TableOrder;
+  paidOrders: TableOrder[];
   paidSummary?: {
     isPaid: boolean;
     lastPayment: TableOrder['lastCompletedPayment'] | null;
+    lastOrderTotal: number;
   };
   courseGroups: OrderCourseGroup[];
   pendingKitchenCount: number;

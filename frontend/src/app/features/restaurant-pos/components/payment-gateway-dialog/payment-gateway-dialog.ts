@@ -15,6 +15,7 @@ export class PaymentGatewayDialog {
   readonly tableTitle = input.required<string>();
   readonly statusLabel = input.required<string>();
   readonly rejected = input(false);
+  readonly loading = input(false);
 
   readonly closed = output<void>();
   readonly accepted = output<void>();

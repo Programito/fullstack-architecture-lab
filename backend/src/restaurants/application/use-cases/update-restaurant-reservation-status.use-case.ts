@@ -14,6 +14,8 @@ type UpdateRestaurantReservationStatusCommand = {
   restaurantId: string;
   reservationId: string;
   status: RestaurantReservation['status'];
+  /** Origen del cliente que pide el cambio (X-Client-Origin); solo se persiste al cancelar. */
+  cancelledByOrigin?: string | null;
 };
 
 @Injectable()
@@ -39,6 +41,7 @@ export class UpdateRestaurantReservationStatusUseCase {
         command.restaurantId,
         command.reservationId,
         command.status,
+        command.cancelledByOrigin ?? null,
       );
       return reservation ? ok(reservation) : err(reservationNotFound(command.reservationId));
     } catch (error) {

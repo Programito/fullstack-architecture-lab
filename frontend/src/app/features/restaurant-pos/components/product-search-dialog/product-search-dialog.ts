@@ -37,6 +37,7 @@ export class ProductSearchDialog {
   readonly lastAddedProductId = input<string | null>(null);
   readonly productQuantities = input<Record<string, number>>({});
   readonly configuredLines = input<readonly ProductPickerConfiguredLineInput[]>([]);
+  readonly selectedOrderTotal = input<number | null>(null);
 
   readonly closed = output<void>();
   readonly finished = output<void>();
@@ -117,6 +118,7 @@ export class ProductSearchDialog {
     { id: 'desserts', label: this.translate('restaurantPos.service.dessertProducts'), count: this.sectionProductCount('desserts') },
   ]);
   protected readonly productPickerSummary = computed(() => {
+    const selectedOrderTotal = this.selectedOrderTotal();
     const summaryProducts = this.allProducts().length ? this.allProducts() : this.products();
     const productById = new Map(summaryProducts.map((product) => [product.id, product]));
     let count = 0;
@@ -134,6 +136,10 @@ export class ProductSearchDialog {
 
     if (count === 0) {
       return '';
+    }
+
+    if (selectedOrderTotal !== null) {
+      total = selectedOrderTotal;
     }
 
     return this.translate('restaurantPos.service.productPickerSummary', {

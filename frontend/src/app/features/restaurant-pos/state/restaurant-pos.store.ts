@@ -53,6 +53,7 @@ export class RestaurantPosStore {
   // --- order delegates ---
   readonly products = this.order.products;
   readonly ordersByTable = this.order.ordersByTable;
+  readonly paidOrdersByTable = this.order.paidOrdersByTable;
   readonly occupiedTables = this.order.occupiedTables;
   readonly activeOrders = this.order.activeOrders;
   readonly kitchenQueue = this.order.kitchenQueue;
@@ -225,6 +226,10 @@ export class RestaurantPosStore {
     this.order.markOrderLinePreparing(tableId, lineIdOrProductId);
   }
 
+  markOrderLineServed(tableId: string, lineIdOrProductId: string): void {
+    this.order.markOrderLineServed(tableId, lineIdOrProductId);
+  }
+
   markOrderLineReady(tableId: string, lineIdOrProductId: string): void {
     this.order.markOrderLineReady(tableId, lineIdOrProductId);
   }
@@ -389,6 +394,8 @@ export class RestaurantPosStore {
     // si no, el panel sigue ofreciendo un botón Eliminar que el backend
     // rechaza para siempre (el DELETE solo admite líneas en estado
     // 'pending', y una línea cancelada ya no lo está).
+    const paidOrders = this.order.paidOrdersByTable()[table.id] ?? [];
+    const latestPaidOrder = paidOrders.at(-1) ?? null;
     const activeLines = orderVal.lines.filter((l) => l.status !== 'cancelled');
     const pendingKitchenCount = activeLines
       .filter((l) => l.status === 'pending')
@@ -399,10 +406,6 @@ export class RestaurantPosStore {
     const canMarkCleaning =
       table.status === 'occupied' || table.status === 'served' || table.status === 'payment_pending' || table.status === 'paid';
     const canFreeTable = table.status === 'paid' || table.status === 'cleaning';
-    const paidSummary = {
-      isPaid: table.status === 'paid' || orderVal.status === 'paid',
-      lastPayment: orderVal.lastCompletedPayment ?? null,
-    };
 
     const courseGroups = COURSE_SERVICE_ORDER.map((course) => {
       const lines = activeLines.filter((l) => l.course === course);
@@ -437,7 +440,29 @@ export class RestaurantPosStore {
                 ? { type: 'free_table', count: 0 }
                 : { type: 'none', count: 0 };
 
-    return { table, order: orderVal, paidSummary, courseGroups, pendingKitchenCount, servicePhase, nextAction, canSendToKitchen, canMarkServed, canCharge, canMarkCleaning, canFreeTable };
+    return {
+      table,
+      order: orderVal,
+      paidOrders,
+      ...(latestPaidOrder
+        ? {
+            paidSummary: {
+              isPaid: true,
+              lastPayment: latestPaidOrder.lastCompletedPayment ?? null,
+              lastOrderTotal: latestPaidOrder.total,
+            },
+          }
+        : {}),
+      courseGroups,
+      pendingKitchenCount,
+      servicePhase,
+      nextAction,
+      canSendToKitchen,
+      canMarkServed,
+      canCharge,
+      canMarkCleaning,
+      canFreeTable,
+    };
   }
 
   private setError(message: string): void {

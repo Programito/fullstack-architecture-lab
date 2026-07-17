@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { OrderCourse, OrderLineProductSnapshot, PreparationBoardCard, PreparationBoardColumn } from '../../models/restaurant-pos.models';
-import { PreparationBoard, type PreparationLineCancel, type PreparationLineMove } from './preparation-board';
+import { PreparationBoard, type PreparationLineCancel, type PreparationLineMove, type PreparationLineServe } from './preparation-board';
 
 describe('PreparationBoard', () => {
   const productSnapshot = (
@@ -216,7 +216,25 @@ describe('PreparationBoard', () => {
     expect(lineMoved).toHaveBeenCalledWith({ tableId: 'table-4', lineId: 'line-platter', targetColumnId: 'preparing' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Preparado' }));
-    expect(lineMoved).toHaveBeenCalledWith({ tableId: 'table-2', lineId: 'line-combo', targetColumnId: 'ready' });
+    expect(screen.getByRole('heading', { name: 'Finalizar preparación' })).toBeTruthy();
+    expect(lineMoved).not.toHaveBeenCalledWith({ tableId: 'table-2', lineId: 'line-combo', targetColumnId: 'ready' });
+  });
+
+  it('can confirm a ready line directly as served from the preparation dialog', async () => {
+    const i18n = provideI18nTesting();
+    const lineServed = vi.fn<(serve: PreparationLineServe) => void>();
+
+    const { fixture } = await render(PreparationBoard, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: { columns, servedCards: [], warning: null },
+    });
+    fixture.componentInstance.lineServed.subscribe(lineServed);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preparado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar como servido' }));
+
+    expect(lineServed).toHaveBeenCalledWith({ tableId: 'table-2', lineId: 'line-combo' });
   });
 
   it('shows the served count button when there are served cards', async () => {

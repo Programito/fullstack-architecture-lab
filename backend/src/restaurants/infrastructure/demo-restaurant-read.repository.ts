@@ -603,6 +603,7 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     restaurantId: string,
     reservationId: string,
     status: RestaurantReservation['status'],
+    cancelledByOrigin?: string | null,
   ): Promise<RestaurantReservation | null> {
     const reservationsMap = new Map(this.reservations);
     const reservations = reservationsMap.get(restaurantId);
@@ -623,7 +624,11 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
       );
     }
 
-    reservations[reservationIndex] = { ...reservation, status };
+    reservations[reservationIndex] = {
+      ...reservation,
+      status,
+      ...(status === 'cancelled' ? { cancelledByOrigin: cancelledByOrigin ?? null } : {}),
+    };
     reservationsMap.set(restaurantId, reservations);
     this.reservations = [...reservationsMap.entries()];
 

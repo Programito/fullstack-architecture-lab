@@ -277,6 +277,8 @@ export type RestaurantReservation = {
   depositPaidAt: string | null;
   /** Origen del cliente que creo la reserva (header X-Client-Origin); null en reservas antiguas. */
   clientOrigin?: string | null;
+  /** Origen del cliente que la cancelo; solo con status=cancelled, null en cancelaciones antiguas. */
+  cancelledByOrigin?: string | null;
 };
 
 export type CreateRestaurantReservationInput = {

@@ -861,29 +861,37 @@ describe('RestaurantPosStore', () => {
     expect(store.ordersByTable()['table-1'].lines[0].note).toBeUndefined();
   });
 
-  it('marks the selected table as paid when charging is accepted', () => {
+  it('archives the paid order and opens a new empty order when charging is accepted', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');
     store.chargeSelectedTable();
 
     const table = store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1');
+    const activeOrder = store.ordersByTable()['table-1'];
+    const paidOrder = store.paidOrdersByTable()['table-1']?.[0];
 
     expect(table?.status).toBe('paid');
-    expect(store.ordersByTable()['table-1'].status).toBe('paid');
-  });
-
-  it('derives the paid summary from a paid selected table and its last completed payment', () => {
-    store.selectTable('table-1');
-    store.hydrateServicePoint({
-      table: {
-        id: 'table-1',
-        number: 1,
-        capacity: 4,
+    expect(table?.total).toBe(0);
+    expect(activeOrder).toEqual(
+      expect.objectContaining({
+        tableId: 'table-1',
+        status: 'open',
+        paymentMethod: 'pending',
+        total: 0,
+        lines: [],
+      }),
+    );
+    expect(paidOrder).toEqual(
+      expect.objectContaining({
+        tableId: 'table-1',
         status: 'paid',
         total: 12.5,
-        openDuration: '25m',
-      },
-    });
+      }),
+    );
+  });
+
+  it('derives the paid summary from the latest paid order in history', () => {
+    store.selectTable('table-1');
     store.hydrateServicePointOrder('table-1', {
       tableId: 'table-1',
       total: 12.5,
@@ -898,6 +906,7 @@ describe('RestaurantPosStore', () => {
         paidAt: '2026-07-17T12:30:00.000Z',
       },
     });
+    store.chargeSelectedTable();
 
     expect(store.selectedServiceInfo()?.paidSummary).toEqual({
       isPaid: true,
@@ -908,6 +917,30 @@ describe('RestaurantPosStore', () => {
         status: 'completed',
         paidAt: '2026-07-17T12:30:00.000Z',
       },
+      lastOrderTotal: 12.5,
+    });
+  });
+
+  it('preserves paid history when adding a new order after charging without freeing the table', () => {
+    store.selectTable('table-1');
+    store.addProductToSelectedTable('product-1');
+    store.chargeSelectedTable();
+
+    store.addProductToSelectedTable('product-3');
+
+    expect(store.restaurantTables().find((restaurantTable) => restaurantTable.id === 'table-1')?.status).toBe('occupied');
+    expect(store.ordersByTable()['table-1']).toEqual(
+      expect.objectContaining({
+        status: 'open',
+        total: 4.5,
+      }),
+    );
+    expect(store.ordersByTable()['table-1'].lines.map((line) => line.productId)).toEqual(['product-3']);
+    expect(store.paidOrdersByTable()['table-1']).toHaveLength(1);
+    expect(store.selectedServiceInfo()?.paidSummary).toEqual({
+      isPaid: true,
+      lastPayment: null,
+      lastOrderTotal: 12.5,
     });
   });
 

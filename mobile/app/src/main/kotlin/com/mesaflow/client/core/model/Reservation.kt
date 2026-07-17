@@ -17,7 +17,22 @@ data class Reservation(
     // fue aprobado.
     val depositAmountCents: Int,
     val depositPaidAt: String?,
-)
+) {
+    /** true si la reserva ya no ocupa mesa (cancelada o no-show): puede dejar de mostrarse. */
+    val isClosed: Boolean
+        get() = status == ReservationStatus.CANCELLED || status == ReservationStatus.NO_SHOW
+
+    /**
+     * true si la reserva es de un día ya pasado (ayer o antes) respecto a la
+     * medianoche UTC de hoy — el mismo criterio de día UTC que usa el
+     * DatePicker del formulario (ver ReservationDateRules). Una fecha que no
+     * se puede parsear cuenta como no-pasada: mejor mostrar una reserva rara
+     * que borrar una válida por un formato inesperado.
+     */
+    fun isFromPastDay(todayStartUtcMillis: Long): Boolean =
+        runCatching { java.time.Instant.parse(reservationAt).toEpochMilli() < todayStartUtcMillis }
+            .getOrDefault(false)
+}
 
 /**
  * Espejo del campo `status` del backend. `UNKNOWN` es la reserva de un valor
@@ -34,9 +49,9 @@ enum class ReservationStatus {
 }
 
 /**
- * Referencia mínima a la reserva propia, persistida en [com.mesaflow.client.core.datastore.ReservationStore].
+ * Referencia mínima a una reserva propia, persistida en [com.mesaflow.client.core.datastore.ReservationStore].
  * No hay listado de reservas para el cliente (ver ReservationsApi), así que
- * esta referencia es la única forma de volver a encontrarla tras cerrar la app.
+ * estas referencias son la única forma de volver a encontrarlas tras cerrar la app.
  */
 data class OwnReservationRef(
     val restaurantId: String,

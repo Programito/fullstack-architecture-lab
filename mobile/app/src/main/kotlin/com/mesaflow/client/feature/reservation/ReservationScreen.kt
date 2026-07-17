@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,10 +69,11 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /**
- * Reserva propia del cliente: crear una nueva (fecha, hora, comensales,
- * fianza fake), ver su estado y cancelarla. No hay listado de reservas
- * (ver [ReservationViewModel]): esta pantalla solo conoce la reserva que
- * ella misma creó, nunca las de otros clientes del restaurante.
+ * Reservas propias del cliente: la lista de reservas activas creadas desde
+ * esta app (cada una cancelable por separado), más un formulario para añadir
+ * una nueva (fecha, hora, comensales, fianza fake). No hay listado del
+ * restaurante (ver [ReservationViewModel]): esta pantalla solo conoce las
+ * reservas que ella misma creó, nunca las de otros clientes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +93,10 @@ fun ReservationScreen(
         }
     }
 
+    // Desde el formulario, si hay reservas activas detrás, la flecha vuelve a
+    // la lista en vez de salir de la pantalla.
+    val formDismissesToList = uiState.showForm && uiState.reservations.isNotEmpty()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -96,7 +104,9 @@ fun ReservationScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.reservation_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        if (formDismissesToList) viewModel.closeNewReservationForm() else onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.reservation_back))
                     }
                 },
@@ -105,17 +115,18 @@ fun ReservationScreen(
     ) { innerPadding ->
         when {
             !uiState.hasChecked -> LoadingBody(innerPadding)
-            uiState.reservation != null && !uiState.reservation!!.isClosed ->
-                ReservationStatusCard(
-                    reservation = uiState.reservation!!,
-                    isLoading = uiState.isLoading,
-                    onCancel = viewModel::cancelReservation,
-                    contentPadding = innerPadding,
-                )
-            else ->
+            uiState.isFormVisible ->
                 ReservationForm(
                     isLoading = uiState.isLoading,
                     onSubmit = viewModel::createReservation,
+                    contentPadding = innerPadding,
+                )
+            else ->
+                ReservationList(
+                    reservations = uiState.reservations,
+                    isLoading = uiState.isLoading,
+                    onCancel = viewModel::cancelReservation,
+                    onNewReservation = viewModel::openNewReservationForm,
                     contentPadding = innerPadding,
                 )
         }
@@ -137,52 +148,119 @@ private fun LoadingBody(contentPadding: PaddingValues, modifier: Modifier = Modi
 }
 
 @Composable
-private fun ReservationStatusCard(
-    reservation: Reservation,
+private fun ReservationList(
+    reservations: List<Reservation>,
     isLoading: Boolean,
-    onCancel: () -> Unit,
+    onCancel: (Reservation) -> Unit,
+    onNewReservation: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    // Reserva pendiente de confirmar su cancelación: cancelar es irreversible
+    // y la fianza no se devuelve, así que nunca se cancela con un solo toque.
+    var pendingCancel by remember { mutableStateOf<Reservation?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(contentPadding)
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
     ) {
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-            Column(Modifier.padding(20.dp)) {
-                Text(
-                    text = stringResource(reservation.status.toStatusLabelRes()),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = reservation.reservationAt.toDisplayDateTime(),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.reservation_party_size, reservation.partySize),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(
-                        R.string.reservation_deposit_paid,
-                        PriceFormatter.format(reservation.depositAmountCents.toLong(), "EUR"),
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        reservations.forEach { reservation ->
+            ReservationStatusCard(
+                reservation = reservation,
+                isLoading = isLoading,
+                onCancel = { pendingCancel = reservation },
+            )
+            Spacer(Modifier.height(16.dp))
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(8.dp))
         if (isLoading) {
             CircularProgressIndicator(Modifier.height(40.dp))
         } else {
-            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onNewReservation, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.reservation_new))
+            }
+        }
+    }
+
+    pendingCancel?.let { reservation ->
+        AlertDialog(
+            onDismissRequest = { pendingCancel = null },
+            title = { Text(stringResource(R.string.reservation_cancel_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.reservation_cancel_confirm_message,
+                        PriceFormatter.format(reservation.depositAmountCents.toLong(), "EUR"),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingCancel = null
+                        onCancel(reservation)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text(stringResource(R.string.reservation_cancel)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingCancel = null }) {
+                    Text(stringResource(R.string.reservation_cancel_keep))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ReservationStatusCard(
+    reservation: Reservation,
+    isLoading: Boolean,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Text(
+                text = stringResource(reservation.status.toStatusLabelRes()),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = reservation.reservationAt.toDisplayDateTime(),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.reservation_party_size, reservation.partySize),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(
+                    R.string.reservation_deposit_paid,
+                    PriceFormatter.format(reservation.depositAmountCents.toLong(), "EUR"),
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(
+                onClick = onCancel,
+                enabled = !isLoading,
+                // Cancelar es destructivo (la fianza no se devuelve): en rojo,
+                // que no parezca una acción neutra más.
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(stringResource(R.string.reservation_cancel))
             }
         }
@@ -208,7 +286,8 @@ private fun ReservationForm(
     var customerPhone by remember { mutableStateOf("") }
     var partySize by remember { mutableIntStateOf(2) }
     var notes by remember { mutableStateOf("") }
-    var selectedMethod by remember { mutableStateOf(PaymentMethod.CARD) }
+    var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
+    var submitAttempted by remember { mutableStateOf(false) }
     val todayMillis = remember { todayUtcMillis() }
     var selectedDateMillis by remember { mutableStateOf<Long?>(todayMillis) }
     var selectedHour by remember { mutableIntStateOf(21) }
@@ -227,7 +306,23 @@ private fun ReservationForm(
             .toString()
     }
     val depositAmountCents = calculateReservationDepositCents(partySize)
-    val canSubmit = customerName.isNotBlank() && partySize >= 1 && reservationAt != null && !isLoading
+    val hasBaseReservationData = hasBaseReservationFormData(
+        customerName = customerName,
+        partySize = partySize,
+        reservationAt = reservationAt,
+        isLoading = isLoading,
+    )
+    val canSubmit = canSubmitReservationForm(
+        customerName = customerName,
+        partySize = partySize,
+        reservationAt = reservationAt,
+        paymentMethod = selectedMethod,
+        isLoading = isLoading,
+    )
+    val showPaymentMethodError = shouldShowReservationPaymentMethodError(
+        submitAttempted = submitAttempted,
+        paymentMethod = selectedMethod,
+    )
 
     Column(
         modifier = modifier
@@ -297,20 +392,36 @@ private fun ReservationForm(
             label = stringResource(R.string.checkout_method_card),
             selected = selectedMethod == PaymentMethod.CARD,
             enabled = !isLoading,
-            onClick = { selectedMethod = PaymentMethod.CARD },
+            onClick = {
+                selectedMethod = PaymentMethod.CARD
+                submitAttempted = false
+            },
         )
         ReservationPaymentMethodRow(
             label = stringResource(R.string.checkout_method_bizum),
             selected = selectedMethod == PaymentMethod.BIZUM,
             enabled = !isLoading,
-            onClick = { selectedMethod = PaymentMethod.BIZUM },
+            onClick = {
+                selectedMethod = PaymentMethod.BIZUM
+                submitAttempted = false
+            },
         )
         ReservationPaymentMethodRow(
             label = stringResource(R.string.checkout_method_cash),
             selected = selectedMethod == PaymentMethod.CASH,
             enabled = !isLoading,
-            onClick = { selectedMethod = PaymentMethod.CASH },
+            onClick = {
+                selectedMethod = PaymentMethod.CASH
+                submitAttempted = false
+            },
         )
+        if (showPaymentMethodError) {
+            Text(
+                text = stringResource(R.string.reservation_payment_method_required),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(Modifier.height(4.dp))
         Text(
             text = stringResource(R.string.checkout_mock_note),
@@ -323,16 +434,18 @@ private fun ReservationForm(
         } else {
             Button(
                 onClick = {
+                    submitAttempted = true
+                    val paymentMethod = selectedMethod ?: return@Button
                     onSubmit(
                         customerName.trim(),
                         customerPhone.trim().ifBlank { null },
                         partySize,
                         reservationAt!!,
                         notes.trim().ifBlank { null },
-                        selectedMethod,
+                        paymentMethod,
                     )
                 },
-                enabled = canSubmit,
+                enabled = hasBaseReservationData,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.reservation_submit))
@@ -432,3 +545,23 @@ private fun AppError.toReservationErrorRes(): Int = when (this) {
     AppError.PaymentDeclined -> R.string.reservation_error_payment_declined
     else -> R.string.entry_error_generic
 }
+
+internal fun hasBaseReservationFormData(
+    customerName: String,
+    partySize: Int,
+    reservationAt: String?,
+    isLoading: Boolean,
+): Boolean = customerName.isNotBlank() && partySize >= 1 && reservationAt != null && !isLoading
+
+internal fun canSubmitReservationForm(
+    customerName: String,
+    partySize: Int,
+    reservationAt: String?,
+    paymentMethod: PaymentMethod?,
+    isLoading: Boolean,
+): Boolean = hasBaseReservationFormData(customerName, partySize, reservationAt, isLoading) && paymentMethod != null
+
+internal fun shouldShowReservationPaymentMethodError(
+    submitAttempted: Boolean,
+    paymentMethod: PaymentMethod?,
+): Boolean = submitAttempted && paymentMethod == null

@@ -13,6 +13,7 @@ export type ProductPickerConfiguredLineInput = {
   productId: string;
   quantity: number;
   summary: string;
+  total?: number;
 };
 
 export type ProductPickerConfiguredLine = ProductPickerConfiguredLineInput & {

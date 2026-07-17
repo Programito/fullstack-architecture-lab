@@ -7,9 +7,9 @@ import com.mesaflow.client.core.common.AppResult
 import com.mesaflow.client.core.data.AuthRepository
 import com.mesaflow.client.core.data.ReservationRepository
 import com.mesaflow.client.core.datastore.SessionStore
+import com.mesaflow.client.core.model.OwnReservationRef
 import com.mesaflow.client.core.model.PaymentMethod
 import com.mesaflow.client.core.model.Reservation
-import com.mesaflow.client.core.model.ReservationStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,17 +20,24 @@ import kotlinx.coroutines.launch
 
 data class ReservationUiState(
     val isLoading: Boolean = false,
-    /** null hasta la primera respuesta: no confundir con "no hay reserva" (ver [hasChecked]). */
+    /** false hasta la primera respuesta: no confundir con "no hay reservas" (ver [reservations]). */
     val hasChecked: Boolean = false,
-    val reservation: Reservation? = null,
+    /** Reservas propias activas (las cerradas se descartan al refrescar). */
+    val reservations: List<Reservation> = emptyList(),
+    /** true cuando el usuario ha pedido crear una reserva nueva teniendo ya otras activas. */
+    val showForm: Boolean = false,
     val error: AppError? = null,
-)
+) {
+    /** El formulario también es el estado vacío: sin reservas no hay lista que mostrar. */
+    val isFormVisible: Boolean
+        get() = showForm || (hasChecked && reservations.isEmpty())
+}
 
 /**
- * Gestiona la reserva propia del cliente: crearla, consultar su estado y
- * cancelarla. No hay listado (ver [ReservationRepository]), así que esta
- * pantalla solo conoce la reserva que ella misma creó (persistida en
- * ReservationStore) o ninguna.
+ * Gestiona las reservas propias del cliente: crearlas, consultar su estado y
+ * cancelarlas una a una. No hay listado del restaurante (ver
+ * [ReservationRepository]), así que esta pantalla solo conoce las reservas que
+ * ella misma creó (persistidas en ReservationStore).
  */
 @HiltViewModel
 class ReservationViewModel @Inject constructor(
@@ -46,11 +53,14 @@ class ReservationViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val existing = reservationRepository.refreshOwnReservation()
-            if (existing == null) {
-                _uiState.update { it.copy(hasChecked = true) }
-            } else {
-                applyResult(existing)
+            when (val existing = withFreshSessionRetry { reservationRepository.refreshOwnReservations() }) {
+                null -> _uiState.update { it.copy(hasChecked = true) }
+                is AppResult.Success -> _uiState.update {
+                    it.copy(hasChecked = true, reservations = existing.data)
+                }
+                is AppResult.Error -> _uiState.update {
+                    it.copy(hasChecked = true, error = existing.error)
+                }
             }
         }
     }
@@ -66,12 +76,10 @@ class ReservationViewModel @Inject constructor(
         if (_uiState.value.isLoading) return
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            when (val idResult = ensureRestaurantId()) {
-                is AppResult.Error -> _uiState.update {
-                    it.copy(isLoading = false, hasChecked = true, error = idResult.error)
-                }
-                is AppResult.Success -> {
-                    val result = reservationRepository.create(
+            val result = withFreshSessionRetry {
+                when (val idResult = ensureRestaurantId()) {
+                    is AppResult.Error -> AppResult.Error(idResult.error)
+                    is AppResult.Success -> reservationRepository.create(
                         restaurantId = idResult.data,
                         customerName = customerName,
                         customerPhone = customerPhone,
@@ -80,27 +88,75 @@ class ReservationViewModel @Inject constructor(
                         notes = notes,
                         paymentMethod = paymentMethod,
                     )
-                    applyResult(result)
                 }
+            }
+            when (result) {
+                is AppResult.Success -> _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        hasChecked = true,
+                        reservations = it.reservations + result.data,
+                        showForm = false,
+                    )
+                }
+                is AppResult.Error -> _uiState.update {
+                    it.copy(isLoading = false, hasChecked = true, error = result.error)
+                }
+                null -> _uiState.update { it.copy(isLoading = false, hasChecked = true) }
             }
         }
     }
 
-    fun cancelReservation() {
+    fun cancelReservation(reservation: Reservation) {
         if (_uiState.value.isLoading) return
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            val result = reservationRepository.cancelOwnReservation()
-            if (result == null) {
-                _uiState.update { it.copy(isLoading = false) }
-                return@launch
+            val ref = OwnReservationRef(restaurantId = reservation.restaurantId, reservationId = reservation.id)
+            when (val result = withFreshSessionRetry { reservationRepository.cancelOwnReservation(ref) }) {
+                is AppResult.Success -> _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        reservations = it.reservations.filterNot { r -> r.id == reservation.id },
+                    )
+                }
+                is AppResult.Error -> _uiState.update {
+                    it.copy(isLoading = false, error = result.error)
+                }
+                null -> _uiState.update { it.copy(isLoading = false) }
             }
-            applyResult(result)
         }
+    }
+
+    /** El usuario quiere añadir otra reserva manteniendo las actuales. */
+    fun openNewReservationForm() {
+        _uiState.update { it.copy(showForm = true) }
+    }
+
+    /** Vuelve de la creación a la lista (solo tiene sentido si hay reservas que listar). */
+    fun closeNewReservationForm() {
+        _uiState.update { it.copy(showForm = false) }
     }
 
     fun onErrorShown() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    /**
+     * Ejecuta [block] y, si falla con Unauthorized, hace un login demo fresco
+     * y reintenta UNA vez. Cubre el caso de la sesión persistida muerta (la
+     * cookie de refresh caducó o el backend se reinició): el TokenAuthenticator
+     * ya limpia esa sesión al fallar el refresh, pero sin este reintento la
+     * petición original se perdía — p. ej. enviabas una reserva, llegaba el
+     * 401 y volvías al formulario como si no la hubieras creado.
+     */
+    private suspend fun <T> withFreshSessionRetry(block: suspend () -> AppResult<T>?): AppResult<T>? {
+        val first = block()
+        if (first !is AppResult.Error || first.error != AppError.Unauthorized) return first
+        restaurantId = null
+        return when (val login = authRepository.demoLogin()) {
+            is AppResult.Error -> AppResult.Error(login.error)
+            is AppResult.Success -> block()
+        }
     }
 
     /**
@@ -124,19 +180,4 @@ class ReservationViewModel @Inject constructor(
         restaurantId = id
         return AppResult.Success(id)
     }
-
-    private fun applyResult(result: AppResult<Reservation>) {
-        when (result) {
-            is AppResult.Success -> _uiState.update {
-                it.copy(isLoading = false, hasChecked = true, reservation = result.data)
-            }
-            is AppResult.Error -> _uiState.update {
-                it.copy(isLoading = false, hasChecked = true, error = result.error)
-            }
-        }
-    }
 }
-
-/** true si la reserva ya no ocupa mesa (cancelada o no-show): la UI puede ofrecer crear una nueva. */
-val Reservation.isClosed: Boolean
-    get() = status == ReservationStatus.CANCELLED || status == ReservationStatus.NO_SHOW

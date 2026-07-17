@@ -13,6 +13,7 @@ import type {
   OrderLine,
   OrderLineProductSnapshot,
   OrdersByTable,
+  PaidOrdersByTable,
   PaymentMethod,
   PreparationBoardColumn,
   PreparationBoardColumnId,
@@ -39,9 +40,11 @@ export class RestaurantOrderStore {
   private readonly menuValidation = inject(MenuValidationService);
 
   private readonly _ordersByTable = signal<OrdersByTable>({});
+  private readonly _paidOrdersByTable = signal<PaidOrdersByTable>({});
   private readonly _backendProducts = signal<Product[] | null>(null);
 
   readonly ordersByTable = this._ordersByTable.asReadonly();
+  readonly paidOrdersByTable = this._paidOrdersByTable.asReadonly();
   readonly products = computed(() => this._backendProducts() ?? this.menu.products());
 
   readonly occupiedTables = computed(
@@ -110,10 +113,14 @@ export class RestaurantOrderStore {
       {},
     );
     this._ordersByTable.set(next);
+    this._paidOrdersByTable.update((history) =>
+      tables.reduce<PaidOrdersByTable>((acc, table) => ({ ...acc, [table.id]: history[table.id] ?? [] }), {}),
+    );
   }
 
   removeTableOrder(tableId: string): void {
     this._ordersByTable.update(({ [tableId]: _removed, ...rest }) => rest);
+    this._paidOrdersByTable.update(({ [tableId]: _removed, ...rest }) => rest);
   }
 
   createEmptyOrder(tableId: string): TableOrder {
@@ -289,7 +296,22 @@ export class RestaurantOrderStore {
 
   chargeTable(tableId: string): void {
     const order = this.ensureOrder(tableId);
-    this.applyOrderStatus(tableId, order, 'paid', 'paid');
+    const paidOrder = structuredClone({
+      ...order,
+      status: 'paid' as const,
+      lines: this.updateLinesForStatus(order.lines, 'paid'),
+    });
+
+    this._paidOrdersByTable.update((history) => ({
+      ...history,
+      [tableId]: [...(history[tableId] ?? []), paidOrder],
+    }));
+    this.setOrder(tableId, this.createEmptyOrder(tableId));
+    this.floor.updateTable(tableId, {
+      status: 'paid',
+      total: 0,
+      cleaningStartedAt: undefined,
+    });
   }
 
   markPaymentPending(tableId: string): void {

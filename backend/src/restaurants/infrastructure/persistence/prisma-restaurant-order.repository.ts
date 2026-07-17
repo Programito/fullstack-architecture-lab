@@ -70,6 +70,7 @@ type RawOrderLine = {
   taxRatePercentSnapshot: { toString(): string } | null;
   taxCents: number;
   status: string;
+  sentToKitchenAt?: Date | null;
   kitchenNote: string | null;
   cancellationReason: string | null;
   cancelledAt: Date | null;
@@ -633,9 +634,12 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     });
     if (!order) return null;
 
+    // Enviar a cocina NO empieza la preparacion: la linea queda en la columna
+    // "Pendiente" del tablero de cocina (status pending + sentToKitchenAt) y
+    // es cocina quien la mueve a 'preparing' cuando se pone con ella.
     await this.prisma.orderLine.updateMany({
-      where: { orderId: order.id, status: 'pending' },
-      data: { status: 'preparing' },
+      where: { orderId: order.id, status: 'pending', sentToKitchenAt: null },
+      data: { sentToKitchenAt: new Date() },
     });
 
     return this.findById(restaurantId, order.id);
@@ -651,8 +655,17 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     await this.prisma.orderLine.updateMany({
       where: {
         orderId: order.id,
-        ...(lineIds?.length ? { id: { in: lineIds } } : {}),
-        status: { in: lineIds?.length ? ['pending', 'preparing', 'ready'] : ['preparing', 'ready'] },
+        ...(lineIds?.length
+          ? { id: { in: lineIds }, status: { in: ['pending', 'preparing', 'ready'] } }
+          : {
+            // Sin lineIds ("Marcar servido" de la mesa entera) se sirven las
+            // lineas en curso Y las ya enviadas a cocina (pending +
+            // sentToKitchenAt), pero NO las anadidas sin enviar todavia.
+            OR: [
+              { status: { in: ['preparing', 'ready'] } },
+              { status: 'pending', sentToKitchenAt: { not: null } },
+            ],
+          }),
       },
       data: { status: 'served' },
     });
@@ -775,7 +788,14 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       taxRateName: line.taxRateNameSnapshot,
       taxRatePercent: line.taxRatePercentSnapshot ? Number(line.taxRatePercentSnapshot.toString()) : null,
       taxCents: line.taxCents,
-      status: line.status as OrderLineStatus,
+      // En BD la linea enviada a cocina sigue en 'pending' (cocina aun no ha
+      // empezado); la marca sentToKitchenAt es lo que la distingue de una
+      // linea recien anadida. Hacia fuera se expone como 'sent_to_kitchen',
+      // el mismo estado que ya usan el repo demo y el tablero de cocina.
+      status:
+        line.status === 'pending' && line.sentToKitchenAt
+          ? 'sent_to_kitchen'
+          : (line.status as OrderLineStatus),
       kitchenNote: line.kitchenNote,
       cancellationReason: line.cancellationReason,
       cancelledAt: line.cancelledAt?.toISOString() ?? null,

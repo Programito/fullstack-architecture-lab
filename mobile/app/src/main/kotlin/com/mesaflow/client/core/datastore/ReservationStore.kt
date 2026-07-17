@@ -12,42 +12,81 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
- * Guarda la referencia a la última reserva propia creada desde esta app.
+ * Guarda las referencias a las reservas propias creadas desde esta app.
  * No existe un listado de reservas para el cliente (ver ReservationsApi),
- * así que esta es la única forma de volver a consultarla o cancelarla tras
+ * así que esta es la única forma de volver a consultarlas o cancelarlas tras
  * cerrar y reabrir la app. Usa el mismo DataStore que [SessionStore] pero
- * con claves propias (own_reservation_*) para no colisionar con las de
+ * con claves propias (own_reservation*) para no colisionar con las de
  * sesión/mesa.
+ *
+ * Formato: una sola preferencia de texto con una referencia por línea,
+ * `restaurantId|reservationId`. Las claves antiguas de reserva única
+ * (own_reservation_restaurant_id / own_reservation_id) se siguen leyendo
+ * como migración y se eliminan en la primera escritura.
  */
 @Singleton
 class ReservationStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
 
-    val ownReservation: Flow<OwnReservationRef?> = dataStore.data.map { prefs ->
-        val reservationId = prefs[KEY_RESERVATION_ID] ?: return@map null
-        val restaurantId = prefs[KEY_RESTAURANT_ID] ?: return@map null
-        OwnReservationRef(restaurantId = restaurantId, reservationId = reservationId)
+    val ownReservations: Flow<List<OwnReservationRef>> = dataStore.data.map { prefs ->
+        readRefs(prefs)
     }
 
-    suspend fun currentOwnReservation(): OwnReservationRef? = ownReservation.first()
+    suspend fun currentOwnReservations(): List<OwnReservationRef> = ownReservations.first()
 
-    suspend fun saveOwnReservation(ref: OwnReservationRef) {
+    /** Primera reserva guardada, si hay alguna (conveniencia/compatibilidad). */
+    suspend fun currentOwnReservation(): OwnReservationRef? = currentOwnReservations().firstOrNull()
+
+    suspend fun addOwnReservation(ref: OwnReservationRef) {
         dataStore.edit { prefs ->
-            prefs[KEY_RESTAURANT_ID] = ref.restaurantId
-            prefs[KEY_RESERVATION_ID] = ref.reservationId
+            val refs = readRefs(prefs)
+            writeRefs(prefs, if (refs.contains(ref)) refs else refs + ref)
         }
     }
 
-    suspend fun clearOwnReservation() {
+    suspend fun removeOwnReservation(ref: OwnReservationRef) {
         dataStore.edit { prefs ->
-            prefs.remove(KEY_RESTAURANT_ID)
-            prefs.remove(KEY_RESERVATION_ID)
+            writeRefs(prefs, readRefs(prefs) - ref)
         }
+    }
+
+    suspend fun clearOwnReservations() {
+        dataStore.edit { prefs ->
+            writeRefs(prefs, emptyList())
+        }
+    }
+
+    private fun readRefs(prefs: Preferences): List<OwnReservationRef> {
+        val encoded = prefs[KEY_RESERVATIONS]
+        if (encoded != null) {
+            return encoded.lineSequence()
+                .mapNotNull { line ->
+                    val parts = line.split(SEPARATOR, limit = 2)
+                    if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
+                        OwnReservationRef(restaurantId = parts[0], reservationId = parts[1])
+                    } else {
+                        null
+                    }
+                }
+                .toList()
+        }
+        // Migración desde el formato antiguo de reserva única.
+        val legacyReservationId = prefs[LEGACY_KEY_RESERVATION_ID] ?: return emptyList()
+        val legacyRestaurantId = prefs[LEGACY_KEY_RESTAURANT_ID] ?: return emptyList()
+        return listOf(OwnReservationRef(restaurantId = legacyRestaurantId, reservationId = legacyReservationId))
+    }
+
+    private fun writeRefs(prefs: androidx.datastore.preferences.core.MutablePreferences, refs: List<OwnReservationRef>) {
+        prefs[KEY_RESERVATIONS] = refs.joinToString("\n") { "${it.restaurantId}$SEPARATOR${it.reservationId}" }
+        prefs.remove(LEGACY_KEY_RESTAURANT_ID)
+        prefs.remove(LEGACY_KEY_RESERVATION_ID)
     }
 
     private companion object {
-        val KEY_RESTAURANT_ID = stringPreferencesKey("own_reservation_restaurant_id")
-        val KEY_RESERVATION_ID = stringPreferencesKey("own_reservation_id")
+        const val SEPARATOR = "|"
+        val KEY_RESERVATIONS = stringPreferencesKey("own_reservations")
+        val LEGACY_KEY_RESTAURANT_ID = stringPreferencesKey("own_reservation_restaurant_id")
+        val LEGACY_KEY_RESERVATION_ID = stringPreferencesKey("own_reservation_id")
     }
 }

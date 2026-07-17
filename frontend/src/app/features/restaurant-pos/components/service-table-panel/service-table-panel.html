@@ -117,9 +117,14 @@
     </section>
 
     <section class="border-t pt-4 mt-5" data-testid="service-panel-kitchen-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('kitchen')" [ngClass]="isWorkflowSectionHighlighted('kitchen') ? 'rounded-md bg-cyan-50/70 px-3 pb-3 ring-2 ring-cyan-400/70 shadow-sm dark:bg-cyan-950/20' : ''" [attr.aria-label]="'restaurantPos.service.kitchenActions' | transloco" aria-labelledby="service-panel-kitchen-heading">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-start justify-between gap-3">
         <h3 id="service-panel-kitchen-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.kitchen' | transloco }}</h3>
-        <p class="theme-muted text-xs font-semibold">{{ pendingKitchenCountLabel() }}</p>
+        <div class="grid justify-items-end gap-1 text-right">
+          <p class="theme-muted text-xs font-semibold">{{ 'restaurantPos.service.pendingKitchenLabel' | transloco }}</p>
+          <p class="inline-flex min-w-10 items-center justify-center rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-sm font-semibold text-cyan-950 dark:border-cyan-800 dark:bg-cyan-950/20 dark:text-cyan-100">
+            {{ pendingKitchenCount() }}
+          </p>
+        </div>
       </div>
       <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <app-button variant="primary" expand="block" size="sm" [ariaLabel]="actionLabel('sendKitchenActionLabel')" [disabled]="!canSendToKitchen()" (pressed)="sendToKitchen.emit()">
@@ -127,9 +132,17 @@
         </app-button>
         @if (servedSelectionMode()) {
           <div class="sm:col-span-2 grid gap-2 rounded-md border p-3">
-            <div class="flex items-center justify-between gap-2">
+            <div class="flex items-start justify-between gap-3">
               <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.servedSelectionTitle' | transloco }}</p>
-              <p class="theme-muted text-sm">{{ 'restaurantPos.service.servedSelectionCount' | transloco: { count: servedLineIds().length } }}</p>
+              <label class="theme-field inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  [checked]="servableLines().length > 0 && servedLineIds().length === servableLines().length"
+                  [attr.aria-label]="'restaurantPos.service.selectAllServedLines' | transloco"
+                  (change)="allServedLinesSelected.emit()"
+                />
+                <span>{{ 'restaurantPos.service.selectAllServedLines' | transloco }}</span>
+              </label>
             </div>
             @for (line of servableLines(); track line.id) {
               <label class="theme-field flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
@@ -137,11 +150,18 @@
                 <span>{{ line.quantity }} x {{ line.productName }}</span>
               </label>
             }
-            <div class="grid gap-2 sm:grid-cols-3">
-              <app-button variant="neutral" size="sm" (pressed)="allServedLinesSelected.emit()">{{ 'restaurantPos.service.selectAllServedLines' | transloco }}</app-button>
-              <app-button variant="secondary" size="sm" (pressed)="cancelServedSelection.emit()">{{ 'restaurantPos.common.cancel' | transloco }}</app-button>
-              <app-button variant="primary" size="sm" [ariaLabel]="actionLabel('confirmServedSelection')" (pressed)="servedSelectionConfirmed.emit()">
-                <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.confirmServedSelection' | transloco }}</span>
+            <div class="grid gap-2">
+              <div class="flex items-center justify-between gap-3 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-2 dark:border-cyan-800 dark:bg-cyan-950/20">
+                <span class="theme-muted text-sm font-medium dark:text-cyan-100/80">{{ 'restaurantPos.service.servedSelectionSummaryLabel' | transloco }}</span>
+                <span class="inline-flex min-w-10 items-center justify-center rounded-md border border-cyan-200 bg-white px-2 py-1 text-sm font-semibold text-cyan-950 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-100">
+                  {{ servedLineIds().length }}
+                </span>
+              </div>
+              <app-button variant="secondary" fill="outline" expand="block" size="md" (pressed)="cancelServedSelection.emit()">
+                <span class="inline-flex w-full items-center justify-center text-center leading-tight">{{ 'restaurantPos.common.cancel' | transloco }}</span>
+              </app-button>
+              <app-button variant="primary" expand="block" size="md" [ariaLabel]="actionLabel('confirmServedSelection')" (pressed)="servedSelectionConfirmed.emit()">
+                <span class="inline-flex w-full items-center justify-center gap-1.5 text-center leading-tight"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.confirmServedSelection' | transloco }}</span>
               </app-button>
             </div>
           </div>
@@ -173,13 +193,18 @@
         </div>
       </div>
       <div class="mt-3 grid gap-2">
-        <app-button variant="primary" expand="block" [size]="chargePriority() ? 'lg' : 'md'" [ariaLabel]="chargeButtonAriaLabel()" [disabled]="!canCharge() || isCharging()" [loading]="isCharging()" (pressed)="charge.emit()">
+        <app-button variant="primary" expand="block" [size]="chargePriority() ? 'lg' : 'md'" [ariaLabel]="chargeButtonAriaLabel()" [disabled]="!canSubmitCharge()" [loading]="isCharging()" (pressed)="charge.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="payments" size="sm" />{{ chargeButtonLabel() }}</span>
         </app-button>
         <div class="grid grid-cols-2 gap-2">
           <button type="button" class="rounded-md border px-3 py-2 text-sm font-semibold transition disabled:pointer-events-none disabled:opacity-55" [attr.aria-label]="actionLabel('setCashPaymentActionLabel')" [disabled]="!canCharge()" [ngClass]="paymentMethodClass('cash')" (click)="setPaymentMethod.emit('cash')">{{ 'restaurantPos.payment.cash' | transloco }}</button>
           <button type="button" class="rounded-md border px-3 py-2 text-sm font-semibold transition disabled:pointer-events-none disabled:opacity-55" [attr.aria-label]="actionLabel('setCardPaymentActionLabel')" [disabled]="!canCharge()" [ngClass]="paymentMethodClass('card')" (click)="setPaymentMethod.emit('card')">{{ 'restaurantPos.payment.card' | transloco }}</button>
         </div>
+        @if (shouldShowPaymentMethodHint()) {
+          <p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="payment-method-hint">
+            {{ 'restaurantPos.service.selectPaymentMethodHint' | transloco }}
+          </p>
+        }
       </div>
       @if (serviceInfo()?.paidSummary?.isPaid) {
         <section class="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-100" data-testid="paid-summary">
@@ -190,7 +215,43 @@
               <span class="font-semibold">{{ formatCurrency(lastPayment.amount) }}</span>
             </div>
           } @else {
-            <p class="mt-1 text-sm">{{ formatCurrency(order()?.total ?? 0) }}</p>
+            <p class="mt-1 text-sm">{{ formatCurrency(serviceInfo()?.paidSummary?.lastOrderTotal ?? 0) }}</p>
+          }
+        </section>
+      }
+      @if (paidOrders().length) {
+        <section class="mt-3 rounded-md border px-3 py-3" data-testid="payment-history">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between gap-3 text-left"
+            [attr.aria-expanded]="paymentHistoryExpanded()"
+            [attr.aria-label]="paymentHistoryExpanded() ? ('restaurantPos.service.hidePaymentHistory' | transloco) : ('restaurantPos.service.showPaymentHistory' | transloco)"
+            (click)="togglePaymentHistory()">
+            <div>
+              <p class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.paymentHistoryTitle' | transloco }}</p>
+              @if (!paymentHistoryExpanded()) {
+                <p class="theme-muted mt-1 text-sm">
+                  {{ 'restaurantPos.service.paymentHistoryCollapsedTotal' | transloco: { total: formatCurrency(totalPaidAmount()) } }}
+                </p>
+              }
+            </div>
+            <span class="inline-flex items-center gap-2">
+              <span class="theme-muted text-xs font-semibold">{{ paymentHistoryCountLabel() }}</span>
+              <app-icon [name]="paymentHistoryExpanded() ? 'expand_less' : 'expand_more'" size="sm" />
+            </span>
+          </button>
+          @if (paymentHistoryExpanded()) {
+            <div class="mt-3 grid gap-2">
+              @for (paidOrder of paidOrders(); track paidOrder.id ?? $index) {
+                <article class="theme-soft-panel rounded-md border px-3 py-2 text-sm">
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="font-semibold">{{ paymentMethodLabel(paidOrder.lastCompletedPayment?.method ?? 'other') }}</span>
+                    <span class="theme-title font-semibold">{{ formatCurrency(paidOrderAmount(paidOrder)) }}</span>
+                  </div>
+                  <p class="theme-muted mt-1 text-xs">{{ paidOrderTimestamp(paidOrder) }}</p>
+                </article>
+              }
+            </div>
           }
         </section>
       }

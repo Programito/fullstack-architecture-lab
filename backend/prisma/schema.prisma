@@ -534,6 +534,11 @@ model OrderLine {
   taxRatePercentSnapshot       Decimal?           @db.Decimal(5, 2)
   taxCents                     Int                @default(0)
   status                       OrderLineStatus    @default(pending)
+  // Momento en que la linea se envio a cocina. En BD la linea sigue en
+  // status=pending hasta que cocina empieza a prepararla; esta marca es lo
+  // que distingue "anadida pero sin enviar" (null) de "enviada, esperando
+  // cocina" (fecha) — la capa de vista lo expone como sent_to_kitchen.
+  sentToKitchenAt              DateTime?
   kitchenNote                  String?
   cancellationReason           String?
   cancelledAt                  DateTime?
@@ -713,6 +718,9 @@ model Reservation {
   depositPaidAt         DateTime?
   // Origen del cliente que creo la reserva (header X-Client-Origin).
   clientOrigin          String?
+  // Origen del cliente que la cancelo (solo con status=cancelled); null si
+  // no esta cancelada o si se cancelo antes de existir esta columna.
+  cancelledByOrigin     String?
   restaurant            Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   customer              Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
   tables                ReservationTable[]

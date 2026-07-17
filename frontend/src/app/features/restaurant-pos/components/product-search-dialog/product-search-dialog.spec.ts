@@ -114,6 +114,7 @@ describe('ProductSearchDialog', () => {
         bestSellerProductIds: ['burger', 'combo'],
         lastAddedProductId: 'lemonade',
         productQuantities: { burger: 2, combo: 1 },
+        selectedOrderTotal: 38.5,
         ...inputs,
       },
     });
@@ -300,5 +301,14 @@ describe('ProductSearchDialog', () => {
 
     fireEvent.click(within(comboRow).getByRole('button', { name: 'Crear otra opción de Menu Classic Burger' }));
     expect(productConfigured).toHaveBeenCalledWith('combo');
+  });
+
+  it('uses the selected order total for the footer summary when provided', async () => {
+    await renderDialog({
+      productQuantities: { burger: 2 },
+      selectedOrderTotal: 27.4,
+    });
+
+    expect(screen.getByText(/2 productos/).textContent).toMatch(/27,40/);
   });
 });

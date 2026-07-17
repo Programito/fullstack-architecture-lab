@@ -198,6 +198,8 @@ export type RestaurantReservationDto = {
   tables: RestaurantReservationTableDto[];
   /** Origen del cliente que creo la reserva (p. ej. 'apk-customer'); null en reservas antiguas. */
   clientOrigin?: string | null;
+  /** Origen del cliente que la cancelo; solo con status=cancelled, null en cancelaciones antiguas. */
+  cancelledByOrigin?: string | null;
 };
 
 export type TimeEntryStatusDto = 'open' | 'closed' | 'corrected';
@@ -282,12 +284,15 @@ export type CreateRestaurantReservationRequest = {
   durationMinutes: number;
   notes: string | null;
   tableIds: string[];
+  paymentMethod?: OrderPaymentMethodDto;
 };
 
 // ── Persistent order DTOs ──────────────────────────────────────────────────────
 
 export type OrderStatusDto = 'open' | 'pending_payment' | 'paid' | 'cancelled';
-export type OrderLineStatusDto = 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+// 'sent_to_kitchen' es un estado de la capa de vista del backend: en BD la
+// linea sigue en 'pending' (con sentToKitchenAt) hasta que cocina la empieza.
+export type OrderLineStatusDto = 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'served' | 'cancelled';
 export type OrderPaymentMethodDto = 'cash' | 'card' | 'bizum' | 'other';
 export type OrderPaymentStatusDto = 'pending' | 'completed' | 'failed' | 'refunded';
 

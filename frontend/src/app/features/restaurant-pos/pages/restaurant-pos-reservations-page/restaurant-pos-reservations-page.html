@@ -105,6 +105,16 @@
         <option value="dinner">{{ 'restaurantPos.reservations.serviceDinner' | transloco }}</option>
       </select>
     </label>
+
+    <label class="theme-panel flex items-center gap-2.5 rounded-2xl border px-4 py-3 shadow-sm">
+      <input
+        type="checkbox"
+        class="reservations-page__checkbox"
+        [checked]="hideClosedReservations()"
+        (change)="hideClosedReservations.set($any($event.target).checked)"
+      />
+      <span class="theme-muted text-xs font-semibold uppercase tracking-[0.18em]">{{ 'restaurantPos.reservations.hideClosedFilter' | transloco }}</span>
+    </label>
   </div>
 
   @if (!loading() && !loadError()) {
@@ -183,10 +193,14 @@
                   [class.reservations-page__card--pending]="!reservation.isOverdue && reservation.status === 'pending'"
                   [class.reservations-page__card--confirmed]="!reservation.isOverdue && reservation.status === 'confirmed'"
                   [class.reservations-page__card--seated]="reservation.status === 'seated'"
+                  [class.reservations-page__card--cancelled]="reservation.status === 'cancelled' || reservation.status === 'no_show'"
                 >
                   <div class="reservations-page__card-top">
                     <p class="reservations-page__time">{{ reservation.timeLabel }}</p>
-                    <p class="reservations-page__status">{{ statusLabel(reservation.status) }}</p>
+                    <p
+                      class="reservations-page__status"
+                      [class.reservations-page__status--cancelled]="reservation.status === 'cancelled' || reservation.status === 'no_show'"
+                    >{{ statusLabel(reservation.status) }}</p>
                   </div>
                   <div class="reservations-page__badges">
                     @if (serviceStatusLabel(reservation); as serviceStatus) {
@@ -200,6 +214,9 @@
                     }
                     @if (reservation.fromCustomerApp) {
                       <span class="reservations-page__badge reservations-page__badge--customer-app">{{ 'restaurantPos.reservations.customerAppChip' | transloco }}</span>
+                    }
+                    @if (reservation.cancelledFromApp) {
+                      <span class="reservations-page__badge reservations-page__badge--cancelled-by-customer">{{ 'restaurantPos.reservations.cancelledFromAppBadge' | transloco }}</span>
                     }
                   </div>
                   <h3 class="theme-title text-base font-semibold">{{ reservation.customerName }}</h3>

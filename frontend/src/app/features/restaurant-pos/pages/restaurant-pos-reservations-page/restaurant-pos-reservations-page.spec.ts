@@ -538,6 +538,7 @@ describe('RestaurantPosReservationsPage', () => {
       durationMinutes: 90,
       notes: 'Ventana',
       tableIds: ['table-2'],
+      paymentMethod: 'other',
     });
     expect(await screen.findByText('Marina Soler')).toBeTruthy();
     expect(apiMock.getRestaurantReservations).toHaveBeenCalledTimes(2);
@@ -561,7 +562,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(apiMock.createRestaurantReservation).toHaveBeenCalledWith(
       'restaurant-mesaflow-centro',
-      expect.objectContaining({ reservationAt: new Date(`${tomorrow}T13:30:00`).toISOString() }),
+      expect.objectContaining({ reservationAt: new Date(`${tomorrow}T13:30:00`).toISOString(), paymentMethod: 'other' }),
     );
   });
 
@@ -581,7 +582,7 @@ describe('RestaurantPosReservationsPage', () => {
 
     expect(apiMock.createRestaurantReservation).toHaveBeenCalledWith(
       'restaurant-mesaflow-centro',
-      expect.objectContaining({ tableIds: [] }),
+      expect.objectContaining({ tableIds: [], paymentMethod: 'other' }),
     );
   });
 

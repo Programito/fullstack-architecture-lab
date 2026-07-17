@@ -146,6 +146,17 @@
                     {{ nextActionLabel(column.id) }}
                   </button>
                 </div>
+              } @else if (column.id === 'ready') {
+                <!-- Atajo de cocina: marcar servido sin pasar por Servicio (con confirmación) -->
+                <div class="border-t px-3 pb-3 pt-2.5 dark:border-slate-700/60">
+                  <button
+                    type="button"
+                    class="w-full rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-950 transition hover:bg-cyan-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:border-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-100 dark:hover:bg-cyan-950/50"
+                    (click)="requestServe(card)"
+                  >
+                    {{ 'restaurantPos.preparationBoard.serveAction' | transloco }}
+                  </button>
+                </div>
               }
             </article>
           } @empty {
@@ -156,6 +167,40 @@
     }
   </div>
 </section>
+
+<app-dialog
+  [open]="!!pendingServeCard()"
+  [title]="'restaurantPos.preparationBoard.serveConfirmTitle' | transloco"
+  [description]="'restaurantPos.preparationBoard.serveConfirmDescription' | transloco"
+  size="sm"
+  [showActions]="false"
+  (closed)="abortServe()"
+>
+  @if (pendingServeCard(); as card) {
+    <div class="grid gap-3">
+      <article class="rounded-md border bg-white/80 p-3 text-sm dark:bg-slate-950/55">
+        <p class="theme-muted text-xs font-medium">{{ 'restaurantPos.preparationBoard.tableLabel' | transloco: { number: card.tableNumber } }}</p>
+        <h4 class="theme-title mt-1 font-semibold">{{ card.line.quantity }}x {{ card.line.productName }}</h4>
+      </article>
+      <div class="grid gap-2">
+        <button
+          type="button"
+          class="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          (click)="confirmServe()"
+        >
+          {{ 'restaurantPos.preparationBoard.serveConfirmAction' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="w-full rounded-md border px-3 py-2 text-sm font-semibold transition hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:hover:bg-slate-900"
+          (click)="abortServe()"
+        >
+          {{ 'restaurantPos.preparationBoard.serveConfirmAbort' | transloco }}
+        </button>
+      </div>
+    </div>
+  }
+</app-dialog>
 
 <app-dialog
   [open]="servedModalOpen()"

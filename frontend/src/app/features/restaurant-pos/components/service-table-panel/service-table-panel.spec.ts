@@ -88,6 +88,7 @@ describe('ServiceTablePanel', () => {
     return {
       table: currentTable,
       order: currentOrder,
+      paidOrders: [],
       courseGroups,
       pendingKitchenCount,
       servicePhase: { course: 'main', status: 'pending' },
@@ -310,6 +311,46 @@ describe('ServiceTablePanel', () => {
     expect(paymentButton.textContent).toContain('Cobrar 12,50');
   });
 
+  it('disables the charge action until a cash or card method is selected', async () => {
+    const i18n = provideI18nTesting();
+    const pendingPaymentOrder: TableOrder = {
+      ...order,
+      paymentMethod: 'pending',
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, pendingPaymentOrder, { canCharge: true }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByRole('button', { name: /Cobrar la mesa seleccionada/i }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByTestId('payment-method-hint').textContent).toContain('Selecciona un tipo de pago para poder cobrar');
+  });
+
+  it('keeps the charge action disabled and busy while a charge is in progress', async () => {
+    const i18n = provideI18nTesting();
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, order, { canCharge: true }),
+        title: 'Mesa 1',
+        errorMessage: null,
+        isCharging: true,
+      },
+    });
+
+    const chargeButton = screen.getByRole('button', { name: /Cobrar la mesa seleccionada/i });
+    expect(chargeButton.getAttribute('aria-busy')).toBe('true');
+    expect(chargeButton.hasAttribute('disabled')).toBe(true);
+  });
+
   it('emits cancellation from served-selection mode without changing the selected lines', async () => {
     const i18n = provideI18nTesting();
     const readyLine = { ...order.lines[0], status: 'ready' as const };
@@ -352,7 +393,12 @@ describe('ServiceTablePanel', () => {
       },
     });
 
-    expect(screen.getByText('1 selected')).toBeTruthy();
+    const servedSelectionHeading = screen.getByRole('heading', { name: 'Kitchen' }).closest('section');
+    expect(servedSelectionHeading).toBeTruthy();
+    expect(screen.getAllByText('Select served items').length).toBeGreaterThan(0);
+    const servedSelectionTitle = screen.getAllByText('Select served items')[0]?.closest('div');
+    expect(servedSelectionTitle?.contains(screen.getByRole('checkbox', { name: 'Select all' }))).toBe(true);
+    expect(within(screen.getByTestId('service-panel-kitchen-section')).getByText('1')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
   });
 
@@ -375,7 +421,9 @@ describe('ServiceTablePanel', () => {
       paidSummary: {
         isPaid: true,
         lastPayment: paidOrder.lastCompletedPayment,
+        lastOrderTotal: paidOrder.total,
       },
+      paidOrders: [paidOrder],
     });
 
     const paidSummary = screen.getByTestId('paid-summary');
@@ -403,10 +451,71 @@ describe('ServiceTablePanel', () => {
       paidSummary: {
         isPaid: true,
         lastPayment: paidOrder.lastCompletedPayment,
+        lastOrderTotal: paidOrder.total,
       },
+      paidOrders: [paidOrder],
     });
 
     expect(within(screen.getByTestId('paid-summary')).getByText('Otro')).toBeTruthy();
+  });
+
+  it('renders the payment history even after a new active order starts', async () => {
+    const paidOrder: TableOrder = {
+      ...order,
+      id: 'paid-order-1',
+      status: 'paid',
+      paymentMethod: 'card',
+      lastCompletedPayment: {
+        id: 'payment-1',
+        method: 'card',
+        amount: 12.5,
+        status: 'completed',
+        paidAt: '2026-07-17T12:30:00.000Z',
+      },
+    };
+    const newActiveOrder: TableOrder = {
+      ...order,
+      id: 'active-order-2',
+      status: 'open',
+      paymentMethod: 'pending',
+      total: 4.5,
+      lines: [
+        {
+          ...order.lines[0],
+          id: 'line-water',
+          productSnapshot: productSnapshot('water', 'Agua', 4.5, 'drinks', false),
+          productId: 'water',
+          productName: 'Agua',
+          basePrice: 4.5,
+          unitPrice: 4.5,
+          subtotal: 4.5,
+          configurationSignature: 'water::',
+          course: 'drinks',
+        },
+      ],
+    };
+
+    await renderServiceTablePanel({
+      table: { ...table, status: 'occupied', total: 4.5 },
+      order: newActiveOrder,
+      paidSummary: {
+        isPaid: true,
+        lastPayment: paidOrder.lastCompletedPayment,
+        lastOrderTotal: paidOrder.total,
+      },
+      paidOrders: [paidOrder],
+    });
+
+    const paymentHistory = screen.getByTestId('payment-history');
+    expect(within(paymentHistory).getByText('Historial de cobros')).toBeTruthy();
+    expect(within(paymentHistory).getByText(/Total cobrado: 12,50/)).toBeTruthy();
+    expect(within(paymentHistory).getByText('1 cobro')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Cobrar la mesa seleccionada por 4,50/i })).toBeTruthy();
+
+    fireEvent.click(within(paymentHistory).getByRole('button'));
+
+    expect(within(paymentHistory).getByText('Tarjeta')).toBeTruthy();
+    expect(within(paymentHistory).getByText(/12,50/)).toBeTruthy();
   });
 
   it('shows a tax breakdown with taxable base, VAT, and total in the payment section', async () => {
@@ -460,7 +569,9 @@ describe('ServiceTablePanel', () => {
     });
 
     expect(screen.getByText('Siguiente: enviar 1 a cocina')).toBeTruthy();
-    expect(screen.getByText('Pendiente cocina: 1')).toBeTruthy();
+    const kitchenSection = screen.getByTestId('service-panel-kitchen-section');
+    expect(within(kitchenSection).getByText('Pendiente cocina')).toBeTruthy();
+    expect(within(kitchenSection).getByText('1')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Bebidas' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Principal' })).toBeTruthy();
     expect(screen.getByText('1 x Agua')).toBeTruthy();

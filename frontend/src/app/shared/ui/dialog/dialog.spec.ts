@@ -120,6 +120,17 @@ describe('Dialog', () => {
     expect(dialog.closest('.dialog')?.classList.contains('dialog--drawer')).toBe(true);
   });
 
+  it('uses a modal layer above the floor-plan surface', async () => {
+    await render('<app-dialog open title="Reserva">Contenido</app-dialog>', {
+      imports: [Dialog],
+    });
+
+    const shell = screen.getByRole('dialog', { name: 'Reserva' }).closest('.dialog') as HTMLElement | null;
+
+    expect(shell).toBeTruthy();
+    expect(Number(shell?.style.zIndex ?? 0)).toBeGreaterThan(60);
+  });
+
   it('moves focus into the dialog on open and restores the opener on close', async () => {
     await render(
       `

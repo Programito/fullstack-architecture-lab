@@ -415,6 +415,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
     restaurantId: string,
     reservationId: string,
     status: RestaurantReservation['status'],
+    cancelledByOrigin?: string | null,
   ): Promise<RestaurantReservation | null> {
     const existing = await this.prisma.reservation.findFirst({
       where: { id: reservationId, restaurantId },
@@ -436,7 +437,9 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
 
     const updated = await this.prisma.reservation.update({
       where: { id: reservationId },
-      data: { status },
+      // El origen de la cancelacion solo tiene sentido al cancelar; en el
+      // resto de transiciones no se toca la columna.
+      data: { status, ...(status === 'cancelled' ? { cancelledByOrigin: cancelledByOrigin ?? null } : {}) },
       include: { tables: { include: { table: true } } },
     });
 
@@ -612,7 +615,13 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         taxRateName: line.taxRateNameSnapshot,
         taxRatePercent: line.taxRatePercentSnapshot ? Number(line.taxRatePercentSnapshot.toString()) : null,
         taxCents: line.taxCents,
-        status: line.status as ServiceOrderLineStatus,
+        // Linea enviada a cocina pero aun sin empezar: en BD sigue 'pending'
+        // (con sentToKitchenAt); hacia fuera es 'sent_to_kitchen', la columna
+        // "Pendiente" del tablero de cocina.
+        status:
+          line.status === 'pending' && line.sentToKitchenAt
+            ? ('sent_to_kitchen' as ServiceOrderLineStatus)
+            : (line.status as ServiceOrderLineStatus),
         course: this.mapServiceCourse(line.courseSnapshot),
         preparationRoute: line.preparationRouteSnapshot as ServicePointOrderView['lines'][number]['preparationRoute'],
         kitchenNote: line.kitchenNote,
@@ -643,9 +652,11 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
     });
 
     if (order) {
+      // Igual que sendPendingLinesToKitchen: enviar a cocina no empieza la
+      // preparacion, solo marca la linea como enviada (columna "Pendiente").
       await this.prisma.orderLine.updateMany({
-        where: { orderId: order.id, status: 'pending' },
-        data: { status: 'preparing' },
+        where: { orderId: order.id, status: 'pending', sentToKitchenAt: null },
+        data: { sentToKitchenAt: new Date() },
       });
     }
 
@@ -945,7 +956,16 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
       return 'served';
     }
 
-    if (order.lines.some((line) => line.status === 'preparing' || line.status === 'ready')) {
+    if (
+      order.lines.some(
+        (line) =>
+          line.status === 'preparing' ||
+          line.status === 'ready' ||
+          // Enviada a cocina pero aun sin empezar (pending + sentToKitchenAt):
+          // la mesa ya esta esperando a cocina aunque nadie la haya tocado.
+          (line.status === 'pending' && line.sentToKitchenAt !== null),
+      )
+    ) {
       return 'waiting_kitchen';
     }
 
@@ -972,6 +992,7 @@ function mapReservation(
     depositAmountCents: number;
     depositPaidAt: Date | null;
     clientOrigin?: string | null;
+    cancelledByOrigin?: string | null;
   },
 ): RestaurantReservation {
   return {
@@ -993,6 +1014,7 @@ function mapReservation(
     depositAmountCents: reservation.depositAmountCents,
     depositPaidAt: reservation.depositPaidAt ? reservation.depositPaidAt.toISOString() : null,
     clientOrigin: reservation.clientOrigin ?? null,
+    cancelledByOrigin: reservation.cancelledByOrigin ?? null,
   };
 }
 

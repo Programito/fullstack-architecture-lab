@@ -26,6 +26,8 @@ export interface RestaurantReadRepository {
     restaurantId: string,
     reservationId: string,
     status: RestaurantReservation['status'],
+    /** Origen del cliente que pide el cambio; solo se persiste al cancelar. */
+    cancelledByOrigin?: string | null,
   ): Promise<RestaurantReservation | null>;
   findServiceFloorByRestaurantId(restaurantId: string): Promise<ServiceFloorView | null>;
   findServicePointByRestaurantId(restaurantId: string, tableId: string): Promise<ServicePointDetailView | null>;

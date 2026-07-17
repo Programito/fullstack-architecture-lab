@@ -67,7 +67,7 @@ export class Dialog {
   );
   protected readonly labelledBy = computed(() => (this.title() ? this.titleId : null));
   protected readonly describedBy = computed(() => (this.description() ? this.descriptionId : null));
-  protected readonly zIndex = computed(() => 50 + this.stackLayer());
+  protected readonly zIndex = computed(() => 120 + this.stackLayer());
 
   constructor() {
     effect(() => {

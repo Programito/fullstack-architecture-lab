@@ -134,7 +134,8 @@
     <string name="checkout_keep_ordering">Continua demanant</string>
 
     <string name="entry_reservation_open">Reserva una taula</string>
-    <string name="reservation_title">La meva reserva</string>
+    <string name="reservation_title">Reserves</string>
+    <string name="reservation_new">Nova reserva</string>
     <string name="reservation_back">Enrere</string>
     <string name="reservation_name_label">Nom</string>
     <string name="reservation_phone_label">Telèfon (opcional)</string>
@@ -148,6 +149,9 @@
     <string name="reservation_deposit_paid">Fiança pagada: %1$s</string>
     <string name="reservation_submit">Paga la fiança i reserva</string>
     <string name="reservation_cancel">Cancel·la la reserva</string>
+    <string name="reservation_cancel_confirm_title">Vols cancel·lar la reserva?</string>
+    <string name="reservation_cancel_confirm_message">La fiança de %1$s no es retorna: encara que cancel·lis, es cobrarà igualment.</string>
+    <string name="reservation_cancel_keep">Mantén la reserva</string>
     <string name="reservation_status_pending">Reserva pendent de confirmar</string>
     <string name="reservation_status_confirmed">Reserva confirmada</string>
     <string name="reservation_status_seated">Ja ets a la teva taula</string>

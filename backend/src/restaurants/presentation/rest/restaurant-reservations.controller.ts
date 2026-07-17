@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards, Version } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
@@ -70,6 +70,7 @@ export class RestaurantReservationsController {
     @Body() body: CreateRestaurantReservationDto,
     @Req() request: AuthenticatedRequest,
   ): Promise<RestaurantReservationResponseDto> {
+    const clientOrigin = resolveClientOrigin(request, 'backend');
     const reservation = unwrapResultOrThrow(
       await this.createRestaurantReservation.execute({
         restaurantId,
@@ -80,8 +81,8 @@ export class RestaurantReservationsController {
         durationMinutes: body.durationMinutes ?? 90,
         notes: body.notes ?? null,
         tableIds: body.tableIds ?? [],
-        paymentMethod: body.paymentMethod,
-        clientOrigin: resolveClientOrigin(request, 'backend'),
+        paymentMethod: resolveReservationPaymentMethod(body.paymentMethod, clientOrigin),
+        clientOrigin,
       }),
     );
     await this.audit.record({
@@ -168,7 +169,14 @@ export class RestaurantReservationsController {
     status: 'confirmed' | 'seated' | 'no_show' | 'cancelled',
   ): Promise<RestaurantReservationResponseDto> {
     const reservation = unwrapResultOrThrow(
-      await this.updateRestaurantReservationStatus.execute({ restaurantId, reservationId, status }),
+      await this.updateRestaurantReservationStatus.execute({
+        restaurantId,
+        reservationId,
+        status,
+        // Solo relevante al cancelar: distingue "cancelada por el cliente
+        // desde la app" de "cancelada por el restaurante desde el TPV".
+        cancelledByOrigin: status === 'cancelled' ? resolveClientOrigin(request, 'backend') : null,
+      }),
     );
     await this.audit.record({
       ...auditContext(request, restaurantId),
@@ -183,4 +191,15 @@ export class RestaurantReservationsController {
     });
     return RestaurantReservationResponseDto.fromDomain(reservation);
   }
+}
+
+function resolveReservationPaymentMethod(
+  paymentMethod: CreateRestaurantReservationDto['paymentMethod'],
+  clientOrigin: ReturnType<typeof resolveClientOrigin>,
+): NonNullable<CreateRestaurantReservationDto['paymentMethod']> {
+  if (paymentMethod) return paymentMethod;
+  if (clientOrigin === 'apk-customer') {
+    throw new BadRequestException('paymentMethod is required for customer reservations.');
+  }
+  return 'other';
 }

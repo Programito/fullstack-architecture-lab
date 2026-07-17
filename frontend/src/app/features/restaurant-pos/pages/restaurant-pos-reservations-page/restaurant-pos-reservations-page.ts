@@ -59,6 +59,8 @@ type ReservationAgendaItem = {
   isUnassigned: boolean;
   /** true cuando la reserva se creo desde la app cliente Android (X-Client-Origin: apk-customer). */
   fromCustomerApp: boolean;
+  /** true cuando fue el propio cliente quien la cancelo desde la app Android. */
+  cancelledFromApp: boolean;
   availableActions: ReservationAction[];
 };
 
@@ -92,6 +94,8 @@ export class RestaurantPosReservationsPage {
   protected readonly statusFilter = signal<ReservationStatusFilter>('all');
   protected readonly serviceFilter = signal<ReservationServiceFilter>('all');
   protected readonly highlightFilter = signal<ReservationHighlightFilter>('all');
+  /** Oculta canceladas y no presentadas de la agenda (útil en días con muchas bajas). */
+  protected readonly hideClosedReservations = signal(false);
   protected readonly pendingAction = signal<{ action: ReservationAction; reservation: ReservationAgendaItem } | null>(null);
   protected readonly creationOpen = signal(false);
   protected readonly creationSubmitting = signal(false);
@@ -257,7 +261,14 @@ export class RestaurantPosReservationsPage {
     unassigned: this.dayReservations().filter((r) => r.isUnassigned).length,
     overdue: this.dayReservations().filter((r) => r.isOverdue).length,
   }));
-  private readonly filteredReservations = computed(() => this.filterReservations(this.dayReservations()));
+  private readonly filteredReservations = computed(() => {
+    const filtered = this.filterReservations(this.dayReservations());
+    // Las reservas "muertas" (canceladas / no presentadas) se van al final de
+    // su servicio: las activas deben leerse primero en la agenda. El orden
+    // horario dentro de cada bloque se conserva (filter es estable).
+    const isClosed = (r: ReservationAgendaItem) => r.status === 'cancelled' || r.status === 'no_show';
+    return [...filtered.filter((r) => !isClosed(r)), ...filtered.filter(isClosed)];
+  });
   protected readonly lunchReservations = computed(() => this.filteredReservations().filter((r) => r.serviceBucket === 'lunch'));
   protected readonly dinnerReservations = computed(() => this.filteredReservations().filter((r) => r.serviceBucket === 'dinner'));
   protected readonly serviceGroups = computed(() => [
@@ -626,6 +637,7 @@ export class RestaurantPosReservationsPage {
         customerPhone: r.customerPhoneSnapshot,
         customerName: r.customerNameSnapshot,
         fromCustomerApp: r.clientOrigin === 'apk-customer',
+        cancelledFromApp: r.status === 'cancelled' && r.cancelledByOrigin === 'apk-customer',
         reservationAt: r.reservationAt,
         partySize: r.partySize,
         status: r.status,
@@ -657,7 +669,12 @@ export class RestaurantPosReservationsPage {
         highlight === 'all' ||
         (highlight === 'unassigned' && r.isUnassigned) ||
         (highlight === 'overdue' && r.isOverdue);
-      return matchesService && matchesStatus && matchesQuery && matchesHighlight;
+      // El toggle no aplica si el usuario está filtrando explícitamente por un
+      // estado cerrado: pedir "solo canceladas" y ocultarlas a la vez no tiene sentido.
+      const closed = r.status === 'cancelled' || r.status === 'no_show';
+      const matchesClosedToggle =
+        !this.hideClosedReservations() || !closed || this.statusFilter() === r.status;
+      return matchesService && matchesStatus && matchesQuery && matchesHighlight && matchesClosedToggle;
     });
   }
 
@@ -689,6 +706,7 @@ export class RestaurantPosReservationsPage {
       durationMinutes: form.durationMinutes,
       notes: form.notes.trim() || null,
       tableIds: form.tableIds,
+      paymentMethod: 'other' as const,
     };
   }
 }

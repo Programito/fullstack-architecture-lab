@@ -20,6 +20,11 @@ export interface PreparationLineCancel {
   lineId: string;
 }
 
+export interface PreparationLineServe {
+  tableId: string;
+  lineId: string;
+}
+
 @Component({
   selector: 'app-preparation-board',
   imports: [CdkDrag, CdkDragHandle, CdkDropList, Dialog, Icon, NgClass, TranslocoPipe],
@@ -31,6 +36,7 @@ export class PreparationBoard {
   readonly warning = input<string | null>(null);
   readonly lineMoved = output<PreparationLineMove>();
   readonly lineCancelled = output<PreparationLineCancel>();
+  readonly lineServed = output<PreparationLineServe>();
 
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
@@ -42,6 +48,10 @@ export class PreparationBoard {
   protected readonly connectedColumnIds: PreparationBoardColumnId[] = ['pending', 'preparing', 'ready'];
   protected readonly servedModalOpen = signal(false);
   protected readonly pendingCancelCardId = signal<string | null>(null);
+  // Tarjeta de "Preparado" pendiente de confirmar su marcado como servido.
+  // Lo normal es servir desde la página de Servicio; este atajo de cocina
+  // pide confirmación precisamente porque se sale del flujo habitual.
+  protected readonly pendingServeCard = signal<PreparationBoardCard | null>(null);
 
   protected columnLabelKey(id: PreparationBoardColumnId): string {
     return `restaurantPos.preparationBoard.${id}`;
@@ -145,6 +155,21 @@ export class PreparationBoard {
   protected closeServedModal(): void {
     this.servedModalOpen.set(false);
     this.pendingCancelCardId.set(null);
+  }
+
+  protected requestServe(card: PreparationBoardCard): void {
+    this.pendingServeCard.set(card);
+  }
+
+  protected abortServe(): void {
+    this.pendingServeCard.set(null);
+  }
+
+  protected confirmServe(): void {
+    const card = this.pendingServeCard();
+    if (!card) return;
+    this.lineServed.emit({ tableId: card.tableId, lineId: card.line.id });
+    this.pendingServeCard.set(null);
   }
 
   protected requestCancel(card: PreparationBoardCard): void {

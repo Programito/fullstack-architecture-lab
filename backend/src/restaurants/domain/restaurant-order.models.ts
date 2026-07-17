@@ -92,7 +92,9 @@ export type RestaurantOrderLineView = {
   taxRateName: string | null;
   taxRatePercent: number | null;
   taxCents: number;
-  status: OrderLineStatus;
+  // 'sent_to_kitchen' es un estado de la capa de vista: en BD la linea sigue
+  // en 'pending' con sentToKitchenAt marcado hasta que cocina la empieza.
+  status: OrderLineStatus | 'sent_to_kitchen';
   kitchenNote: string | null;
   cancellationReason: string | null;
   cancelledAt: string | null;

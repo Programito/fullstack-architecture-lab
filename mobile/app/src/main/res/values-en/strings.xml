@@ -134,7 +134,8 @@
     <string name="checkout_keep_ordering">Keep ordering</string>
 
     <string name="entry_reservation_open">Book a table</string>
-    <string name="reservation_title">My reservation</string>
+    <string name="reservation_title">Reservations</string>
+    <string name="reservation_new">New reservation</string>
     <string name="reservation_back">Back</string>
     <string name="reservation_name_label">Name</string>
     <string name="reservation_phone_label">Phone (optional)</string>
@@ -148,6 +149,9 @@
     <string name="reservation_deposit_paid">Deposit paid: %1$s</string>
     <string name="reservation_submit">Pay deposit and book</string>
     <string name="reservation_cancel">Cancel reservation</string>
+    <string name="reservation_cancel_confirm_title">Cancel this reservation?</string>
+    <string name="reservation_cancel_confirm_message">The %1$s deposit is non-refundable: you will still be charged even if you cancel.</string>
+    <string name="reservation_cancel_keep">Keep reservation</string>
     <string name="reservation_status_pending">Reservation awaiting confirmation</string>
     <string name="reservation_status_confirmed">Reservation confirmed</string>
     <string name="reservation_status_seated">You are already seated</string>

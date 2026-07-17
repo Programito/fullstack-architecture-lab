@@ -103,3 +103,4 @@ export interface TableOrder {
 }
 
 export type OrdersByTable = Record<string, TableOrder>;
+export type PaidOrdersByTable = Record<string, TableOrder[]>;

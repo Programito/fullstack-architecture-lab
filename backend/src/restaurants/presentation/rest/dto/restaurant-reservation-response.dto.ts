@@ -45,6 +45,9 @@ export class RestaurantReservationResponseDto {
   @ApiPropertyOptional({ nullable: true, example: 'apk-customer', description: "Origen del cliente que creo la reserva; null en reservas antiguas." })
   clientOrigin?: string | null;
 
+  @ApiPropertyOptional({ nullable: true, example: 'apk-customer', description: 'Origen del cliente que cancelo la reserva; solo con status=cancelled.' })
+  cancelledByOrigin?: string | null;
+
   static fromDomain(reservation: RestaurantReservation): RestaurantReservationResponseDto {
     return {
       ...reservation,
