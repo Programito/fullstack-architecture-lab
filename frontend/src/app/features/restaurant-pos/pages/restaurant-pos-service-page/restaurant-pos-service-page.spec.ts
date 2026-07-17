@@ -4,7 +4,7 @@ import englishTranslations from '../../../../../../public/i18n/en.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
 import { mapServicePointOrder } from '../../api/restaurant-pos-api.mappers';
-import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
+import type { ServiceFloorDto, ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { OrderWriteService } from '../../state/order-write.service';
@@ -26,6 +26,8 @@ describe('RestaurantPosServicePage', () => {
     };
     lines: Array<{
       id: string;
+      restaurantProductId?: string | null;
+      productId?: string | null;
       productName: string;
       productType: 'simple' | 'combo' | 'platter';
       preparationRoute: 'direct' | 'bar' | 'kitchen' | 'cold_station' | 'dessert_station';
@@ -309,6 +311,8 @@ describe('RestaurantPosServicePage', () => {
         lines: [
           {
             id: 'line-table-1-burger',
+            restaurantProductId: 'product-1',
+            productId: 'product-1',
             productName: 'Hamburguesa craft',
             productType: 'simple' as const,
             preparationRoute: 'kitchen' as const,
@@ -835,6 +839,16 @@ describe('RestaurantPosServicePage', () => {
     expect(tablePanelHost?.className).not.toMatch(/\babsolute\b|\bfixed\b/);
   });
 
+  it('keeps the service floor empty until the backend floor snapshot loads', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const delayedFloor$ = new Subject<ServiceFloorDto>();
+    vi.mocked(apiMock.getRestaurantServiceFloor).mockReturnValue(delayedFloor$);
+
+    await renderServicePage(undefined, apiMock);
+
+    expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();
+  });
+
   it('opens the selected table panel from the floor plan', async () => {
     await renderServicePage();
 
@@ -1127,6 +1141,43 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     expect(queryProductDialog()).toBeNull();
+  });
+
+  it('keeps direct-product quantity controls visible after backend reloads the same line', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-lemonade',
+        restaurantProductId: 'product-3',
+        productId: 'product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 1,
+        unitPriceCents: 450,
+        subtotalCents: 450,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-06-22T10:01:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
+
+    apiMock.__setServiceOrder('table-1', record);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = getProductDialog();
+    expect(within(dialog).getByLabelText('Cantidad de Limonada con gas: 1')).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: 'Añadir una unidad de Limonada con gas' })).toBeNull();
   });
 
   it('opens the customizer for configurable products and adds the selected snapshot', async () => {

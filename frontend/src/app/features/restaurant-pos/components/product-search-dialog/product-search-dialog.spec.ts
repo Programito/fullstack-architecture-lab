@@ -143,14 +143,10 @@ describe('ProductSearchDialog', () => {
     const sectionChanged = vi.fn();
     const favoriteToggled = vi.fn();
     const productConfigured = vi.fn();
-    const productIncremented = vi.fn();
-    const productDecremented = vi.fn();
     const finished = vi.fn();
     fixture.componentInstance.sectionChanged.subscribe(sectionChanged);
     fixture.componentInstance.favoriteToggled.subscribe(favoriteToggled);
     fixture.componentInstance.productConfigured.subscribe(productConfigured);
-    fixture.componentInstance.productIncremented.subscribe(productIncremented);
-    fixture.componentInstance.productDecremented.subscribe(productDecremented);
     fixture.componentInstance.finished.subscribe(finished);
 
     for (const chip of ['Todos', 'Favoritos', 'Más vendidos', 'Bebidas', 'Comida', 'Menús', 'Platos combinados', 'Postres']) {
@@ -199,8 +195,9 @@ describe('ProductSearchDialog', () => {
     expect(within(comboRow).getByText('Menú')).toBeTruthy();
     expect(within(platterRow).getByText('Plato combinado')).toBeTruthy();
     expect(within(soldOutRow).getByText('Agotado')).toBeTruthy();
-    expect(within(burgerRow).getByLabelText('Cantidad de Hamburguesa craft: 2')).toBeTruthy();
+    expect(within(burgerRow).queryByLabelText('Cantidad de Hamburguesa craft: 2')).toBeNull();
     expect(within(lemonadeRow).queryByLabelText('Cantidad de Limonada con gas: 0')).toBeNull();
+    expect(within(burgerRow).getByRole('button', { name: 'Configurar Hamburguesa craft' }).textContent?.trim()).toBe('Configurar');
     expect(within(lemonadeRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }).textContent?.trim()).toBe('Añadir');
     expect(within(comboRow).getByRole('button', { name: 'Configurar menú Menu Classic Burger' }).textContent?.trim()).toBe('Configurar menú');
     expect(within(platterRow).getByRole('button', { name: 'Configurar plato Plato combinado de lomo' }).textContent?.trim()).toBe('Configurar plato');
@@ -219,9 +216,6 @@ describe('ProductSearchDialog', () => {
 
     fireEvent.click(within(lemonadeRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
     expect(productConfigured).toHaveBeenCalledWith('lemonade');
-
-    fireEvent.click(within(burgerRow).getByRole('button', { name: 'Quitar una unidad de Hamburguesa craft' }));
-    expect(productDecremented).toHaveBeenCalledWith('burger');
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
     expect(finished).toHaveBeenCalledOnce();
@@ -259,7 +253,7 @@ describe('ProductSearchDialog', () => {
     expect(screen.getByRole('button', { name: 'Menús' }).textContent).toContain('1');
   });
 
-  it('shows configured options and lets each option be incremented independently', async () => {
+  it('shows configured options without quantity steppers and lets each option be added again', async () => {
     const { fixture } = await renderDialog({
       activeSection: 'combos',
       products: products.filter((product) => product.type === 'combo'),
@@ -271,10 +265,8 @@ describe('ProductSearchDialog', () => {
     });
     const productConfigured = vi.fn();
     const configuredLineIncremented = vi.fn();
-    const configuredLineDecremented = vi.fn();
     fixture.componentInstance.productConfigured.subscribe(productConfigured);
     fixture.componentInstance.configuredLineIncremented.subscribe(configuredLineIncremented);
-    fixture.componentInstance.configuredLineDecremented.subscribe(configuredLineDecremented);
 
     const comboRow = screen.getByTestId('product-search-row-combo');
     const comboActions = within(comboRow).getByTestId('product-search-row-actions');
@@ -292,12 +284,10 @@ describe('ProductSearchDialog', () => {
     expect(within(comboRow).getByTestId('product-search-options-panel').className).toContain('overflow-hidden');
     expect(within(comboRow).getByText('2 x Hamburguesa craft · Patatas bravas · Agua')).toBeTruthy();
     expect(within(comboRow).getByText('1 x Hamburguesa craft · Ensalada · Cerveza')).toBeTruthy();
+    expect(within(comboRow).queryByRole('button', { name: /Quitar una unidad de Menu Classic Burger/i })).toBeNull();
 
     fireEvent.click(within(comboRow).getByRole('button', { name: 'Añadir una unidad de Menu Classic Burger con Hamburguesa craft · Patatas bravas · Agua' }));
     expect(configuredLineIncremented).toHaveBeenCalledWith('line-combo-classic');
-
-    fireEvent.click(within(comboRow).getByRole('button', { name: 'Quitar una unidad de Menu Classic Burger con Hamburguesa craft · Ensalada · Cerveza' }));
-    expect(configuredLineDecremented).toHaveBeenCalledWith('line-combo-beer');
 
     fireEvent.click(within(comboRow).getByRole('button', { name: 'Crear otra opción de Menu Classic Burger' }));
     expect(productConfigured).toHaveBeenCalledWith('combo');

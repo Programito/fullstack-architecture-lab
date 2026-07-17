@@ -215,18 +215,19 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
       const unitPrice = line.unitPriceCents / 100;
       const subtotal = line.subtotalCents / 100;
       const course = mapServiceCourse(line.course);
+      const stableProductId = line.productId ?? line.restaurantProductId ?? `service-product:${line.id}`;
 
       return {
         id: line.id,
         productSnapshot: {
-          productId: `service-product:${line.id}`,
+          productId: stableProductId,
           productName: line.productName,
           productType: line.productType,
           basePrice: unitPrice,
           course,
           preparationPolicy: mapPreparationPolicy(line.preparationRoute),
         },
-        productId: `service-product:${line.id}`,
+        productId: stableProductId,
         productName: line.productName,
         quantity: line.quantity,
         basePrice: unitPrice,

@@ -64,43 +64,43 @@
                 <span class="theme-muted text-xs font-semibold">{{ courseSummaryLabel(group) }}</span>
               </div>
               <div class="mt-2 grid divide-y rounded-md border">
-                @for (line of group.lines; track line.id) {
+                @for (groupedLine of group.lines; track groupedLine.key) {
                   <div class="theme-order-line px-3 py-3">
                     <div class="flex items-start justify-between gap-3">
                       <div class="min-w-0">
-                        <p class="theme-title truncate font-semibold">{{ line.quantity }} x {{ line.productName }}</p>
-                        <p class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold">{{ lineStatusLabel(line.status) }}</p>
+                        <p class="theme-title truncate font-semibold">{{ groupedLine.quantity }} x {{ groupedLine.primaryLine.productName }}</p>
+                        <p class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold">{{ lineStatusLabel(groupedLine.primaryLine.status) }}</p>
                       </div>
                       <div class="grid justify-items-end gap-2">
-                        <p class="font-semibold">{{ formatCurrency(line.subtotal) }}</p>
+                        <p class="font-semibold">{{ formatCurrency(groupedLine.subtotal) }}</p>
                         <div class="theme-quantity-stepper inline-flex items-center rounded-md border p-0.5">
-                          <button type="button" class="theme-quantity-button grid h-7 w-7 place-items-center rounded text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50" [attr.aria-label]="lineActionLabel('decreaseProductQuantityActionLabel', line.productName)" (click)="decreaseProduct.emit(line.id)">
+                          <button type="button" class="theme-quantity-button grid h-7 w-7 place-items-center rounded text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50" [attr.aria-label]="lineActionLabel('decreaseProductQuantityActionLabel', groupedLine.primaryLine.productName)" (click)="decreaseProduct.emit(groupedLine.primaryLine.id)">
                             <app-icon name="remove" size="sm" />
                           </button>
-                          <span class="min-w-7 text-center text-xs font-semibold" aria-hidden="true">{{ line.quantity }}</span>
-                          <button type="button" class="theme-quantity-button grid h-7 w-7 place-items-center rounded text-sm font-semibold transition" [attr.aria-label]="lineActionLabel('increaseProductQuantityActionLabel', line.productName)" (click)="increaseProduct.emit(line.id)">
+                          <span class="min-w-7 text-center text-xs font-semibold" aria-hidden="true">{{ groupedLine.quantity }}</span>
+                          <button type="button" class="theme-quantity-button grid h-7 w-7 place-items-center rounded text-sm font-semibold transition" [attr.aria-label]="lineActionLabel('increaseProductQuantityActionLabel', groupedLine.primaryLine.productName)" (click)="increaseProduct.emit(groupedLine.primaryLine.id)">
                             <app-icon name="add" size="sm" />
                           </button>
                         </div>
                       </div>
                     </div>
-                    @if (hasModifiers(line)) { <p class="theme-muted mt-2 text-xs">{{ modifierLabel(line) }}</p> }
-                    @if (hasPlatterComponents(line)) {
-                      <p class="theme-muted mt-2 text-xs"><span class="font-semibold">{{ 'restaurantPos.service.platterComponentsLabel' | transloco }}</span> {{ platterComponentsLabel(line) }}</p>
+                    @if (hasModifiers(groupedLine.primaryLine)) { <p class="theme-muted mt-2 text-xs">{{ modifierLabel(groupedLine.primaryLine) }}</p> }
+                    @if (hasPlatterComponents(groupedLine.primaryLine)) {
+                      <p class="theme-muted mt-2 text-xs"><span class="font-semibold">{{ 'restaurantPos.service.platterComponentsLabel' | transloco }}</span> {{ platterComponentsLabel(groupedLine.primaryLine) }}</p>
                     }
-                    @if (hasComboSlots(line)) {
+                    @if (hasComboSlots(groupedLine.primaryLine)) {
                       <div class="theme-muted mt-2 grid gap-1 text-xs">
-                        @for (slot of line.selectedComboSlots; track slot.slotId) { <p><span class="font-semibold">{{ slot.slotName }}:</span> {{ comboSlotLabel(slot) }}</p> }
+                        @for (slot of groupedLine.primaryLine.selectedComboSlots; track slot.slotId) { <p><span class="font-semibold">{{ slot.slotName }}:</span> {{ comboSlotLabel(slot) }}</p> }
                       </div>
                     }
-                    @if (line.kitchenNote) { <p class="theme-muted mt-2 border-l-2 border-dashed pl-2 text-xs">{{ 'restaurantPos.service.kitchenNotePrefix' | transloco }} {{ line.kitchenNote }}</p> }
+                    @if (groupedLine.primaryLine.kitchenNote) { <p class="theme-muted mt-2 border-l-2 border-dashed pl-2 text-xs">{{ 'restaurantPos.service.kitchenNotePrefix' | transloco }} {{ groupedLine.primaryLine.kitchenNote }}</p> }
                     <div class="mt-3 grid gap-2">
                       <label class="grid gap-1 text-xs font-semibold">
                         <span class="theme-muted">{{ 'restaurantPos.service.lineNote' | transloco }}</span>
-                        <textarea class="theme-field min-h-16 rounded-md border px-2 py-1 text-sm font-normal" [attr.aria-label]="lineActionLabel('lineNoteActionLabel', line.productName)" [value]="line.kitchenNote ?? ''" (input)="updateLineNote(line.id, $event)"></textarea>
+                        <textarea class="theme-field min-h-16 rounded-md border px-2 py-1 text-sm font-normal" [attr.aria-label]="lineActionLabel('lineNoteActionLabel', groupedLine.primaryLine.productName)" [value]="groupedLine.primaryLine.kitchenNote ?? ''" (input)="updateLineNote(groupedLine.primaryLine.id, $event)"></textarea>
                       </label>
                       <div class="flex justify-end">
-                        <button type="button" class="rounded-md border border-red-200 px-2 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/25" [attr.aria-label]="lineActionLabel('removeProductActionLabel', line.productName)" (click)="requestRemoveProduct(line)">
+                        <button type="button" class="rounded-md border border-red-200 px-2 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/25" [attr.aria-label]="lineActionLabel('removeProductActionLabel', groupedLine.primaryLine.productName)" (click)="requestRemoveProduct(groupedLine.primaryLine)">
                           {{ 'restaurantPos.service.removeProduct' | transloco }}
                         </button>
                       </div>

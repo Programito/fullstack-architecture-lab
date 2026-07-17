@@ -578,6 +578,58 @@ describe('ServiceTablePanel', () => {
     expect(screen.getByText('1 x Craft Burger')).toBeTruthy();
   });
 
+  it('groups identical pending order lines into a single order row', async () => {
+    const i18n = provideI18nTesting();
+    const duplicatedOrder: TableOrder = {
+      ...order,
+      total: 8.4,
+      lines: [
+        {
+          id: 'line-wine-1',
+          productSnapshot: productSnapshot('wine-glass', 'Vino tinto copa', 4.2, 'drinks', false),
+          productId: 'wine-glass',
+          productName: 'Vino tinto copa',
+          quantity: 1,
+          basePrice: 4.2,
+          selectedModifiers: [],
+          unitPrice: 4.2,
+          subtotal: 4.2,
+          configurationSignature: 'wine-glass::',
+          course: 'drinks',
+          status: 'pending',
+        },
+        {
+          id: 'line-wine-2',
+          productSnapshot: productSnapshot('wine-glass', 'Vino tinto copa', 4.2, 'drinks', false),
+          productId: 'wine-glass',
+          productName: 'Vino tinto copa',
+          quantity: 1,
+          basePrice: 4.2,
+          selectedModifiers: [],
+          unitPrice: 4.2,
+          subtotal: 4.2,
+          configurationSignature: 'wine-glass::',
+          course: 'drinks',
+          status: 'pending',
+        },
+      ],
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, duplicatedOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getByText('2 x Vino tinto copa')).toBeTruthy();
+    expect(screen.getByText('2 uds · 8,40 €')).toBeTruthy();
+    expect(screen.queryByText('1 x Vino tinto copa')).toBeNull();
+  });
+
   it('renders combo slot selections with supplements', async () => {
     const i18n = provideI18nTesting();
     const comboOrder: TableOrder = {

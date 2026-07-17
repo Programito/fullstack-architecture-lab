@@ -758,6 +758,8 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
       },
       lines: activeOrder.lines.map((line) => ({
         id: line.id,
+        restaurantProductId: line.restaurantProductId ?? null,
+        productId: line.productId ?? null,
         productName: line.productName,
         productType: line.productType,
         quantity: line.quantity,

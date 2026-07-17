@@ -89,9 +89,19 @@ export class RestaurantPosServicePage {
   protected readonly selectedServedLineIds = signal<readonly string[]>([]);
   protected readonly chargeKitchenConfirmOpen = signal(false);
   protected readonly isCharging = signal(false);
+  protected readonly serviceFloorLoaded = signal(false);
   private readonly pendingChargePaymentMethod = signal<Exclude<PaymentMethod, 'pending'> | null>(null);
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
+    if (!this.serviceFloorLoaded()) {
+      return [
+        { id: 'occupied', value: '0', tone: 'neutral' as const },
+        { id: 'kitchen', value: '0', tone: 'neutral' as const },
+        { id: 'charge', value: '0', tone: 'neutral' as const },
+        { id: 'sales', value: this.formatCurrency(0), tone: 'accent' as const },
+      ];
+    }
+
     const servicePoints = this.store.servicePoints();
     const occupied = this.store.occupiedTables();
     const kitchen = servicePoints.filter((point) => point.table.status === 'waiting_kitchen').length;
@@ -210,12 +220,15 @@ export class RestaurantPosServicePage {
 
     effect(() => {
       const restaurant = this.restaurantContext.activeRestaurant();
+      this.serviceFloorLoaded.set(false);
       if (!restaurant) return;
       this.api.getRestaurantServiceFloor(restaurant.id).subscribe({
         next: (serviceFloor) => {
           this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
+          this.serviceFloorLoaded.set(true);
         },
         error: () => {
+          this.serviceFloorLoaded.set(true);
           this.store.reportApiError('restaurantPos.errors.loadFailed');
         },
       });
@@ -282,6 +295,7 @@ export class RestaurantPosServicePage {
   }
 
   protected closeProductSearch(): void {
+    this.orderWrite.flushPendingDirectProducts();
     this.productSearchOpen.set(false);
     this.closeProductCustomizer();
     this.closeComboCustomizer();
@@ -402,7 +416,11 @@ export class RestaurantPosServicePage {
     const product = this.store.products().find((currentProduct) => currentProduct.id === productId);
 
     if (product?.type !== 'combo' && (this.productQuantities()[productId] ?? 0) > 0) {
-      this.store.increaseSelectedOrderLine(productId);
+      if (this.isDeferredDirectProduct(productId)) {
+        this.orderWrite.increaseDirectProductQuantity(productId);
+      } else {
+        this.store.increaseSelectedOrderLine(productId);
+      }
       this.lastAddedProductId.set(productId);
       return;
     }
@@ -510,6 +528,11 @@ export class RestaurantPosServicePage {
   }
 
   protected increaseProductQuantity(productId: string): void {
+    if (this.isDeferredDirectProduct(productId)) {
+      this.orderWrite.increaseDirectProductQuantity(productId);
+      return;
+    }
+
     const ctx = this.resolveApiLine(productId);
     this.store.increaseSelectedOrderLine(productId);
     if (ctx) {
@@ -520,6 +543,11 @@ export class RestaurantPosServicePage {
   }
 
   protected decreaseProductQuantity(productId: string): void {
+    if (this.isDeferredDirectProduct(productId)) {
+      this.orderWrite.decreaseDirectProductQuantity(productId);
+      return;
+    }
+
     const ctx = this.resolveApiLine(productId);
     this.store.decreaseSelectedOrderLine(productId);
     if (ctx) {
@@ -573,6 +601,10 @@ export class RestaurantPosServicePage {
 
   protected removeProduct(productId: string): void {
     const ctx = this.resolveApiLine(productId);
+    if (ctx && this.isDeferredDirectProduct(ctx.line.productId)) {
+      this.orderWrite.removeDirectProduct(ctx.line.productId);
+      return;
+    }
     this.store.removeSelectedOrderLine(productId);
     if (ctx) {
       // Backend only allows DELETE on pending lines; once a line is preparing or
@@ -820,7 +852,7 @@ export class RestaurantPosServicePage {
     this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
       next: (serviceOrder) => {
         const mappedOrder = mapServicePointOrder(serviceOrder);
-        this.store.hydrateServicePointOrder(tableId, mappedOrder);
+        this.orderWrite.hydrateRemoteOrder(tableId, mappedOrder);
         if (mappedOrder) {
           this.autoServeStaleKitchenLines(restaurantId, tableId, mappedOrder);
         }
@@ -922,6 +954,11 @@ export class RestaurantPosServicePage {
     const product = this.store.products().find((currentProduct) => currentProduct.id === line.productId);
 
     return line.productSnapshot.productType === 'combo' || (product?.modifierGroupIds.length ?? 0) > 0;
+  }
+
+  private isDeferredDirectProduct(productId: string): boolean {
+    const product = this.store.products().find((currentProduct) => currentProduct.id === productId);
+    return !!product && product.type === 'simple' && product.modifierGroupIds.length === 0 && !!product.restaurantProductId;
   }
 
   private orderLineOptionSummary(line: OrderLine): string {

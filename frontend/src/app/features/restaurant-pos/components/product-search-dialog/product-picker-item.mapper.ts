@@ -109,7 +109,7 @@ export function toProductPickerItem(product: Product, context: ProductPickerItem
     actionAriaLabel: productActionAriaLabel(product, { isCombo, isPlatter, isCustomizable }, context.translate),
     disabled,
     quantity,
-    showQuantityControls: !isCombo && !configuredLineCount && quantity > 0,
+    showQuantityControls: false,
     configuredLines,
     configuredLineCount,
     hasSingleConfiguredLine: configuredLineCount === 1,

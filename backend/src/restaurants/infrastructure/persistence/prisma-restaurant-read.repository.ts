@@ -607,6 +607,8 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
       },
       lines: order.lines.map((line) => ({
         id: line.id,
+        restaurantProductId: line.restaurantProductId,
+        productId: line.productId,
         productName: line.productNameSnapshot,
         productType: line.productTypeSnapshot as 'simple' | 'combo' | 'platter',
         quantity: line.quantity,

@@ -144,6 +144,8 @@ export type ServiceOrderLineStatusDto = 'pending' | 'sent_to_kitchen' | 'prepari
 
 export type ServicePointOrderLineDto = {
   id: string;
+  restaurantProductId?: string | null;
+  productId?: string | null;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   quantity: number;

@@ -12,6 +12,20 @@ export interface OrderLineNoteChange {
   note: string;
 }
 
+type GroupedOrderLine = {
+  key: string;
+  quantity: number;
+  subtotal: number;
+  lines: readonly OrderLine[];
+  primaryLine: OrderLine;
+};
+
+type GroupedOrderCourse = Omit<OrderCourseGroup, 'lines' | 'quantity' | 'total'> & {
+  lines: readonly GroupedOrderLine[];
+  quantity: number;
+  total: number;
+};
+
 @Component({
   selector: 'app-service-table-panel',
   imports: [Button, Dialog, Icon, NgClass, TranslocoPipe],
@@ -144,15 +158,51 @@ export class ServiceTablePanel {
     return this.translate('restaurantPos.service.pendingKitchenCount', { count: this.serviceInfo()?.pendingKitchenCount ?? 0 });
   }
 
-  protected courseSummaryLabel(group: OrderCourseGroup): string {
+  protected courseSummaryLabel(group: Pick<GroupedOrderCourse, 'quantity' | 'total'>): string {
     return this.translate('restaurantPos.service.courseSummary', {
-      count: group.lines.reduce((sum, line) => sum + line.quantity, 0),
+      count: group.quantity,
       total: this.formatCurrency(group.total),
     });
   }
 
-  protected groupedOrderCourses(): OrderCourseGroup[] {
-    return this.serviceInfo()?.courseGroups ?? [];
+  protected groupedOrderCourses(): GroupedOrderCourse[] {
+    return (this.serviceInfo()?.courseGroups ?? []).map((group) => {
+      const groupedLines = new Map<string, GroupedOrderLine>();
+      const orderedKeys: string[] = [];
+
+      group.lines.forEach((line) => {
+        const key = this.orderLineGroupKey(line);
+        const existing = groupedLines.get(key);
+
+        if (existing) {
+          groupedLines.set(key, {
+            ...existing,
+            quantity: existing.quantity + line.quantity,
+            subtotal: existing.subtotal + line.subtotal,
+            lines: [...existing.lines, line],
+          });
+          return;
+        }
+
+        groupedLines.set(key, {
+          key,
+          quantity: line.quantity,
+          subtotal: line.subtotal,
+          lines: [line],
+          primaryLine: line,
+        });
+        orderedKeys.push(key);
+      });
+
+      const lines = orderedKeys.map((key) => groupedLines.get(key)!);
+
+      return {
+        ...group,
+        lines,
+        quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+        total: lines.reduce((sum, line) => sum + line.subtotal, 0),
+      };
+    });
   }
 
   protected pendingKitchenCount(): number {
@@ -447,6 +497,25 @@ export class ServiceTablePanel {
   protected confirmFreeTable(): void {
     this.freeTable.emit();
     this.closeFreeTableConfirm();
+  }
+
+  private orderLineGroupKey(line: OrderLine): string {
+    if (!this.canGroupOrderLine(line)) {
+      return `line:${line.id}`;
+    }
+
+    return ['group', line.productId, line.configurationSignature, line.unitPrice, line.status].join('::');
+  }
+
+  private canGroupOrderLine(line: OrderLine): boolean {
+    return (
+      line.status === 'pending' &&
+      !line.kitchenNote &&
+      !line.note &&
+      line.selectedModifiers.length === 0 &&
+      (line.selectedComboSlots?.length ?? 0) === 0 &&
+      (line.platterComponents?.length ?? 0) === 0
+    );
   }
 
   private translate(key: string, params?: Record<string, unknown>): string {

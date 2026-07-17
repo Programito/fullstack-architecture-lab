@@ -1,5 +1,5 @@
-import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder } from './restaurant-pos-api.mappers';
-import type { RestaurantMenuDto, RestaurantOrderDto } from './restaurant-pos-api.models';
+import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServicePointOrder } from './restaurant-pos-api.mappers';
+import type { RestaurantMenuDto, RestaurantOrderDto, ServicePointOrderDto } from './restaurant-pos-api.models';
 
 const MENU: RestaurantMenuDto = {
   id: 'menu-1',
@@ -478,5 +478,90 @@ describe('mapRestaurantOrder', () => {
       status: 'completed',
       paidAt: '2026-07-17T12:30:00.000Z',
     });
+  });
+});
+
+describe('mapServicePointOrder', () => {
+  it('preserves stable product ids from service-point lines when the backend provides them', () => {
+    const response: ServicePointOrderDto = {
+      order: {
+        id: 'order-1',
+        tableId: 'table-1',
+        status: 'open',
+        openedAt: '2026-07-17T12:00:00.000Z',
+        updatedAt: '2026-07-17T12:05:00.000Z',
+        subtotalCents: 450,
+        taxCents: 0,
+        totalCents: 450,
+        currency: 'EUR',
+      },
+      lines: [
+        {
+          id: 'line-1',
+          restaurantProductId: 'rp-lemonade-1',
+          productId: 'product-3',
+          productName: 'Limonada con gas',
+          productType: 'simple',
+          quantity: 1,
+          unitPriceCents: 450,
+          subtotalCents: 450,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          course: 'drinks',
+          preparationRoute: 'bar',
+          kitchenNote: null,
+          updatedAt: '2026-07-17T12:05:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+        },
+      ],
+    };
+
+    const order = mapServicePointOrder(response);
+
+    expect(order?.lines[0]?.productId).toBe('product-3');
+    expect(order?.lines[0]?.productSnapshot.productId).toBe('product-3');
+  });
+
+  it('falls back to the legacy synthetic id when service-point lines still omit product ids', () => {
+    const response: ServicePointOrderDto = {
+      order: {
+        id: 'order-1',
+        tableId: 'table-1',
+        status: 'open',
+        openedAt: '2026-07-17T12:00:00.000Z',
+        updatedAt: '2026-07-17T12:05:00.000Z',
+        subtotalCents: 1250,
+        taxCents: 0,
+        totalCents: 1250,
+        currency: 'EUR',
+      },
+      lines: [
+        {
+          id: 'line-legacy',
+          productName: 'Hamburguesa craft',
+          productType: 'simple',
+          quantity: 1,
+          unitPriceCents: 1250,
+          subtotalCents: 1250,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          course: 'mains',
+          preparationRoute: 'kitchen',
+          kitchenNote: null,
+          updatedAt: '2026-07-17T12:05:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+        },
+      ],
+    };
+
+    const order = mapServicePointOrder(response);
+
+    expect(order?.lines[0]?.productId).toBe('service-product:line-legacy');
   });
 });

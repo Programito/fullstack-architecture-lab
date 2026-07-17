@@ -61,7 +61,7 @@
         ></textarea>
       </label>
 
-      <app-button variant="primary" expand="block" (pressed)="confirm()">
+      <app-button variant="primary" expand="block" [disabled]="!validationResult().valid" (pressed)="confirm()">
         {{ 'menu.customizer.addFor' | transloco: { price: formatCurrency(previewPrice()) } }}
       </app-button>
     </div>

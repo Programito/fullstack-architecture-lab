@@ -5,6 +5,7 @@ import { mapServiceFloor, mapServicePointOrder } from '../api/restaurant-pos-api
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { RestaurantContextStore } from './restaurant-context.store';
+import { OrderWriteService } from './order-write.service';
 import { RestaurantPosStore } from './restaurant-pos.store';
 
 export const ORDER_SYNC_POLL_INTERVAL_MS = 30_000;
@@ -17,6 +18,7 @@ export class OrderSyncService {
   private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly realtime = inject(RealtimeService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly orderWrite = inject(OrderWriteService);
 
   constructor() {
     toObservable(this.restaurantContext.activeRestaurant).pipe(
@@ -46,7 +48,7 @@ export class OrderSyncService {
           this.api.getRestaurantServicePointOrder(restaurant.id, sp.table.id)
             .pipe(takeUntilDestroyed(this.destroyRef), catchError(() => EMPTY))
             .subscribe((order) => {
-              this.store.hydrateServicePointOrder(sp.table.id, mapServicePointOrder(order));
+              this.orderWrite.hydrateRemoteOrder(sp.table.id, mapServicePointOrder(order));
             });
         });
     });

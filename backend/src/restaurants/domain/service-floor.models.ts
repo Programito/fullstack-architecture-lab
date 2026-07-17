@@ -83,6 +83,8 @@ export type ServicePointDetailView = {
 
 export type ServicePointOrderLineView = {
   id: string;
+  restaurantProductId: string | null;
+  productId: string | null;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   quantity: number;

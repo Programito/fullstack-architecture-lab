@@ -289,6 +289,10 @@ export class RestaurantPosStore {
     this.clearError();
   }
 
+  getOrder(tableId: string): TableOrder | null {
+    return this.order.getOrder(tableId) ?? null;
+  }
+
   // === floor mutations (with error handling) ===
   addRow(): void { this.floor.addRow(); this.clearError(); }
 

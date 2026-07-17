@@ -20,6 +20,7 @@ describe('ProductCustomizerDialog', () => {
     );
 
     const dialog = screen.getByRole('dialog', { name: /Craft Burger/i });
+    fireEvent.click(within(dialog).getByLabelText(/Medium/i));
     fireEvent.click(within(dialog).getByLabelText(/Bacon/i));
     fireEvent.click(within(dialog).getByLabelText(/Cheese/i));
     fireEvent.click(within(dialog).getByLabelText(/NO Onion/i));
@@ -32,8 +33,43 @@ describe('ProductCustomizerDialog', () => {
     expect(confirmed).toHaveBeenCalledWith(
       expect.objectContaining({
         productId: 'product-1',
-        selectedModifierOptionIds: expect.arrayContaining(['extra-bacon', 'extra-cheese', 'remove-onion']),
+        selectedModifierOptionIds: expect.arrayContaining(['point-medium', 'extra-bacon', 'extra-cheese', 'remove-onion']),
         kitchenNote: 'Little done',
+      }),
+    );
+  });
+
+  it('keeps add disabled until required modifiers are selected', async () => {
+    const i18n = provideI18nTesting('en');
+    const product = MOCK_MENU_PRODUCTS.find((currentProduct) => currentProduct.id === 'product-14')!;
+    const modifierGroups = MOCK_MODIFIER_GROUPS
+      .filter((group) => product.modifierGroupIds.includes(group.id))
+      .map((group) => ({
+        ...group,
+        options: group.options.map((option) => ({ ...option, selectedByDefault: false })),
+      }));
+    const confirmed = vi.fn();
+
+    await render(
+      '<app-product-customizer-dialog open [product]="product" [modifierGroups]="modifierGroups" (confirmed)="confirmed($event)" />',
+      {
+        imports: [...i18n.imports, ProductCustomizerDialog],
+        providers: [...i18n.providers],
+        componentProperties: { product, modifierGroups, confirmed },
+      },
+    );
+
+    const addButton = screen.getByRole('button', { name: /Add for/i });
+    expect(addButton).toHaveProperty('disabled', true);
+
+    fireEvent.click(screen.getByLabelText(/Medium/i));
+    expect(addButton).toHaveProperty('disabled', false);
+
+    fireEvent.click(addButton);
+    expect(confirmed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: 'product-14',
+        selectedModifierOptionIds: ['size-medium'],
       }),
     );
   });

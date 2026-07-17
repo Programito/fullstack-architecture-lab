@@ -6,6 +6,7 @@ import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RealtimeService, type OrderInvalidatedEvent } from '../../../core/realtime/realtime.service';
 import { RestaurantContextStore } from './restaurant-context.store';
+import { OrderWriteService } from './order-write.service';
 import { RestaurantPosStore } from './restaurant-pos.store';
 import { ORDER_SYNC_POLL_INTERVAL_MS, OrderSyncService } from './order-sync.service';
 
@@ -64,6 +65,7 @@ describe('OrderSyncService', () => {
   let mockLoad: ReturnType<typeof vi.fn>;
   let mockHydrateServiceFloor: ReturnType<typeof vi.fn>;
   let mockHydrateServicePointOrder: ReturnType<typeof vi.fn>;
+  let mockHydrateRemoteOrder: ReturnType<typeof vi.fn>;
   let mockGetServiceFloor: ReturnType<typeof vi.fn>;
   let mockGetServicePointOrder: ReturnType<typeof vi.fn>;
   let invalidated$: Subject<OrderInvalidatedEvent>;
@@ -74,6 +76,7 @@ describe('OrderSyncService', () => {
     mockLoad = vi.fn();
     mockHydrateServiceFloor = vi.fn();
     mockHydrateServicePointOrder = vi.fn();
+    mockHydrateRemoteOrder = vi.fn();
     mockGetServiceFloor = vi.fn().mockReturnValue(of(FLOOR_WITH_LINES));
     mockGetServicePointOrder = vi.fn().mockReturnValue(of(ORDER));
     invalidated$ = new Subject<OrderInvalidatedEvent>();
@@ -95,6 +98,10 @@ describe('OrderSyncService', () => {
         {
           provide: RestaurantPosStore,
           useValue: { hydrateServiceFloor: mockHydrateServiceFloor, hydrateServicePointOrder: mockHydrateServicePointOrder },
+        },
+        {
+          provide: OrderWriteService,
+          useValue: { hydrateRemoteOrder: mockHydrateRemoteOrder },
         },
         {
           provide: RestaurantPosApiService,
@@ -138,7 +145,7 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockHydrateServicePointOrder).toHaveBeenCalledWith('table-1', expect.anything());
+    expect(mockHydrateRemoteOrder).toHaveBeenCalledWith('table-1', expect.anything());
   });
 
   it('no llama a la API de pedidos cuando la planta no tiene puntos con líneas', async () => {

@@ -5,6 +5,7 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import type { ModifierGroup, Product } from '../../models/menu.models';
 import { MenuPricingService } from '../../services/menu-pricing.service';
+import { MenuValidationService } from '../../services/menu-validation.service';
 
 export interface ProductCustomizationConfirmed {
   productId: string;
@@ -25,6 +26,7 @@ export class ProductCustomizerDialog {
   readonly confirmed = output<ProductCustomizationConfirmed>();
 
   private readonly pricing = inject(MenuPricingService);
+  private readonly validation = inject(MenuValidationService);
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly selectedOptionIds = signal<string[]>([]);
@@ -36,6 +38,10 @@ export class ProductCustomizerDialog {
   protected readonly previewPrice = computed(() => {
     const product = this.product();
     return product ? this.pricing.calculateCustomizedProductPrice(product, this.selectedModifiers()) : 0;
+  });
+  protected readonly validationResult = computed(() => {
+    const product = this.product();
+    return product ? this.validation.validateCustomization(product, this.selectedOptionIds(), [...this.modifierGroups()]) : { valid: false, errors: [] };
   });
 
   constructor() {
@@ -75,7 +81,7 @@ export class ProductCustomizerDialog {
   protected confirm(): void {
     const product = this.product();
 
-    if (!product) {
+    if (!product || !this.validationResult().valid) {
       return;
     }
 

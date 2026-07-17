@@ -52,6 +52,12 @@ class ServicePointOrderLineResponseDto {
   @ApiProperty({ example: 'line-burger' })
   id!: string;
 
+  @ApiPropertyOptional({ nullable: true, example: 'rp-burger-001' })
+  restaurantProductId!: string | null;
+
+  @ApiPropertyOptional({ nullable: true, example: 'product-burger-001' })
+  productId!: string | null;
+
   @ApiProperty({ example: 'Hamburguesa craft' })
   productName!: string;
 

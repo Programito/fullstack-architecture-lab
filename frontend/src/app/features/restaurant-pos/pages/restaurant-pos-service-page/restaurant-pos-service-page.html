@@ -52,7 +52,13 @@
       </div>
 
       <div class="min-w-0 overflow-x-auto pb-1">
-        <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
+        @if (serviceFloorLoaded()) {
+          <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
+        } @else {
+          <div class="theme-soft-panel flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed px-4 py-6 text-center">
+            <p class="theme-muted text-sm">{{ 'restaurantPos.service.floorDescription' | transloco }}</p>
+          </div>
+        }
       </div>
     </div>
 

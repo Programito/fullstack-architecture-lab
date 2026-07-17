@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="mesaflow-bg" x1="8" x2="56" y1="6" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e" />
+      <stop offset="1" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="mesaflow-accent" x1="20" x2="44" y1="18" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#cffafe" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#mesaflow-bg)" />
+  <path
+    d="M15 48V16h9l8 11 8-11h9v32h-8V28L32 40 23 28v20z"
+    fill="url(#mesaflow-accent)"
+  />
+  <path
+    d="M23 28 32 40 41 28"
+    fill="none"
+    stroke="#67e8f9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="3"
+    opacity="0.9"
+  />
+</svg>
