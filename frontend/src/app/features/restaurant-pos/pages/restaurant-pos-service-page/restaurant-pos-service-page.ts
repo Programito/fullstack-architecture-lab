@@ -86,6 +86,9 @@ export class RestaurantPosServicePage {
   protected readonly cardGatewayOpen = signal(false);
   protected readonly cardGatewayStatus = signal<'connecting' | 'rejected'>('connecting');
   protected readonly chargeKitchenConfirmOpen = signal(false);
+  protected readonly servedSelectionMode = signal(false);
+  protected readonly selectedServedLineIds = signal<readonly string[]>([]);
+  protected readonly isCharging = signal(false);
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
     const servicePoints = this.store.servicePoints();
@@ -174,6 +177,11 @@ export class RestaurantPosServicePage {
         })
       : '';
   });
+  protected readonly servableSelectedOrderLines = computed(() =>
+    (this.store.selectedOrder()?.lines ?? []).filter((line) =>
+      ['pending', 'sent_to_kitchen', 'preparing', 'ready', 'picked_up'].includes(line.status),
+    ),
+  );
   protected readonly selectedTableTitle = computed(() => {
     const table = this.store.selectedTable();
     const servicePoint = this.store.selectedServicePoint();
@@ -421,7 +429,7 @@ export class RestaurantPosServicePage {
   }
 
   protected chargeTable(): void {
-    if (!this.store.selectedServiceInfo()?.canCharge) {
+    if (!this.store.selectedServiceInfo()?.canCharge || this.isCharging()) {
       return;
     }
 
@@ -452,19 +460,53 @@ export class RestaurantPosServicePage {
     });
   }
 
-  protected markServed(): void {
+  protected enterServedSelectionMode(): void {
+    this.servedSelectionMode.set(true);
+    this.selectedServedLineIds.set([]);
+  }
+
+  protected toggleServedLine(lineId: string): void {
+    this.selectedServedLineIds.update((ids) =>
+      ids.includes(lineId) ? ids.filter((id) => id !== lineId) : [...ids, lineId],
+    );
+  }
+
+  protected selectAllServedLines(): void {
+    this.selectedServedLineIds.set(this.servableSelectedOrderLines().map((line) => line.id));
+  }
+
+  protected confirmMarkServedSelection(): void {
+    const lineIds = this.selectedServedLineIds();
+    if (lineIds.length === 0) {
+      this.store.reportApiError('restaurantPos.errors.selectProductsToMarkServed');
+      return;
+    }
+    this.markServed(lineIds);
+  }
+
+  protected markServed(lineIds?: readonly string[]): void {
     const restaurant = this.restaurantContext.activeRestaurant();
     const tableId = this.store.selectedTableId();
 
     if (!restaurant || !tableId) {
-      this.store.markSelectedOrderAsServed();
+      if (lineIds) {
+        lineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
+      } else {
+        this.store.markSelectedOrderAsServed();
+      }
       return;
     }
 
-    this.api.markRestaurantServicePointServed(restaurant.id, tableId).subscribe({
+    this.api.markRestaurantServicePointServed(restaurant.id, tableId, lineIds ? { lineIds: [...lineIds] } : undefined).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
-        this.store.markSelectedOrderAsServed();
+        if (lineIds) {
+          lineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
+          this.servedSelectionMode.set(false);
+          this.selectedServedLineIds.set([]);
+        } else {
+          this.store.markSelectedOrderAsServed();
+        }
       },
       error: () => {
         this.store.reportApiError('restaurantPos.errors.servicePointActionFailed');
@@ -671,12 +713,14 @@ export class RestaurantPosServicePage {
     const applyCharge = (): void => {
       this.store.setSelectedPaymentMethod(paymentMethod);
       this.store.chargeSelectedTable();
+      this.isCharging.set(false);
 
       if (paymentMethod === 'card') {
         this.cardGatewayOpen.set(false);
       }
     };
     const onChargeError = (): void => {
+      this.isCharging.set(false);
       if (paymentMethod === 'card') {
         this.cardGatewayStatus.set('rejected');
       }
@@ -690,6 +734,8 @@ export class RestaurantPosServicePage {
       applyCharge();
       return;
     }
+
+    this.isCharging.set(true);
 
     if (!orderId || amountCents <= 0) {
       this.api.chargeRestaurantServicePoint(restaurant.id, tableId).subscribe({
@@ -721,6 +767,7 @@ export class RestaurantPosServicePage {
       .subscribe({
         next: () => {
           this.store.setSelectedPaymentMethod(paymentMethod);
+          this.isCharging.set(false);
           if (paymentMethod === 'card') {
             this.cardGatewayOpen.set(false);
           }

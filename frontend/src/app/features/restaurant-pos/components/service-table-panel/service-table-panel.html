@@ -125,9 +125,27 @@
         <app-button variant="primary" expand="block" size="sm" [ariaLabel]="actionLabel('sendKitchenActionLabel')" [disabled]="!canSendToKitchen()" (pressed)="sendToKitchen.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="skillet" size="sm" />{{ 'restaurantPos.service.sendKitchen' | transloco }}</span>
         </app-button>
-        <app-button variant="secondary" expand="block" size="sm" [ariaLabel]="actionLabel('markServedActionLabel')" [disabled]="!canMarkServed()" (pressed)="markServed.emit()">
-          <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.markServed' | transloco }}</span>
-        </app-button>
+        @if (servedSelectionMode()) {
+          <div class="sm:col-span-2 grid gap-2 rounded-md border p-3">
+            <div class="flex items-center justify-between gap-2">
+              <p class="theme-title text-sm font-semibold">Selecciona los productos servidos</p>
+              <button type="button" class="text-sm font-semibold underline" (click)="allServedLinesSelected.emit()">Seleccionar todos</button>
+            </div>
+            @for (line of servableLines(); track line.id) {
+              <label class="theme-field flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <input type="checkbox" [checked]="isServedLineSelected(line.id)" [attr.aria-label]="line.productName" (change)="servedLineToggled.emit(line.id)" />
+                <span>{{ line.quantity }} x {{ line.productName }}</span>
+              </label>
+            }
+            <app-button variant="secondary" expand="block" size="sm" ariaLabel="Confirmar servido" (pressed)="servedSelectionConfirmed.emit()">
+              <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />Confirmar servido</span>
+            </app-button>
+          </div>
+        } @else {
+          <app-button variant="secondary" expand="block" size="sm" [ariaLabel]="actionLabel('markServedActionLabel')" [disabled]="!canMarkServed() && servableLines().length === 0" (pressed)="markServed.emit()">
+            <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.markServed' | transloco }}</span>
+          </app-button>
+        }
       </div>
     </section>
 
@@ -151,7 +169,7 @@
         </div>
       </div>
       <div class="mt-3 grid gap-2">
-        <app-button variant="primary" expand="block" [size]="chargePriority() ? 'lg' : 'md'" [ariaLabel]="chargeButtonAriaLabel()" [disabled]="!canCharge()" (pressed)="charge.emit()">
+        <app-button variant="primary" expand="block" [size]="chargePriority() ? 'lg' : 'md'" [ariaLabel]="chargeButtonAriaLabel()" [disabled]="!canCharge() || isCharging()" [loading]="isCharging()" (pressed)="charge.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="payments" size="sm" />{{ chargeButtonLabel() }}</span>
         </app-button>
         <div class="grid grid-cols-2 gap-2">

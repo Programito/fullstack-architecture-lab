@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import englishTranslations from '../../../../../../public/i18n/en.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
 import { mapServicePointOrder } from '../../api/restaurant-pos-api.mappers';
+import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { OrderWriteService } from '../../state/order-write.service';
@@ -862,10 +863,90 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
 
-    expect(apiMock.markRestaurantServicePointServed).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(apiMock.markRestaurantServicePointServed).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'table-1',
+      { lineIds: ['line-table-1-burger'] },
+    );
     expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'served' }));
+  });
+
+  it('opens served selection mode and confirms only selected lines', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    apiMock.__setServiceOrder('table-1', createServiceOrderRecord([
+      {
+        id: 'line-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'ready',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T10:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+      {
+        id: 'line-pasta',
+        productName: 'Pasta fresca',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1450,
+        subtotalCents: 1450,
+        status: 'preparing',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T10:01:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'sent_to_kitchen'));
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText(/M1 mesa/i));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Hamburguesa craft/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar servido/i }));
+    fixture.detectChanges();
+
+    expect(apiMock.markRestaurantServicePointServed).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'table-1',
+      { lineIds: ['line-burger'] },
+    );
+  });
+
+  it('shows a loading state only on the charge button while charging', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const deferredCharge$ = new Subject<ServicePointDetailDto>();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
+    fixture.detectChanges();
+    vi.mocked(apiMock.chargeRestaurantServicePoint).mockReturnValue(deferredCharge$);
+
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
+    fixture.detectChanges();
+
+    expect(screen.getByRole('button', { name: /Cobrar/i }).getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByRole('button', { name: /Efectivo/i }).getAttribute('aria-busy')).not.toBe('true');
   });
 
   it('charges the selected table through the backend endpoint', async () => {
@@ -878,6 +959,8 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: /Efectivo/i }));
     fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
@@ -1235,6 +1318,9 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.queryByRole('region', { name: 'Preparación' })).toBeNull();
     fireEvent.input(screen.getByRole('textbox', { name: 'Nota para Hamburguesa craft' }), { target: { value: 'Sin cebolla' } });
     fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar servido' }));
     fixture.detectChanges();
 
     expect(store.selectedOrder()?.lines[0]).toEqual(expect.objectContaining({ note: 'Sin cebolla', status: 'served' }));

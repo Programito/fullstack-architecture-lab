@@ -21,11 +21,18 @@ export class ServiceTablePanel {
   readonly serviceInfo = input<ServiceTableInfo | null>(null);
   readonly title = input.required<string>();
   readonly errorMessage = input<string | null>(null);
+  readonly servedSelectionMode = input(false);
+  readonly servedLineIds = input<readonly string[]>([]);
+  readonly servableLines = input<readonly OrderLine[]>([]);
+  readonly isCharging = input(false);
 
   readonly occupy = output<void>();
   readonly openProductSearch = output<void>();
   readonly sendToKitchen = output<void>();
   readonly markServed = output<void>();
+  readonly servedLineToggled = output<string>();
+  readonly allServedLinesSelected = output<void>();
+  readonly servedSelectionConfirmed = output<void>();
   readonly increaseProduct = output<string>();
   readonly decreaseProduct = output<string>();
   readonly markProductReady = output<string>();
@@ -340,6 +347,10 @@ export class ServiceTablePanel {
 
   protected updateLineNote(lineId: string, event: Event): void {
     this.updateProductNote.emit({ lineId, note: (event.target as HTMLTextAreaElement).value });
+  }
+
+  protected isServedLineSelected(lineId: string): boolean {
+    return this.servedLineIds().includes(lineId);
   }
 
   protected requestRemoveProduct(line: OrderLine): void {
