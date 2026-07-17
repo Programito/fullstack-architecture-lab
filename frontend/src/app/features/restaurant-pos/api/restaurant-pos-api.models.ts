@@ -134,6 +134,10 @@ export type ServicePointDetailDto = {
   };
 };
 
+export type MarkRestaurantServicePointServedRequest = {
+  lineIds?: string[];
+};
+
 export type ServiceOrderStatusDto = 'open' | 'sent_to_kitchen' | 'served' | 'payment_pending' | 'paid';
 
 export type ServiceOrderLineStatusDto = 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';

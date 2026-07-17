@@ -1,5 +1,6 @@
 import type { RestaurantMenuDto, RestaurantOrderDto, ServiceFloorDto, ServicePhaseCourseDto, ServicePointOrderDto } from './restaurant-pos-api.models';
 import type { PaymentMethod } from '../models/payment.models';
+import type { TableOrderPaymentSummary } from '../models/order.models';
 import type { ComboProductDefinition } from '../../menu/models/combo.model';
 import type { ModifierGroup } from '../../menu/models/modifier-group.model';
 import type { FloorElement, Product, RestaurantTable, TableStatus } from '../models/restaurant-pos.models';
@@ -265,6 +266,14 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
 }
 
 export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMethod: PaymentMethod = 'pending') {
+  const payments: TableOrderPaymentSummary[] = orderResponse.payments.map((payment) => ({
+    id: payment.id,
+    method: payment.method === 'other' ? 'other' : payment.method,
+    amount: payment.amountCents / 100,
+    status: payment.status,
+    paidAt: payment.paidAt,
+  }));
+  const lastCompletedPayment = [...payments].reverse().find((payment) => payment.status === 'completed') ?? null;
   const status =
     orderResponse.order.status === 'pending_payment'
       ? ('payment_pending' as const)
@@ -282,6 +291,8 @@ export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMet
     total: orderResponse.order.totalCents / 100,
     status,
     paymentMethod,
+    payments,
+    lastCompletedPayment,
     lines: orderResponse.lines.map((line) => {
       const unitPrice = line.unitPriceCents / 100;
       const subtotal = line.subtotalCents / 100;

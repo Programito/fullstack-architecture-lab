@@ -78,6 +78,14 @@ export interface OrderLine {
 export type OrderStatus = 'open' | 'sent_to_kitchen' | 'served' | 'payment_pending' | 'paid';
 export type OrderLineStatus = 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
 
+export interface TableOrderPaymentSummary {
+  id: string;
+  method: PaymentMethod | 'other';
+  amount: number;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  paidAt: string | null;
+}
+
 export interface TableOrder {
   id?: string;
   tableId: string;
@@ -88,6 +96,8 @@ export interface TableOrder {
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
+  payments?: TableOrderPaymentSummary[];
+  lastCompletedPayment?: TableOrderPaymentSummary | null;
   /** Origen del cliente que abrio el pedido (p. ej. 'apk-customer'); null/undefined si se desconoce. */
   clientOrigin?: string | null;
 }

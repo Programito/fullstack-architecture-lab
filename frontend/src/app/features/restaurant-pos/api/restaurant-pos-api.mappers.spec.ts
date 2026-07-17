@@ -1,5 +1,5 @@
-import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts } from './restaurant-pos-api.mappers';
-import type { RestaurantMenuDto } from './restaurant-pos-api.models';
+import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder } from './restaurant-pos-api.mappers';
+import type { RestaurantMenuDto, RestaurantOrderDto } from './restaurant-pos-api.models';
 
 const MENU: RestaurantMenuDto = {
   id: 'menu-1',
@@ -439,5 +439,44 @@ describe('mapRestaurantMenuComboDefinitions', () => {
   it('usa pricingMode base_plus_supplements', () => {
     const defs = mapRestaurantMenuComboDefinitions(COMBO_MENU);
     expect(defs[0]!.pricingMode).toBe('base_plus_supplements');
+  });
+});
+
+describe('mapRestaurantOrder', () => {
+  it('maps the latest completed payment into lastCompletedPayment', () => {
+    const orderResponse: RestaurantOrderDto = {
+      order: {
+        id: 'order-1',
+        restaurantId: 'restaurant-1',
+        tableId: 'table-1',
+        status: 'paid',
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 1200,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 1200,
+        paidCents: 1200,
+        balanceCents: 0,
+        openedAt: '2026-07-17T12:00:00.000Z',
+        updatedAt: '2026-07-17T12:30:00.000Z',
+        closedAt: '2026-07-17T12:30:00.000Z',
+      },
+      lines: [],
+      payments: [
+        { id: 'payment-1', method: 'cash', amountCents: 600, status: 'failed', paidAt: null },
+        { id: 'payment-2', method: 'card', amountCents: 1200, status: 'completed', paidAt: '2026-07-17T12:30:00.000Z' },
+      ],
+    };
+
+    const order = mapRestaurantOrder(orderResponse);
+
+    expect(order.lastCompletedPayment).toEqual({
+      id: 'payment-2',
+      method: 'card',
+      amount: 12,
+      status: 'completed',
+      paidAt: '2026-07-17T12:30:00.000Z',
+    });
   });
 });

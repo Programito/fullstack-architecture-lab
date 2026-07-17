@@ -19,6 +19,7 @@ import type {
   CustomerSummaryDto,
   MenuItemAdminDto,
   MenuSectionAdminDto,
+  MarkRestaurantServicePointServedRequest,
   OpenRestaurantOrderRequest,
   OrderPaymentMethodDto,
   ReorderFloorElementsRequest,
@@ -196,8 +197,12 @@ export class RestaurantPosApiService {
     return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/send-to-kitchen`, {});
   }
 
-  markRestaurantServicePointServed(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
-    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/mark-served`, {});
+  markRestaurantServicePointServed(
+    restaurantId: string,
+    tableId: string,
+    request: MarkRestaurantServicePointServedRequest = {},
+  ): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/mark-served`, request);
   }
 
   chargeRestaurantServicePoint(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {

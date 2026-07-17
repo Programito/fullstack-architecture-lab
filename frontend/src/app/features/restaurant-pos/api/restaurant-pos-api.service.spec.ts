@@ -514,6 +514,18 @@ describe('RestaurantPosApiService', () => {
     http.verify();
   });
 
+  it('posts selected line ids when marking a service point as served', () => {
+    const { service, http } = setup();
+
+    service.markRestaurantServicePointServed('restaurant-1', 'table-1', { lineIds: ['line-2'] }).subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/service-points/table-1/mark-served');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ lineIds: ['line-2'] });
+    request.flush({});
+    http.verify();
+  });
+
   it('posts charge for one service point', () => {
     const { service, http } = setup();
     let result: unknown;
