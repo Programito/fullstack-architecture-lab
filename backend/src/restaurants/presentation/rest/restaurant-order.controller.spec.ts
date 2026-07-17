@@ -245,8 +245,15 @@ describe('RestaurantOrderController realtime invalidation', () => {
   it('publica order.service-point.marked-served tras marcar la mesa como servida', async () => {
     const { controller, markRestaurantServicePointOrderServed, realtime } = makeController();
     markRestaurantServicePointOrderServed.execute.mockResolvedValue(ok(makeServicePointDetail()));
+    const request = makeRequest();
 
-    await controller.markServicePointServed(RESTAURANT_ID, TABLE_ID, makeRequest());
+    await controller.markServicePointServed(RESTAURANT_ID, TABLE_ID, request, { lineIds: ['line-1'] });
+
+    expect(markRestaurantServicePointOrderServed.execute).toHaveBeenCalledWith({
+      restaurantId: RESTAURANT_ID,
+      tableId: TABLE_ID,
+      lineIds: ['line-1'],
+    });
 
     expect(realtime.publishOrderInvalidated).toHaveBeenCalledWith({
       restaurantId: RESTAURANT_ID,

@@ -41,14 +41,17 @@ export class MarkRestaurantServicePointOrderServedUseCase {
     const persistentOrder = await this.orders.findActiveByTable(restaurantId, tableId);
 
     if (persistentOrder) {
-      const eligibleLineIds = persistentOrder.lines
+      const activeLineIds = persistentOrder.lines
         .filter((line) => line.status !== 'served' && line.status !== 'cancelled')
         .map((line) => line.id);
       const normalizedLineIds = lineIds?.length
-        ? eligibleLineIds.filter((lineId) => lineIds.includes(lineId))
+        ? persistentOrder.lines
+          .filter((line) => line.status === 'preparing' || line.status === 'ready')
+          .map((line) => line.id)
+          .filter((lineId) => lineIds.includes(lineId))
         : undefined;
 
-      if (eligibleLineIds.length === 0 || (lineIds?.length && normalizedLineIds?.length === 0)) {
+      if (activeLineIds.length === 0 || (lineIds?.length && normalizedLineIds?.length === 0)) {
         return err(invalidServiceAction({ restaurantId, tableId, action: 'mark_served' }));
       }
       await this.orders.markActiveLinesServed(restaurantId, tableId, normalizedLineIds);

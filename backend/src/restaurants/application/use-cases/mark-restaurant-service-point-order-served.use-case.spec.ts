@@ -185,4 +185,20 @@ describe('MarkRestaurantServicePointOrderServedUseCase', () => {
 
     expect(result).toEqual(err(expect.objectContaining({ code: 'invalid_service_action' })));
   });
+
+  it('returns invalid_service_action when selected lineIds are pending', async () => {
+    const restaurants = makeReadRepository();
+    const orders = makeOrderRepository();
+    vi.mocked(restaurants.findFloorsByRestaurantId).mockResolvedValue(makeFloors());
+    vi.mocked(orders.findActiveByTable).mockResolvedValue({
+      ...makeOrderWithActiveLines(),
+      lines: [{ ...makeOrderWithActiveLines().lines[0], id: 'line-1', status: 'pending' }],
+    });
+    const useCase = new MarkRestaurantServicePointOrderServedUseCase(restaurants, orders);
+
+    const result = await useCase.execute({ restaurantId: 'restaurant-1', tableId: 'table-1', lineIds: ['line-1'] });
+
+    expect(result).toEqual(err(expect.objectContaining({ code: 'invalid_service_action' })));
+    expect(orders.markActiveLinesServed).not.toHaveBeenCalled();
+  });
 });
