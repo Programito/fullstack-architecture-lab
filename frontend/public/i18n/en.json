@@ -669,6 +669,8 @@
       "servedSelectionTitle": "Select served items",
       "selectAllServedLines": "Select all",
       "confirmServedSelection": "Confirm served",
+      "servedSelectionCount": "{{count}} selected",
+      "paidSummaryStatus": "Paid",
       "charge": "Charge",
       "cleaning": "Cleaning",
       "freeTable": "Free table",

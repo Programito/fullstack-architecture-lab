@@ -335,6 +335,27 @@ describe('ServiceTablePanel', () => {
     expect(cancelServedSelection).toHaveBeenCalledTimes(1);
   });
 
+  it('localizes served-selection controls in English', async () => {
+    const i18n = provideI18nTesting('en');
+    const readyLine = { ...order.lines[0], status: 'ready' as const };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, { ...order, lines: [readyLine] }),
+        title: 'Table 1',
+        errorMessage: null,
+        servedSelectionMode: true,
+        servedLineIds: [readyLine.id],
+        servableLines: [readyLine],
+      },
+    });
+
+    expect(screen.getByText('1 selected')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+  });
+
   it('renders the last completed payment summary for a paid table', async () => {
     const paidOrder: TableOrder = {
       ...order,

@@ -926,6 +926,29 @@ describe('RestaurantPosServicePage', () => {
     );
   });
 
+  it('cancels served selection through the panel and clears selected lines', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Hamburguesa craft/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fixture.detectChanges();
+
+    expect(screen.queryByRole('button', { name: /Confirmar servido/i })).toBeNull();
+    expect(apiMock.markRestaurantServicePointServed).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+
+    expect((screen.getByRole('checkbox', { name: /Hamburguesa craft/i }) as HTMLInputElement).checked).toBe(false);
+  });
+
   it('clears served selection before it can be confirmed for a different table', async () => {
     const apiMock = createRestaurantPosApiMock();
     apiMock.__setServiceOrder('table-1', createServiceOrderRecord([

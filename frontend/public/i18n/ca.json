@@ -669,6 +669,8 @@
       "servedSelectionTitle": "Selecciona els productes servits",
       "selectAllServedLines": "Selecciona'ls tots",
       "confirmServedSelection": "Confirma el servei",
+      "servedSelectionCount": "{{count}} seleccionats",
+      "paidSummaryStatus": "Pagat",
       "charge": "Cobrar",
       "cleaning": "Neteja",
       "freeTable": "Alliberar taula",

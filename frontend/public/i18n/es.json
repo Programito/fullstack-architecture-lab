@@ -722,6 +722,8 @@
       "servedSelectionTitle": "Selecciona los productos servidos",
       "selectAllServedLines": "Seleccionar todos",
       "confirmServedSelection": "Confirmar servido",
+      "servedSelectionCount": "{{count}} seleccionados",
+      "paidSummaryStatus": "Pagado",
       "charge": "Cobrar",
       "cleaning": "Limpieza",
       "freeTable": "Liberar mesa",
