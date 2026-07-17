@@ -641,7 +641,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     return this.findById(restaurantId, order.id);
   }
 
-  async markActiveLinesServed(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null> {
+  async markActiveLinesServed(restaurantId: string, tableId: string, lineIds?: string[]): Promise<RestaurantOrderView | null> {
     const order = await this.prisma.order.findFirst({
       where: { restaurantId, tableId, status: { in: ['open', 'pending_payment'] } },
       select: { id: true },
@@ -649,7 +649,11 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     if (!order) return null;
 
     await this.prisma.orderLine.updateMany({
-      where: { orderId: order.id, status: { in: ['preparing', 'ready'] } },
+      where: {
+        orderId: order.id,
+        ...(lineIds?.length ? { id: { in: lineIds } } : {}),
+        status: { in: ['preparing', 'ready'] },
+      },
       data: { status: 'served' },
     });
 
@@ -823,4 +827,3 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     };
   }
 }
-
