@@ -735,6 +735,7 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         cash: 'Efectivo',
         card: 'Tarjeta',
         bizum: 'Bizum',
+        other: 'Otro',
         pending: 'Pendiente',
       },
       paymentGateway: {

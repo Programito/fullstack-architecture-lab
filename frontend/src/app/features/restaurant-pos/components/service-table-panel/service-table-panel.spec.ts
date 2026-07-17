@@ -384,6 +384,31 @@ describe('ServiceTablePanel', () => {
     expect(within(paidSummary).getByText(/12,50/)).toBeTruthy();
   });
 
+  it('renders the localized other payment method in the paid summary', async () => {
+    const paidOrder: TableOrder = {
+      ...order,
+      status: 'paid',
+      lastCompletedPayment: {
+        id: 'payment-other',
+        method: 'other',
+        amount: 12.5,
+        status: 'completed',
+        paidAt: '2026-07-17T12:30:00.000Z',
+      },
+    };
+
+    await renderServiceTablePanel({
+      table: { ...table, status: 'paid' },
+      order: paidOrder,
+      paidSummary: {
+        isPaid: true,
+        lastPayment: paidOrder.lastCompletedPayment,
+      },
+    });
+
+    expect(within(screen.getByTestId('paid-summary')).getByText('Otro')).toBeTruthy();
+  });
+
   it('shows a tax breakdown with taxable base, VAT, and total in the payment section', async () => {
     await renderServiceTablePanel({ canCharge: true });
 
