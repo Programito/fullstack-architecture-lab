@@ -872,6 +872,45 @@ describe('RestaurantPosStore', () => {
     expect(store.ordersByTable()['table-1'].status).toBe('paid');
   });
 
+  it('derives the paid summary from a paid selected table and its last completed payment', () => {
+    store.selectTable('table-1');
+    store.hydrateServicePoint({
+      table: {
+        id: 'table-1',
+        number: 1,
+        capacity: 4,
+        status: 'paid',
+        total: 12.5,
+        openDuration: '25m',
+      },
+    });
+    store.hydrateServicePointOrder('table-1', {
+      tableId: 'table-1',
+      total: 12.5,
+      status: 'paid',
+      paymentMethod: 'card',
+      lines: [],
+      lastCompletedPayment: {
+        id: 'payment-1',
+        method: 'card',
+        amount: 12.5,
+        status: 'completed',
+        paidAt: '2026-07-17T12:30:00.000Z',
+      },
+    });
+
+    expect(store.selectedServiceInfo()?.paidSummary).toEqual({
+      isPaid: true,
+      lastPayment: {
+        id: 'payment-1',
+        method: 'card',
+        amount: 12.5,
+        status: 'completed',
+        paidAt: '2026-07-17T12:30:00.000Z',
+      },
+    });
+  });
+
   it('can mark the selected table payment as pending before completion', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');

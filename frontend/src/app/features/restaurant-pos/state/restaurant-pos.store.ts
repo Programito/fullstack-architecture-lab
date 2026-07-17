@@ -399,6 +399,10 @@ export class RestaurantPosStore {
     const canMarkCleaning =
       table.status === 'occupied' || table.status === 'served' || table.status === 'payment_pending' || table.status === 'paid';
     const canFreeTable = table.status === 'paid' || table.status === 'cleaning';
+    const paidSummary = {
+      isPaid: table.status === 'paid' || orderVal.status === 'paid',
+      lastPayment: orderVal.lastCompletedPayment ?? null,
+    };
 
     const courseGroups = COURSE_SERVICE_ORDER.map((course) => {
       const lines = activeLines.filter((l) => l.course === course);
@@ -433,7 +437,7 @@ export class RestaurantPosStore {
                 ? { type: 'free_table', count: 0 }
                 : { type: 'none', count: 0 };
 
-    return { table, order: orderVal, courseGroups, pendingKitchenCount, servicePhase, nextAction, canSendToKitchen, canMarkServed, canCharge, canMarkCleaning, canFreeTable };
+    return { table, order: orderVal, paidSummary, courseGroups, pendingKitchenCount, servicePhase, nextAction, canSendToKitchen, canMarkServed, canCharge, canMarkCleaning, canFreeTable };
   }
 
   private setError(message: string): void {
