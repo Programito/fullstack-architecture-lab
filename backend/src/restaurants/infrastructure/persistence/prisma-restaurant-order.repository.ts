@@ -652,7 +652,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       where: {
         orderId: order.id,
         ...(lineIds?.length ? { id: { in: lineIds } } : {}),
-        status: { in: ['preparing', 'ready'] },
+        status: { in: lineIds?.length ? ['pending', 'preparing', 'ready'] : ['preparing', 'ready'] },
       },
       data: { status: 'served' },
     });

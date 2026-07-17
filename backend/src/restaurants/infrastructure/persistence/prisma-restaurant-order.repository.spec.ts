@@ -14,13 +14,13 @@ function makeRepository() {
 }
 
 describe('PrismaRestaurantOrderRepository.markActiveLinesServed', () => {
-  it('limits serving to selected preparing or ready line IDs', async () => {
+  it('limits selected serving to pending, preparing, or ready line IDs', async () => {
     const { prisma, repository } = makeRepository();
 
     await repository.markActiveLinesServed('restaurant-1', 'table-1', ['line-2']);
 
     expect(prisma.orderLine.updateMany).toHaveBeenCalledWith({
-      where: { orderId: 'order-1', id: { in: ['line-2'] }, status: { in: ['preparing', 'ready'] } },
+      where: { orderId: 'order-1', id: { in: ['line-2'] }, status: { in: ['pending', 'preparing', 'ready'] } },
       data: { status: 'served' },
     });
   });
