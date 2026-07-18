@@ -1067,16 +1067,26 @@ describe('ServiceTablePanel', () => {
   });
 
   it.each([
-    ['es', 'Eliminar Craft Burger del pedido', 'Sí, eliminar todas las unidades'],
-    ['en', 'Remove Craft Burger from the order', 'Yes, remove all units'],
-    ['ca', 'Eliminar Craft Burger de la comanda', 'Sí, eliminar totes les unitats'],
-  ] as const)('uses the context-specific grouped removal confirmation label in %s', async (locale, removeActionLabel, expectedConfirmLabel) => {
+    ['es', spanishTranslations, 'Sí, eliminar todas las unidades', 'Sí, cancelar el producto'],
+    ['en', englishTranslations, 'Yes, remove all units', 'Yes, cancel the item'],
+    ['ca', catalanTranslations, 'Sí, eliminar totes les unitats', 'Sí, cancel·lar el producte'],
+  ] as const)('uses the production grouped and non-pending confirmation labels in %s', async (
+    locale,
+    runtimeTranslations,
+    expectedGroupedConfirmLabel,
+    expectedNonPendingConfirmLabel,
+  ) => {
     const i18n = provideI18nTesting(locale);
+    const runtimeServiceTranslations = runtimeTranslations.restaurantPos.service;
+    expect(runtimeServiceTranslations.confirmRemoveGrouped).toBe(expectedGroupedConfirmLabel);
+    expect(runtimeServiceTranslations.confirmRemoveNonPending).toBe(expectedNonPendingConfirmLabel);
     Object.assign(i18n.translations[locale].restaurantPos.service, {
-      confirmRemoveGrouped: expectedConfirmLabel,
+      confirmRemoveGrouped: runtimeServiceTranslations.confirmRemoveGrouped,
+      confirmRemoveNonPending: runtimeServiceTranslations.confirmRemoveNonPending,
+      removeProductActionLabel: runtimeServiceTranslations.removeProductActionLabel,
     });
 
-    await render(ServiceTablePanel, {
+    const { fixture } = await render(ServiceTablePanel, {
       imports: [...i18n.imports],
       providers: [...i18n.providers],
       inputs: {
@@ -1086,9 +1096,24 @@ describe('ServiceTablePanel', () => {
       },
     });
 
+    const removeActionLabel = runtimeServiceTranslations.removeProductActionLabel.replace('{{name}}', 'Craft Burger');
+    fireEvent.click(screen.getByRole('button', { name: removeActionLabel }));
+    const groupedConfirmButton = within(screen.getByRole('dialog')).getByRole('button', {
+      name: runtimeServiceTranslations.confirmRemoveGrouped,
+    });
+    expect(groupedConfirmButton).toBeTruthy();
+    fireEvent.click(groupedConfirmButton);
+
+    const nonPendingOrder: TableOrder = {
+      ...order,
+      total: 25,
+      lines: [{ ...order.lines[0], quantity: 2, subtotal: 25, status: 'ready' }],
+    };
+    fixture.componentRef.setInput('serviceInfo', createServiceInfo(table, nonPendingOrder));
+    fixture.detectChanges();
     fireEvent.click(screen.getByRole('button', { name: removeActionLabel }));
 
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: expectedConfirmLabel })).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: runtimeServiceTranslations.confirmRemoveNonPending })).toBeTruthy();
   });
 
   it('confirms grouped removal once using the primary line id and closes the dialog', async () => {

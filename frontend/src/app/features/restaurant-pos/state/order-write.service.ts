@@ -438,26 +438,36 @@ export class OrderWriteService {
     };
 
     pendingGroups.forEach(({ identity, desiredQuantity }) => {
-      nextOrder.lines = nextOrder.lines.filter(
-        (line) => !(this.isDeferredDirectOrderLine(line) && this.sameDirectGroup(line, identity)),
-      );
-
-      if (desiredQuantity <= 0) {
-        return;
-      }
-
       const localLine = localOrder.lines.find(
         (line) => this.isDeferredDirectOrderLine(line) && this.sameDirectGroup(line, identity),
       );
-      if (!localLine) {
-        return;
-      }
+      let hasMatchingLine = false;
 
-      nextOrder.lines.push({
-        ...localLine,
-        quantity: desiredQuantity,
-        subtotal: this.round(localLine.unitPrice * desiredQuantity),
+      nextOrder.lines = nextOrder.lines.flatMap((line) => {
+        if (!(this.isDeferredDirectOrderLine(line) && this.sameDirectGroup(line, identity))) {
+          return [line];
+        }
+        if (hasMatchingLine) {
+          return [];
+        }
+        hasMatchingLine = true;
+        if (desiredQuantity <= 0 || !localLine) {
+          return [];
+        }
+        return [{
+          ...localLine,
+          quantity: desiredQuantity,
+          subtotal: this.round(localLine.unitPrice * desiredQuantity),
+        }];
       });
+
+      if (!hasMatchingLine && desiredQuantity > 0 && localLine) {
+        nextOrder.lines.push({
+          ...localLine,
+          quantity: desiredQuantity,
+          subtotal: this.round(localLine.unitPrice * desiredQuantity),
+        });
+      }
     });
 
     nextOrder.total = this.round(nextOrder.lines.reduce((sum, line) => sum + line.subtotal, 0));

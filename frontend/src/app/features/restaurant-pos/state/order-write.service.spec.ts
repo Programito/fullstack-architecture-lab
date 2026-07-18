@@ -493,6 +493,64 @@ describe('OrderWriteService', () => {
       );
     });
 
+    it('preserva el orden remoto al reconciliar una subida pendiente de la linea intermedia', () => {
+      const localMiddleLine = {
+        ...localDirectOrder().lines[0],
+        id: 'line-local-b',
+        productName: 'B',
+        productSnapshot: {
+          ...localDirectOrder().lines[0].productSnapshot,
+          productName: 'B',
+        },
+      };
+      const mutableOrder = {
+        ...localDirectOrder(),
+        lines: [localMiddleLine],
+      };
+      mockGetOrder.mockImplementation(() => mutableOrder);
+      mockAdjustSelectedOrderLineQuantityById.mockImplementation((lineId: string, delta: number) => {
+        const line = mutableOrder.lines.find((candidate) => candidate.id === lineId);
+        if (!line) return;
+        line.quantity += delta;
+        line.subtotal = line.quantity * line.unitPrice;
+        mutableOrder.total = line.subtotal;
+      });
+      const remoteMiddleLine = {
+        ...localMiddleLine,
+        id: 'line-remote-b',
+        quantity: 1,
+        subtotal: 2.5,
+      };
+      const unrelatedLine = (id: string, productId: string, productName: string) => ({
+        ...remoteMiddleLine,
+        id,
+        productId,
+        productName,
+        productSnapshot: {
+          ...remoteMiddleLine.productSnapshot,
+          productId,
+          productName,
+        },
+        configurationSignature: `${productId}||`,
+      });
+      const service = setup();
+
+      service.increaseDirectProductQuantity('product-1', 'line-local-b');
+      service.hydrateRemoteOrder(TABLE_ID, {
+        ...localDirectOrder(),
+        total: 7.5,
+        lines: [
+          unrelatedLine('line-remote-a', 'product-a', 'A'),
+          remoteMiddleLine,
+          unrelatedLine('line-remote-c', 'product-c', 'C'),
+        ],
+      });
+
+      const hydratedOrder = mockHydrateServicePointOrder.mock.calls.at(-1)?.[1];
+      expect(hydratedOrder.lines.map((line: { productName: string }) => line.productName)).toEqual(['A', 'B', 'C']);
+      expect(hydratedOrder.lines[1]).toEqual(expect.objectContaining({ productName: 'B', quantity: 2, subtotal: 5 }));
+    });
+
     it('mantiene la eliminacion local pendiente cuando entra una recarga remota antigua', () => {
       const mutableOrder = localDirectOrder();
       mockGetOrder.mockImplementation(() => mutableOrder);
