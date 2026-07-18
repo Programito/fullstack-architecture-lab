@@ -1364,7 +1364,7 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
     fireEvent.click(within(notedRow()).getByRole('button', { name: 'Eliminar Limonada con gas del pedido' }));
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Eliminar todas las unidades' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Eliminar todas las unidades' })).getByRole('button', { name: 'Sí, eliminar todas las unidades' }));
     fixture.detectChanges();
 
     expect(increaseDirect).not.toHaveBeenCalled();
@@ -1478,7 +1478,7 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(within(localLineRow).getByRole('button', { name: 'Quitar una unidad de Limonada con gas' }));
     fireEvent.click(within(localLineRow).getByRole('button', { name: 'Eliminar Limonada con gas del pedido' }));
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Eliminar todas las unidades' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Eliminar todas las unidades' })).getByRole('button', { name: 'Sí, eliminar todas las unidades' }));
     fixture.detectChanges();
 
     expect(increaseDirect).toHaveBeenCalledWith('product-3', 'line-local-lemonade');
@@ -1864,7 +1864,7 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
 
     const dialog = screen.getByRole('dialog', { name: 'Cancelar producto de cocina' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar el producto' }));
     fixture.detectChanges();
 
     expect(apiMock.cancelRestaurantOrderLine).toHaveBeenCalledTimes(1);
@@ -1963,7 +1963,7 @@ describe('RestaurantPosServicePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Hamburguesa craft del pedido' }));
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).getByRole('button', { name: 'Sí, cancelar el producto' }));
     fixture.detectChanges();
 
     expect(screen.queryByText('1 x Hamburguesa craft')).toBeNull();
@@ -2048,7 +2048,7 @@ describe('RestaurantPosServicePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Cerveza del pedido' }));
     fixture.detectChanges();
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).getByRole('button', { name: 'Sí, cancelar el producto' }));
     fixture.detectChanges();
 
     expect(screen.queryByText('2 x Cerveza')).toBeNull();
