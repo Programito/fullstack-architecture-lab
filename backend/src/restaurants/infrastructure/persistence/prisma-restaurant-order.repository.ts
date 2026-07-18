@@ -177,6 +177,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
 
   async findActiveByTable(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null> {
     const order = await this.prisma.order.findFirst({
+      relationLoadStrategy: 'join',
       where: {
         restaurantId,
         tableId,
@@ -190,6 +191,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
 
   async findById(restaurantId: string, orderId: string): Promise<RestaurantOrderView | null> {
     const order = await this.prisma.order.findFirst({
+      relationLoadStrategy: 'join',
       where: { id: orderId, restaurantId },
       include: ORDER_INCLUDE,
     });
@@ -742,6 +744,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
 
   private async getOrderOrThrow(restaurantId: string, orderId: string): Promise<RestaurantOrderView> {
     const order = await this.prisma.order.findFirstOrThrow({
+      relationLoadStrategy: 'join',
       where: { id: orderId, restaurantId },
       include: ORDER_INCLUDE,
     });

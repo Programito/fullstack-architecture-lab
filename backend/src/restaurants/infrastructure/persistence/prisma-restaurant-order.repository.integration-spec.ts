@@ -11,15 +11,20 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { PrismaRestaurantOrderRepository } from './prisma-restaurant-order.repository';
 
 describe('PrismaRestaurantOrderRepository (integration)', () => {
+  const concurrentQueryDeprecation =
+    'Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.';
   let container: StartedPostgreSqlContainer;
   let prisma: PrismaService;
   let repository: PrismaRestaurantOrderRepository;
+  const warnings: Error[] = [];
+  const captureWarning = (warning: Error) => warnings.push(warning);
 
   let restaurantId: string;
   let tableId: string;
   let userId: string;
 
   beforeAll(async () => {
+    process.on('warning', captureWarning);
     container = await new PostgreSqlContainer('postgres:16-alpine').start();
     process.env.DATABASE_URL = container.getConnectionUri();
 
@@ -33,6 +38,9 @@ describe('PrismaRestaurantOrderRepository (integration)', () => {
   afterAll(async () => {
     await prisma?.$disconnect();
     await container?.stop();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    process.off('warning', captureWarning);
+    expect(warnings.map((warning) => warning.message)).not.toContain(concurrentQueryDeprecation);
   });
 
   beforeEach(async () => {
