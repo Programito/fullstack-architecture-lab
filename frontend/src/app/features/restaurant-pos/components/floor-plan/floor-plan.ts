@@ -43,6 +43,7 @@ export class FloorPlan implements OnDestroy {
   readonly focusRequest = input<FloorPlanFocusRequest | null>(null);
   readonly editElement = output<FloorElement>();
   readonly resizeElement = output<FloorElement>();
+  readonly elementDeleted = output<FloorElement>();
   readonly selectedElementChange = output<FloorElement | null>();
   readonly elementMoved = output<FloorElement>();
   readonly servicePointSelected = output<FloorElement>();
@@ -143,7 +144,7 @@ export class FloorPlan implements OnDestroy {
     event.stopPropagation();
 
     if (confirm(this.translate('restaurantPos.floorPlan.deleteConfirm'))) {
-      this.store.deleteFloorElement(element.id);
+      this.elementDeleted.emit(element);
       this.selectedElementId.set(null);
       this.selectedElementChange.emit(null);
     }

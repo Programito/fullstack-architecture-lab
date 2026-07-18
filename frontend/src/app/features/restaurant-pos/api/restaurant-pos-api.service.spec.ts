@@ -514,6 +514,22 @@ describe('RestaurantPosApiService', () => {
     http.verify();
   });
 
+  it('deletes one floor element and returns the refreshed layout', () => {
+    const { service, http } = setup();
+    let result: unknown;
+
+    service.deleteFloorElement('restaurant-1', 'floor-1', 'element-1').subscribe((value) => {
+      result = value;
+    });
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-1/floors/floor-1/elements/element-1');
+    expect(request.request.method).toBe('DELETE');
+    request.flush({ restaurantId: 'restaurant-1', tables: [], floors: [] });
+
+    expect(result).toEqual({ restaurantId: 'restaurant-1', tables: [], floors: [] });
+    http.verify();
+  });
+
   it('posts selected line ids when marking a service point as served', () => {
     const { service, http } = setup();
 

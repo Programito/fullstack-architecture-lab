@@ -77,4 +77,28 @@ describe('PrismaRestaurantReadRepository', () => {
     const missing = await repository.findReservationById('restaurant-mesaflow-centro', 'missing-reservation');
     expect(missing).toBeNull();
   });
+
+  it('persists floor element deletion and deactivates its linked table', async () => {
+    const before = await repository.findFloorsByRestaurantId('restaurant-mesaflow-centro');
+    const floor = before?.floors.find((candidate) => candidate.elements.some((element) => element.tableId));
+    const element = floor?.elements.find((candidate) => candidate.tableId);
+    expect(floor).toBeTruthy();
+    expect(element?.tableId).toBeTruthy();
+
+    const updated = await repository.deleteFloorElement(
+      'restaurant-mesaflow-centro',
+      floor!.id,
+      element!.id,
+    );
+
+    expect(updated?.floors.find((candidate) => candidate.id === floor!.id)?.elements).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: element!.id })]),
+    );
+    expect(updated?.tables).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: element!.tableId })]),
+    );
+    await expect(
+      prisma.restaurantTable.findUnique({ where: { id: element!.tableId! }, select: { isActive: true } }),
+    ).resolves.toEqual({ isActive: false });
+  });
 });

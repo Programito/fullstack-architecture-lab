@@ -372,16 +372,19 @@ describe('FloorPlan', () => {
     expect(resizeElement).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-1' }));
   });
 
-  it('asks for confirmation before deleting the selected element', async () => {
+  it('asks for confirmation and emits the element to delete without mutating the store itself', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const elementDeleted = vi.fn();
+    (fixture.componentInstance as FloorPlan).elementDeleted.subscribe(elementDeleted);
 
     fireEvent.click(screen.getByLabelText('M1 floor element'));
     fireEvent.click(screen.getByRole('button', { name: 'Delete M1' }));
 
     expect(window.confirm).toHaveBeenCalledWith('Delete this element from the layout?');
-    expect(store.floorElements().some((element) => element.id === 'floor-element-1')).toBe(false);
+    expect(elementDeleted).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-1' }));
+    expect(store.floorElements().some((element) => element.id === 'floor-element-1')).toBe(true);
   });
 
   it('allows moving the selected element from the object or the move toolbar action', async () => {

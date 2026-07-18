@@ -377,6 +377,29 @@ describe('RestaurantPosLayoutPage', () => {
     expect(store.activeFloorName()).toBe('Sala principal');
   });
 
+  it('persists a confirmed floor element deletion and applies the backend response', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const deletedResponse = createDefaultFloorsResponse();
+    deletedResponse.tables = deletedResponse.tables.filter((table) => table.id !== 'table-1');
+    deletedResponse.floors[0]!.elements = deletedResponse.floors[0]!.elements.filter(
+      (element) => element.id !== 'floor-element-1',
+    );
+    const deleteFloorElement = vi.fn(() => of(deletedResponse));
+    const { api } = await renderLayoutPage('es', {
+      apiOverrides: { deleteFloorElement } as unknown as Partial<RestaurantPosApiService>,
+    });
+
+    fireEvent.click(screen.getByLabelText('M1 elemento del plano'));
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar M1' }));
+
+    expect(api.deleteFloorElement).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'floor-main',
+      'floor-element-1',
+    );
+    expect(screen.queryByLabelText('M1 elemento del plano')).toBeNull();
+  });
+
   it('posts a new element and refreshes the layout from the backend response', async () => {
     const createFloorElement = vi.fn(() =>
       of({

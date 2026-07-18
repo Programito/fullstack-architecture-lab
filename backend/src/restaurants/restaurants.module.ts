@@ -15,6 +15,7 @@ import { MarkRestaurantServicePointOrderServedUseCase } from './application/use-
 import { OccupyRestaurantServicePointUseCase } from './application/use-cases/occupy-restaurant-service-point.use-case';
 import { SendRestaurantServicePointOrderToKitchenUseCase } from './application/use-cases/send-restaurant-service-point-order-to-kitchen.use-case';
 import { CreateFloorElementUseCase } from './application/use-cases/create-floor-element.use-case';
+import { DeleteFloorElementUseCase } from './application/use-cases/delete-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from './application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from './application/use-cases/update-floor-element.use-case';
 import { UpdateRestaurantFloorUseCase } from './application/use-cases/update-restaurant-floor.use-case';
@@ -149,6 +150,7 @@ import { RestaurantModifierOptionOverridesController } from './presentation/rest
     ListRestaurantReservationsUseCase,
     GetRestaurantReservationUseCase,
     CreateFloorElementUseCase,
+    DeleteFloorElementUseCase,
     ReorderFloorElementsUseCase,
     UpdateFloorElementUseCase,
     UpdateRestaurantFloorUseCase,

@@ -276,6 +276,12 @@ export class RestaurantPosApiService {
     return this.http.patch<RestaurantFloorsDto>(`${this.restaurantsUrl}/${restaurantId}/floors/${floorId}/elements/${elementId}`, request);
   }
 
+  deleteFloorElement(restaurantId: string, floorId: string, elementId: string): Observable<RestaurantFloorsDto> {
+    return this.http.delete<RestaurantFloorsDto>(
+      `${this.restaurantsUrl}/${restaurantId}/floors/${floorId}/elements/${elementId}`,
+    );
+  }
+
   reorderFloorElements(
     restaurantId: string,
     floorId: string,

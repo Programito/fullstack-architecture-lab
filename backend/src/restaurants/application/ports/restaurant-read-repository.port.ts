@@ -61,6 +61,11 @@ export interface RestaurantReadRepository {
       capacity: number | null;
     },
   ): Promise<RestaurantFloors | null>;
+  deleteFloorElement(
+    restaurantId: string,
+    floorId: string,
+    elementId: string,
+  ): Promise<RestaurantFloors | null>;
   updateServiceOrderLineStatus(
     restaurantId: string,
     orderId: string,

@@ -243,7 +243,7 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         },
       }),
       this.prisma.restaurantTable.findMany({
-        where: { restaurantId },
+        where: { restaurantId, isActive: true },
         orderBy: { tableNumber: 'asc' },
       }),
     ]);
@@ -788,6 +788,30 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         data: { name: element.label, capacity: element.capacity },
       });
     }
+
+    return this.findFloorsByRestaurantId(restaurantId);
+  }
+
+  async deleteFloorElement(
+    restaurantId: string,
+    floorId: string,
+    elementId: string,
+  ): Promise<RestaurantFloors | null> {
+    const existing = await this.prisma.floorElement.findFirst({
+      where: { id: elementId, floorId, floor: { restaurantId } },
+      select: { id: true, tableId: true },
+    });
+    if (!existing) return null;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.floorElement.delete({ where: { id: elementId } });
+      if (existing.tableId) {
+        await tx.restaurantTable.update({
+          where: { id: existing.tableId },
+          data: { isActive: false },
+        });
+      }
+    });
 
     return this.findFloorsByRestaurantId(restaurantId);
   }

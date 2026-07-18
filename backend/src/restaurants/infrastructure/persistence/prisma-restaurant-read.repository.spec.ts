@@ -516,6 +516,36 @@ describe('PrismaRestaurantReadRepository', () => {
     );
   });
 
+  it('deletes a floor element and deactivates its linked table', async () => {
+    process.env.DATABASE_URL = 'postgresql://demo';
+    const prisma = {
+      floorElement: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'floor-element-1', tableId: 'table-1' }),
+        delete: vi.fn().mockResolvedValue({ id: 'floor-element-1' }),
+      },
+      restaurantTable: {
+        update: vi.fn().mockResolvedValue({ id: 'table-1', isActive: false }),
+      },
+      $transaction: vi.fn(async (operation: (tx: unknown) => Promise<void>) => operation(prisma)),
+    };
+    const repository = new PrismaRestaurantReadRepository(prisma as never);
+    const refreshed = { restaurantId: 'restaurant-1', tables: [], floors: [] };
+    vi.spyOn(repository, 'findFloorsByRestaurantId').mockResolvedValue(refreshed);
+
+    const result = await repository.deleteFloorElement('restaurant-1', 'floor-1', 'floor-element-1');
+
+    expect(prisma.floorElement.findFirst).toHaveBeenCalledWith({
+      where: { id: 'floor-element-1', floorId: 'floor-1', floor: { restaurantId: 'restaurant-1' } },
+      select: { id: true, tableId: true },
+    });
+    expect(prisma.floorElement.delete).toHaveBeenCalledWith({ where: { id: 'floor-element-1' } });
+    expect(prisma.restaurantTable.update).toHaveBeenCalledWith({
+      where: { id: 'table-1' },
+      data: { isActive: false },
+    });
+    expect(result).toBe(refreshed);
+  });
+
   it('loads the active service point order from Prisma', async () => {
     process.env.DATABASE_URL = 'postgresql://demo';
 

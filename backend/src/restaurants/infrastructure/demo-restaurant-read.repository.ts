@@ -1097,6 +1097,29 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     return structuredClone(floors);
   }
 
+  async deleteFloorElement(
+    restaurantId: string,
+    floorId: string,
+    elementId: string,
+  ): Promise<RestaurantFloors | null> {
+    const floorsMap = new Map(this.floors);
+    const floors = floorsMap.get(restaurantId);
+    if (!floors) return null;
+
+    const floor = floors.floors.find((candidate) => candidate.id === floorId);
+    const element = floor?.elements.find((candidate) => candidate.id === elementId);
+    if (!floor || !element) return null;
+
+    floor.elements = floor.elements.filter((candidate) => candidate.id !== elementId);
+    if (element.tableId) {
+      floors.tables = floors.tables.filter((table) => table.id !== element.tableId);
+    }
+
+    floorsMap.set(restaurantId, structuredClone(floors));
+    this.floors = [...floorsMap.entries()];
+    return structuredClone(floors);
+  }
+
   async createFloorElement(
     restaurantId: string,
     floorId: string,

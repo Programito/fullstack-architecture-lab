@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Patch, Post, Put, UseGuards, Version } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Put, UseGuards, Version } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 import { unwrapResultOrThrow } from '../../../shared/http/application-error.mapper';
@@ -12,6 +12,7 @@ import { GetRestaurantServicePointUseCase } from '../../application/use-cases/ge
 import { GetRestaurantServicePointOrderUseCase } from '../../application/use-cases/get-restaurant-service-point-order.use-case';
 import { OccupyRestaurantServicePointUseCase } from '../../application/use-cases/occupy-restaurant-service-point.use-case';
 import { CreateFloorElementUseCase } from '../../application/use-cases/create-floor-element.use-case';
+import { DeleteFloorElementUseCase } from '../../application/use-cases/delete-floor-element.use-case';
 import { ReorderFloorElementsUseCase } from '../../application/use-cases/reorder-floor-elements.use-case';
 import { UpdateFloorElementUseCase } from '../../application/use-cases/update-floor-element.use-case';
 import { UpdateRestaurantFloorUseCase } from '../../application/use-cases/update-restaurant-floor.use-case';
@@ -34,6 +35,7 @@ export class RestaurantFloorController {
     private readonly getRestaurantServicePointOrder: GetRestaurantServicePointOrderUseCase,
     private readonly occupyRestaurantServicePoint: OccupyRestaurantServicePointUseCase,
     private readonly createFloorElement: CreateFloorElementUseCase,
+    private readonly deleteFloorElement: DeleteFloorElementUseCase,
     private readonly reorderFloorElements: ReorderFloorElementsUseCase,
     private readonly updateFloorElement: UpdateFloorElementUseCase,
     private readonly updateRestaurantFloor: UpdateRestaurantFloorUseCase,
@@ -157,6 +159,25 @@ export class RestaurantFloorController {
           shape: body.shape ?? null,
           capacity: body.capacity ?? null,
         }),
+      ),
+    );
+  }
+
+  @Delete(':id/floors/:floorId/elements/:elementId')
+  @Version('1')
+  @UseGuards(AuthGuard, PermissionsGuard, RestaurantAccessGuard)
+  @RequirePermissions('layout')
+  @RequireRestaurantScope()
+  @ApiOkResponse({ type: RestaurantFloorsResponseDto })
+  @ApiNotFoundResponse({ description: 'Restaurant, floor, or floor element not found.' })
+  async deleteElement(
+    @Param('id') id: string,
+    @Param('floorId') floorId: string,
+    @Param('elementId') elementId: string,
+  ): Promise<RestaurantFloorsResponseDto> {
+    return RestaurantFloorsResponseDto.fromDomain(
+      unwrapResultOrThrow(
+        await this.deleteFloorElement.execute({ restaurantId: id, floorId, elementId }),
       ),
     );
   }

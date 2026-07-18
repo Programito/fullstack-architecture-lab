@@ -480,6 +480,22 @@ export class RestaurantPosLayoutPage {
     this.persistCurrentFloorArrangement();
   }
 
+  protected handleFloorElementDeleted(element: FloorElement): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+    const floorId = this.store.activeFloorId();
+
+    if (!restaurant || !floorId) {
+      return;
+    }
+
+    this.api.deleteFloorElement(restaurant.id, floorId, element.id).subscribe({
+      next: (floors) => this.applyFloorsResponse(floors),
+      error: () => {
+        // Keep the persisted layout visible so the user can retry the deletion.
+      },
+    });
+  }
+
   protected resizeCellClass(cell: MatrixCell): string {
     return cell.column <= this.resizeColumnsInput() && cell.row <= this.resizeRowsInput()
       ? 'border-cyan-500 bg-cyan-100'
