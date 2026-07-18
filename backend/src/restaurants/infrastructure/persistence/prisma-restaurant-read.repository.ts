@@ -579,7 +579,10 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
       where: { restaurantId, tableId, status: { in: ['open', 'pending_payment'] } },
       include: {
         lines: {
-          orderBy: { updatedAt: 'asc' },
+          orderBy: [
+            { createdAt: 'asc' as const },
+            { id: 'asc' as const },
+          ],
           include: {
             modifiers: true,
             comboSlots: true,
@@ -871,7 +874,10 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
       },
       include: {
         lines: {
-          orderBy: { updatedAt: 'asc' },
+          orderBy: [
+            { createdAt: 'asc' as const },
+            { id: 'asc' as const },
+          ],
         },
       },
       orderBy: { createdAt: 'asc' },

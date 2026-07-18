@@ -391,6 +391,34 @@ describe('PrismaRestaurantReadRepository', () => {
   it('builds the service floor from Prisma tables, layout and active orders', async () => {
     process.env.DATABASE_URL = 'postgresql://demo';
 
+    const findActiveOrders = vi.fn().mockResolvedValue([
+      {
+        id: 'order-demo-served',
+        tableId: 'stool-3',
+        status: 'pending_payment',
+        currency: 'EUR',
+        guestCount: 1,
+        subtotalCents: 1190,
+        taxCents: 207,
+        totalCents: 1190,
+        createdAt: new Date('2026-06-21T11:15:00.000Z'),
+        updatedAt: new Date('2026-06-21T12:00:00.000Z'),
+        lines: [
+          {
+            id: 'line-platter',
+            productNameSnapshot: 'Plato combinado vegetal',
+            quantity: 1,
+            unitPriceCents: 1190,
+            subtotalCents: 1190,
+            status: 'served',
+            courseSnapshot: 'main',
+            kitchenNote: null,
+            updatedAt: new Date('2026-06-21T11:58:00.000Z'),
+          },
+        ],
+      },
+    ]);
+
     const repository = new PrismaRestaurantReadRepository({
       restaurant: {
         findUnique: vi.fn().mockResolvedValue({ id: 'restaurant-mesaflow-centro' }),
@@ -439,33 +467,7 @@ describe('PrismaRestaurantReadRepository', () => {
         ]),
       },
       order: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            id: 'order-demo-served',
-            tableId: 'stool-3',
-            status: 'pending_payment',
-            currency: 'EUR',
-            guestCount: 1,
-            subtotalCents: 1190,
-            taxCents: 207,
-            totalCents: 1190,
-            createdAt: new Date('2026-06-21T11:15:00.000Z'),
-            updatedAt: new Date('2026-06-21T12:00:00.000Z'),
-            lines: [
-              {
-                id: 'line-platter',
-                productNameSnapshot: 'Plato combinado vegetal',
-                quantity: 1,
-                unitPriceCents: 1190,
-                subtotalCents: 1190,
-                status: 'served',
-                courseSnapshot: 'main',
-                kitchenNote: null,
-                updatedAt: new Date('2026-06-21T11:58:00.000Z'),
-              },
-            ],
-          },
-        ]),
+        findMany: findActiveOrders,
       },
     } as never);
 
@@ -499,6 +501,18 @@ describe('PrismaRestaurantReadRepository', () => {
           }),
         }),
       ]),
+    );
+    expect(findActiveOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          lines: expect.objectContaining({
+            orderBy: [
+              { createdAt: 'asc' },
+              { id: 'asc' },
+            ],
+          }),
+        }),
+      }),
     );
   });
 
@@ -560,6 +574,7 @@ describe('PrismaRestaurantReadRepository', () => {
         },
       ],
     };
+    const findServicePointOrder = vi.fn().mockResolvedValue(demoOrder);
 
     const repository = new PrismaRestaurantReadRepository({
       restaurant: {
@@ -573,7 +588,7 @@ describe('PrismaRestaurantReadRepository', () => {
       },
       order: {
         findMany: vi.fn().mockResolvedValue([demoOrder]),
-        findFirst: vi.fn().mockResolvedValue(demoOrder),
+        findFirst: findServicePointOrder,
       },
     } as never);
 
@@ -612,5 +627,17 @@ describe('PrismaRestaurantReadRepository', () => {
         }),
       ],
     });
+    expect(findServicePointOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          lines: expect.objectContaining({
+            orderBy: [
+              { createdAt: 'asc' },
+              { id: 'asc' },
+            ],
+          }),
+        }),
+      }),
+    );
   });
 });

@@ -146,7 +146,10 @@ type RawCatalogRestaurantProduct = {
 
 const ORDER_INCLUDE = {
   lines: {
-    orderBy: { createdAt: 'asc' as const },
+    orderBy: [
+      { createdAt: 'asc' as const },
+      { id: 'asc' as const },
+    ],
     include: {
       modifiers: true,
       comboSlots: true,
@@ -159,7 +162,7 @@ const ORDER_INCLUDE = {
   payments: {
     orderBy: { createdAt: 'asc' as const },
   },
-} as const;
+};
 
 @Injectable()
 export class PrismaRestaurantOrderRepository implements RestaurantOrderRepository {

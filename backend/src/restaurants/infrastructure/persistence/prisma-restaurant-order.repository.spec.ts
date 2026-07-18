@@ -98,6 +98,10 @@ describe('PrismaRestaurantOrderRepository order image contract', () => {
       expect.objectContaining({
         include: expect.objectContaining({
           lines: expect.objectContaining({
+            orderBy: [
+              { createdAt: 'asc' },
+              { id: 'asc' },
+            ],
             include: expect.objectContaining({
               restaurantProduct: { select: { imageUrl: true } },
             }),
