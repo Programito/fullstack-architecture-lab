@@ -1,4 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
+import catalanTranslations from '../../../../../../public/i18n/ca.json';
+import englishTranslations from '../../../../../../public/i18n/en.json';
+import spanishTranslations from '../../../../../../public/i18n/es.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { OrderCourse, OrderCourseGroup, OrderLineProductSnapshot, RestaurantTable, ServiceTableInfo, TableOrder } from '../../models/restaurant-pos.models';
 import { ServiceTablePanel } from './service-table-panel';
@@ -115,6 +118,26 @@ describe('ServiceTablePanel', () => {
       },
     });
   };
+
+  const groupedPendingOrder = (imageUrl = 'https://example.com/burger.jpg'): TableOrder => ({
+    ...order,
+    total: 62.5,
+    lines: [
+      {
+        ...order.lines[0],
+        productSnapshot: { ...order.lines[0].productSnapshot, imageUrl },
+        quantity: 2,
+        subtotal: 25,
+      },
+      {
+        ...order.lines[0],
+        id: 'line-burger-secondary',
+        productSnapshot: { ...order.lines[0].productSnapshot, imageUrl },
+        quantity: 3,
+        subtotal: 37.5,
+      },
+    ],
+  });
 
   it('renders the selected table panel as workflow-first sections', async () => {
     await renderServiceTablePanel();
@@ -316,6 +339,9 @@ describe('ServiceTablePanel', () => {
     const pendingPaymentOrder: TableOrder = {
       ...order,
       paymentMethod: 'pending',
+      // Sin líneas pendientes: si las hubiera, el botón se habilitaría igualmente para
+      // abrir el diálogo de "enviar a cocina antes de cobrar" (ver canSubmitCharge()).
+      lines: order.lines.map((line) => ({ ...line, status: 'sent_to_kitchen' })),
     };
 
     await render(ServiceTablePanel, {
@@ -582,7 +608,7 @@ describe('ServiceTablePanel', () => {
     const i18n = provideI18nTesting();
     const duplicatedOrder: TableOrder = {
       ...order,
-      total: 8.4,
+      total: 12.6,
       lines: [
         {
           id: 'line-wine-1',
@@ -612,6 +638,21 @@ describe('ServiceTablePanel', () => {
           course: 'drinks',
           status: 'pending',
         },
+        {
+          id: 'line-wine-noted',
+          productSnapshot: productSnapshot('wine-glass', 'Vino tinto copa', 4.2, 'drinks', false),
+          productId: 'wine-glass',
+          productName: 'Vino tinto copa',
+          quantity: 1,
+          basePrice: 4.2,
+          selectedModifiers: [],
+          kitchenNote: 'Sin hielo',
+          unitPrice: 4.2,
+          subtotal: 4.2,
+          configurationSignature: 'wine-glass::',
+          course: 'drinks',
+          status: 'pending',
+        },
       ],
     };
 
@@ -626,8 +667,87 @@ describe('ServiceTablePanel', () => {
     });
 
     expect(screen.getByText('2 x Vino tinto copa')).toBeTruthy();
-    expect(screen.getByText('2 uds · 8,40 €')).toBeTruthy();
-    expect(screen.queryByText('1 x Vino tinto copa')).toBeNull();
+    expect(screen.getByText('1 x Vino tinto copa')).toBeTruthy();
+    expect(screen.getByText('3 uds · 12,60 €')).toBeTruthy();
+    expect(screen.getByText(/Sin hielo/)).toBeTruthy();
+  });
+
+  it('keeps the same product in separate rows when signature or unit price differs', async () => {
+    const i18n = provideI18nTesting();
+    const baseLine = {
+      id: 'line-wine-a',
+      productSnapshot: productSnapshot('wine-glass', 'Vino tinto copa', 4.2, 'drinks', false),
+      productId: 'wine-glass',
+      productName: 'Vino tinto copa',
+      quantity: 1,
+      basePrice: 4.2,
+      selectedModifiers: [],
+      unitPrice: 4.2,
+      subtotal: 4.2,
+      configurationSignature: 'wine-glass|a',
+      course: 'drinks' as const,
+      status: 'pending' as const,
+    };
+    const splitOrder: TableOrder = {
+      ...order,
+      total: 13.4,
+      lines: [
+        baseLine,
+        { ...baseLine, id: 'line-wine-b', configurationSignature: 'wine-glass|b' },
+        { ...baseLine, id: 'line-wine-price-b', unitPrice: 5, subtotal: 5 },
+      ],
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, splitOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getAllByText('1 x Vino tinto copa')).toHaveLength(3);
+  });
+
+  it('does not group pending combo lines when their configuration snapshots are empty', async () => {
+    const i18n = provideI18nTesting();
+    const comboLine = {
+      id: 'line-combo-1',
+      productSnapshot: {
+        ...productSnapshot('combo-1', 'Menú del día', 12, 'main'),
+        productType: 'combo' as const,
+      },
+      productId: 'combo-1',
+      productName: 'Menú del día',
+      quantity: 1,
+      basePrice: 12,
+      selectedModifiers: [],
+      selectedComboSlots: [],
+      unitPrice: 12,
+      subtotal: 12,
+      configurationSignature: 'combo-1::',
+      course: 'main' as const,
+      status: 'pending' as const,
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, {
+          ...order,
+          total: 24,
+          lines: [comboLine, { ...comboLine, id: 'line-combo-2' }],
+        }),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    expect(screen.getAllByText('1 x Menú del día')).toHaveLength(2);
+    expect(screen.queryByText('2 x Menú del día')).toBeNull();
   });
 
   it('renders combo slot selections with supplements', async () => {
@@ -858,6 +978,319 @@ describe('ServiceTablePanel', () => {
 
     expect(screen.queryByRole('dialog', { name: 'Cancelar producto de cocina' })).toBeNull();
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
+  });
+
+  it('keeps the kitchen cancellation copy for a non-pending line with multiple units', async () => {
+    const i18n = provideI18nTesting();
+    const kitchenOrder: TableOrder = {
+      ...order,
+      lines: [{ ...order.lines[0], quantity: 2, subtotal: 25, status: 'ready' }],
+    };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, kitchenOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+
+    expect(screen.getByRole('dialog', { name: 'Cancelar producto de cocina' })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: 'Eliminar todas las unidades' })).toBeNull();
+  });
+
+  it('waits for confirmation before removing a grouped pending line', async () => {
+    const i18n = provideI18nTesting();
+    const removeProduct = vi.fn();
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(removeProduct).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['es', spanishTranslations, 'Eliminar todas las unidades', 'Se eliminarán las 5 unidades de Craft Burger del pedido.'],
+    ['en', englishTranslations, 'Remove all units', 'All 5 units of Craft Burger will be removed from the order.'],
+    ['ca', catalanTranslations, 'Eliminar totes les unitats', "S'eliminaran les 5 unitats de Craft Burger de la comanda."],
+  ] as const)('shows the grouped image, quantity, and production %s remove-all copy', async (locale, runtimeTranslations, expectedTitle, expectedDescription) => {
+    const i18n = provideI18nTesting(locale);
+    const runtimeServiceTranslations = runtimeTranslations.restaurantPos.service;
+    expect(runtimeServiceTranslations.removeGroupedConfirmTitle).toBe(expectedTitle);
+    expect(
+      runtimeServiceTranslations.removeGroupedConfirmDescription
+        .replace('{{count}}', '5')
+        .replace('{{name}}', 'Craft Burger'),
+    ).toBe(expectedDescription);
+    Object.assign(i18n.translations[locale].restaurantPos.service, {
+      removeGroupedConfirmTitle: runtimeServiceTranslations.removeGroupedConfirmTitle,
+      removeGroupedConfirmDescription: runtimeServiceTranslations.removeGroupedConfirmDescription,
+      removeProductActionLabel: runtimeServiceTranslations.removeProductActionLabel,
+    });
+    const { container } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    const removeActionLabel = runtimeServiceTranslations.removeProductActionLabel.replace('{{name}}', 'Craft Burger');
+    fireEvent.click(screen.getByRole('button', { name: removeActionLabel }));
+
+    const dialog = screen.getByRole('dialog', { name: expectedTitle });
+    const dialogImage = dialog.querySelector('[data-product-image]') as HTMLElement;
+    expect(dialogImage).toBeTruthy();
+    expect(dialogImage.style.width).toBe('6rem');
+    expect(within(dialog).getByText('Craft Burger')).toBeTruthy();
+    expect(within(dialog).getByText('5')).toBeTruthy();
+    expect(within(dialog).getByText(expectedDescription)).toBeTruthy();
+    expect(container.querySelectorAll('[data-product-image]')).toHaveLength(2);
+  });
+
+  it('confirms grouped removal once using the primary line id and closes the dialog', async () => {
+    const i18n = provideI18nTesting();
+    const removeProduct = vi.fn();
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, cancelar producto' }));
+
+    expect(removeProduct).toHaveBeenCalledTimes(1);
+    expect(removeProduct).toHaveBeenCalledWith('line-burger');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('refreshes grouped removal from the canonical current group and keeps the original course', async () => {
+    const i18n = provideI18nTesting();
+    const removeProduct = vi.fn();
+    const initialOrder: TableOrder = {
+      ...order,
+      total: 25,
+      lines: [{
+        ...order.lines[0],
+        id: 'local-main-line',
+        quantity: 2,
+        subtotal: 25,
+        configurationSignature: 'burger::::',
+        productSnapshot: { ...order.lines[0].productSnapshot, imageUrl: 'https://example.com/local-burger.jpg' },
+      }],
+    };
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, initialOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+
+    const synchronizedMainLine = {
+      ...initialOrder.lines[0],
+      id: 'backend-main-line',
+      productName: 'Craft Burger actualizado',
+      quantity: 3,
+      subtotal: 37.5,
+      configurationSignature: 'burger|',
+      productSnapshot: {
+        ...initialOrder.lines[0].productSnapshot,
+        productName: 'Craft Burger actualizado',
+        imageUrl: 'https://example.com/backend-burger.jpg',
+      },
+    };
+    const synchronizedOrder: TableOrder = {
+      ...initialOrder,
+      total: 150,
+      lines: [
+        synchronizedMainLine,
+        {
+          ...synchronizedMainLine,
+          id: 'backend-drinks-collision',
+          productName: 'Craft Burger de bebidas',
+          quantity: 9,
+          subtotal: 112.5,
+          course: 'drinks',
+          productSnapshot: {
+            ...synchronizedMainLine.productSnapshot,
+            productName: 'Craft Burger de bebidas',
+            course: 'drinks',
+            imageUrl: 'https://example.com/drinks-collision.jpg',
+          },
+        },
+      ],
+    };
+    fixture.componentRef.setInput('serviceInfo', createServiceInfo(table, synchronizedOrder));
+    fixture.detectChanges();
+
+    const dialog = screen.getByRole('dialog', { name: 'Eliminar todas las unidades' });
+    expect(within(dialog).getByText('Craft Burger actualizado')).toBeTruthy();
+    expect(within(dialog).getByText('3')).toBeTruthy();
+    expect(dialog.querySelector('img')?.getAttribute('src')).toBe('https://example.com/backend-burger.jpg');
+    expect(within(dialog).queryByText('Craft Burger de bebidas')).toBeNull();
+    expect(within(dialog).queryByText('9')).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar producto' }));
+
+    expect(removeProduct).toHaveBeenCalledTimes(1);
+    expect(removeProduct).toHaveBeenCalledWith('backend-main-line');
+  });
+
+  it('closes grouped removal without emitting when the target group disappears', async () => {
+    const i18n = provideI18nTesting();
+    const removeProduct = vi.fn();
+    const initialOrder = groupedPendingOrder();
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, initialOrder),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+    fixture.componentRef.setInput('serviceInfo', createServiceInfo(table, { ...initialOrder, total: 0, lines: [] }));
+    fixture.detectChanges();
+
+    expect(removeProduct).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes and cancels grouped removal without emitting or retaining the pending group', async () => {
+    const i18n = provideI18nTesting();
+    const removeProduct = vi.fn();
+    const { fixture } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+    fixture.componentInstance.removeProduct.subscribe(removeProduct);
+    const pendingRemovalGroup = () => (
+      fixture.componentInstance as unknown as { pendingRemovalGroup: () => unknown }
+    ).pendingRemovalGroup();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+    expect(pendingRemovalGroup()).not.toBeNull();
+    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Cancelar producto' })[0]);
+
+    expect(removeProduct).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(pendingRemovalGroup()).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+    expect(pendingRemovalGroup()).not.toBeNull();
+    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Cancelar producto' })[1]);
+    expect(removeProduct).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(pendingRemovalGroup()).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, cancelar producto' }));
+    expect(removeProduct).toHaveBeenCalledTimes(1);
+    expect(removeProduct).toHaveBeenCalledWith('line-burger');
+  });
+
+  it('renders a medium product image and loading skeleton in the order line', async () => {
+    const i18n = provideI18nTesting();
+    const { container } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    const orderLine = container.querySelector('.theme-order-line') as HTMLElement;
+    const image = orderLine.querySelector('[data-product-image]') as HTMLElement;
+    expect(image).toBeTruthy();
+    expect(image.style.width).toBe('3rem');
+    expect(orderLine.querySelector('img')?.getAttribute('src')).toBe('https://example.com/burger.jpg');
+    expect(orderLine.querySelector('.skeleton')).toBeTruthy();
+  });
+
+  it('renders the product image fallback when the order snapshot has no URL', async () => {
+    const i18n = provideI18nTesting();
+    const { container } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder('')),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    const orderLine = container.querySelector('.theme-order-line') as HTMLElement;
+    expect(orderLine.querySelector('[data-product-image-fallback]')).toBeTruthy();
+    expect(orderLine.querySelector('img')).toBeNull();
+  });
+
+  it('keeps phone-safe DOM order, shrink constraints, and complete quantity controls', async () => {
+    const i18n = provideI18nTesting();
+    const { container } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    const orderLine = container.querySelector('.theme-order-line') as HTMLElement;
+    const row = orderLine.firstElementChild as HTMLElement;
+    const image = orderLine.querySelector('app-product-image') as HTMLElement;
+    const content = orderLine.querySelector('[data-order-line-content]') as HTMLElement;
+    const stepper = orderLine.querySelector('.theme-quantity-stepper') as HTMLElement;
+    const quantityButtons = within(stepper).getAllByRole('button');
+
+    expect(row.classList).toContain('flex');
+    expect(row.children[0]).toBe(image);
+    expect(row.children[1]).toBe(content);
+    expect(image.classList).toContain('shrink-0');
+    expect(content.classList).toContain('min-w-0');
+    expect(content.classList).toContain('flex-1');
+    expect(stepper.parentElement?.classList).toContain('shrink-0');
+    expect(quantityButtons).toHaveLength(2);
+    expect(quantityButtons.every((button) => button.classList.contains('h-7') && button.classList.contains('w-7'))).toBe(true);
+    expect(orderLine.querySelector('.overflow-x-auto')).toBeNull();
   });
 
   it('shows picked up line status without preparation controls', async () => {

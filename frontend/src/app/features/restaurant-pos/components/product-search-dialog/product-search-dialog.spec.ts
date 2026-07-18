@@ -15,6 +15,7 @@ describe('ProductSearchDialog', () => {
       categoryId: 'burgers-classic',
       category: 'Hamburguesas',
       description: 'Carne de ternera con salsa de la casa.',
+      imageUrl: 'https://cdn.example/burger.webp',
       basePrice: 12.5,
       price: 12.5,
       available: true,
@@ -138,6 +139,51 @@ describe('ProductSearchDialog', () => {
     expect(screen.getAllByText(/Más vendidos|Favoritos/).length).toBeGreaterThan(0);
   });
 
+  it('shows a circular skeleton until a product image loads and falls back when it fails', async () => {
+    await renderDialog({
+      activeSection: 'food',
+      products: [products[0]],
+      favoriteProductIds: [],
+      bestSellerProductIds: [],
+      productQuantities: {},
+    });
+
+    const avatar = screen.getByTestId('product-search-avatar-burger');
+    const productImage = avatar.querySelector('app-product-image');
+    const imageContainer = avatar.querySelector('[data-product-image]');
+    const image = avatar.querySelector('img') as HTMLImageElement;
+
+    expect(productImage).toBeTruthy();
+    expect(imageContainer?.classList).toContain('product-image--circle');
+    expect(image.getAttribute('src')).toBe('https://cdn.example/burger.webp');
+    expect(avatar.querySelector('.skeleton')).toBeTruthy();
+
+    fireEvent.load(image);
+    expect(avatar.querySelector('.skeleton')).toBeNull();
+    expect(avatar.querySelector('img')).toBeTruthy();
+
+    fireEvent.error(image);
+    expect(avatar.querySelector('img')).toBeNull();
+    expect(avatar.querySelector('[data-product-image-fallback]')).toBeTruthy();
+  });
+
+  it('shows the image fallback immediately without a skeleton when the product has no URL', async () => {
+    await renderDialog({
+      activeSection: 'drinks',
+      products: [products[1]],
+      favoriteProductIds: [],
+      bestSellerProductIds: [],
+      productQuantities: {},
+    });
+
+    const avatar = screen.getByTestId('product-search-avatar-lemonade');
+
+    expect(avatar.querySelector('app-product-image')).toBeTruthy();
+    expect(avatar.querySelector('[data-product-image-fallback]')).toBeTruthy();
+    expect(avatar.querySelector('.skeleton')).toBeNull();
+    expect(avatar.querySelector('img')).toBeNull();
+  });
+
   it('renders section chips, grouped products and polished POS card actions', async () => {
     const { fixture } = await renderDialog();
     const sectionChanged = vi.fn();
@@ -205,8 +251,12 @@ describe('ProductSearchDialog', () => {
     expect(screen.getByRole('button', { name: 'Favoritos' }).className).toContain('cursor-pointer');
     expect(within(soldOutRow).getByRole('button', { name: 'Añadir una unidad de Coulant de chocolate' }).className).toContain('disabled:cursor-not-allowed');
     expect(lemonadeAvatar.className).toContain('rounded-full');
-    expect(within(lemonadeAvatar).getByText('local_drink')).toBeTruthy();
-    expect(within(comboAvatar).getByText('restaurant_menu')).toBeTruthy();
+    expect(lemonadeAvatar.querySelector('[data-product-image-fallback]')).toBeTruthy();
+    const burgerAvatar = within(burgerRow).getByTestId('product-search-avatar-burger');
+    const burgerImage = burgerAvatar.querySelector('img');
+    expect(burgerImage?.getAttribute('src')).toBe('https://cdn.example/burger.webp');
+    expect(lemonadeAvatar.querySelector('img')).toBeNull();
+    expect(comboAvatar.querySelector('[data-product-image-fallback]')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Favoritos' }));
     expect(sectionChanged).toHaveBeenCalledWith('favorites');

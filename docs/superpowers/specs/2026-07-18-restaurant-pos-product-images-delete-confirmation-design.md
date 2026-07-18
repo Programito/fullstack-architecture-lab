@@ -43,7 +43,7 @@ El pedido usará una miniatura cuadrada. El buscador conservará su avatar circu
 - `OrderLineProductSnapshot` incorporará `imageUrl?: string`.
 - Las líneas locales copiarán la URL desde el producto del catálogo al crear su snapshot.
 - La respuesta backend del pedido expondrá `imageUrl: string | null`.
-- Prisma obtendrá la URL actual a través de la relación del producto; no se añadirá una columna snapshot ni una migración.
+- Prisma obtendrá la URL actual desde `RestaurantProduct.imageUrl`, que es donde el esquema guarda la imagen del artículo de venta; no se añadirá una columna snapshot ni una migración.
 - El adaptador demo y los mappers frontend conservarán el campo opcional.
 - Si un backend antiguo no envía el campo, la interfaz mostrará el fallback sin romper la carga del pedido.
 

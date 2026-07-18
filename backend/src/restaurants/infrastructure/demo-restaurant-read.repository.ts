@@ -229,6 +229,8 @@ const INITIAL_RESERVATIONS = new Map<string, RestaurantReservation[]>([
 
 type DemoOrderLine = {
   id: string;
+  restaurantProductId?: string | null;
+  productId?: string | null;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   quantity: number;
@@ -279,6 +281,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
         lines: [
           {
             id: 'line-burger',
+            restaurantProductId: 'menu-item-burger',
             productName: 'Hamburguesa craft',
             productType: 'simple',
             quantity: 1,
@@ -294,6 +297,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
           },
           {
             id: 'line-combo',
+            restaurantProductId: 'menu-item-combo',
             productName: 'Menu Classic Burger',
             productType: 'combo',
             quantity: 1,
@@ -412,6 +416,7 @@ const INITIAL_SERVICE_ORDERS = new Map<string, DemoOrder[]>([
         lines: [
           {
             id: 'line-paid-burger',
+            restaurantProductId: 'menu-item-burger',
             productName: 'Hamburguesa craft',
             productType: 'simple',
             quantity: 1,
@@ -744,6 +749,9 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
       return { order: null, lines: [] };
     }
 
+    const menuItems = (new Map(this.menus).get(restaurantId)?.sections ?? [])
+      .flatMap((section) => section.items);
+
     return {
       order: {
         id: activeOrder.id,
@@ -760,6 +768,13 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
         id: line.id,
         restaurantProductId: line.restaurantProductId ?? null,
         productId: line.productId ?? null,
+        imageUrl:
+          menuItems.find(
+            (item) =>
+              (item.restaurantProductId ?? item.productId ?? item.id) ===
+              (line.restaurantProductId ?? line.productId),
+          )?.imageUrl ?? null,
+        configurationSignature: line.restaurantProductId ?? line.productId ?? line.id,
         productName: line.productName,
         productType: line.productType,
         quantity: line.quantity,
@@ -1198,6 +1213,9 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
     // Numero de ticket del modo demo: posicion 1-based del pedido dentro de su restaurante
     // (estable y suficiente para mostrar; el real lo asigna PrismaRestaurantOrderRepository).
     const orderIndex = this.getOrders(restaurantId).findIndex((candidate) => candidate.id === order.id);
+    const menuItems = (new Map(this.menus).get(restaurantId)?.sections ?? [])
+      .flatMap((section) => section.items);
+
     return {
       order: {
         id: order.id,
@@ -1221,6 +1239,12 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
         id: line.id,
         restaurantProductId: null,
         productId: null,
+        imageUrl:
+          menuItems.find(
+            (item) =>
+              (item.restaurantProductId ?? item.productId ?? item.id) ===
+              (line.restaurantProductId ?? line.productId),
+          )?.imageUrl ?? null,
         productName: line.productName,
         productType: 'simple',
         course: this.mapDemoLineCourse(line.course),

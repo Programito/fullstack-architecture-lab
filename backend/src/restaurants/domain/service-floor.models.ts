@@ -85,6 +85,8 @@ export type ServicePointOrderLineView = {
   id: string;
   restaurantProductId: string | null;
   productId: string | null;
+  imageUrl: string | null;
+  configurationSignature: string;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   quantity: number;

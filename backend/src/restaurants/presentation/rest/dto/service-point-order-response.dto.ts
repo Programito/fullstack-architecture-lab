@@ -58,6 +58,12 @@ class ServicePointOrderLineResponseDto {
   @ApiPropertyOptional({ nullable: true, example: 'product-burger-001' })
   productId!: string | null;
 
+  @ApiPropertyOptional({ nullable: true, example: 'https://cdn.example.test/wine.jpg' })
+  imageUrl!: string | null;
+
+  @ApiProperty({ example: 'rp-burger|' })
+  configurationSignature!: string;
+
   @ApiProperty({ example: 'Hamburguesa craft' })
   productName!: string;
 

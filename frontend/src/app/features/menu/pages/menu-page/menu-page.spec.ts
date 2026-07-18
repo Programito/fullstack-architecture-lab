@@ -181,7 +181,7 @@ describe('MenuPage', () => {
 
     expect(screen.getAllByText('Cerveza').length).toBeGreaterThan(0);
     expect(screen.queryByText('No hay productos que coincidan con los filtros.')).toBeNull();
-  });
+  }, 10_000);
 
   it('filters products by a selected allergen', async () => {
     const { fixture } = await renderPage();

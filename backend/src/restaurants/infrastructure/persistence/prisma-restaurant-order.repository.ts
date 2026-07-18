@@ -58,6 +58,7 @@ type RawOrderLine = {
   id: string;
   restaurantProductId: string | null;
   productId: string | null;
+  restaurantProduct: { imageUrl: string | null } | null;
   productNameSnapshot: string;
   productTypeSnapshot: string;
   courseSnapshot: string;
@@ -150,6 +151,9 @@ const ORDER_INCLUDE = {
       modifiers: true,
       comboSlots: true,
       platterComponents: true,
+      restaurantProduct: {
+        select: { imageUrl: true },
+      },
     },
   },
   payments: {
@@ -777,6 +781,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       id: line.id,
       restaurantProductId: line.restaurantProductId,
       productId: line.productId,
+      imageUrl: line.restaurantProduct?.imageUrl ?? null,
       productName: line.productNameSnapshot,
       productType: line.productTypeSnapshot as RestaurantOrderLineView['productType'],
       course: line.courseSnapshot as RestaurantOrderLineView['course'],

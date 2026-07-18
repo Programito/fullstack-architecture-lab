@@ -1,21 +1,31 @@
 import { inject, Injectable } from '@angular/core';
-import { switchMap } from 'rxjs';
+import { switchMap, type Observable } from 'rxjs';
 import type { ComboSlotSelection } from '../../menu/models/menu.models';
 import type { ModifierGroup } from '../../menu/models/modifier-group.model';
 import { MenuMockService } from '../../menu/services/menu-mock.service';
-import { mapServiceFloor, mapServicePointOrder } from '../api/restaurant-pos-api.mappers';
+import { mapServiceCourse, mapServiceFloor, mapServicePointOrder } from '../api/restaurant-pos-api.mappers';
 import type { AddRestaurantOrderLineRequest, ServicePointOrderDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import type { OrderLine, Product, TableOrder } from '../models/restaurant-pos.models';
+import { orderLineConfigurationIdentity, type OrderLineConfigurationIdentity } from '../models/order-line-grouping';
 import { RestaurantContextStore } from './restaurant-context.store';
 import { RestaurantPosStore } from './restaurant-pos.store';
 
 @Injectable()
 export class OrderWriteService {
   private readonly directSyncTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly pendingDirectQuantities = new Map<string, Map<string, number>>();
+  private readonly pendingDirectQuantities = new Map<string, Map<string, PendingDirectGroup>>();
   private readonly directSyncInFlight = new Set<string>();
   private readonly directSyncRetryRequested = new Set<string>();
+  // Época de mutación local por mesa: cada mutación optimista la avanza. Una respuesta
+  // remota lanzada con una época anterior se considera obsoleta y no debe pisar el estado.
+  private readonly orderMutationEpochs = new Map<string, number>();
+  private readonly lineMutationQueues = new Map<
+    string,
+    Array<{ mutation: () => Observable<unknown>; errorMessageKey: string; applyResponse?: (response: unknown) => void }>
+  >();
+  private readonly lineMutationInFlight = new Set<string>();
+  private readonly lineMutationRefreshNeeded = new Set<string>();
   private readonly store = inject(RestaurantPosStore);
   private readonly api = inject(RestaurantPosApiService);
   private readonly context = inject(RestaurantContextStore);
@@ -24,12 +34,19 @@ export class OrderWriteService {
   addProduct(productId: string): void {
     const product = this.store.products().find((p) => p.id === productId);
     if (!product) return;
+    this.noteSelectedTableMutation();
     if (this.isDeferredDirectProduct(product)) {
       if (!this.canOptimisticallySync()) {
         return;
       }
+      const tableId = this.store.selectedTableId();
+      const beforeLineIds = new Set((tableId ? this.store.getOrder(tableId)?.lines : [])?.map((line) => line.id) ?? []);
       this.store.addProductToSelectedTable(productId);
-      this.queueDirectProductSync(productId);
+      const addedLine = this.deferredDirectOrderLines(productId).find((line) => !beforeLineIds.has(line.id))
+        ?? this.findDeferredDirectOrderLine(productId);
+      if (addedLine) {
+        this.queueDirectGroupSync(this.directGroupIdentity(addedLine));
+      }
     } else if (product.restaurantProductId) {
       if (!this.canOptimisticallySync()) {
         return;
@@ -44,6 +61,7 @@ export class OrderWriteService {
   addCustomizedProduct(productId: string, modifierOptionIds: string[], kitchenNote: string): void {
     const product = this.store.products().find((p) => p.id === productId);
     if (!product) return;
+    this.noteSelectedTableMutation();
     if (product.restaurantProductId) {
       if (!this.canOptimisticallySync()) {
         return;
@@ -58,6 +76,7 @@ export class OrderWriteService {
   addCombo(comboProductId: string, slotSelections: ComboSlotSelection[]): void {
     const product = this.store.products().find((p) => p.id === comboProductId);
     if (!product) return;
+    this.noteSelectedTableMutation();
     if (product.restaurantProductId) {
       if (!this.canOptimisticallySync()) {
         return;
@@ -69,19 +88,32 @@ export class OrderWriteService {
     }
   }
 
-  increaseDirectProductQuantity(productId: string): void {
-    this.store.increaseSelectedOrderLine(productId);
-    this.queueDirectProductSync(productId);
+  increaseDirectProductQuantity(productId: string, sourceLineId?: string): void {
+    const targetLine = this.findDeferredDirectOrderLine(productId, sourceLineId);
+    if (!targetLine) return;
+    const identity = this.directGroupIdentity(targetLine);
+    this.noteSelectedTableMutation();
+    this.store.adjustSelectedOrderLineQuantityById(targetLine.id, 1);
+    this.queueDirectGroupSync(identity);
   }
 
-  decreaseDirectProductQuantity(productId: string): void {
-    this.store.decreaseSelectedOrderLine(productId);
-    this.queueDirectProductSync(productId);
+  decreaseDirectProductQuantity(productId: string, sourceLineId?: string): void {
+    const targetLine = this.findDeferredDirectOrderLine(productId, sourceLineId);
+    if (!targetLine) return;
+    const identity = this.directGroupIdentity(targetLine);
+    this.noteSelectedTableMutation();
+    this.store.adjustSelectedOrderLineQuantityById(targetLine.id, -1);
+    this.queueDirectGroupSync(identity);
   }
 
-  removeDirectProduct(productId: string): void {
-    this.store.removeSelectedOrderLine(productId);
-    this.queueDirectProductSync(productId);
+  removeDirectProduct(productId: string, sourceLineId?: string): void {
+    const sourceLine = this.findDeferredDirectOrderLine(productId, sourceLineId);
+    if (!sourceLine) return;
+    const identity = this.directGroupIdentity(sourceLine);
+    const targetLines = this.deferredDirectOrderLines(productId).filter((line) => this.sameDirectGroup(line, identity));
+    this.noteSelectedTableMutation();
+    targetLines.forEach((line) => this.store.removeSelectedOrderLine(line.id));
+    this.queueDirectGroupSync(identity);
   }
 
   flushPendingDirectProducts(): void {
@@ -90,11 +122,99 @@ export class OrderWriteService {
     this.startDirectSync(tableId);
   }
 
-  hydrateRemoteOrder(tableId: string, order: TableOrder | null): void {
+  /**
+   * Aplica un pedido recibido del backend sobre el estado local.
+   *
+   * Si se indica `expectedEpoch` (la época capturada al lanzar la petición GET), la
+   * hidratación se descarta cuando hubo mutaciones locales posteriores: la respuesta
+   * es una foto antigua y pisarla provocaría el efecto "elimino y reaparece".
+   */
+  hydrateRemoteOrder(tableId: string, order: TableOrder | null, expectedEpoch?: number): void {
+    if (expectedEpoch !== undefined && expectedEpoch !== this.orderMutationEpoch(tableId)) {
+      return;
+    }
     this.store.hydrateServicePointOrder(
       tableId,
       this.overlayPendingDirectQuantities(tableId, order, this.pendingDirectQuantities.get(tableId) ?? new Map()),
     );
+  }
+
+  /** Marca que acaba de producirse una mutación local optimista del pedido de la mesa. */
+  noteLocalOrderMutation(tableId: string): void {
+    this.orderMutationEpochs.set(tableId, this.orderMutationEpoch(tableId) + 1);
+  }
+
+  orderMutationEpoch(tableId: string): number {
+    return this.orderMutationEpochs.get(tableId) ?? 0;
+  }
+
+  /**
+   * Encola una mutación de línea (add/update/delete) para ejecutarla en serie por mesa.
+   * Al vaciarse la cola se recarga el pedido una vez, protegido por época, en lugar de
+   * disparar un GET por mutación que puede volver desordenado.
+   */
+  enqueueLineMutation(
+    tableId: string,
+    restaurantId: string,
+    mutation: () => Observable<unknown>,
+    options?: { errorMessageKey?: string; applyResponse?: (response: unknown) => void },
+  ): void {
+    const queue = this.lineMutationQueues.get(tableId) ?? [];
+    queue.push({
+      mutation,
+      errorMessageKey: options?.errorMessageKey ?? 'restaurantPos.errors.updateLineFailed',
+      ...(options?.applyResponse ? { applyResponse: options.applyResponse } : {}),
+    });
+    this.lineMutationQueues.set(tableId, queue);
+    if (!this.lineMutationInFlight.has(tableId)) {
+      this.drainLineMutations(tableId, restaurantId);
+    }
+  }
+
+  refreshRemoteOrder(restaurantId: string, tableId: string): void {
+    const expectedEpoch = this.orderMutationEpoch(tableId);
+    this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
+      next: (serviceOrder) => this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder), expectedEpoch),
+      error: () => undefined,
+    });
+  }
+
+  private drainLineMutations(tableId: string, restaurantId: string): void {
+    const entry = this.lineMutationQueues.get(tableId)?.shift();
+    if (!entry) {
+      this.lineMutationInFlight.delete(tableId);
+      // Si toda la tanda aplicó su propia respuesta, esa respuesta es la verdad más
+      // reciente: un GET extra podría volver con una foto anterior y resucitar líneas.
+      if (this.lineMutationRefreshNeeded.delete(tableId)) {
+        this.refreshRemoteOrder(restaurantId, tableId);
+      }
+      return;
+    }
+    this.lineMutationInFlight.add(tableId);
+    entry.mutation().subscribe({
+      next: (result) => {
+        if (entry.applyResponse) {
+          entry.applyResponse(result);
+          // La respuesta aplicada cuenta como verdad local nueva: descarta GETs en vuelo.
+          this.noteLocalOrderMutation(tableId);
+        } else {
+          this.lineMutationRefreshNeeded.add(tableId);
+        }
+        this.drainLineMutations(tableId, restaurantId);
+      },
+      error: () => {
+        this.store.reportApiError(entry.errorMessageKey);
+        this.lineMutationRefreshNeeded.add(tableId);
+        this.drainLineMutations(tableId, restaurantId);
+      },
+    });
+  }
+
+  private noteSelectedTableMutation(): void {
+    const tableId = this.store.selectedTableId();
+    if (tableId) {
+      this.noteLocalOrderMutation(tableId);
+    }
   }
 
   private canOptimisticallySync(): boolean {
@@ -105,14 +225,14 @@ export class OrderWriteService {
     return product.type === 'simple' && product.modifierGroupIds.length === 0 && !!product.restaurantProductId;
   }
 
-  private queueDirectProductSync(productId: string): void {
+  private queueDirectGroupSync(identity: DirectLineGroupIdentity): void {
     const tableId = this.store.selectedTableId();
     if (!tableId || !this.canOptimisticallySync()) return;
 
-    const desiredQuantity = this.currentDirectProductQuantity(tableId, productId);
-    const pendingProducts = this.pendingDirectQuantities.get(tableId) ?? new Map<string, number>();
-    pendingProducts.set(productId, desiredQuantity);
-    this.pendingDirectQuantities.set(tableId, pendingProducts);
+    const desiredQuantity = this.currentDirectGroupQuantity(tableId, identity);
+    const pendingGroups = this.pendingDirectQuantities.get(tableId) ?? new Map<string, PendingDirectGroup>();
+    pendingGroups.set(this.directGroupKey(identity), { identity, desiredQuantity });
+    this.pendingDirectQuantities.set(tableId, pendingGroups);
 
     const existingTimer = this.directSyncTimers.get(tableId);
     if (existingTimer) {
@@ -134,9 +254,9 @@ export class OrderWriteService {
   }
 
   private startDirectSync(tableId: string): void {
-    const pendingProducts = this.pendingDirectQuantities.get(tableId);
+    const pendingGroups = this.pendingDirectQuantities.get(tableId);
     const restaurant = this.context.activeRestaurant();
-    if (!pendingProducts || pendingProducts.size === 0 || !restaurant) return;
+    if (!pendingGroups || pendingGroups.size === 0 || !restaurant) return;
     if (this.directSyncInFlight.has(tableId)) return;
 
     const existingTimer = this.directSyncTimers.get(tableId);
@@ -153,14 +273,15 @@ export class OrderWriteService {
   }
 
   private syncDirectProductDifferences(tableId: string, restaurantId: string, serviceOrder: ServicePointOrderDto): void {
-    const pendingProducts = new Map(this.pendingDirectQuantities.get(tableId) ?? []);
-    const operations = this.buildDirectSyncOperations(pendingProducts, serviceOrder);
+    const pendingGroups = new Map(this.pendingDirectQuantities.get(tableId) ?? []);
+    const operations = this.buildDirectSyncOperations(pendingGroups, serviceOrder);
 
     this.executeDirectSyncOperations(tableId, restaurantId, serviceOrder.order?.id ?? null, operations, () => {
+      const expectedEpoch = this.orderMutationEpoch(tableId);
       this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
         next: (latestServiceOrder) => {
           const latestMappedOrder = mapServicePointOrder(latestServiceOrder);
-          this.hydrateRemoteOrder(tableId, latestMappedOrder);
+          this.hydrateRemoteOrder(tableId, latestMappedOrder, expectedEpoch);
           this.clearSatisfiedDirectSyncs(tableId, latestServiceOrder);
           this.finishDirectSync(tableId);
         },
@@ -232,20 +353,21 @@ export class OrderWriteService {
   }
 
   private buildDirectSyncOperations(
-    pendingProducts: Map<string, number>,
+    pendingGroups: Map<string, PendingDirectGroup>,
     serviceOrder: ServicePointOrderDto,
   ): DirectSyncOperation[] {
     const operations: DirectSyncOperation[] = [];
     const backendLines = serviceOrder.lines.filter((line) => this.isDeferredDirectProductLine(line));
 
-    pendingProducts.forEach((desiredQuantity, productId) => {
+    pendingGroups.forEach(({ identity, desiredQuantity }) => {
+      const productId = identity.productId;
       const product = this.store.products().find((candidate) => candidate.id === productId);
       const restaurantProductId = product?.restaurantProductId;
       if (!product || !restaurantProductId) {
         return;
       }
 
-      const matchingLines = backendLines.filter((line) => (line.productId ?? line.restaurantProductId) === productId);
+      const matchingLines = backendLines.filter((line) => this.matchesBackendDirectGroup(line, identity));
       const [primaryLine, ...duplicateLines] = matchingLines;
 
       if (!primaryLine) {
@@ -299,9 +421,9 @@ export class OrderWriteService {
   private overlayPendingDirectQuantities(
     tableId: string,
     order: TableOrder | null,
-    pendingProducts: Map<string, number>,
+    pendingGroups: Map<string, PendingDirectGroup>,
   ): TableOrder | null {
-    if (!order || pendingProducts.size === 0) {
+    if (!order || pendingGroups.size === 0) {
       return order;
     }
 
@@ -315,14 +437,18 @@ export class OrderWriteService {
       lines: [...order.lines],
     };
 
-    pendingProducts.forEach((desiredQuantity, productId) => {
-      nextOrder.lines = nextOrder.lines.filter((line) => !(this.isDeferredDirectOrderLine(line) && line.productId === productId));
+    pendingGroups.forEach(({ identity, desiredQuantity }) => {
+      nextOrder.lines = nextOrder.lines.filter(
+        (line) => !(this.isDeferredDirectOrderLine(line) && this.sameDirectGroup(line, identity)),
+      );
 
       if (desiredQuantity <= 0) {
         return;
       }
 
-      const localLine = localOrder.lines.find((line) => this.isDeferredDirectOrderLine(line) && line.productId === productId);
+      const localLine = localOrder.lines.find(
+        (line) => this.isDeferredDirectOrderLine(line) && this.sameDirectGroup(line, identity),
+      );
       if (!localLine) {
         return;
       }
@@ -339,27 +465,27 @@ export class OrderWriteService {
   }
 
   private clearSatisfiedDirectSyncs(tableId: string, serviceOrder: ServicePointOrderDto): void {
-    const pendingProducts = this.pendingDirectQuantities.get(tableId);
-    if (!pendingProducts) {
+    const pendingGroups = this.pendingDirectQuantities.get(tableId);
+    if (!pendingGroups) {
       return;
     }
 
-    pendingProducts.forEach((desiredQuantity, productId) => {
+    pendingGroups.forEach(({ identity, desiredQuantity }, groupKey) => {
       const backendQuantity = serviceOrder.lines
-        .filter((line) => this.isDeferredDirectProductLine(line) && (line.productId ?? line.restaurantProductId) === productId)
+        .filter((line) => this.isDeferredDirectProductLine(line) && this.matchesBackendDirectGroup(line, identity))
         .reduce((sum, line) => sum + line.quantity, 0);
 
       if (backendQuantity === desiredQuantity) {
-        pendingProducts.delete(productId);
+        pendingGroups.delete(groupKey);
       }
     });
 
-    if (pendingProducts.size === 0) {
+    if (pendingGroups.size === 0) {
       this.pendingDirectQuantities.delete(tableId);
       return;
     }
 
-    this.pendingDirectQuantities.set(tableId, pendingProducts);
+    this.pendingDirectQuantities.set(tableId, pendingGroups);
   }
 
   private finishDirectSync(tableId: string): void {
@@ -381,19 +507,123 @@ export class OrderWriteService {
     });
   }
 
-  private currentDirectProductQuantity(tableId: string, productId: string): number {
+  private currentDirectGroupQuantity(tableId: string, identity: DirectLineGroupIdentity): number {
     const order = this.store.getOrder(tableId);
     return (order?.lines ?? [])
-      .filter((line) => this.isDeferredDirectOrderLine(line) && line.productId === productId && line.status !== 'cancelled')
+      .filter((line) => this.isDeferredDirectOrderLine(line) && this.sameDirectGroup(line, identity))
       .reduce((sum, line) => sum + line.quantity, 0);
   }
 
   private isDeferredDirectOrderLine(line: OrderLine): boolean {
-    return line.productSnapshot.productType === 'simple' && line.selectedModifiers.length === 0 && !(line.selectedComboSlots?.length);
+    return (
+      line.productSnapshot.productType === 'simple' &&
+      line.status === 'pending' &&
+      !line.kitchenNote &&
+      !line.note &&
+      line.selectedModifiers.length === 0 &&
+      (line.selectedComboSlots?.length ?? 0) === 0 &&
+      (line.platterComponents?.length ?? 0) === 0
+    );
   }
 
   private isDeferredDirectProductLine(line: ServicePointOrderDto['lines'][number]): boolean {
-    return line.productType === 'simple' && line.modifiers.length === 0 && line.comboSlots.length === 0 && !line.kitchenNote;
+    return (
+      line.productType === 'simple' &&
+      line.status === 'pending' &&
+      line.modifiers.length === 0 &&
+      line.comboSlots.length === 0 &&
+      !line.kitchenNote
+    );
+  }
+
+  private deferredDirectOrderLines(productId: string): OrderLine[] {
+    const tableId = this.store.selectedTableId();
+    if (!tableId) return [];
+    const canonicalProductId = this.canonicalProductId(productId);
+    return (this.store.getOrder(tableId)?.lines ?? []).filter(
+      (line) =>
+        this.canonicalProductId(line.productId) === canonicalProductId && this.isDeferredDirectOrderLine(line),
+    );
+  }
+
+  private findDeferredDirectOrderLine(productId: string, sourceLineId?: string): OrderLine | null {
+    const lines = this.deferredDirectOrderLines(productId);
+    if (sourceLineId) {
+      return lines.find((line) => line.id === sourceLineId) ?? null;
+    }
+    return lines[0] ?? null;
+  }
+
+  private directGroupIdentity(line: OrderLine): DirectLineGroupIdentity {
+    return {
+      productId: this.canonicalProductId(line.productId),
+      configuration: this.classifyLocalConfiguration(line),
+      course: line.course,
+      unitPriceCents: Math.round(line.unitPrice * 100),
+      status: 'pending',
+    };
+  }
+
+  private sameDirectGroup(line: OrderLine, identity: DirectLineGroupIdentity): boolean {
+    return this.directGroupKey(this.directGroupIdentity(line)) === this.directGroupKey(identity);
+  }
+
+  private directGroupKey(identity: DirectLineGroupIdentity): string {
+    return [
+      identity.productId,
+      identity.configuration.kind,
+      identity.configuration.kind === 'exact' ? identity.configuration.value : '',
+      identity.course,
+      identity.unitPriceCents,
+      identity.status,
+    ].join('\u001f');
+  }
+
+  /**
+   * Las firmas locales vacías (`productId::::`), las remotas vacías
+   * (`restaurantProductId|`) y `service-config:<productId>` representan una única
+   * configuración canónica por defecto. El último formato es el fallback sintético
+   * del mapper para backend legacy sin firma; no puede competir con otro grupo.
+   */
+  private classifyLocalConfiguration(line: OrderLine): OrderLineConfigurationIdentity {
+    const product = this.store.products().find(
+      (candidate) => candidate.id === line.productId || candidate.restaurantProductId === line.productId,
+    );
+    const identifiers = [line.productId, product?.restaurantProductId].filter((value): value is string => !!value);
+    return orderLineConfigurationIdentity(line.configurationSignature, identifiers);
+  }
+
+  private matchesBackendDirectGroup(
+    line: ServicePointOrderDto['lines'][number],
+    identity: DirectLineGroupIdentity,
+  ): boolean {
+    if (
+      !this.matchesDirectProductLine(line, identity.productId)
+      || mapServiceCourse(line.course) !== identity.course
+      || line.unitPriceCents !== identity.unitPriceCents
+    ) {
+      return false;
+    }
+
+    if (identity.configuration.kind === 'default') {
+      const product = this.store.products().find((candidate) => candidate.id === identity.productId);
+      const identifiers = [identity.productId, product?.restaurantProductId, line.productId, line.restaurantProductId]
+        .filter((value): value is string => !!value);
+      return orderLineConfigurationIdentity(line.configurationSignature, identifiers).kind === 'default';
+    }
+
+    return line.configurationSignature === identity.configuration.value;
+  }
+
+  private canonicalProductId(productId: string): string {
+    return this.store.products().find(
+      (product) => product.id === productId || product.restaurantProductId === productId,
+    )?.id ?? productId;
+  }
+
+  private matchesDirectProductLine(line: ServicePointOrderDto['lines'][number], productId: string): boolean {
+    const restaurantProductId = this.store.products().find((product) => product.id === productId)?.restaurantProductId;
+    return line.productId === productId || (!!restaurantProductId && line.restaurantProductId === restaurantProductId);
   }
 
   private syncLineToBackend(
@@ -435,33 +665,21 @@ export class OrderWriteService {
     const tableId = this.store.selectedTableId();
     if (!restaurant || !tableId) return;
 
-    const orderId = this.store.selectedOrder()?.id;
-
-    const addAndReload$ = (oid: string) =>
-      this.api.addRestaurantOrderLine(restaurant.id, oid, request).pipe(
-        switchMap(() => this.api.getRestaurantServicePointOrder(restaurant.id, tableId)),
-      );
-
-    const source$ = orderId
-      ? addAndReload$(orderId)
-      : this.api.openRestaurantOrder(restaurant.id, tableId, 1).pipe(
-          switchMap((orderDto) => addAndReload$(orderDto.order.id)),
-        );
-
-    source$.subscribe({
-      next: (serviceOrder) => {
-        this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder));
+    // La mutación entra en la cola serializada de la mesa: se ejecuta cuando le toca,
+    // resolviendo el orderId en ese momento, y el refresco único al vaciarse la cola
+    // (protegido por época) sustituye al GET por mutación que llegaba desordenado.
+    this.enqueueLineMutation(
+      tableId,
+      restaurant.id,
+      () => {
+        const orderId = this.store.selectedOrder()?.id;
+        const add$ = (oid: string) => this.api.addRestaurantOrderLine(restaurant.id, oid, request);
+        return orderId
+          ? add$(orderId)
+          : this.api.openRestaurantOrder(restaurant.id, tableId, 1).pipe(switchMap((orderDto) => add$(orderDto.order.id)));
       },
-      error: () => {
-        this.store.reportApiError('restaurantPos.errors.addLineFailed');
-        this.api.getRestaurantServicePointOrder(restaurant.id, tableId).subscribe((serviceOrder) => {
-          this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder));
-        });
-        this.api.getRestaurantServiceFloor(restaurant.id).subscribe((serviceFloor) => {
-          this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
-        });
-      },
-    });
+      { errorMessageKey: 'restaurantPos.errors.addLineFailed' },
+    );
   }
 
   private buildModifiersRequest(
@@ -501,3 +719,16 @@ type DirectSyncOperation =
   | { type: 'add'; request: AddRestaurantOrderLineRequest }
   | { type: 'update'; orderId: string; lineId: string; quantity: number }
   | { type: 'delete'; orderId: string; lineId: string };
+
+interface DirectLineGroupIdentity {
+  productId: string;
+  configuration: OrderLineConfigurationIdentity;
+  course: OrderLine['course'];
+  unitPriceCents: number;
+  status: 'pending';
+}
+
+interface PendingDirectGroup {
+  identity: DirectLineGroupIdentity;
+  desiredQuantity: number;
+}

@@ -66,6 +66,7 @@ describe('UpdateRestaurantReservationStatusUseCase', () => {
       'restaurant-mesaflow-centro',
       'reservation-1',
       'confirmed',
+      null,
     );
   });
 

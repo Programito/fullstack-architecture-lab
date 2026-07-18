@@ -25,8 +25,7 @@ export type ProductPickerConfiguredLine = ProductPickerConfiguredLineInput & {
 export type ProductPickerItem = {
   id: string;
   name: string;
-  visualIcon: string;
-  visualClass: string;
+  imageUrl: string | null;
   priceLabel: string;
   categoryLabel: string;
   allergenLabel: string;
@@ -37,6 +36,8 @@ export type ProductPickerItem = {
   disabled: boolean;
   quantity: number;
   showQuantityControls: boolean;
+  /** Falso para combos/platos/productos personalizables: su cantidad se gestiona por línea configurada, no con +/- en la fila. */
+  canAdjustQuantityInline: boolean;
   configuredLines: readonly ProductPickerConfiguredLine[];
   configuredLineCount: number;
   hasSingleConfiguredLine: boolean;
@@ -98,8 +99,7 @@ export function toProductPickerItem(product: Product, context: ProductPickerItem
   return {
     id: product.id,
     name: product.name,
-    visualIcon: productVisualIcon(product),
-    visualClass: productVisualClass(product),
+    imageUrl: product.imageUrl ?? null,
     priceLabel: context.formatCurrency(product.basePrice ?? product.price ?? 0),
     categoryLabel: product.category ?? product.categoryId,
     allergenLabel: product.allergens?.length ? product.allergens.join(', ') : context.translate('restaurantPos.service.noAllergens'),
@@ -109,7 +109,8 @@ export function toProductPickerItem(product: Product, context: ProductPickerItem
     actionAriaLabel: productActionAriaLabel(product, { isCombo, isPlatter, isCustomizable }, context.translate),
     disabled,
     quantity,
-    showQuantityControls: false,
+    showQuantityControls: quantity > 0 && product.available && !isCombo,
+    canAdjustQuantityInline: quantity > 0 && product.available && !isCombo && !isCustomizable,
     configuredLines,
     configuredLineCount,
     hasSingleConfiguredLine: configuredLineCount === 1,
@@ -156,52 +157,6 @@ function productConfiguredLines(product: Product, context: ProductPickerItemCont
         summary: line.summary,
       }),
     }));
-}
-
-function productVisualIcon(product: Product): string {
-  if (product.type === 'combo') {
-    return 'restaurant_menu';
-  }
-
-  if (product.type === 'platter') {
-    return 'room_service';
-  }
-
-  switch (product.course) {
-    case 'drinks':
-      return 'local_drink';
-    case 'dessert':
-      return 'bakery_dining';
-    case 'starter':
-      return 'tapas';
-    case 'main':
-      return 'lunch_dining';
-    default:
-      return 'restaurant';
-  }
-}
-
-function productVisualClass(product: Product): string {
-  const baseClass = 'grid h-11 w-11 shrink-0 place-items-center rounded-full border';
-
-  if (product.type === 'combo') {
-    return `${baseClass} border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-200`;
-  }
-
-  if (product.type === 'platter') {
-    return `${baseClass} border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200`;
-  }
-
-  switch (product.course) {
-    case 'drinks':
-      return `${baseClass} border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200`;
-    case 'dessert':
-      return `${baseClass} border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200`;
-    case 'starter':
-      return `${baseClass} border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200`;
-    default:
-      return `${baseClass} border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-200`;
-  }
 }
 
 function productPickerBadges(

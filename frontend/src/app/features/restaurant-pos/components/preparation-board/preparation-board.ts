@@ -52,6 +52,9 @@ export class PreparationBoard {
   // Lo normal es servir desde la página de Servicio; este atajo de cocina
   // pide confirmación precisamente porque se sale del flujo habitual.
   protected readonly pendingServeCard = signal<PreparationBoardCard | null>(null);
+  // Tarjeta de "Preparándose" pendiente de decidir si pasa a Preparado o se sirve
+  // directamente (atajo cuando el plato se recoge en el momento).
+  protected readonly pendingReadyDecisionCard = signal<PreparationBoardCard | null>(null);
 
   protected columnLabelKey(id: PreparationBoardColumnId): string {
     return `restaurantPos.preparationBoard.${id}`;
@@ -76,6 +79,28 @@ export class PreparationBoard {
 
   protected moveCard(card: PreparationBoardCard, targetColumnId: PreparationBoardColumnId): void {
     this.lineMoved.emit({ tableId: card.tableId, lineId: card.line.id, targetColumnId });
+  }
+
+  protected requestReadyDecision(card: PreparationBoardCard): void {
+    this.pendingReadyDecisionCard.set(card);
+  }
+
+  protected abortReadyDecision(): void {
+    this.pendingReadyDecisionCard.set(null);
+  }
+
+  protected confirmReadyOnly(): void {
+    const card = this.pendingReadyDecisionCard();
+    if (!card) return;
+    this.moveCard(card, 'ready');
+    this.pendingReadyDecisionCard.set(null);
+  }
+
+  protected confirmServeDirect(): void {
+    const card = this.pendingReadyDecisionCard();
+    if (!card) return;
+    this.lineServed.emit({ tableId: card.tableId, lineId: card.line.id });
+    this.pendingReadyDecisionCard.set(null);
   }
 
   protected nextAction(columnId: PreparationBoardColumnId): PreparationBoardColumnId | null {

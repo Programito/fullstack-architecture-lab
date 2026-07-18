@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { of, Subject } from 'rxjs';
 import englishTranslations from '../../../../../../public/i18n/en.json';
+import spanishTranslations from '../../../../../../public/i18n/es.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { KEY_VALUE_STORAGE, MemoryKeyValueStorage, type KeyValueStorage } from '../../../../shared/utils/storage/key-value-storage';
 import { mapServicePointOrder } from '../../api/restaurant-pos-api.mappers';
@@ -12,6 +13,21 @@ import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 
 describe('RestaurantPosServicePage', () => {
+  // Fija el reloj: varios fixtures usan fechas absolutas ('2026-06-22', '2026-07-17'...)
+  // para representar líneas recientes o antiguas frente a isStaleKitchenLine (24h). Sin
+  // fijar Date.now(), el paso del tiempo real las va convirtiendo en obsoletas y los
+  // tests empiezan a fallar de forma intermitente según cuándo se ejecuten.
+  beforeEach(() => {
+    // Solo se falsea Date: los setTimeout/debounce reales de la página (búsqueda,
+    // sincronización de productos directos) deben seguir corriendo con normalidad.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-17T14:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   type ServiceOrderRecord = {
     order: {
       id: string;
@@ -34,6 +50,7 @@ describe('RestaurantPosServicePage', () => {
       quantity: number;
       unitPriceCents: number;
       subtotalCents: number;
+      configurationSignature?: string;
       status: 'pending' | 'sent_to_kitchen' | 'preparing' | 'ready' | 'picked_up' | 'served' | 'cancelled';
       course: 'drinks' | 'starters' | 'mains' | 'desserts' | 'mixed' | 'none';
       kitchenNote: string | null;
@@ -322,7 +339,9 @@ describe('RestaurantPosServicePage', () => {
             status: 'sent_to_kitchen' as const,
             course: 'mains' as const,
             kitchenNote: null,
-            updatedAt: '2026-06-22T10:00:00.000Z',
+            // Fecha reciente a propósito: fechas fijas del pasado activan el auto-marcado
+            // de líneas de cocina obsoletas (isStaleKitchenLine, 24h) y rompen el test.
+            updatedAt: new Date().toISOString(),
             modifiers: [],
             comboSlots: [],
           },
@@ -695,6 +714,10 @@ describe('RestaurantPosServicePage', () => {
 
   const renderServicePage = async (storage?: KeyValueStorage, apiMock = createRestaurantPosApiMock()) => {
     const i18n = provideI18nTesting();
+    Object.assign(i18n.translations.es.restaurantPos.service, {
+      removeGroupedConfirmTitle: spanishTranslations.restaurantPos.service.removeGroupedConfirmTitle,
+      removeGroupedConfirmDescription: spanishTranslations.restaurantPos.service.removeGroupedConfirmDescription,
+    });
     const result = await render(RestaurantPosServicePage, {
       imports: [...i18n.imports],
       providers: [
@@ -1043,6 +1066,7 @@ describe('RestaurantPosServicePage', () => {
     fixture.detectChanges();
     vi.mocked(apiMock.chargeRestaurantServicePoint).mockReturnValue(deferredCharge$);
 
+    fireEvent.click(screen.getByRole('button', { name: /Efectivo/i }));
     fireEvent.click(screen.getByRole('button', { name: /Cobrar/i }));
     fixture.detectChanges();
 
@@ -1151,7 +1175,7 @@ describe('RestaurantPosServicePage', () => {
       {
         id: 'line-lemonade',
         restaurantProductId: 'product-3',
-        productId: 'product-3',
+        productId: 'catalog-product-3',
         productName: 'Limonada con gas',
         productType: 'simple',
         preparationRoute: 'bar',
@@ -1177,7 +1201,291 @@ describe('RestaurantPosServicePage', () => {
 
     const dialog = getProductDialog();
     expect(within(dialog).getByLabelText('Cantidad de Limonada con gas: 1')).toBeTruthy();
-    expect(within(dialog).queryByRole('button', { name: 'Añadir una unidad de Limonada con gas' })).toBeNull();
+    // El stepper inline sigue disponible tras la recarga del backend; su "+" comparte
+    // etiqueta con la acción de añadir, así que se comprueba el "−" como señal inequívoca.
+    expect(within(dialog).getByRole('button', { name: 'Quitar una unidad de Limonada con gas' })).toBeTruthy();
+  });
+
+  it('routes remote direct-line controls through the desired-quantity queue using the concrete line id', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const orderWrite = fixture.debugElement.injector.get(OrderWriteService);
+    const increaseDirect = vi.spyOn(orderWrite, 'increaseDirectProductQuantity').mockImplementation(() => undefined);
+    const decreaseDirect = vi.spyOn(orderWrite, 'decreaseDirectProductQuantity').mockImplementation(() => undefined);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-lemonade',
+        restaurantProductId: 'product-3',
+        productId: 'catalog-product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 2,
+        unitPriceCents: 450,
+        subtotalCents: 900,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T13:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
+
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-3' ? { ...product, restaurantProductId: 'product-3' } : product,
+      ),
+    );
+    apiMock.__setServiceOrder('table-1', record);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar una unidad de Limonada con gas' }));
+
+    expect(increaseDirect).toHaveBeenCalledWith('product-3', 'line-lemonade');
+    expect(decreaseDirect).toHaveBeenCalledWith('product-3', 'line-lemonade');
+    expect(apiMock.updateRestaurantOrderLine).not.toHaveBeenCalled();
+    expect(apiMock.deleteRestaurantOrderLine).not.toHaveBeenCalled();
+  });
+
+  it('preserves a remote direct line signature and historical price from the inline search stepper', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-lemonade-historical-price',
+        restaurantProductId: 'product-3',
+        productId: 'catalog-product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 1,
+        unitPriceCents: 350,
+        subtotalCents: 350,
+        configurationSignature: 'product-3|historical-price',
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T13:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
+
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-3' ? { ...product, restaurantProductId: 'product-3' } : product,
+      ),
+    );
+    apiMock.__setServiceOrder('table-1', record);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+    fireEvent.click(within(getProductDialog()).getByRole('button', { name: /adir una unidad de Limonada con gas$/i }));
+    fixture.detectChanges();
+
+    expect(store.selectedOrder()?.lines.find((line) => line.id === 'line-lemonade-historical-price')).toEqual(
+      expect.objectContaining({
+        quantity: 2,
+        unitPrice: 3.5,
+        subtotal: 7,
+        configurationSignature: 'product-3|historical-price',
+      }),
+    );
+  });
+
+  it('keeps annotated direct-line controls on the generic line queue', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const orderWrite = fixture.debugElement.injector.get(OrderWriteService);
+    const increaseDirect = vi.spyOn(orderWrite, 'increaseDirectProductQuantity').mockImplementation(() => undefined);
+    const decreaseDirect = vi.spyOn(orderWrite, 'decreaseDirectProductQuantity').mockImplementation(() => undefined);
+    const removeDirect = vi.spyOn(orderWrite, 'removeDirectProduct').mockImplementation(() => undefined);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-lemonade-noted',
+        restaurantProductId: 'product-3',
+        productId: 'catalog-product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 2,
+        unitPriceCents: 450,
+        subtotalCents: 900,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: 'Sin hielo',
+        updatedAt: '2026-07-17T13:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+      {
+        id: 'line-lemonade-clean',
+        restaurantProductId: 'product-3',
+        productId: 'catalog-product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 1,
+        unitPriceCents: 450,
+        subtotalCents: 450,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T13:00:01.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
+
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-3' ? { ...product, restaurantProductId: 'product-3' } : product,
+      ),
+    );
+    apiMock.__setServiceOrder('table-1', record);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+
+    const notedRow = () => screen.getByText(/Sin hielo/).closest<HTMLElement>('.theme-order-line')!;
+    fireEvent.click(within(notedRow()).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
+    fixture.detectChanges();
+    fireEvent.click(within(notedRow()).getByRole('button', { name: 'Quitar una unidad de Limonada con gas' }));
+    fixture.detectChanges();
+    fireEvent.click(within(notedRow()).getByRole('button', { name: 'Eliminar Limonada con gas del pedido' }));
+    fixture.detectChanges();
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Eliminar todas las unidades' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fixture.detectChanges();
+
+    expect(increaseDirect).not.toHaveBeenCalled();
+    expect(decreaseDirect).not.toHaveBeenCalled();
+    expect(removeDirect).not.toHaveBeenCalled();
+    expect(vi.mocked(apiMock.updateRestaurantOrderLine).mock.calls).toEqual([
+      ['restaurant-mesaflow-centro', 'order:table-1', 'line-lemonade-noted', { quantity: 3 }],
+      ['restaurant-mesaflow-centro', 'order:table-1', 'line-lemonade-noted', { quantity: 2 }],
+    ]);
+    expect(apiMock.deleteRestaurantOrderLine).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'order:table-1',
+      'line-lemonade-noted',
+    );
+  });
+
+  it('shows Add for a direct product whose only order line is annotated and creates a new clean line', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const orderWrite = fixture.debugElement.injector.get(OrderWriteService);
+    vi.spyOn(orderWrite, 'addProduct').mockImplementation((productId) => store.addProductToSelectedTable(productId));
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-lemonade-noted',
+        restaurantProductId: 'product-3',
+        productId: 'catalog-product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 1,
+        unitPriceCents: 450,
+        subtotalCents: 450,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: 'Sin hielo',
+        updatedAt: '2026-07-17T13:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
+
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-3' ? { ...product, restaurantProductId: 'product-3' } : product,
+      ),
+    );
+    apiMock.__setServiceOrder('table-1', record);
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder(record));
+    fixture.detectChanges();
+    fireEvent.click(within(screen.getByLabelText('Panel de mesa seleccionada')).getByRole('button', { name: /Buscar producto/i }));
+    fixture.detectChanges();
+
+    const dialog = getProductDialog();
+    expect(within(dialog).queryByLabelText('Cantidad de Limonada con gas: 1')).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
+    fixture.detectChanges();
+
+    const lemonadeLines = store.selectedOrder()?.lines.filter((line) => line.productId === 'product-3') ?? [];
+    expect(lemonadeLines.find((line) => line.id === 'line-lemonade-noted')).toEqual(
+      expect.objectContaining({ quantity: 1, kitchenNote: 'Sin hielo' }),
+    );
+    const cleanLine = lemonadeLines.find((line) => line.id !== 'line-lemonade-noted');
+    expect(cleanLine).toEqual(expect.objectContaining({ quantity: 1, status: 'pending' }));
+    expect(cleanLine?.kitchenNote).toBeUndefined();
+    expect(cleanLine?.note).toBeUndefined();
+  });
+
+  it('routes local unconfirmed direct-line controls through the desired-quantity queue', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const orderWrite = fixture.debugElement.injector.get(OrderWriteService);
+    const increaseDirect = vi.spyOn(orderWrite, 'increaseDirectProductQuantity').mockImplementation(() => undefined);
+    const decreaseDirect = vi.spyOn(orderWrite, 'decreaseDirectProductQuantity').mockImplementation(() => undefined);
+    const removeDirect = vi.spyOn(orderWrite, 'removeDirectProduct').mockImplementation(() => undefined);
+    const record = createServiceOrderRecord([
+      {
+        id: 'line-local-lemonade',
+        restaurantProductId: 'product-3',
+        productId: 'catalog-product-3',
+        productName: 'Limonada con gas',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 2,
+        unitPriceCents: 450,
+        subtotalCents: 900,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T13:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]);
+    const localOrder = mapServicePointOrder(record)!;
+    localOrder.lines[0] = { ...localOrder.lines[0], remote: false };
+
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-3' ? { ...product, restaurantProductId: 'product-3' } : product,
+      ),
+    );
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    store.hydrateServicePointOrder('table-1', localOrder);
+    fixture.detectChanges();
+
+    const localLineRow = screen.getByText('2 x Limonada con gas').closest<HTMLElement>('.theme-order-line')!;
+    fireEvent.click(within(localLineRow).getByRole('button', { name: 'Añadir una unidad de Limonada con gas' }));
+    fireEvent.click(within(localLineRow).getByRole('button', { name: 'Quitar una unidad de Limonada con gas' }));
+    fireEvent.click(within(localLineRow).getByRole('button', { name: 'Eliminar Limonada con gas del pedido' }));
+    fixture.detectChanges();
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Eliminar todas las unidades' })).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fixture.detectChanges();
+
+    expect(increaseDirect).toHaveBeenCalledWith('product-3', 'line-local-lemonade');
+    expect(decreaseDirect).toHaveBeenCalledWith('product-3', 'line-local-lemonade');
+    expect(removeDirect).toHaveBeenCalledWith('product-3', 'line-local-lemonade');
+    expect(apiMock.updateRestaurantOrderLine).not.toHaveBeenCalled();
+    expect(apiMock.deleteRestaurantOrderLine).not.toHaveBeenCalled();
   });
 
   it('opens the customizer for configurable products and adds the selected snapshot', async () => {

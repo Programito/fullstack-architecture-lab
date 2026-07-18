@@ -94,6 +94,7 @@ export function mapRestaurantMenuToProducts(menu: RestaurantMenuDto): Product[] 
       ...(item.restaurantProductId ? { restaurantProductId: item.restaurantProductId } : {}),
       name: item.name,
       ...(item.description ? { description: item.description } : {}),
+      ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
       categoryId: section.id,
       category: section.name,
       basePrice: item.priceCents / 100,
@@ -215,13 +216,17 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
       const unitPrice = line.unitPriceCents / 100;
       const subtotal = line.subtotalCents / 100;
       const course = mapServiceCourse(line.course);
-      const stableProductId = line.productId ?? line.restaurantProductId ?? `service-product:${line.id}`;
+      // El catálogo POS usa restaurantProductId como identidad. productId identifica
+      // el producto maestro y no sirve para reconciliar una línea con su artículo de venta.
+      const stableProductId = line.restaurantProductId ?? line.productId ?? `service-product:${line.id}`;
+      const configurationSignature = line.configurationSignature ?? `service-config:${stableProductId}`;
 
       return {
         id: line.id,
         productSnapshot: {
           productId: stableProductId,
           productName: line.productName,
+          ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
           productType: line.productType,
           basePrice: unitPrice,
           course,
@@ -229,6 +234,7 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
         },
         productId: stableProductId,
         productName: line.productName,
+        remote: true,
         quantity: line.quantity,
         basePrice: unitPrice,
         selectedModifiers: line.modifiers.map((m) => ({
@@ -257,7 +263,7 @@ export function mapServicePointOrder(serviceOrder: ServicePointOrderDto) {
         ...(line.taxCents !== undefined ? { tax: line.taxCents / 100 } : {}),
         unitPrice,
         subtotal,
-        configurationSignature: `service-line:${line.id}`,
+        configurationSignature,
         course,
         status: line.status,
         statusUpdatedAt: line.updatedAt,
@@ -305,13 +311,15 @@ export function mapRestaurantOrder(orderResponse: RestaurantOrderDto, paymentMet
         productSnapshot: {
           productId: line.productId ?? line.restaurantProductId ?? `order-product:${line.id}`,
           productName: line.productName,
+          ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
           productType: line.productType,
           basePrice: line.basePriceCents / 100,
           course,
           preparationPolicy: mapPreparationPolicy(line.preparationRoute),
         },
-        productId: line.productId ?? line.restaurantProductId ?? `order-product:${line.id}`,
+        productId: line.restaurantProductId ?? line.productId ?? `order-product:${line.id}`,
         productName: line.productName,
+        remote: true,
         quantity: line.quantity,
         basePrice: line.basePriceCents / 100,
         selectedModifiers: line.modifiers.map((modifier) => ({

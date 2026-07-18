@@ -579,6 +579,78 @@ describe('RestaurantPosStore', () => {
     );
   });
 
+  it('keeps the product image URL in a locally created order-line snapshot', () => {
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-1' ? { ...product, imageUrl: 'https://cdn.example.com/burger.jpg' } : product,
+      ),
+    );
+    store.selectTable('table-1');
+
+    store.addProductToSelectedTable('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines[0]?.productSnapshot).toMatchObject({ imageUrl: 'https://cdn.example.com/burger.jpg' });
+  });
+
+  it('omits imageUrl in a locally created order-line snapshot when the product has none', () => {
+    store.hydrateProducts(
+      store.products().map((product) =>
+        product.id === 'product-1' ? { ...product, imageUrl: undefined } : product,
+      ),
+    );
+    store.selectTable('table-1');
+
+    store.addProductToSelectedTable('product-1');
+
+    expect(store.ordersByTable()['table-1'].lines[0]?.productSnapshot).not.toHaveProperty('imageUrl');
+  });
+
+  it('adjusts a concrete line by id without rebuilding its signature or price', () => {
+    store.selectTable('table-1');
+    store.hydrateServicePointOrder('table-1', {
+      tableId: 'table-1',
+      total: 7,
+      status: 'open',
+      paymentMethod: 'pending',
+      lines: [
+        {
+          id: 'line-remote-price',
+          productSnapshot: {
+            productId: 'product-3',
+            productName: 'Limonada con gas',
+            productType: 'simple',
+            basePrice: 3.5,
+            course: 'drinks',
+            preparationPolicy: { route: 'bar', requiresReadyBeforeServe: false },
+          },
+          productId: 'product-3',
+          productName: 'Limonada con gas',
+          remote: true,
+          quantity: 2,
+          basePrice: 3.5,
+          selectedModifiers: [],
+          unitPrice: 3.5,
+          subtotal: 7,
+          configurationSignature: 'rp-lemonade|legacy-price',
+          course: 'drinks',
+          status: 'pending',
+        },
+      ],
+    });
+
+    store.adjustSelectedOrderLineQuantityById('line-remote-price', 1);
+
+    expect(store.selectedOrder()?.lines).toEqual([
+      expect.objectContaining({
+        id: 'line-remote-price',
+        quantity: 3,
+        unitPrice: 3.5,
+        subtotal: 10.5,
+        configurationSignature: 'rp-lemonade|legacy-price',
+      }),
+    ]);
+  });
+
   it('adds the same product as a new pending line when the existing one is already preparing', () => {
     store.selectTable('table-1');
     store.addProductToSelectedTable('product-1');

@@ -34,6 +34,19 @@ describe('DemoRestaurantReadRepository', () => {
     ]);
   });
 
+  it('maps current menu images onto demo order lines by stable sale identity', async () => {
+    const repository = new DemoRestaurantReadRepository();
+
+    const order = await repository.findServicePointOrderByRestaurantId('restaurant-mesaflow-centro', 'table-3');
+
+    expect(order?.lines.find((line) => line.id === 'line-burger')?.imageUrl).toBe(
+      'https://res.cloudinary.com/demo/image/upload/v1/hamburguesa-craft.jpg',
+    );
+    expect(order?.lines.find((line) => line.id === 'line-combo')?.imageUrl).toBe(
+      'https://res.cloudinary.com/demo/image/upload/v1/menu-classic-burger.jpg',
+    );
+  });
+
   it('returns nothing when the caller has no restaurant or organization scope', async () => {
     const repository = new DemoRestaurantReadRepository();
 

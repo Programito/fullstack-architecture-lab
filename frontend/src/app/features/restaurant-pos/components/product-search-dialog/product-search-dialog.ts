@@ -2,9 +2,9 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoService } from '@jsverse/transloco';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
-import { Icon } from '../../../../shared/ui/icon/icon';
 import { SearchInput } from '../../../../shared/ui/search-input/search-input';
 import type { Product } from '../../models/restaurant-pos.models';
+import { ProductImage } from '../product-image/product-image';
 import { toProductPickerItem, type ProductPickerConfiguredLineInput, type ProductPickerItem } from './product-picker-item.mapper';
 
 export type ProductPickerSection = 'all' | 'favorites' | 'best_sellers' | 'drinks' | 'food' | 'combos' | 'platters' | 'desserts';
@@ -23,7 +23,7 @@ type ProductPickerGroup = {
 
 @Component({
   selector: 'app-product-search-dialog',
-  imports: [Dialog, Icon, SearchInput],
+  imports: [Dialog, ProductImage, SearchInput],
   templateUrl: './product-search-dialog.html',
 })
 export class ProductSearchDialog {

@@ -61,6 +61,7 @@ export class RestaurantOrderLineResponseDto {
   @ApiProperty() id!: string;
   @ApiPropertyOptional({ nullable: true }) restaurantProductId!: string | null;
   @ApiPropertyOptional({ nullable: true }) productId!: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'https://cdn.example.test/wine.jpg' }) imageUrl!: string | null;
   @ApiProperty() productName!: string;
   @ApiProperty() productType!: string;
   @ApiProperty() course!: string;
@@ -86,6 +87,7 @@ export class RestaurantOrderLineResponseDto {
       id: line.id,
       restaurantProductId: line.restaurantProductId,
       productId: line.productId,
+      imageUrl: line.imageUrl,
       productName: line.productName,
       productType: line.productType,
       course: line.course,

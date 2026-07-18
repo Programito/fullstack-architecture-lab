@@ -81,6 +81,7 @@ export type RestaurantOrderLineView = {
   id: string;
   restaurantProductId: string | null;
   productId: string | null;
+  imageUrl: string | null;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   course: 'drinks' | 'starter' | 'main' | 'dessert' | 'other';

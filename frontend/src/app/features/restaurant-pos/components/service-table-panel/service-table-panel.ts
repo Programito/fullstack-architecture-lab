@@ -1,11 +1,13 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { OrderCourse, OrderCourseGroup, OrderLine, OrderLineStatus, PaymentMethod, RestaurantTable, ServiceTableInfo, TableOrder, TableStatus } from '../../models/restaurant-pos.models';
+import { orderLineConfigurationIdentity } from '../../models/order-line-grouping';
+import { ProductImage } from '../product-image/product-image';
 
 export interface OrderLineNoteChange {
   lineId: string;
@@ -28,7 +30,7 @@ type GroupedOrderCourse = Omit<OrderCourseGroup, 'lines' | 'quantity' | 'total'>
 
 @Component({
   selector: 'app-service-table-panel',
-  imports: [Button, Dialog, Icon, NgClass, TranslocoPipe],
+  imports: [Button, Dialog, Icon, NgClass, ProductImage, TranslocoPipe],
   templateUrl: './service-table-panel.html',
 })
 export class ServiceTablePanel {
@@ -64,7 +66,13 @@ export class ServiceTablePanel {
   protected readonly freeTableConfirmOpen = signal(false);
   protected readonly removeProductConfirmOpen = signal(false);
   protected readonly paymentHistoryExpanded = signal(false);
-  protected readonly pendingRemovalLine = signal<OrderLine | null>(null);
+  protected readonly pendingRemovalGroup = signal<GroupedOrderLine | null>(null);
+  protected readonly currentRemovalGroup = computed(() => this.resolveCurrentRemovalGroup());
+  private readonly closeMissingRemovalTarget = effect(() => {
+    if (this.removeProductConfirmOpen() && this.pendingRemovalGroup() && !this.currentRemovalGroup()) {
+      this.closeRemoveProductConfirm();
+    }
+  });
   protected readonly table = computed(() => this.serviceInfo()?.table ?? null);
   protected readonly order = computed(() => this.serviceInfo()?.order ?? null);
   protected readonly guidesToOrder = computed(() => {
@@ -327,7 +335,13 @@ export class ServiceTablePanel {
   }
 
   protected canSubmitCharge(): boolean {
-    return this.canCharge() && this.hasSelectedPaymentMethod() && !this.isCharging();
+    // Con líneas pendientes el botón abre el diálogo de "enviar a cocina antes de cobrar",
+    // así que no exige método de pago todavía (si no se elige, se cobra en efectivo).
+    return this.canCharge() && !this.isCharging() && (this.hasSelectedPaymentMethod() || this.hasPendingLines());
+  }
+
+  protected hasPendingLines(): boolean {
+    return (this.order()?.lines ?? []).some((line) => line.status === 'pending');
   }
 
   protected shouldShowPaymentMethodHint(): boolean {
@@ -455,33 +469,59 @@ export class ServiceTablePanel {
     return this.servedLineIds().includes(lineId);
   }
 
-  protected requestRemoveProduct(line: OrderLine): void {
-    if (line.status === 'pending') {
-      this.removeProduct.emit(line.id);
+  protected requestRemoveProduct(group: GroupedOrderLine): void {
+    if (group.primaryLine.status === 'pending' && group.quantity === 1) {
+      this.removeProduct.emit(group.primaryLine.id);
       return;
     }
 
-    this.pendingRemovalLine.set(line);
+    this.pendingRemovalGroup.set(group);
     this.removeProductConfirmOpen.set(true);
   }
 
   protected closeRemoveProductConfirm(): void {
     this.removeProductConfirmOpen.set(false);
-    this.pendingRemovalLine.set(null);
+    this.pendingRemovalGroup.set(null);
   }
 
   protected confirmRemoveProduct(): void {
-    const line = this.pendingRemovalLine();
-    if (line) {
-      this.removeProduct.emit(line.id);
+    const currentGroup = this.currentRemovalGroup();
+    if (currentGroup) {
+      this.removeProduct.emit(currentGroup.primaryLine.id);
     }
     this.closeRemoveProductConfirm();
   }
 
+  protected removeProductConfirmTitle(): string {
+    const group = this.currentRemovalGroup();
+    return group && group.primaryLine.status === 'pending' && group.quantity > 1
+      ? this.translate('restaurantPos.service.removeGroupedConfirmTitle')
+      : this.translate('restaurantPos.service.removeNonPendingConfirmTitle');
+  }
+
   protected removeProductConfirmDescription(): string {
+    const group = this.currentRemovalGroup();
+    if (group && group.primaryLine.status === 'pending' && group.quantity > 1) {
+      return this.translate('restaurantPos.service.removeGroupedConfirmDescription', {
+        count: group.quantity,
+        name: group.primaryLine.productName,
+      });
+    }
+
     return this.translate('restaurantPos.service.removeNonPendingConfirmDescription', {
-      name: this.pendingRemovalLine()?.productName ?? '',
+      name: group?.primaryLine.productName ?? '',
     });
+  }
+
+  private resolveCurrentRemovalGroup(): GroupedOrderLine | null {
+    const requestedGroup = this.pendingRemovalGroup();
+    if (!requestedGroup) {
+      return null;
+    }
+
+    return this.groupedOrderCourses()
+      .flatMap((course) => course.lines)
+      .find((group) => group.key === requestedGroup.key) ?? null;
   }
 
   protected requestFreeTable(): void {
@@ -504,11 +544,21 @@ export class ServiceTablePanel {
       return `line:${line.id}`;
     }
 
-    return ['group', line.productId, line.configurationSignature, line.unitPrice, line.status].join('::');
+    const configuration = orderLineConfigurationIdentity(line.configurationSignature, [line.productId]);
+    return [
+      'group',
+      line.course,
+      line.productId,
+      configuration.kind,
+      configuration.kind === 'exact' ? configuration.value : '',
+      Math.round(line.unitPrice * 100),
+      line.status,
+    ].join('::');
   }
 
   private canGroupOrderLine(line: OrderLine): boolean {
     return (
+      line.productSnapshot.productType === 'simple' &&
       line.status === 'pending' &&
       !line.kitchenNote &&
       !line.note &&

@@ -101,7 +101,7 @@ describe('OrderSyncService', () => {
         },
         {
           provide: OrderWriteService,
-          useValue: { hydrateRemoteOrder: mockHydrateRemoteOrder },
+          useValue: { hydrateRemoteOrder: mockHydrateRemoteOrder, orderMutationEpoch: vi.fn(() => 0) },
         },
         {
           provide: RestaurantPosApiService,
@@ -145,7 +145,7 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockHydrateRemoteOrder).toHaveBeenCalledWith('table-1', expect.anything());
+    expect(mockHydrateRemoteOrder).toHaveBeenCalledWith('table-1', expect.anything(), expect.anything());
   });
 
   it('no llama a la API de pedidos cuando la planta no tiene puntos con líneas', async () => {

@@ -239,6 +239,24 @@ export class RestaurantOrderStore {
     );
   }
 
+  adjustOrderLineQuantityById(tableId: string, lineId: string, delta: number): void {
+    const order = this.ensureOrder(tableId);
+    const existing = order.lines.find((line) => line.id === lineId);
+    if (!existing || delta === 0) return;
+    const nextQuantity = existing.quantity + delta;
+    const nextLines =
+      nextQuantity <= 0
+        ? order.lines.filter((line) => line.id !== lineId)
+        : order.lines.map((line) =>
+            line.id === lineId
+              ? { ...line, quantity: nextQuantity, subtotal: this.round(nextQuantity * line.unitPrice) }
+              : line,
+          );
+    const total = this.calculateOrderTotal(nextLines);
+    this.setOrder(tableId, { ...order, lines: nextLines, total });
+    this.floor.updateTable(tableId, { total });
+  }
+
   decreaseOrderLine(tableId: string, lineIdOrProductId: string): void {
     const order = this.ensureOrder(tableId);
     const existing = this.findOrderLine(order, lineIdOrProductId);
@@ -312,6 +330,27 @@ export class RestaurantOrderStore {
       total: 0,
       cleaningStartedAt: undefined,
     });
+  }
+
+  /**
+   * Marca el pedido actual como pagado tras la confirmación del backend: archiva una
+   * copia en el histórico de pagos y mantiene el pedido visible en estado 'paid'
+   * (a diferencia de chargeTable, que vacía la mesa en el flujo demo).
+   */
+  markOrderPaid(tableId: string, method: PaymentMethod): void {
+    const order = this.ensureOrder(tableId);
+    const paidOrder: TableOrder = {
+      ...order,
+      status: 'paid',
+      paymentMethod: method,
+      lines: this.updateLinesForStatus(order.lines, 'paid'),
+    };
+    this._paidOrdersByTable.update((history) => ({
+      ...history,
+      [tableId]: [...(history[tableId] ?? []), structuredClone(paidOrder)],
+    }));
+    this.setOrder(tableId, paidOrder);
+    this.floor.updateTable(tableId, { status: 'paid', cleaningStartedAt: undefined });
   }
 
   markPaymentPending(tableId: string): void {
@@ -573,6 +612,7 @@ export class RestaurantOrderStore {
     return {
       productId: product.id,
       productName: product.name,
+      ...(product.imageUrl ? { imageUrl: product.imageUrl } : {}),
       productType: product.type,
       basePrice: product.basePrice,
       course: product.course,

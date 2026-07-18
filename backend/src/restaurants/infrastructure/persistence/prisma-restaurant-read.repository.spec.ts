@@ -531,9 +531,11 @@ describe('PrismaRestaurantReadRepository', () => {
           taxCents: 234,
           status: 'preparing',
           kitchenNote: 'Sin cebolla',
+          configurationSignature: 'rp-burger|',
           updatedAt: new Date('2026-06-21T12:20:00.000Z'),
           modifiers: [],
           comboSlots: [],
+          restaurantProduct: { imageUrl: 'https://cdn.example.test/burger.jpg' },
         },
         {
           id: 'line-combo',
@@ -554,6 +556,7 @@ describe('PrismaRestaurantReadRepository', () => {
           comboSlots: [
             { slotNameSnapshot: 'Hamburguesa', selectedProductNameSnapshot: 'Classic Burger', supplementPriceCents: 0, quantity: 1 },
           ],
+          restaurantProduct: null,
         },
       ],
     };
@@ -592,6 +595,8 @@ describe('PrismaRestaurantReadRepository', () => {
           preparationRoute: 'kitchen',
           status: 'preparing',
           course: 'mains',
+          configurationSignature: 'rp-burger|',
+          imageUrl: 'https://cdn.example.test/burger.jpg',
           modifiers: [],
           comboSlots: [],
         }),
@@ -602,6 +607,7 @@ describe('PrismaRestaurantReadRepository', () => {
           preparationRoute: 'kitchen',
           status: 'pending',
           course: 'mains',
+          imageUrl: null,
           comboSlots: [expect.objectContaining({ slotName: 'Hamburguesa', selectedProductName: 'Classic Burger' })],
         }),
       ],

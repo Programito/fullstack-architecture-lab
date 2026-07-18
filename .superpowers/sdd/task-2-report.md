@@ -1,38 +1,58 @@
-# Task 2 Report: Service Command-Center Shell
+# Task 2 Report: Frontend Payment Summary Model and Mark-Served API Support
 
-## Scope
+## Status
 
-Rebuilt only the `restaurant-pos-service-page` shell. The existing service-table workflow component, product picker implementation, service state, routing, API contracts, and order write flows were not reorganized or changed.
+DONE
 
-## Delivered
+## Implemented
 
-- Replaced the legacy summary widget with the Task 1 `serviceDashboardStats()` compact metric strip.
-- Introduced the command-center header with service title, service-point search control, and kitchen navigation.
-- Made the floor plan the dominant responsive canvas region, retaining the status legend, selected-service-point return action, and existing floor selection/focus bindings.
-- Wrapped `app-service-table-panel` in a dedicated, responsive workflow shell without changing the panel's inputs or outputs.
-- Retained the product search as the existing overlay. Its drawer implementation remains deliberately deferred to Task 4.
-- Removed the now-unused `ServiceSummary` import.
-- Added a focused command-center shell assertion for the header stats, floor canvas, and workflow panel test IDs.
+- Added `MarkRestaurantServicePointServedRequest` with optional `lineIds`.
+- Updated `markRestaurantServicePointServed` to accept an optional request, preserving the existing `{}` request body when omitted.
+- Added `TableOrderPaymentSummary`, optional `payments`, and optional `lastCompletedPayment` to `TableOrder`.
+- Added optional `paidSummary` metadata to `ServiceTableInfo` for later UI consumption.
+- Mapped all order payments from cents to currency units and derived the latest completed payment without modifying payment registration, charge sequencing, `clientOrigin`, or backend DTO persistence behavior.
 
-## Verification
+## Tests
 
-- Red: `pnpm exec ng test frontend --include src/app/features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page.spec.ts --watch=false` failed as expected before implementation because `service-dashboard-stats` was missing; the remaining 24 tests passed.
-- Green: the same focused command passed with 25/25 tests.
-- Build: `pnpm build` completed successfully.
-- Diff hygiene: `git diff --check` completed successfully.
+### Red
 
-## Notes
+The initial focused test run compiled the new tests and failed as expected:
 
-- The brief's literal `pnpm test -- --watch=false <spec>` command is incompatible with this Angular CLI configuration: the script forwards the spec path as the project argument and the runner rejects the forwarded watch argument. The equivalent supported focused command above was used.
-- The build retains existing repository warnings for the initial bundle budget, unrelated component-style budgets, and Mermaid CommonJS dependencies. No task-specific build failure or warning was introduced.
+- `lastCompletedPayment` was missing from the mapper return type.
+- `markRestaurantServicePointServed` accepted only two arguments.
 
-## Review Fix: Desktop Workflow Panel
+The task brief's positional command is not supported by the local Angular 21 CLI. The equivalent supported command was:
 
-- Promoted the service page's two-column grid from `2xl` to `xl`, so the workflow panel is positioned alongside the floor canvas at normal desktop widths.
-- Promoted the workflow shell's sticky positioning from `2xl` to `xl` to keep the desktop panel behavior aligned with the two-column layout.
-- Strengthened the command-center shell test with an exact `classList` assertion for `xl:grid-cols-[minmax(0,1fr)_26rem]`. This avoids the false positive where a substring assertion matched the old `2xl` token.
+```powershell
+pnpm test -- frontend --include=src/app/features/restaurant-pos/api/restaurant-pos-api.service.spec.ts
+```
 
-### Focused Evidence
+The initial run also compiled the mapper spec and reported both expected missing-contract errors.
 
-- Red: the exact class-token assertion failed against the prior `2xl:grid-cols-[minmax(0,1fr)_26rem]` implementation; 24 other tests passed.
-- Green: `pnpm exec ng test frontend --include src/app/features/restaurant-pos/pages/restaurant-pos-service-page/restaurant-pos-service-page.spec.ts --watch=false` passed with 25/25 tests after the `xl` change.
+### Green
+
+```powershell
+pnpm test -- frontend --include=src/app/features/restaurant-pos/api/restaurant-pos-api.service.spec.ts
+```
+
+Passed: 1 test file, 29 tests.
+
+```powershell
+pnpm test -- frontend --include=src/app/features/restaurant-pos/api/restaurant-pos-api.mappers.spec.ts
+```
+
+Passed: 1 test file, 27 tests.
+
+`git diff --check` also passed.
+
+## Scope and Constraints
+
+- No payment request contracts were changed.
+- No charge-to-payment ordering was changed.
+- No `clientOrigin` mapping or filtering behavior was changed.
+- No completed-payment persistence or `RestaurantOrderDto` return behavior was changed.
+- Service page and service table panel files were not edited.
+
+## Concerns
+
+None. The full frontend suite and production build were not run because this task requests focused API/model coverage only; the Angular test build did type-check the application code used by these changes.

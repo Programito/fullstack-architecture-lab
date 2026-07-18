@@ -60,7 +60,6 @@ describe('toProductPickerItem', () => {
     expect(item).toMatchObject({
       id: 'lemonade',
       name: 'Limonada con gas',
-      visualIcon: 'local_drink',
       priceLabel: '4.50 EUR',
       categoryLabel: 'Bebidas',
       allergenLabel: 'Sin alergenos indicados',
@@ -74,8 +73,18 @@ describe('toProductPickerItem', () => {
       recentlyAdded: true,
     });
     expect(item.badges.map((badge) => badge.label)).toEqual(['Anadido']);
-    expect(item.visualClass).toContain('rounded-full');
-    expect(item.visualClass).toContain('text-sky-700');
+  });
+
+  it('expone la imagen del producto cuando está disponible', () => {
+    const item = toProductPickerItem(product({ imageUrl: 'https://cdn.example/limonada.webp' }), context);
+
+    expect(item.imageUrl).toBe('https://cdn.example/limonada.webp');
+  });
+
+  it('deja la imagen a null cuando el producto no tiene imagen', () => {
+    const item = toProductPickerItem(product({}), context);
+
+    expect(item.imageUrl).toBeNull();
   });
 
   it('maps customizable products to configure action and quantity controls when already added', () => {
@@ -96,8 +105,6 @@ describe('toProductPickerItem', () => {
 
     expect(item.actionLabel).toBe('Configurar menu');
     expect(item.actionAriaLabel).toBe('Configurar menu Menu Classic Burger');
-    expect(item.visualIcon).toBe('restaurant_menu');
-    expect(item.visualClass).toContain('text-violet-700');
     expect(item.quantity).toBe(1);
     expect(item.showQuantityControls).toBe(false);
     expect(item.badges.map((badge) => badge.label)).toEqual(['Menu', 'Mas vendido']);
@@ -108,8 +115,6 @@ describe('toProductPickerItem', () => {
     const customizablePlatter = toProductPickerItem(product({ type: 'platter', modifierGroupIds: ['platter-extras'] }), context);
 
     expect(simplePlatter.actionLabel).toBe('Anadir');
-    expect(simplePlatter.visualIcon).toBe('room_service');
-    expect(simplePlatter.visualClass).toContain('text-emerald-700');
     expect(customizablePlatter.actionLabel).toBe('Configurar plato');
     expect(customizablePlatter.actionAriaLabel).toBe('Configurar plato Limonada con gas');
     expect(simplePlatter.badges.map((badge) => badge.label)).toEqual(['Plato combinado', 'Anadido']);

@@ -133,6 +133,13 @@ export class RestaurantPosStore {
     if (err) this.setError(err); else this.clearError();
   }
 
+  adjustSelectedOrderLineQuantityById(lineId: string, delta: number): void {
+    const tableId = this._selectedTableId();
+    if (!tableId) { this.setError(SELECT_TABLE_ERROR); return; }
+    this.order.adjustOrderLineQuantityById(tableId, lineId, delta);
+    this.clearError();
+  }
+
   decreaseSelectedOrderLine(lineIdOrProductId: string): void {
     const tableId = this._selectedTableId();
     if (!tableId) { this.setError(SELECT_TABLE_ERROR); return; }
@@ -178,6 +185,13 @@ export class RestaurantPosStore {
     const tableId = this._selectedTableId();
     if (!tableId) { this.setError(SELECT_TABLE_ERROR); return; }
     this.order.chargeTable(tableId);
+    this.clearError();
+  }
+
+  markSelectedOrderPaid(method: PaymentMethod): void {
+    const tableId = this._selectedTableId();
+    if (!tableId) { this.setError(SELECT_TABLE_ERROR); return; }
+    this.order.markOrderPaid(tableId, method);
     this.clearError();
   }
 

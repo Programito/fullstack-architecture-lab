@@ -45,10 +45,13 @@ export class OrderSyncService {
       serviceFloor.servicePoints
         .filter((sp) => sp.summary.lineCount > 0)
         .forEach((sp) => {
+          // Se captura la época antes de lanzar el GET: si el usuario muta el pedido
+          // mientras la respuesta viaja, la hidratación se descarta como obsoleta.
+          const expectedEpoch = this.orderWrite.orderMutationEpoch(sp.table.id);
           this.api.getRestaurantServicePointOrder(restaurant.id, sp.table.id)
             .pipe(takeUntilDestroyed(this.destroyRef), catchError(() => EMPTY))
             .subscribe((order) => {
-              this.orderWrite.hydrateRemoteOrder(sp.table.id, mapServicePointOrder(order));
+              this.orderWrite.hydrateRemoteOrder(sp.table.id, mapServicePointOrder(order), expectedEpoch);
             });
         });
     });

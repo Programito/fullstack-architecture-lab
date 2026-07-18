@@ -146,6 +146,8 @@ export type ServicePointOrderLineDto = {
   id: string;
   restaurantProductId?: string | null;
   productId?: string | null;
+  imageUrl?: string | null;
+  configurationSignature?: string;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   quantity: number;
@@ -302,6 +304,7 @@ export type RestaurantOrderLineDto = {
   id: string;
   restaurantProductId: string | null;
   productId: string | null;
+  imageUrl?: string | null;
   productName: string;
   productType: 'simple' | 'combo' | 'platter';
   course: string;

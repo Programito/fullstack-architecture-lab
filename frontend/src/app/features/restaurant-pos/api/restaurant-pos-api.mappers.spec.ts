@@ -443,6 +443,60 @@ describe('mapRestaurantMenuComboDefinitions', () => {
 });
 
 describe('mapRestaurantOrder', () => {
+  it('preserves the product image URL from persistent-order lines', () => {
+    const orderResponse: RestaurantOrderDto = {
+      order: {
+        id: 'order-image-1',
+        restaurantId: 'restaurant-1',
+        tableId: 'table-1',
+        status: 'open',
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 1200,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 1200,
+        paidCents: 0,
+        balanceCents: 1200,
+        openedAt: '2026-07-18T12:00:00.000Z',
+        updatedAt: '2026-07-18T12:00:00.000Z',
+        closedAt: null,
+      },
+      lines: [
+        {
+          id: 'line-image-1',
+          restaurantProductId: 'restaurant-product-1',
+          productId: 'product-1',
+          productName: 'Hamburguesa craft',
+          productType: 'simple',
+          course: 'main',
+          preparationRoute: 'kitchen',
+          basePriceCents: 1200,
+          unitPriceCents: 1200,
+          quantity: 1,
+          subtotalCents: 1200,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          kitchenNote: null,
+          cancellationReason: null,
+          cancelledAt: null,
+          configurationSignature: 'restaurant-product-1|',
+          modifiers: [],
+          comboSlots: [],
+          platterComponents: [],
+          imageUrl: 'https://cdn.example.com/burger.jpg',
+        },
+      ],
+      payments: [],
+    };
+
+    const order = mapRestaurantOrder(orderResponse);
+
+    expect(order.lines[0]?.productSnapshot).toMatchObject({ imageUrl: 'https://cdn.example.com/burger.jpg' });
+  });
+
   it('maps the latest completed payment into lastCompletedPayment', () => {
     const orderResponse: RestaurantOrderDto = {
       order: {
@@ -482,6 +536,91 @@ describe('mapRestaurantOrder', () => {
 });
 
 describe('mapServicePointOrder', () => {
+  it('preserves the product image URL from service-point lines', () => {
+    const response: ServicePointOrderDto = {
+      order: {
+        id: 'order-image-1',
+        tableId: 'table-1',
+        status: 'open',
+        openedAt: '2026-07-18T12:00:00.000Z',
+        updatedAt: '2026-07-18T12:00:00.000Z',
+        subtotalCents: 450,
+        taxCents: 0,
+        totalCents: 450,
+        currency: 'EUR',
+      },
+      lines: [
+        {
+          id: 'line-image-1',
+          restaurantProductId: 'restaurant-product-1',
+          productId: 'product-1',
+          productName: 'Limonada con gas',
+          productType: 'simple',
+          quantity: 1,
+          unitPriceCents: 450,
+          subtotalCents: 450,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          course: 'drinks',
+          preparationRoute: 'bar',
+          kitchenNote: null,
+          updatedAt: '2026-07-18T12:00:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+          imageUrl: 'https://cdn.example.com/lemonade.jpg',
+        },
+      ],
+    };
+
+    const order = mapServicePointOrder(response);
+
+    expect(order?.lines[0]?.productSnapshot).toMatchObject({ imageUrl: 'https://cdn.example.com/lemonade.jpg' });
+  });
+
+  it('omits imageUrl for legacy service-point lines without the field', () => {
+    const response: ServicePointOrderDto = {
+      order: {
+        id: 'order-legacy-image',
+        tableId: 'table-1',
+        status: 'open',
+        openedAt: '2026-07-18T12:00:00.000Z',
+        updatedAt: '2026-07-18T12:00:00.000Z',
+        subtotalCents: 450,
+        taxCents: 0,
+        totalCents: 450,
+        currency: 'EUR',
+      },
+      lines: [
+        {
+          id: 'line-legacy-image',
+          restaurantProductId: 'restaurant-product-1',
+          productId: 'product-1',
+          productName: 'Limonada con gas',
+          productType: 'simple',
+          quantity: 1,
+          unitPriceCents: 450,
+          subtotalCents: 450,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          course: 'drinks',
+          preparationRoute: 'bar',
+          kitchenNote: null,
+          updatedAt: '2026-07-18T12:00:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+        },
+      ],
+    };
+
+    const order = mapServicePointOrder(response);
+
+    expect(order?.lines[0]?.productSnapshot).not.toHaveProperty('imageUrl');
+  });
+
   it('preserves stable product ids from service-point lines when the backend provides them', () => {
     const response: ServicePointOrderDto = {
       order: {
@@ -498,6 +637,71 @@ describe('mapServicePointOrder', () => {
       lines: [
         {
           id: 'line-1',
+          restaurantProductId: 'rp-lemonade-1',
+          productId: 'product-3',
+          configurationSignature: 'rp-lemonade-1|',
+          productName: 'Limonada con gas',
+          productType: 'simple',
+          quantity: 1,
+          unitPriceCents: 450,
+          subtotalCents: 450,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          course: 'drinks',
+          preparationRoute: 'bar',
+          kitchenNote: null,
+          updatedAt: '2026-07-17T12:05:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+        },
+      ],
+    };
+
+    const order = mapServicePointOrder(response);
+
+    expect(order?.lines[0]?.productId).toBe('rp-lemonade-1');
+    expect(order?.lines[0]?.productSnapshot.productId).toBe('rp-lemonade-1');
+    expect(order?.lines[0]?.configurationSignature).toBe('rp-lemonade-1|');
+  });
+
+  it('uses a stable configuration signature for legacy lines with the same restaurant product', () => {
+    const response: ServicePointOrderDto = {
+      order: {
+        id: 'order-legacy-grouping',
+        tableId: 'table-1',
+        status: 'open',
+        openedAt: '2026-07-17T12:00:00.000Z',
+        updatedAt: '2026-07-17T12:05:00.000Z',
+        subtotalCents: 900,
+        taxCents: 0,
+        totalCents: 900,
+        currency: 'EUR',
+      },
+      lines: [
+        {
+          id: 'line-legacy-1',
+          restaurantProductId: 'rp-lemonade-1',
+          productId: 'product-3',
+          productName: 'Limonada con gas',
+          productType: 'simple',
+          quantity: 1,
+          unitPriceCents: 450,
+          subtotalCents: 450,
+          taxRateName: null,
+          taxRatePercent: null,
+          taxCents: 0,
+          status: 'pending',
+          course: 'drinks',
+          preparationRoute: 'bar',
+          kitchenNote: null,
+          updatedAt: '2026-07-17T12:05:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+        },
+        {
+          id: 'line-legacy-2',
           restaurantProductId: 'rp-lemonade-1',
           productId: 'product-3',
           productName: 'Limonada con gas',
@@ -521,8 +725,10 @@ describe('mapServicePointOrder', () => {
 
     const order = mapServicePointOrder(response);
 
-    expect(order?.lines[0]?.productId).toBe('product-3');
-    expect(order?.lines[0]?.productSnapshot.productId).toBe('product-3');
+    expect(order?.lines.map((line) => line.configurationSignature)).toEqual([
+      'service-config:rp-lemonade-1',
+      'service-config:rp-lemonade-1',
+    ]);
   });
 
   it('falls back to the legacy synthetic id when service-point lines still omit product ids', () => {

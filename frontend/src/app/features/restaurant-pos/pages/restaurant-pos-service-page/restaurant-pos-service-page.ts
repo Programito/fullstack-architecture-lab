@@ -2,7 +2,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import type { ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
+import type { RestaurantOrderDto, ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
 import { switchMap, tap, type Observable } from 'rxjs';
 import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
@@ -131,7 +131,11 @@ export class RestaurantPosServicePage {
   // volver a añadirlo mostraba cantidad 2 en el buscador con solo 1 activo.
   protected readonly productQuantities = computed<Record<string, number>>(() =>
     (this.store.selectedOrder()?.lines ?? [])
-      .filter((line) => line.status !== 'cancelled')
+      .filter(
+        (line) =>
+          line.status !== 'cancelled' &&
+          (!this.isDeferredDirectProduct(line.productId) || this.isAdjustableDirectOrderLine(line)),
+      )
       .reduce<Record<string, number>>((quantities, line) => {
         quantities[line.productId] = (quantities[line.productId] ?? 0) + line.quantity;
         return quantities;
@@ -527,38 +531,58 @@ export class RestaurantPosServicePage {
     });
   }
 
-  protected increaseProductQuantity(productId: string): void {
-    if (this.isDeferredDirectProduct(productId)) {
-      this.orderWrite.increaseDirectProductQuantity(productId);
+  protected increaseProductQuantity(lineIdOrProductId: string): void {
+    const localLine = this.findSelectedOrderLineById(lineIdOrProductId);
+    const ctx = this.resolveApiLine(lineIdOrProductId);
+    if (localLine && this.isAdjustableDirectOrderLine(localLine)) {
+      this.orderWrite.increaseDirectProductQuantity(localLine.productId, localLine.id);
+      return;
+    }
+    if (!localLine && this.isDeferredDirectProduct(lineIdOrProductId)) {
+      this.orderWrite.increaseDirectProductQuantity(lineIdOrProductId);
       return;
     }
 
-    const ctx = this.resolveApiLine(productId);
-    this.store.increaseSelectedOrderLine(productId);
+    this.noteSelectedOrderMutation();
+    if (localLine) {
+      this.store.adjustSelectedOrderLineQuantityById(localLine.id, 1);
+    } else {
+      this.store.increaseSelectedOrderLine(lineIdOrProductId);
+    }
     if (ctx) {
-      this.api
-        .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 })
-        .subscribe(this.lineMutationObserver(ctx.restaurantId));
+      this.enqueueLineMutation(ctx.restaurantId, () =>
+        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 }),
+      );
     }
   }
 
-  protected decreaseProductQuantity(productId: string): void {
-    if (this.isDeferredDirectProduct(productId)) {
-      this.orderWrite.decreaseDirectProductQuantity(productId);
+  protected decreaseProductQuantity(lineIdOrProductId: string): void {
+    const localLine = this.findSelectedOrderLineById(lineIdOrProductId);
+    const ctx = this.resolveApiLine(lineIdOrProductId);
+    if (localLine && this.isAdjustableDirectOrderLine(localLine)) {
+      this.orderWrite.decreaseDirectProductQuantity(localLine.productId, localLine.id);
+      return;
+    }
+    if (!localLine && this.isDeferredDirectProduct(lineIdOrProductId)) {
+      this.orderWrite.decreaseDirectProductQuantity(lineIdOrProductId);
       return;
     }
 
-    const ctx = this.resolveApiLine(productId);
-    this.store.decreaseSelectedOrderLine(productId);
+    this.noteSelectedOrderMutation();
+    if (localLine) {
+      this.store.adjustSelectedOrderLineQuantityById(localLine.id, -1);
+    } else {
+      this.store.decreaseSelectedOrderLine(lineIdOrProductId);
+    }
     if (ctx) {
       if (ctx.line.quantity <= 1) {
-        this.api
-          .deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id)
-          .subscribe(this.lineMutationObserver(ctx.restaurantId));
+        this.enqueueLineMutation(ctx.restaurantId, () =>
+          this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id),
+        );
       } else {
-        this.api
-          .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 })
-          .subscribe(this.lineMutationObserver(ctx.restaurantId));
+        this.enqueueLineMutation(ctx.restaurantId, () =>
+          this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 }),
+        );
       }
     }
   }
@@ -566,27 +590,29 @@ export class RestaurantPosServicePage {
   protected increaseConfiguredLine(lineId: string): void {
     const ctx = this.resolveApiLine(lineId);
     const line = this.store.selectedOrder()?.lines.find((l) => l.id === lineId);
-    this.store.increaseSelectedOrderLine(lineId);
+    this.noteSelectedOrderMutation();
+    this.store.adjustSelectedOrderLineQuantityById(lineId, 1);
     this.lastAddedProductId.set(line?.productId ?? null);
     if (ctx) {
-      this.api
-        .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 })
-        .subscribe(this.lineMutationObserver(ctx.restaurantId));
+      this.enqueueLineMutation(ctx.restaurantId, () =>
+        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity + 1 }),
+      );
     }
   }
 
   protected decreaseConfiguredLine(lineId: string): void {
     const ctx = this.resolveApiLine(lineId);
-    this.store.decreaseSelectedOrderLine(lineId);
+    this.noteSelectedOrderMutation();
+    this.store.adjustSelectedOrderLineQuantityById(lineId, -1);
     if (ctx) {
       if (ctx.line.quantity <= 1) {
-        this.api
-          .deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id)
-          .subscribe(this.lineMutationObserver(ctx.restaurantId));
+        this.enqueueLineMutation(ctx.restaurantId, () =>
+          this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id),
+        );
       } else {
-        this.api
-          .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 })
-          .subscribe(this.lineMutationObserver(ctx.restaurantId));
+        this.enqueueLineMutation(ctx.restaurantId, () =>
+          this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { quantity: ctx.line.quantity - 1 }),
+        );
       }
     }
   }
@@ -599,31 +625,53 @@ export class RestaurantPosServicePage {
     this.store.markSelectedOrderLineServed(productId);
   }
 
-  protected removeProduct(productId: string): void {
-    const ctx = this.resolveApiLine(productId);
-    if (ctx && this.isDeferredDirectProduct(ctx.line.productId)) {
-      this.orderWrite.removeDirectProduct(ctx.line.productId);
+  protected removeProduct(lineIdOrProductId: string): void {
+    const localLine = this.findSelectedOrderLineById(lineIdOrProductId);
+    const ctx = this.resolveApiLine(lineIdOrProductId);
+    if (localLine && this.isAdjustableDirectOrderLine(localLine)) {
+      this.orderWrite.removeDirectProduct(localLine.productId, localLine.id);
       return;
     }
-    this.store.removeSelectedOrderLine(productId);
+    if (!localLine && this.isDeferredDirectProduct(lineIdOrProductId)) {
+      this.orderWrite.removeDirectProduct(lineIdOrProductId);
+      return;
+    }
+    this.noteSelectedOrderMutation();
+    this.store.removeSelectedOrderLine(lineIdOrProductId);
     if (ctx) {
-      // Backend only allows DELETE on pending lines; once a line is preparing or
-      // ready it has to be cancelled instead so the deletion actually persists.
-      const removal$: Observable<unknown> =
-        ctx.line.status === 'preparing' || ctx.line.status === 'ready'
-          ? this.api.cancelRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, 'removed_by_staff')
-          : this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id);
-      removal$.subscribe(this.lineMutationObserver(ctx.restaurantId));
+      // Backend only allows DELETE on pending lines; once a line has been sent to
+      // kitchen (or beyond) it has to be cancelled instead so the deletion actually persists.
+      if (ctx.line.status !== 'pending') {
+        // La respuesta del cancel es la verdad más reciente del pedido: se aplica
+        // directamente para que un GET posterior (posiblemente desfasado) no resucite la línea.
+        const paymentMethod = this.store.selectedOrder()?.paymentMethod;
+        this.enqueueLineMutation(
+          ctx.restaurantId,
+          () => this.api.cancelRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, 'removed_by_staff'),
+          {
+            applyResponse: (response) => {
+              const tableId = this.store.selectedTableId();
+              if (!tableId) return;
+              this.orderWrite.hydrateRemoteOrder(tableId, mapRestaurantOrder(response as RestaurantOrderDto, paymentMethod));
+            },
+          },
+        );
+      } else {
+        this.enqueueLineMutation(ctx.restaurantId, () =>
+          this.api.deleteRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id),
+        );
+      }
     }
   }
 
   protected updateProductNote(change: { lineId: string; note: string }): void {
     const ctx = this.resolveApiLine(change.lineId);
+    this.noteSelectedOrderMutation();
     this.store.updateSelectedOrderLineNote(change.lineId, change.note);
     if (ctx) {
-      this.api
-        .updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { kitchenNote: change.note })
-        .subscribe(this.lineMutationObserver(ctx.restaurantId));
+      this.enqueueLineMutation(ctx.restaurantId, () =>
+        this.api.updateRestaurantOrderLine(ctx.restaurantId, ctx.orderId, ctx.line.id, { kitchenNote: change.note }),
+      );
     }
   }
 
@@ -634,13 +682,15 @@ export class RestaurantPosServicePage {
 
     const paymentMethod = this.store.selectedOrder()?.paymentMethod;
 
-    if (paymentMethod !== 'cash' && paymentMethod !== 'card') {
+    if ((this.store.selectedOrder()?.lines ?? []).some((line) => line.status === 'pending')) {
+      // El aviso se muestra aunque no haya método elegido; si se confirma sin método,
+      // se cobra en efectivo por defecto.
+      this.pendingChargePaymentMethod.set(paymentMethod === 'card' ? 'card' : 'cash');
+      this.chargeKitchenConfirmOpen.set(true);
       return;
     }
 
-    if ((this.store.selectedOrder()?.lines ?? []).some((line) => line.status === 'pending')) {
-      this.pendingChargePaymentMethod.set(paymentMethod);
-      this.chargeKitchenConfirmOpen.set(true);
+    if (paymentMethod !== 'cash' && paymentMethod !== 'card') {
       return;
     }
 
@@ -821,8 +871,9 @@ export class RestaurantPosServicePage {
       )
       .subscribe({
         next: () => {
-          this.store.setSelectedPaymentMethod(paymentMethod);
-          this.store.chargeSelectedTable();
+          // El backend ya confirmó el pago: se conserva el pedido en estado 'paid'
+          // (y se archiva en el histórico) en lugar de vaciar la mesa.
+          this.store.markSelectedOrderPaid(paymentMethod);
           if (paymentMethod === 'card') {
             this.cardGatewayOpen.set(false);
           }
@@ -835,24 +886,31 @@ export class RestaurantPosServicePage {
       });
   }
 
-  private lineMutationObserver(restaurantId: string): { next: () => void; error: () => void } {
+  /** Avanza la época de mutación local de la mesa seleccionada (guard anti-respuestas obsoletas). */
+  private noteSelectedOrderMutation(): void {
     const tableId = this.store.selectedTableId();
-    return {
-      next: () => {
-        if (tableId) this.reloadOrder(restaurantId, tableId);
-      },
-      error: () => {
-        this.store.reportApiError('restaurantPos.errors.updateLineFailed');
-        if (tableId) this.reloadOrder(restaurantId, tableId);
-      },
-    };
+    if (tableId) {
+      this.orderWrite.noteLocalOrderMutation(tableId);
+    }
+  }
+
+  /** Encola la mutación en la cola serializada por mesa; el refresco llega al vaciarse la cola. */
+  private enqueueLineMutation(
+    restaurantId: string,
+    mutation: () => Observable<unknown>,
+    options?: { errorMessageKey?: string; applyResponse?: (response: unknown) => void },
+  ): void {
+    const tableId = this.store.selectedTableId();
+    if (!tableId) return;
+    this.orderWrite.enqueueLineMutation(tableId, restaurantId, mutation, options);
   }
 
   private reloadOrder(restaurantId: string, tableId: string): void {
+    const expectedEpoch = this.orderWrite.orderMutationEpoch(tableId);
     this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
       next: (serviceOrder) => {
         const mappedOrder = mapServicePointOrder(serviceOrder);
-        this.orderWrite.hydrateRemoteOrder(tableId, mappedOrder);
+        this.orderWrite.hydrateRemoteOrder(tableId, mappedOrder, expectedEpoch);
         if (mappedOrder) {
           this.autoServeStaleKitchenLines(restaurantId, tableId, mappedOrder);
         }
@@ -961,6 +1019,23 @@ export class RestaurantPosServicePage {
     return !!product && product.type === 'simple' && product.modifierGroupIds.length === 0 && !!product.restaurantProductId;
   }
 
+  private isAdjustableDirectOrderLine(line: OrderLine): boolean {
+    return (
+      this.isDeferredDirectProduct(line.productId) &&
+      line.productSnapshot.productType === 'simple' &&
+      line.status === 'pending' &&
+      !line.kitchenNote &&
+      !line.note &&
+      line.selectedModifiers.length === 0 &&
+      (line.selectedComboSlots?.length ?? 0) === 0 &&
+      (line.platterComponents?.length ?? 0) === 0
+    );
+  }
+
+  private findSelectedOrderLineById(lineId: string): OrderLine | null {
+    return this.store.selectedOrder()?.lines.find((line) => line.id === lineId) ?? null;
+  }
+
   private orderLineOptionSummary(line: OrderLine): string {
     const comboProducts = (line.selectedComboSlots ?? []).flatMap((slot) => slot.selectedProducts.map((product) => product.productName));
     const modifiers = line.selectedModifiers.map((modifier) =>
@@ -1020,7 +1095,9 @@ export class RestaurantPosServicePage {
     const order = this.store.selectedOrder();
     if (!restaurant || !order?.id) return null;
     const line = order.lines.find((l) => l.id === lineIdOrProductId || l.productId === lineIdOrProductId) ?? null;
-    if (!line || line.id.startsWith('line:')) return null;
+    // Solo las líneas confirmadas por el backend (remote) tienen id válido para la API;
+    // una línea local aún no sincronizada no debe generar PATCH/DELETE ni refrescos que la pisen.
+    if (!line?.remote) return null;
     return { line, orderId: order.id, restaurantId: restaurant.id };
   }
 

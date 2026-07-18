@@ -583,6 +583,9 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
           include: {
             modifiers: true,
             comboSlots: true,
+            restaurantProduct: {
+              select: { imageUrl: true },
+            },
           },
         },
       },
@@ -609,6 +612,8 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
         id: line.id,
         restaurantProductId: line.restaurantProductId,
         productId: line.productId,
+        imageUrl: line.restaurantProduct?.imageUrl ?? null,
+        configurationSignature: line.configurationSignature,
         productName: line.productNameSnapshot,
         productType: line.productTypeSnapshot as 'simple' | 'combo' | 'platter',
         quantity: line.quantity,

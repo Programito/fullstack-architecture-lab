@@ -26,6 +26,7 @@ export interface PlatterComponentSnapshot {
 export interface OrderLineProductSnapshot {
   productId: string;
   productName: string;
+  imageUrl?: string;
   productType: ProductType;
   basePrice: number;
   course: OrderCourse;
@@ -61,6 +62,8 @@ export interface OrderLine {
   configurationSignature: string;
   course: OrderCourse;
   status: OrderLineStatus;
+  /** true si la línea existe confirmada en el backend (viene de una hidratación remota). */
+  remote?: boolean;
   selectedComboSlots?: SelectedComboSlotSnapshot[];
   platterComponents?: PlatterComponentSnapshot[];
   note?: string;
