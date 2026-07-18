@@ -499,6 +499,13 @@ export class ServiceTablePanel {
       : this.translate('restaurantPos.service.removeNonPendingConfirmTitle');
   }
 
+  protected removeProductConfirmLabel(): string {
+    const group = this.currentRemovalGroup();
+    return group && group.primaryLine.status === 'pending' && group.quantity > 1
+      ? this.translate('restaurantPos.service.confirmRemoveGrouped')
+      : this.translate('restaurantPos.service.confirmRemoveNonPending');
+  }
+
   protected removeProductConfirmDescription(): string {
     const group = this.currentRemovalGroup();
     if (group && group.primaryLine.status === 'pending' && group.quantity > 1) {

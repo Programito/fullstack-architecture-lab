@@ -964,7 +964,9 @@ describe('ServiceTablePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
 
     const dialog = screen.getByRole('dialog', { name: 'Cancelar producto de cocina' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar producto' }));
+    const confirmButton = within(dialog).getByRole('button', { name: 'Sí, cancelar el producto' });
+    expect(confirmButton).toBeTruthy();
+    fireEvent.click(confirmButton);
 
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
   });
@@ -1064,6 +1066,31 @@ describe('ServiceTablePanel', () => {
     expect(container.querySelectorAll('[data-product-image]')).toHaveLength(2);
   });
 
+  it.each([
+    ['es', 'Eliminar Craft Burger del pedido', 'Sí, eliminar todas las unidades'],
+    ['en', 'Remove Craft Burger from the order', 'Yes, remove all units'],
+    ['ca', 'Eliminar Craft Burger de la comanda', 'Sí, eliminar totes les unitats'],
+  ] as const)('uses the context-specific grouped removal confirmation label in %s', async (locale, removeActionLabel, expectedConfirmLabel) => {
+    const i18n = provideI18nTesting(locale);
+    Object.assign(i18n.translations[locale].restaurantPos.service, {
+      confirmRemoveGrouped: expectedConfirmLabel,
+    });
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, groupedPendingOrder()),
+        title: 'Mesa 1',
+        errorMessage: null,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: removeActionLabel }));
+
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: expectedConfirmLabel })).toBeTruthy();
+  });
+
   it('confirms grouped removal once using the primary line id and closes the dialog', async () => {
     const i18n = provideI18nTesting();
     const removeProduct = vi.fn();
@@ -1079,7 +1106,7 @@ describe('ServiceTablePanel', () => {
     fixture.componentInstance.removeProduct.subscribe(removeProduct);
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, eliminar todas las unidades' }));
 
     expect(removeProduct).toHaveBeenCalledTimes(1);
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
@@ -1158,7 +1185,9 @@ describe('ServiceTablePanel', () => {
     expect(within(dialog).queryByText('Craft Burger de bebidas')).toBeNull();
     expect(within(dialog).queryByText('9')).toBeNull();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, cancelar producto' }));
+    const confirmButton = within(dialog).getByRole('button', { name: 'Sí, eliminar todas las unidades' });
+    expect(confirmButton).toBeTruthy();
+    fireEvent.click(confirmButton);
 
     expect(removeProduct).toHaveBeenCalledTimes(1);
     expect(removeProduct).toHaveBeenCalledWith('backend-main-line');
@@ -1220,7 +1249,7 @@ describe('ServiceTablePanel', () => {
     expect(pendingRemovalGroup()).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Craft Burger del pedido' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, cancelar producto' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, eliminar todas las unidades' }));
     expect(removeProduct).toHaveBeenCalledTimes(1);
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
   });

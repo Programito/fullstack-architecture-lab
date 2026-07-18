@@ -287,7 +287,7 @@
 </aside>
 
 <app-dialog [open]="freeTableConfirmOpen()" [title]="'restaurantPos.service.freeTableConfirmTitle' | transloco" [description]="'restaurantPos.service.freeTableConfirmDescription' | transloco" [closeAriaLabel]="'restaurantPos.service.cancelFreeTable' | transloco" [cancelLabel]="'restaurantPos.service.cancelFreeTable' | transloco" [confirmLabel]="'restaurantPos.service.confirmFreeTable' | transloco" confirmVariant="danger" showActions size="sm" (closed)="closeFreeTableConfirm()" (cancelled)="closeFreeTableConfirm()" (confirmed)="confirmFreeTable()" />
-<app-dialog [open]="removeProductConfirmOpen()" [title]="removeProductConfirmTitle()" [description]="removeProductConfirmDescription()" [closeAriaLabel]="'restaurantPos.service.cancelRemoveNonPending' | transloco" [cancelLabel]="'restaurantPos.service.cancelRemoveNonPending' | transloco" [confirmLabel]="'restaurantPos.service.confirmRemoveNonPending' | transloco" confirmVariant="danger" showActions size="sm" (closed)="closeRemoveProductConfirm()" (cancelled)="closeRemoveProductConfirm()" (confirmed)="confirmRemoveProduct()">
+<app-dialog [open]="removeProductConfirmOpen()" [title]="removeProductConfirmTitle()" [description]="removeProductConfirmDescription()" [closeAriaLabel]="'restaurantPos.service.cancelRemoveNonPending' | transloco" [cancelLabel]="'restaurantPos.service.cancelRemoveNonPending' | transloco" [confirmLabel]="removeProductConfirmLabel()" confirmVariant="danger" showActions size="sm" (closed)="closeRemoveProductConfirm()" (cancelled)="closeRemoveProductConfirm()" (confirmed)="confirmRemoveProduct()">
   @if (currentRemovalGroup(); as group) {
     @if (group.quantity > 1) {
       <div class="flex min-w-0 items-center gap-3">
