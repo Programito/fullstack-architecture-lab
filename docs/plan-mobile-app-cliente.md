@@ -110,7 +110,7 @@ Cada fase termina con la app compilando, sus tests en verde y algo demostrable. 
 - [x] Fase 5 — Configurador de producto (extras, combos, "sin X") + carrito Room con merge de líneas idénticas
 - [x] Fase 6 — Resumen del pedido (editar/borrar líneas) y envío real a cocina (abre pedido + líneas + disparo a cocina; el carrito se conserva si algo falla)
 - [x] Fase 7 — Cobro (pasarela mock: tarjeta/Bizum/efectivo, sin cargo real) + registro real del pago en backend + pantalla de pago aceptado
-- [~] Fase 8 — Pulido, i18n completa, APK release: i18n, accesibilidad, animaciones (Nav3 + rebote del carrito), `docs/mobile-app.md` y tests de UI de los flujos críticos (incl. ticket detallado y salir de la mesa) ya hechos; la firma release lee `keystore.properties` (ver `mobile/README.md`). Queda ejecutar los tests en emulador y generar el keystore + APK final.
+- [~] Fase 8 — Pulido, i18n completa, APK release: i18n, accesibilidad, animaciones (Nav3 + rebote del carrito), `docs/mobile-app.md`, tests de UI de los flujos críticos (incl. ticket detallado y salir de la mesa), URL de producción, icono adaptativo y documentación de GitHub Releases ya hechos. La firma release lee `keystore.properties` (ver `mobile/README.md`). Queda generar y respaldar el keystore, validar el APK firmado en un dispositivo físico y publicar `v0.1.0`.
 
 ### Fase 0 — Bootstrap del proyecto (≈ ½ día)
 

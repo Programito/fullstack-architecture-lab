@@ -81,6 +81,7 @@ Open the `mobile/` folder in Android Studio and run on an emulator or device (AP
 
 - **Frontend:** https://fullstack-architecture-lab-crao.vercel.app
 - **Backend:** https://fullstack-architecture-lab.onrender.com
+- **Android:** https://github.com/Programito/fullstack-architecture-lab/releases/latest
 - **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
 
 ### Backend environment variables
@@ -230,6 +231,7 @@ Abre la carpeta `mobile/` en Android Studio y ejecuta en un emulador o dispositi
 
 - **Frontend:** https://fullstack-architecture-lab-crao.vercel.app
 - **Backend:** https://fullstack-architecture-lab.onrender.com
+- **Android:** https://github.com/Programito/fullstack-architecture-lab/releases/latest
 - **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
 
 ### Variables de entorno del backend

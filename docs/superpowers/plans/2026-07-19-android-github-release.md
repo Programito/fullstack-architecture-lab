@@ -287,7 +287,7 @@ it('links to the latest public Android release securely', async () => {
 Run from `frontend/`:
 
 ```powershell
-pnpm test -- --watch=false src/app/app.spec.ts
+pnpm exec ng test --watch=false --include src/app/app.spec.ts
 ```
 
 Expected: FAIL because no link with accessible name `Android APK` exists.
@@ -358,7 +358,7 @@ Update the existing footer rule and add the link rules in `frontend/src/app/app.
 Run from `frontend/`:
 
 ```powershell
-pnpm test -- --watch=false src/app/app.spec.ts
+pnpm exec ng test --watch=false --include src/app/app.spec.ts
 pnpm build
 ```
 
@@ -402,7 +402,7 @@ Add this release flow to `mobile/README.md`:
 ```powershell
 .\gradlew.bat test
 .\gradlew.bat :app:assembleRelease
-& 'C:\Users\Thor_\AppData\Local\Android\Sdk\build-tools\37.0.0\apksigner.bat' verify --verbose --print-certs .\app\build\outputs\apk\release\app-release.apk
+& "$env:ANDROID_HOME\build-tools\37.0.0\apksigner.bat" verify --verbose --print-certs .\app\build\outputs\apk\release\app-release.apk
 Copy-Item .\app\build\outputs\apk\release\app-release.apk .\app\build\outputs\apk\release\mesaflow-0.1.0.apk
 ```
 
@@ -558,7 +558,7 @@ Expected: `BUILD SUCCESSFUL` and `app/build/outputs/apk/release/app-release.apk`
 - [ ] **Step 3: Verify the APK signature and certificate**
 
 ```powershell
-& 'C:\Users\Thor_\AppData\Local\Android\Sdk\build-tools\37.0.0\apksigner.bat' verify --verbose --print-certs .\app\build\outputs\apk\release\app-release.apk
+& "$env:ANDROID_HOME\build-tools\37.0.0\apksigner.bat" verify --verbose --print-certs .\app\build\outputs\apk\release\app-release.apk
 ```
 
 Expected: `Verified` and at least APK Signature Scheme v2 is `true`; record the SHA-256 certificate digest in the private release notes.
@@ -606,7 +606,7 @@ Expected: no request targets localhost, no cleartext-network error appears, and 
 Run from `frontend/`:
 
 ```powershell
-pnpm test -- --watch=false src/app/app.spec.ts
+pnpm exec ng test --watch=false --include src/app/app.spec.ts
 pnpm build
 ```
 

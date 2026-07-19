@@ -4,8 +4,8 @@ App nativa Android para que el cliente del restaurante pida desde su mesa. Kotli
 
 ## Primer build (Fase 0)
 
-1. Abrir la carpeta `mobile/` en Android Studio (Narwhal 4 / 2025.1.4 o más reciente — necesita soporte de AGP 8.13).
-2. Dejar que sincronice: la primera vez descarga Gradle 8.14.3, el SDK de Android 37 y las dependencias.
+1. Abrir la carpeta `mobile/` en Android Studio Panda 4 / 2025.3.4 o más reciente, con soporte para AGP 9.2.
+2. Dejar que sincronice: la primera vez descarga Gradle 9.4.1, el SDK de Android 37 y las dependencias.
 3. Ejecutar la app en un emulador o dispositivo (API 26+). Debe verse la pantalla de bienvenida de MesaFlow.
 4. Tests unitarios: `./gradlew test` (o `gradlew.bat test` en Windows).
 
@@ -13,24 +13,23 @@ App nativa Android para que el cliente del restaurante pida desde su mesa. Kotli
 
 | Pieza | Versión |
 |---|---|
-| AGP | 8.13.2 (Gradle wrapper 8.14.3) |
+| AGP | 9.2.1 (Gradle wrapper 9.4.1) |
 | Kotlin | 2.3.21 (+ plugin Compose y serialization) |
 | KSP | 2.3.9 |
 | Compose BOM | 2026.06.01 (Material 3) |
 | Navigation 3 | 1.1.3 (se cablea en la Fase 3) |
-| Hilt | 2.58 (última compatible con AGP 8.x; Hilt 2.59+ exige AGP 9) |
+| Hilt | 2.58 |
 | kotlinx-serialization-json | 1.11.0 |
 | Room | 2.8.4 (carrito persistente, Fase 5) |
-| androidx.lifecycle (runtime/viewmodel-compose) | 2.10.0 (2.11.0 exige AGP 9.2; ver nota abajo) |
+| androidx.lifecycle (runtime/viewmodel-compose) | 2.10.0 |
 
-> **Nota AGP 9:** varias librerías de Google (Hilt 2.59+, lifecycle 2.11+) ya
-> exigen AGP 9.x en su metadata. Este proyecto se queda deliberadamente en
-> AGP 8.13 mientras sea viable, fijando esas dependencias a la última versión
-> compatible. Cuando el ecosistema lo haga insostenible (cada vez más cerca),
-> la migración es: AGP 9.2.x + Gradle 9.4.1+ + Hilt 2.60 + lifecycle 2.11+,
-> y requiere Android Studio Otter 3 Feature Drop (2025.2.3) o más reciente.
+> **Nota AGP 9:** el proyecto ya usa AGP 9.2.1 y Gradle 9.4.1. Conserva
+> temporalmente `android.builtInKotlin=false` y `android.newDsl=false` para la
+> integración actual de Kotlin/Hilt; Gradle avisa de que estas opciones y las
+> APIs de variantes antiguas deben migrarse antes de AGP 10.
 
-Room, Retrofit/OkHttp, DataStore, Coil y CameraX/ML Kit se añaden al catalog en las fases 2–5, cuando se usan.
+El catálogo incluye Room, Retrofit/OkHttp, DataStore, Coil y Google Code Scanner,
+usados por las capas de datos y los flujos cliente actuales.
 
 ## Estructura
 
@@ -96,12 +95,33 @@ ante cualquier fallo se conserva para reintentar.
    keyPassword=<contraseña de la clave>
    ```
    `storeFile` se resuelve relativo a `mobile/`; también acepta ruta absoluta.
-3. Revisa `BASE_URL` del build type `release` en `app/build.gradle.kts` (hoy es un
-   placeholder `https://api.mesaflow.example`): debe apuntar al backend real HTTPS.
-4. Compila:
+3. El build `release` usa el backend real HTTPS:
+   ```text
+   https://fullstack-architecture-lab.onrender.com/api/v1/
    ```
-   ./gradlew :app:assembleRelease
+   El build `debug` conserva `http://127.0.0.1:3000/api/v1/` para desarrollo
+   local mediante `adb reverse`.
+4. Ejecuta los tests, compila y verifica la firma desde `mobile/` en Windows:
+   ```powershell
+   .\gradlew.bat test
+   .\gradlew.bat :app:assembleRelease
+   & "$env:ANDROID_HOME\build-tools\37.0.0\apksigner.bat" verify --verbose --print-certs .\app\build\outputs\apk\release\app-release.apk
+   Copy-Item .\app\build\outputs\apk\release\app-release.apk .\app\build\outputs\apk\release\mesaflow-0.1.0.apk
    ```
    El APK queda en `app/build/outputs/apk/release/` con R8 y `shrinkResources`
    activados. Si `keystore.properties` no existe, el APK sale **sin firmar**
    (útil en CI, no instalable tal cual).
+
+## Publicación gratuita en GitHub Releases
+
+- Releases: https://github.com/Programito/fullstack-architecture-lab/releases
+- Última versión: https://github.com/Programito/fullstack-architecture-lab/releases/latest
+
+La primera publicación usa el tag `v0.1.0` y adjunta
+`mesaflow-0.1.0.apk`. En cada publicación posterior se debe incrementar
+`versionCode`; `versionName`, el tag y el nombre del APK deben reflejar la nueva
+versión.
+
+El usuario puede descargar el APK sin iniciar sesión porque el repositorio es
+público. Android puede solicitar permiso para instalar aplicaciones desde el
+navegador empleado. Esta distribución es directa y no procede de Google Play.
