@@ -1,7 +1,8 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
-import { of, throwError } from 'rxjs';
-import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, Subject, throwError } from 'rxjs';
+import type { RestaurantFloorsDto, ServiceFloorDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
 import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS, MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
@@ -39,6 +40,44 @@ describe('RestaurantPosLayoutPage', () => {
       },
     ],
   });
+
+  const createDefaultServiceFloorResponse = (): ServiceFloorDto => {
+    const response = createDefaultFloorsResponse();
+    const floor = response.floors[0]!;
+
+    return {
+      restaurantId: response.restaurantId,
+      floor: {
+        id: floor.id,
+        name: floor.name,
+        rows: floor.rows,
+        columns: floor.columns,
+      },
+      elements: floor.elements.map(({ sortOrder: _sortOrder, ...element }) => element),
+      servicePoints: response.tables.map((table) => ({
+        table: {
+          id: table.id,
+          tableNumber: table.tableNumber,
+          name: table.name,
+          capacity: table.capacity,
+          status: 'free',
+          serviceStartedAt: null,
+        },
+        summary: {
+          lineCount: 0,
+          guestCount: 0,
+          totalCents: 0,
+          currency: 'EUR',
+          servicePhase: { course: 'none', status: 'no_order' },
+        },
+      })),
+      totals: {
+        servicePointCount: response.tables.length,
+        occupiedCount: 0,
+        openOrderCount: 0,
+      },
+    };
+  };
 
   const createRestaurantContextMock = (restaurantCount: 'single' | 'multiple' | 'empty' = 'single') => {
     const restaurants =
@@ -230,6 +269,7 @@ describe('RestaurantPosLayoutPage', () => {
     const api = {
       listRestaurants: vi.fn(() => of([])),
       getRestaurantFloors: vi.fn(() => of(responseState)),
+      getRestaurantServiceFloor: vi.fn(() => of(createDefaultServiceFloorResponse())),
       createFloorElement: defaultCreateFloorElement,
       updateFloor: defaultUpdateFloor,
       updateFloorElement: defaultUpdateFloorElement,
@@ -348,24 +388,66 @@ describe('RestaurantPosLayoutPage', () => {
     };
   };
 
-  it('loads the floor plan for the active restaurant', async () => {
-    const floorsResponse: RestaurantFloorsDto = {
+  it('shows an accessible spinner without mock tables while the floor is loading', async () => {
+    const response = new Subject<ServiceFloorDto>();
+    await renderLayoutPage('es', {
+      apiOverrides: { getRestaurantServiceFloor: vi.fn(() => response.asObservable()) },
+    });
+
+    expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
+    expect(screen.getByTestId('floor-loading-state').getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByLabelText('M1 elemento del plano')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Añadir elemento' })).toBeNull();
+    expect(screen.queryByLabelText('Estado del plano')).toBeNull();
+  });
+
+  it('loads the floor plan for the active restaurant from the service-floor snapshot', async () => {
+    const serviceFloorResponse: ServiceFloorDto = {
       restaurantId: 'restaurant-mesaflow-centro',
-      tables: [{ id: 'table-api-1', tableNumber: 11, name: 'Mesa 11', capacity: 4, isActive: true }],
-      floors: [
+      floor: {
+        id: 'floor-main',
+        name: 'Sala principal',
+        rows: 12,
+        columns: 16,
+      },
+      elements: [
         {
-          id: 'floor-main',
-          name: 'Sala principal',
-          rows: 12,
-          columns: 16,
-          elements: [{ id: 'floor-element-api-1', type: 'table', label: 'M11', x: 4, y: 4, width: 2, height: 2, tableId: 'table-api-1', shape: 'square', sortOrder: 1 }],
+          id: 'floor-element-api-1',
+          type: 'table',
+          label: 'M11',
+          x: 4,
+          y: 4,
+          width: 2,
+          height: 2,
+          tableId: 'table-api-1',
+          shape: 'square',
         },
       ],
+      servicePoints: [
+        {
+          table: {
+            id: 'table-api-1',
+            tableNumber: 11,
+            name: 'Mesa 11',
+            capacity: 4,
+            status: 'free',
+            serviceStartedAt: null,
+          },
+          summary: {
+            lineCount: 0,
+            guestCount: 0,
+            totalCents: 0,
+            currency: 'EUR',
+            servicePhase: { course: 'none', status: 'no_order' },
+          },
+        },
+      ],
+      totals: { servicePointCount: 1, occupiedCount: 0, openOrderCount: 0 },
     };
 
-    const { fixture } = await renderLayoutPage('es', {
+    const { fixture, api } = await renderLayoutPage('es', {
       apiOverrides: {
-        getRestaurantFloors: vi.fn(() => of(floorsResponse)),
+        getRestaurantServiceFloor: vi.fn(() => of(serviceFloorResponse)),
       } as Partial<RestaurantPosApiService>,
     });
 
@@ -375,6 +457,60 @@ describe('RestaurantPosLayoutPage', () => {
     expect(store.floorElements()[0]?.label).toBe('M11');
     expect(store.activeFloorId()).toBe('floor-main');
     expect(store.activeFloorName()).toBe('Sala principal');
+    expect(api.getRestaurantServiceFloor).toHaveBeenCalledWith('restaurant-mesaflow-centro');
+    expect(api.getRestaurantFloors).not.toHaveBeenCalled();
+  });
+
+  it('shows a localized alert and retry action when the floor request fails', async () => {
+    await renderLayoutPage('es', {
+      apiOverrides: {
+        getRestaurantServiceFloor: vi.fn(() => throwError(() => new Error('network'))),
+      },
+    });
+
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('No se pudo cargar el plano de mesas.')).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeTruthy();
+    expect(screen.queryByRole('toolbar', { name: 'Acciones de edición del plano' })).toBeNull();
+    expect(screen.queryByLabelText('Estado del plano')).toBeNull();
+  });
+
+  it('retries a failed floor request and renders the emitted floor', async () => {
+    const retryResponse = new Subject<ServiceFloorDto>();
+    const getRestaurantServiceFloor = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('network')))
+      .mockReturnValueOnce(retryResponse.asObservable());
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: { getRestaurantServiceFloor },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
+
+    retryResponse.next(createDefaultServiceFloorResponse());
+    retryResponse.complete();
+    fixture.detectChanges();
+
+    expect(screen.getByLabelText('M1 elemento del plano')).toBeTruthy();
+    expect(screen.getByRole('toolbar', { name: 'Acciones de edición del plano' })).toBeTruthy();
+  });
+
+  it('shows the localized empty state when no floor has been configured', async () => {
+    await renderLayoutPage('ca', {
+      apiOverrides: {
+        getRestaurantServiceFloor: vi.fn(() =>
+          throwError(() => new HttpErrorResponse({ status: 404 })),
+        ),
+      },
+    });
+
+    expect(screen.getByText('Encara no hi ha cap plànol de taules configurat.')).toBeTruthy();
+    expect(screen.queryByTestId('floor-loading-state')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByLabelText('M1 element del plànol')).toBeNull();
   });
 
   it('persists a confirmed floor element deletion and applies the backend response', async () => {

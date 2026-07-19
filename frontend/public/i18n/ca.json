@@ -491,6 +491,12 @@
       "servicePointActionFailed": "No s'ha pogut completar l'acció sobre la taula. Torna-ho a provar.",
       "loadFailed": "No s'han pogut carregar les dades del restaurant. Revisa la sessió i la connexió."
     },
+    "floorLoading": {
+      "loading": "Carregant el plànol de taules…",
+      "loadError": "No s'ha pogut carregar el plànol de taules.",
+      "empty": "Encara no hi ha cap plànol de taules configurat.",
+      "retry": "Torna-ho a provar"
+    },
     "layout": {
       "title": "Plànol del restaurant",
       "description": "Dissenya el menjador, la barra, la cuina i les zones de servei.",

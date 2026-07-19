@@ -544,6 +544,12 @@
       "servicePointActionFailed": "No se pudo completar la acción sobre la mesa. Inténtalo de nuevo.",
       "loadFailed": "No se pudieron cargar los datos del restaurante. Revisa tu sesión y la conexión."
     },
+    "floorLoading": {
+      "loading": "Cargando plano de mesas…",
+      "loadError": "No se pudo cargar el plano de mesas.",
+      "empty": "Todavía no hay un plano de mesas configurado.",
+      "retry": "Reintentar"
+    },
     "layout": {
       "title": "Plano del restaurante",
       "description": "Diseña el comedor, la barra, la cocina y las zonas de servicio.",

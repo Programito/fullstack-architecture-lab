@@ -6,32 +6,34 @@
         <p class="theme-muted mt-1 max-w-2xl text-sm leading-5">{{ 'restaurantPos.layout.description' | transloco }}</p>
       </div>
 
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
-        <div
-          class="theme-control-group grid grid-cols-1 gap-1 rounded-lg border p-1 shadow-inner sm:inline-flex sm:items-center"
-          role="toolbar"
-          [attr.aria-label]="'restaurantPos.layout.editingActions' | transloco"
-        >
-          <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'restaurantPos.layout.resizeLayout' | transloco" (pressed)="openResizeModal()">
-            <span class="inline-flex items-center gap-1.5">
-              <app-icon name="tune" size="sm" />
-              <span>{{ 'restaurantPos.layout.resizeLayout' | transloco }}</span>
-            </span>
-          </app-button>
-          <app-button variant="neutral" size="sm" [ariaLabel]="'restaurantPos.layout.addElement' | transloco" (pressed)="openAddElementModal()">
-            <span class="inline-flex items-center gap-1.5">
-              <app-icon name="add" size="sm" />
-              <span>{{ 'restaurantPos.layout.addElement' | transloco }}</span>
-            </span>
-          </app-button>
-          <app-button variant="primary" fill="outline" size="sm" [ariaLabel]="'restaurantPos.layout.saveChanges' | transloco" disabled>
-            <span class="inline-flex items-center gap-1.5">
-              <app-icon name="save" size="sm" />
-              <span>{{ 'restaurantPos.layout.saveChanges' | transloco }}</span>
-            </span>
-          </app-button>
+      @if (store.floorLoadStatus() === 'loaded') {
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
+          <div
+            class="theme-control-group grid grid-cols-1 gap-1 rounded-lg border p-1 shadow-inner sm:inline-flex sm:items-center"
+            role="toolbar"
+            [attr.aria-label]="'restaurantPos.layout.editingActions' | transloco"
+          >
+            <app-button variant="neutral" fill="clear" size="sm" [ariaLabel]="'restaurantPos.layout.resizeLayout' | transloco" (pressed)="openResizeModal()">
+              <span class="inline-flex items-center gap-1.5">
+                <app-icon name="tune" size="sm" />
+                <span>{{ 'restaurantPos.layout.resizeLayout' | transloco }}</span>
+              </span>
+            </app-button>
+            <app-button variant="neutral" size="sm" [ariaLabel]="'restaurantPos.layout.addElement' | transloco" (pressed)="openAddElementModal()">
+              <span class="inline-flex items-center gap-1.5">
+                <app-icon name="add" size="sm" />
+                <span>{{ 'restaurantPos.layout.addElement' | transloco }}</span>
+              </span>
+            </app-button>
+            <app-button variant="primary" fill="outline" size="sm" [ariaLabel]="'restaurantPos.layout.saveChanges' | transloco" disabled>
+              <span class="inline-flex items-center gap-1.5">
+                <app-icon name="save" size="sm" />
+                <span>{{ 'restaurantPos.layout.saveChanges' | transloco }}</span>
+              </span>
+            </app-button>
+          </div>
         </div>
-      </div>
+      }
     </div>
   </header>
 
@@ -47,23 +49,52 @@
         }
       </div>
 
-      <div
-        class="theme-soft-panel mb-3 flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium"
-        [attr.aria-label]="'restaurantPos.layout.status' | transloco"
-      >
-        <span class="rounded-full bg-cyan-600 px-2 py-1 text-white">{{ 'restaurantPos.layout.layoutMode' | transloco }}</span>
-        <span>{{ 'restaurantPos.common.columnsRows' | transloco: { columns: store.gridColumns(), rows: store.gridRows() } }}</span>
-        <span>{{ floorElementCountLabel() }}</span>
-        <span class="theme-muted">{{ selectedLayoutElementLabel() }}</span>
-      </div>
+      @if (store.floorLoadStatus() === 'loaded' && store.activeFloorId()) {
+        <div
+          class="theme-soft-panel mb-3 flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium"
+          [attr.aria-label]="'restaurantPos.layout.status' | transloco"
+        >
+          <span class="rounded-full bg-cyan-600 px-2 py-1 text-white">{{ 'restaurantPos.layout.layoutMode' | transloco }}</span>
+          <span>{{ 'restaurantPos.common.columnsRows' | transloco: { columns: store.gridColumns(), rows: store.gridRows() } }}</span>
+          <span>{{ floorElementCountLabel() }}</span>
+          <span class="theme-muted">{{ selectedLayoutElementLabel() }}</span>
+        </div>
+      }
 
-      <app-floor-plan
-        (editElement)="openEditElementModal($event)"
-        (elementDeleted)="handleFloorElementDeleted($event)"
-        (elementMoved)="handleFloorElementMoved($event)"
-        (resizeElement)="openResizeElementModal($event)"
-        (selectedElementChange)="handleSelectedLayoutElementChange($event)"
-      />
+      @if (store.floorLoadStatus() === 'loading') {
+        <div
+          data-testid="floor-loading-state"
+          class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div class="grid justify-items-center gap-3">
+            <span class="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
+            <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.loading' | transloco }}</p>
+          </div>
+        </div>
+      } @else if (store.floorLoadStatus() === 'error') {
+        <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center" role="alert">
+          <div class="grid justify-items-center gap-3">
+            <p class="theme-muted text-sm">{{ store.floorLoadError()! | transloco }}</p>
+            <app-button variant="neutral" fill="outline" (pressed)="retryFloorLoad()">
+              {{ 'restaurantPos.floorLoading.retry' | transloco }}
+            </app-button>
+          </div>
+        </div>
+      } @else if (!store.activeFloorId()) {
+        <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center">
+          <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.empty' | transloco }}</p>
+        </div>
+      } @else {
+        <app-floor-plan
+          (editElement)="openEditElementModal($event)"
+          (elementDeleted)="handleFloorElementDeleted($event)"
+          (elementMoved)="handleFloorElementMoved($event)"
+          (resizeElement)="openResizeElementModal($event)"
+          (selectedElementChange)="handleSelectedLayoutElementChange($event)"
+        />
+      }
     </section>
   </div>
 

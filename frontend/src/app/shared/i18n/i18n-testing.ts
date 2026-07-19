@@ -281,6 +281,12 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         cannotPlaceElement: 'No se puede colocar el elemento aquí.',
         cannotResizeGrid: 'No se puede redimensionar el plano porque algunos elementos quedarían fuera de la matriz.',
       },
+      floorLoading: {
+        loading: 'Cargando plano de mesas…',
+        loadError: 'No se pudo cargar el plano de mesas.',
+        empty: 'Todavía no hay un plano de mesas configurado.',
+        retry: 'Reintentar',
+      },
       layout: {
         title: 'Plano del restaurante',
         description: 'Diseña el comedor, la barra, la cocina y las zonas de servicio.',
@@ -1260,6 +1266,12 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         title: 'No modules available',
         description: 'Your user does not have permission to access the operational POS sections.',
       },
+      floorLoading: {
+        loading: 'Loading table layout…',
+        loadError: 'The table layout could not be loaded.',
+        empty: 'No table layout has been configured yet.',
+        retry: 'Retry',
+      },
       layout: {
         title: 'Restaurant layout',
         addElement: 'Add element',
@@ -2120,6 +2132,12 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
         cancelLineAbort: 'Tornar',
         elapsedMinutes: '{{count}} min',
         customerAppChip: 'App client',
+      },
+      floorLoading: {
+        loading: 'Carregant el plànol de taules…',
+        loadError: "No s'ha pogut carregar el plànol de taules.",
+        empty: 'Encara no hi ha cap plànol de taules configurat.',
+        retry: 'Torna-ho a provar',
       },
       layout: {
         title: 'Plànol del restaurant',

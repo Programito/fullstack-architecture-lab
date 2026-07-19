@@ -10,6 +10,7 @@ import type { RestaurantFloorsDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import type { AddFloorElementInput, FloorElement, FloorElementType, TableShape } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { RestaurantFloorLoader } from '../../state/restaurant-floor-loader.service';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
 type MatrixCell = {
@@ -53,6 +54,7 @@ const ELEMENT_PRESETS: ElementPreset[] = [
 export class RestaurantPosLayoutPage {
   protected readonly store = inject(RestaurantPosStore);
   private readonly api = inject(RestaurantPosApiService);
+  private readonly floorLoader = inject(RestaurantFloorLoader);
   private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly transloco = inject(TranslocoService);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
@@ -171,10 +173,16 @@ export class RestaurantPosLayoutPage {
         return;
       }
 
-      this.api.getRestaurantFloors(restaurant.id).subscribe((floors) => {
-        this.applyFloorsResponse(floors);
-      });
+      this.floorLoader.load(restaurant.id);
     });
+  }
+
+  protected retryFloorLoad(): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+
+    if (restaurant) {
+      this.floorLoader.retry(restaurant.id);
+    }
   }
 
   protected openResizeModal(): void {
