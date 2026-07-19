@@ -50,7 +50,11 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://127.0.0.1:3000/api/v1/\"")
         }
         release {
-            buildConfigField("String", "BASE_URL", "\"https://api.mesaflow.example/api/v1/\"")
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://fullstack-architecture-lab.onrender.com/api/v1/\"",
+            )
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
