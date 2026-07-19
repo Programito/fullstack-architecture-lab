@@ -2,18 +2,88 @@
 import { TranslocoService } from '@jsverse/transloco';
 import { RestaurantPosStore } from './restaurant-pos.store';
 import { RestaurantOrderStore } from './restaurant-order.store';
+import {
+  DEFAULT_GRID_COLUMNS,
+  DEFAULT_GRID_ROWS,
+  MOCK_FLOOR_ELEMENTS,
+  MOCK_RESTAURANT_TABLES,
+} from './restaurant-pos.mock-data';
+
+function configureStoreTestingModule(): RestaurantPosStore {
+  const i18n = provideI18nTesting('en');
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    imports: [...i18n.imports],
+    providers: [...i18n.providers],
+  });
+  return TestBed.inject(RestaurantPosStore);
+}
+
+function hydrateMockFloor(store: RestaurantPosStore): void {
+  store.hydrateLayout({
+    floorId: 'floor-main',
+    floorName: 'Sala principal',
+    rows: DEFAULT_GRID_ROWS,
+    columns: DEFAULT_GRID_COLUMNS,
+    floorElements: MOCK_FLOOR_ELEMENTS,
+    restaurantTables: MOCK_RESTAURANT_TABLES,
+  });
+}
+
+describe('runtime floor state', () => {
+  let store: RestaurantPosStore;
+
+  beforeEach(() => {
+    store = configureStoreTestingModule();
+  });
+
+  it('starts empty and loading until the backend floor is hydrated', () => {
+    expect(store.activeFloorId()).toBeNull();
+    expect(store.floorElements()).toEqual([]);
+    expect(store.restaurantTables()).toEqual([]);
+    expect(store.floorLoadStatus()).toBe('loading');
+    expect(store.floorLoadError()).toBeNull();
+  });
+
+  it('transitions between floor loading states explicitly', () => {
+    hydrateMockFloor(store);
+    store.selectTable('table-1');
+    expect(store.floorLoadStatus()).toBe('loaded');
+
+    store.failFloorLoad('No se ha podido cargar el plano.');
+    expect(store.floorLoadStatus()).toBe('error');
+    expect(store.floorLoadError()).toBe('No se ha podido cargar el plano.');
+
+    store.beginFloorLoad();
+    expect(store.activeFloorId()).toBeNull();
+    expect(store.activeFloorName()).toBe('');
+    expect(store.gridRows()).toBe(1);
+    expect(store.gridColumns()).toBe(1);
+    expect(store.floorElements()).toEqual([]);
+    expect(store.restaurantTables()).toEqual([]);
+    expect(store.selectedTableId()).toBeNull();
+    expect(store.floorLoadStatus()).toBe('loading');
+    expect(store.floorLoadError()).toBeNull();
+
+    store.failFloorLoad('No se ha podido cargar el plano.');
+    expect(store.floorLoadStatus()).toBe('error');
+    expect(store.floorLoadError()).toBe('No se ha podido cargar el plano.');
+
+    store.completeEmptyFloorLoad();
+    expect(store.activeFloorId()).toBeNull();
+    expect(store.floorElements()).toEqual([]);
+    expect(store.restaurantTables()).toEqual([]);
+    expect(store.floorLoadStatus()).toBe('loaded');
+    expect(store.floorLoadError()).toBeNull();
+  });
+});
 
 describe('RestaurantPosStore', () => {
   let store: RestaurantPosStore;
 
   beforeEach(() => {
-    const i18n = provideI18nTesting('en');
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      imports: [...i18n.imports],
-      providers: [...i18n.providers],
-    });
-    store = TestBed.inject(RestaurantPosStore);
+    store = configureStoreTestingModule();
+    hydrateMockFloor(store);
   });
 
   it('creates the initial state correctly', () => {

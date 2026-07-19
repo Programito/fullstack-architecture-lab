@@ -49,6 +49,8 @@ export class RestaurantPosStore {
   readonly floorElements = this.floor.floorElements;
   readonly restaurantTables = this.floor.restaurantTables;
   readonly servicePoints = this.floor.servicePoints;
+  readonly floorLoadStatus = this.floor.floorLoadStatus;
+  readonly floorLoadError = this.floor.floorLoadError;
 
   // --- order delegates ---
   readonly products = this.order.products;
@@ -265,6 +267,19 @@ export class RestaurantPosStore {
   }
 
   // === hydration ===
+  beginFloorLoad(): void {
+    this._selectedTableId.set(null);
+    this.floor.beginFloorLoad();
+  }
+
+  completeEmptyFloorLoad(): void {
+    this.floor.completeEmptyFloorLoad();
+  }
+
+  failFloorLoad(message: string): void {
+    this.floor.failFloorLoad(message);
+  }
+
   hydrateLayout(input: {
     floorId?: string | null;
     floorName?: string;

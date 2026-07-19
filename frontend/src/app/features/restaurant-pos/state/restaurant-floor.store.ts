@@ -9,21 +9,18 @@ import type {
   TableShape,
   TableStatus,
 } from '../models/restaurant-pos.models';
-import {
-  DEFAULT_GRID_COLUMNS,
-  DEFAULT_GRID_ROWS,
-  MOCK_FLOOR_ELEMENTS,
-  MOCK_RESTAURANT_TABLES,
-} from './restaurant-pos.mock-data';
+export type RestaurantFloorLoadStatus = 'loading' | 'loaded' | 'error';
 
 @Injectable({ providedIn: 'root' })
 export class RestaurantFloorStore {
-  private readonly _gridRows = signal(DEFAULT_GRID_ROWS);
-  private readonly _gridColumns = signal(DEFAULT_GRID_COLUMNS);
+  private readonly _gridRows = signal(1);
+  private readonly _gridColumns = signal(1);
   private readonly _activeFloorId = signal<string | null>(null);
-  private readonly _activeFloorName = signal<string>('Sala principal');
-  private readonly _floorElements = signal<FloorElement[]>(structuredClone(MOCK_FLOOR_ELEMENTS));
-  private readonly _restaurantTables = signal<RestaurantTable[]>(structuredClone(MOCK_RESTAURANT_TABLES));
+  private readonly _activeFloorName = signal('');
+  private readonly _floorElements = signal<FloorElement[]>([]);
+  private readonly _restaurantTables = signal<RestaurantTable[]>([]);
+  private readonly _floorLoadStatus = signal<RestaurantFloorLoadStatus>('loading');
+  private readonly _floorLoadError = signal<string | null>(null);
 
   readonly gridRows = this._gridRows.asReadonly();
   readonly gridColumns = this._gridColumns.asReadonly();
@@ -31,6 +28,8 @@ export class RestaurantFloorStore {
   readonly activeFloorName = this._activeFloorName.asReadonly();
   readonly floorElements = this._floorElements.asReadonly();
   readonly restaurantTables = this._restaurantTables.asReadonly();
+  readonly floorLoadStatus = this._floorLoadStatus.asReadonly();
+  readonly floorLoadError = this._floorLoadError.asReadonly();
   readonly servicePoints = computed<ServicePoint[]>(() =>
     this._floorElements()
       .filter((el) => !!el.tableId && (el.type === 'table' || el.type === 'stool'))
@@ -55,6 +54,29 @@ export class RestaurantFloorStore {
     this._gridColumns.set(input.columns);
     this._floorElements.set(structuredClone(input.floorElements));
     this._restaurantTables.set(structuredClone(input.restaurantTables));
+    this._floorLoadError.set(null);
+    this._floorLoadStatus.set('loaded');
+  }
+
+  beginFloorLoad(): void {
+    this._activeFloorId.set(null);
+    this._activeFloorName.set('');
+    this._gridRows.set(1);
+    this._gridColumns.set(1);
+    this._floorElements.set([]);
+    this._restaurantTables.set([]);
+    this._floorLoadError.set(null);
+    this._floorLoadStatus.set('loading');
+  }
+
+  completeEmptyFloorLoad(): void {
+    this._floorLoadError.set(null);
+    this._floorLoadStatus.set('loaded');
+  }
+
+  failFloorLoad(message: string): void {
+    this._floorLoadError.set(message);
+    this._floorLoadStatus.set('error');
   }
 
   hydrateServicePoint(input: { table: RestaurantTable; floorElement?: FloorElement | null }): void {
