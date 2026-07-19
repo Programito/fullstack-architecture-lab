@@ -13,7 +13,7 @@ import { Spinner } from '../../../../shared/ui/spinner/spinner';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import type { CreateRestaurantReservationRequest, CustomerSummaryDto, RestaurantReservationDto, ServiceWindowDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
-import { RestaurantPosReservationsStore } from './restaurant-pos-reservations.store';
+import { RESERVATIONS_POLL_INTERVAL_MS, RestaurantPosReservationsStore } from './restaurant-pos-reservations.store';
 import type { ReservationAction } from './restaurant-pos-reservations.store';
 
 type ServiceWindowEditRow = { name: string; startTime: string; endTime: string };
@@ -306,6 +306,18 @@ export class RestaurantPosReservationsPage {
       if (!restaurant) return;
       this.store.loadReservations(restaurant.id, this.selectedDate());
     });
+
+    // Polling de respaldo (los websockets no son fiables en el hosting
+    // gratuito): cada minuto se refresca la agenda en silencio. Si hay
+    // cambios, solo se añaden/actualizan las tarjetas afectadas (track por
+    // id); no se muestra el spinner ni se recarga la página.
+    timer(RESERVATIONS_POLL_INTERVAL_MS, RESERVATIONS_POLL_INTERVAL_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (document.hidden) return;
+        if (!this.restaurantContext.activeRestaurant()) return;
+        this.store.refreshReservations();
+      });
 
     // Inicializa el tab activo al primer servicio cuando llegan las franjas
     effect(() => {

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { fireEvent, render, screen } from '@testing-library/angular';
+import { fireEvent, render, within } from '@testing-library/angular';
 import { Router, provideRouter } from '@angular/router';
 import { Observable, of, Subject } from 'rxjs';
 import { vi } from 'vitest';
@@ -80,11 +80,12 @@ describe('DeveloperPage', () => {
       architectureUrl: string;
     }>();
 
-    await renderPage({ resources$ });
+    const { container } = await renderPage({ resources$ });
+    const page = within(container);
 
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('Cargando recursos...')).toBeTruthy();
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(page.getByRole('status')).toBeTruthy();
+    expect(page.getByText('Cargando recursos...')).toBeTruthy();
+    expect(page.queryAllByRole('link')).toHaveLength(0);
 
     resources$.next({
       storybookUrl: '/developer/storybook/',
@@ -93,37 +94,38 @@ describe('DeveloperPage', () => {
     });
     resources$.complete();
 
-    expect(await screen.findAllByRole('link')).toHaveLength(5);
-    expect(screen.getByText('Plataforma')).toBeTruthy();
-    expect(screen.getByText('Servicios operativos')).toBeTruthy();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(await page.findAllByRole('link')).toHaveLength(5);
+    expect(page.getByText('Plataforma')).toBeTruthy();
+    expect(page.getByText('Servicios operativos')).toBeTruthy();
+    expect(page.queryByRole('status')).toBeNull();
   });
 
   it('renders developer resources and logs out in the background while navigating immediately', async () => {
     const logoutRequest = new Subject<void>();
     const logout = vi.fn(() => logoutRequest);
-    const { storage, router, fixture } = await renderPage({ logout });
+    const { storage, router, fixture, container } = await renderPage({ logout });
+    const page = within(container);
     const navigateSpy = vi.spyOn(router, 'navigate');
 
-    expect(screen.getByRole('heading', { name: /Recursos para Developer/i })).toBeTruthy();
-    expect(screen.getAllByRole('link')).toHaveLength(5);
-    expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('href')).toBe('/developer/api-docs/');
-    expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('target')).toBe('_blank');
-    expect(screen.getByRole('link', { name: /API Docs/i }).getAttribute('rel')).toBe('noreferrer');
-    expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('href')).toBe('/developer/storybook/');
-    expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('target')).toBe('_blank');
-    expect(screen.getByRole('link', { name: /Storybook/i }).getAttribute('rel')).toBe('noreferrer');
-    expect(screen.getByRole('link', { name: /Arquitectura/i }).getAttribute('target')).toBe('_blank');
-    expect(screen.getByRole('link', { name: /Arquitectura/i }).getAttribute('rel')).toBe('noreferrer');
-    const tablesLink = screen.getAllByRole('link').find((link) => link.getAttribute('href') === '/developer/tables');
+    expect(page.getByRole('heading', { name: /Recursos para Developer/i })).toBeTruthy();
+    expect(page.getAllByRole('link')).toHaveLength(5);
+    expect(page.getByRole('link', { name: /API Docs/i }).getAttribute('href')).toBe('/developer/api-docs/');
+    expect(page.getByRole('link', { name: /API Docs/i }).getAttribute('target')).toBe('_blank');
+    expect(page.getByRole('link', { name: /API Docs/i }).getAttribute('rel')).toBe('noreferrer');
+    expect(page.getByRole('link', { name: /Storybook/i }).getAttribute('href')).toBe('/developer/storybook/');
+    expect(page.getByRole('link', { name: /Storybook/i }).getAttribute('target')).toBe('_blank');
+    expect(page.getByRole('link', { name: /Storybook/i }).getAttribute('rel')).toBe('noreferrer');
+    expect(page.getByRole('link', { name: /Arquitectura/i }).getAttribute('target')).toBe('_blank');
+    expect(page.getByRole('link', { name: /Arquitectura/i }).getAttribute('rel')).toBe('noreferrer');
+    const tablesLink = page.getAllByRole('link').find((link) => link.getAttribute('href') === '/developer/tables');
     expect(tablesLink).toBeTruthy();
     expect(tablesLink?.hasAttribute('target')).toBe(false);
-    const logsLink = screen.getAllByRole('link').find((link) => link.getAttribute('href') === '/developer/logs');
+    const logsLink = page.getAllByRole('link').find((link) => link.getAttribute('href') === '/developer/logs');
     expect(logsLink).toBeTruthy();
     expect(logsLink?.hasAttribute('target')).toBe(false);
-    expect(screen.getByText('Base de datos lista para responder.')).toBeTruthy();
+    expect(page.getByText('Base de datos lista para responder.')).toBeTruthy();
 
-    const logoutButton = screen.getByRole('button', { name: /Cerrar sesi.n/i });
+    const logoutButton = page.getByRole('button', { name: /Cerrar sesi.n/i });
     fireEvent.click(logoutButton);
     fixture.detectChanges();
 
@@ -133,15 +135,16 @@ describe('DeveloperPage', () => {
   });
 
   it('shows a warning platform banner and opens logs when the database is warming up', async () => {
-    const { router } = await renderPage({
+    const { router, container } = await renderPage({
       readiness$: of({ status: 'warming_up', database: 'warming_up', durationMs: 1800 }),
     });
+    const page = within(container);
     const navigateSpy = vi.spyOn(router, 'navigate');
 
-    expect(screen.getByText('Base de datos despertando')).toBeTruthy();
-    expect(screen.getByText('El primer acceso puede tardar unos segundos mientras la infraestructura vuelve a responder.')).toBeTruthy();
+    expect(page.getByText('Base de datos despertando')).toBeTruthy();
+    expect(page.getByText('El primer acceso puede tardar unos segundos mientras la infraestructura vuelve a responder.')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver logs' }));
+    fireEvent.click(page.getByRole('button', { name: 'Ver logs' }));
 
     expect(navigateSpy).toHaveBeenCalledWith(['/developer/logs']);
   });

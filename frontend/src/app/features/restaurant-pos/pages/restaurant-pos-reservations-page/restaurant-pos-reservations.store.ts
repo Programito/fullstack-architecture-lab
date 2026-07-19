@@ -8,6 +8,13 @@ import type { RestaurantFloorsDto, RestaurantReservationDto, ServiceWindowDto, U
 
 export type ReservationAction = 'confirm' | 'seat' | 'no_show' | 'cancel';
 
+/**
+ * Intervalo del polling de respaldo de reservas. En el hosting gratuito los
+ * websockets no funcionan de forma fiable (misma razón por la que OrderSync
+ * pollea la cocina cada 30 s), así que la agenda se refresca por HTTP.
+ */
+export const RESERVATIONS_POLL_INTERVAL_MS = 60_000;
+
 type ReservationsLoadContext = {
   restaurantId: string;
   date: string | undefined;
@@ -68,6 +75,36 @@ export class RestaurantPosReservationsStore {
           if (generation !== this.reservationsLoadGeneration) return;
           this._loading.set(false);
           this._loadError.set(true);
+        },
+      });
+  }
+
+  /**
+   * Refresco silencioso para el polling de respaldo: no toca `loading` (para
+   * que la agenda no parpadee con el spinner) y solo escribe la señal si los
+   * datos realmente cambiaron, de modo que las tarjetas nuevas/modificadas se
+   * añaden o actualizan en sitio (track por id) sin recargar toda la página.
+   * Los errores se ignoran: el siguiente tick del polling lo reintenta.
+   */
+  refreshReservations(): void {
+    const context = this.currentReservationsContext;
+    if (!context) return;
+    const generation = ++this.reservationsLoadGeneration;
+    this.api
+      .getRestaurantReservations(context.restaurantId, context.date)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (reservations) => {
+          if (generation !== this.reservationsLoadGeneration) return;
+          // Si había una carga con spinner en vuelo, este refresco la sustituye.
+          this._loading.set(false);
+          this._loadError.set(false);
+          if (JSON.stringify(this._reservations()) !== JSON.stringify(reservations)) {
+            this._reservations.set(reservations);
+          }
+        },
+        error: () => {
+          // Silencioso a propósito: no se marca loadError en un refresco de fondo.
         },
       });
   }
