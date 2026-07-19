@@ -16,7 +16,13 @@
       </div>
 
       <div class="service-page__actions flex flex-wrap items-center gap-2 2xl:justify-end">
-        <app-button variant="neutral" fill="outline" size="sm" (pressed)="openServicePointSearch()">
+        <app-button
+          variant="neutral"
+          fill="outline"
+          size="sm"
+          [disabled]="store.floorLoadStatus() !== 'loaded' || !store.activeFloorId()"
+          (pressed)="openServicePointSearch()"
+        >
           <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
         </app-button>
         <a class="service-page__kitchen-link theme-nav-link inline-flex h-9 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-ring)]" routerLink="/restaurant-pos/kitchen">
@@ -43,7 +49,7 @@
             <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-cyan-600"></span>{{ 'restaurantPos.tableStatus.paid' | transloco }}</span>
             <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-sky-500"></span>{{ 'restaurantPos.tableStatus.cleaning' | transloco }}</span>
           </div>
-          @if (lastSelectedServicePoint()) {
+          @if (store.floorLoadStatus() === 'loaded' && store.activeFloorId() && lastSelectedServicePoint()) {
             <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
               <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
             </app-button>
@@ -52,12 +58,33 @@
       </div>
 
       <div class="min-w-0 overflow-x-auto pb-1">
-        @if (serviceFloorLoaded()) {
-          <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
-        } @else {
-          <div class="theme-soft-panel flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed px-4 py-6 text-center">
-            <p class="theme-muted text-sm">{{ 'restaurantPos.service.floorDescription' | transloco }}</p>
+        @if (store.floorLoadStatus() === 'loading') {
+          <div
+            data-testid="floor-loading-state"
+            class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div class="grid justify-items-center gap-3">
+              <span class="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
+              <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.loading' | transloco }}</p>
+            </div>
           </div>
+        } @else if (store.floorLoadStatus() === 'error') {
+          <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center" role="alert">
+            <div class="grid justify-items-center gap-3">
+              <p class="theme-muted text-sm">{{ store.floorLoadError()! | transloco }}</p>
+              <app-button variant="neutral" fill="outline" (pressed)="retryFloorLoad()">
+                {{ 'restaurantPos.floorLoading.retry' | transloco }}
+              </app-button>
+            </div>
+          </div>
+        } @else if (!store.activeFloorId()) {
+          <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center">
+            <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.empty' | transloco }}</p>
+          </div>
+        } @else {
+          <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />
         }
       </div>
     </div>

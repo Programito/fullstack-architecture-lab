@@ -1,5 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import englishTranslations from '../../../../../../public/i18n/en.json';
 import spanishTranslations from '../../../../../../public/i18n/es.json';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
@@ -59,6 +60,55 @@ describe('RestaurantPosServicePage', () => {
       comboSlots: Array<{ slotName: string; selectedProductName: string; supplementPriceCents: number; quantity: number }>;
     }>;
   };
+
+  const createDefaultServiceFloorResponse = (): ServiceFloorDto => ({
+    restaurantId: 'restaurant-mesaflow-centro',
+    floor: {
+      id: 'floor-main',
+      name: 'Sala principal',
+      rows: 20,
+      columns: 20,
+    },
+    elements: MOCK_FLOOR_ELEMENTS.map((element) => ({
+      id: element.id,
+      type: element.type,
+      label: element.label,
+      x: element.x,
+      y: element.y,
+      width: element.width,
+      height: element.height,
+      shape: element.shape ?? null,
+      tableId: element.tableId ?? null,
+    })),
+    servicePoints: MOCK_FLOOR_ELEMENTS.filter((element) => element.tableId).map((element) => {
+      const table = MOCK_RESTAURANT_TABLES.find((candidate) => candidate.id === element.tableId)!;
+      return {
+        table: {
+          id: table.id,
+          tableNumber: table.number,
+          name: null,
+          capacity: table.capacity,
+          status: table.status,
+          serviceStartedAt: null,
+        },
+        summary: {
+          lineCount: 0,
+          guestCount: table.capacity,
+          totalCents: 0,
+          currency: 'EUR',
+          servicePhase: {
+            course: 'none' as const,
+            status: 'no_order' as const,
+          },
+        },
+      };
+    }),
+    totals: {
+      servicePointCount: 5,
+      occupiedCount: 0,
+      openOrderCount: 0,
+    },
+  });
 
   type RestaurantPosApiMock = Pick<
     RestaurantPosApiService,
@@ -862,14 +912,98 @@ describe('RestaurantPosServicePage', () => {
     expect(tablePanelHost?.className).not.toMatch(/\babsolute\b|\bfixed\b/);
   });
 
-  it('keeps the service floor empty until the backend floor snapshot loads', async () => {
+  it('shows the shared floor spinner and no service points while loading', async () => {
     const apiMock = createRestaurantPosApiMock();
     const delayedFloor$ = new Subject<ServiceFloorDto>();
     vi.mocked(apiMock.getRestaurantServiceFloor).mockReturnValue(delayedFloor$);
 
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const component = fixture.componentInstance as unknown as {
+      serviceDashboardStats(): Array<{ id: 'occupied' | 'kitchen' | 'charge' | 'sales'; value: string; tone: 'neutral' | 'warning' | 'accent' }>;
+    };
+
+    expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
+    expect(screen.getByTestId('floor-loading-state').getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();
+    expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toHaveProperty('disabled', true);
+    expect(component.serviceDashboardStats()).toEqual([
+      { id: 'occupied', value: '0', tone: 'neutral' },
+      { id: 'kitchen', value: '0', tone: 'neutral' },
+      { id: 'charge', value: '0', tone: 'neutral' },
+      { id: 'sales', value: '0,00\u00a0€', tone: 'accent' },
+    ]);
+  });
+
+  it('shows the shared localized alert and retry action when floor loading fails', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    vi.mocked(apiMock.getRestaurantServiceFloor).mockReturnValue(throwError(() => new Error('network')));
+
     await renderServicePage(undefined, apiMock);
 
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('No se pudo cargar el plano de mesas.')).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeTruthy();
     expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();
+    expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toHaveProperty('disabled', true);
+  });
+
+  it('retries the shared floor request and renders the emitted service floor', async () => {
+    const retryResponse = new Subject<ServiceFloorDto>();
+    const apiMock = createRestaurantPosApiMock();
+    vi.mocked(apiMock.getRestaurantServiceFloor)
+      .mockReturnValueOnce(throwError(() => new Error('network')))
+      .mockReturnValueOnce(retryResponse);
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(apiMock.getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
+
+    retryResponse.next(createDefaultServiceFloorResponse());
+    retryResponse.complete();
+    fixture.detectChanges();
+
+    expect(screen.getByLabelText('M1 mesa, Libre')).toBeTruthy();
+    expect(screen.queryByTestId('floor-loading-state')).toBeNull();
+    expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toHaveProperty('disabled', false);
+  });
+
+  it('shows the shared empty state without a floor plan or active statistics', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    vi.mocked(apiMock.getRestaurantServiceFloor).mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const component = fixture.componentInstance as unknown as {
+      serviceDashboardStats(): Array<{ id: 'occupied' | 'kitchen' | 'charge' | 'sales'; value: string; tone: 'neutral' | 'warning' | 'accent' }>;
+    };
+
+    expect(screen.getByText('Todavía no hay un plano de mesas configurado.')).toBeTruthy();
+    expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();
+    expect(screen.queryByTestId('floor-loading-state')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toHaveProperty('disabled', true);
+    expect(component.serviceDashboardStats().map((stat) => stat.value)).toEqual(['0', '0', '0', '0,00\u00a0€']);
+  });
+
+  it('hides return to the last service point whenever the shared floor is not loaded', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    fireEvent.click(screen.getByLabelText('M2 mesa, Libre'));
+    fixture.detectChanges();
+    expect(screen.getByRole('button', { name: /Volver a/ })).toBeTruthy();
+
+    const lastServicePoint = store.servicePoints().find((servicePoint) => servicePoint.table.id === 'table-1')!;
+    store.beginFloorLoad();
+    store.hydrateServicePoint({ table: lastServicePoint.table, floorElement: lastServicePoint.element });
+    fixture.detectChanges();
+
+    expect(store.floorLoadStatus()).toBe('loading');
+    expect(screen.getByTestId('floor-loading-state')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Volver a/ })).toBeNull();
   });
 
   it('opens the selected table panel from the floor plan', async () => {

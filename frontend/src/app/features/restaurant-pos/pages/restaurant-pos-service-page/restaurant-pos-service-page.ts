@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { RestaurantOrderDto, ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
 import { switchMap, tap, type Observable } from 'rxjs';
-import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServiceFloor, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
+import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
 import { Dialog } from '../../../../shared/ui/dialog/dialog';
@@ -23,6 +23,7 @@ import { ServicePointSearchDialog } from '../../components/service-point-search-
 import { ServiceTablePanel } from '../../components/service-table-panel/service-table-panel';
 import type { FloorElement, OrderLine, PaymentMethod, Product, RestaurantTable, TableOrder, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { RestaurantFloorLoader } from '../../state/restaurant-floor-loader.service';
 import { OrderWriteService } from '../../state/order-write.service';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 
@@ -61,6 +62,7 @@ const isServicePointStatusFilter = (value: string): value is ServicePointStatusF
 export class RestaurantPosServicePage {
   protected readonly store = inject(RestaurantPosStore);
   private readonly api = inject(RestaurantPosApiService);
+  private readonly floorLoader = inject(RestaurantFloorLoader);
   private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly orderWrite = inject(OrderWriteService);
   private readonly transloco = inject(TranslocoService);
@@ -89,11 +91,10 @@ export class RestaurantPosServicePage {
   protected readonly selectedServedLineIds = signal<readonly string[]>([]);
   protected readonly chargeKitchenConfirmOpen = signal(false);
   protected readonly isCharging = signal(false);
-  protected readonly serviceFloorLoaded = signal(false);
   private readonly pendingChargePaymentMethod = signal<Exclude<PaymentMethod, 'pending'> | null>(null);
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
-    if (!this.serviceFloorLoaded()) {
+    if (this.store.floorLoadStatus() !== 'loaded' || !this.store.activeFloorId()) {
       return [
         { id: 'occupied', value: '0', tone: 'neutral' as const },
         { id: 'kitchen', value: '0', tone: 'neutral' as const },
@@ -224,18 +225,10 @@ export class RestaurantPosServicePage {
 
     effect(() => {
       const restaurant = this.restaurantContext.activeRestaurant();
-      this.serviceFloorLoaded.set(false);
-      if (!restaurant) return;
-      this.api.getRestaurantServiceFloor(restaurant.id).subscribe({
-        next: (serviceFloor) => {
-          this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
-          this.serviceFloorLoaded.set(true);
-        },
-        error: () => {
-          this.serviceFloorLoaded.set(true);
-          this.store.reportApiError('restaurantPos.errors.loadFailed');
-        },
-      });
+
+      if (restaurant) {
+        this.floorLoader.load(restaurant.id);
+      }
     });
 
     effect(() => {
@@ -309,7 +302,19 @@ export class RestaurantPosServicePage {
   }
 
   protected openServicePointSearch(): void {
+    if (this.store.floorLoadStatus() !== 'loaded' || !this.store.activeFloorId()) {
+      return;
+    }
+
     this.servicePointSearchOpen.set(true);
+  }
+
+  protected retryFloorLoad(): void {
+    const restaurant = this.restaurantContext.activeRestaurant();
+
+    if (restaurant) {
+      this.floorLoader.retry(restaurant.id);
+    }
   }
 
   protected closeServicePointSearch(): void {
@@ -354,6 +359,10 @@ export class RestaurantPosServicePage {
   }
 
   protected returnToLastServicePoint(): void {
+    if (this.store.floorLoadStatus() !== 'loaded' || !this.store.activeFloorId()) {
+      return;
+    }
+
     const lastSelectedServicePoint = this.lastSelectedServicePoint();
 
     if (lastSelectedServicePoint) {
