@@ -18,4 +18,16 @@ describe('App', () => {
 
     expect(screen.getByText('0.0.1')).toBeTruthy();
   });
+
+  it('links to the latest public Android release securely', async () => {
+    await render(App);
+
+    const link = screen.getByRole('link', { name: 'Android APK' });
+
+    expect(link.getAttribute('href')).toBe(
+      'https://github.com/Programito/fullstack-architecture-lab/releases/latest',
+    );
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
 });

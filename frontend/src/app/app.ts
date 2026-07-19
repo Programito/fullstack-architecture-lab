@@ -11,4 +11,6 @@ import { APP_VERSION } from './app.version';
 })
 export class App {
   protected readonly version = APP_VERSION;
+  protected readonly androidReleaseUrl =
+    'https://github.com/Programito/fullstack-architecture-lab/releases/latest';
 }

@@ -19,11 +19,28 @@
 
 .app-layout__footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.75rem 1rem;
   color: var(--ui-text-muted, #64748b);
   font-size: 0.75rem;
   line-height: 1rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.app-layout__android-link {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+.app-layout__android-link:hover {
+  color: var(--ui-primary, #0ea5e9);
+}
+
+.app-layout__android-link:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--ui-primary, #0ea5e9);
+  outline-offset: 3px;
 }
