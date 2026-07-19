@@ -20,7 +20,7 @@
           variant="neutral"
           fill="outline"
           size="sm"
-          [disabled]="store.floorLoadStatus() !== 'loaded' || !store.activeFloorId()"
+          [disabled]="!serviceFloorReady()"
           (pressed)="openServicePointSearch()"
         >
           <span class="inline-flex items-center gap-1.5"><app-icon name="manage_search" size="sm" />{{ 'restaurantPos.service.searchServicePoint' | transloco }}</span>
@@ -49,7 +49,7 @@
             <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-cyan-600"></span>{{ 'restaurantPos.tableStatus.paid' | transloco }}</span>
             <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-sky-500"></span>{{ 'restaurantPos.tableStatus.cleaning' | transloco }}</span>
           </div>
-          @if (store.floorLoadStatus() === 'loaded' && store.activeFloorId() && lastSelectedServicePoint()) {
+          @if (serviceFloorReady() && lastSelectedServicePoint()) {
             <app-button variant="secondary" fill="outline" size="sm" [ariaLabel]="returnToLastServicePointLabel()" (pressed)="returnToLastServicePoint()">
               <span class="inline-flex items-center gap-1.5"><app-icon name="swap_horiz" size="sm" />{{ returnToLastServicePointLabel() }}</span>
             </app-button>
@@ -148,7 +148,7 @@
 />
 
 <app-service-point-search-dialog
-  [open]="servicePointSearchOpen()"
+  [open]="serviceFloorReady() && servicePointSearchOpen()"
   [query]="servicePointSearchQuery()"
   [statusFilter]="servicePointStatusFilter()"
   [statusOptions]="servicePointStatusOptions()"

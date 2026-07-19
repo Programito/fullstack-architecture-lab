@@ -92,9 +92,12 @@ export class RestaurantPosServicePage {
   protected readonly chargeKitchenConfirmOpen = signal(false);
   protected readonly isCharging = signal(false);
   private readonly pendingChargePaymentMethod = signal<Exclude<PaymentMethod, 'pending'> | null>(null);
+  protected readonly serviceFloorReady = computed(
+    () => this.store.floorLoadStatus() === 'loaded' && this.store.activeFloorId() !== null,
+  );
 
   protected readonly serviceDashboardStats = computed<ServiceDashboardStat[]>(() => {
-    if (this.store.floorLoadStatus() !== 'loaded' || !this.store.activeFloorId()) {
+    if (!this.serviceFloorReady()) {
       return [
         { id: 'occupied', value: '0', tone: 'neutral' as const },
         { id: 'kitchen', value: '0', tone: 'neutral' as const },
@@ -169,6 +172,10 @@ export class RestaurantPosServicePage {
     return product ? (this.menu.comboProductDefinitions().find((definition) => definition.productId === product.id) ?? null) : null;
   });
   protected readonly filteredServicePoints = computed(() => {
+    if (!this.serviceFloorReady()) {
+      return [];
+    }
+
     const query = this.normalizeSearch(this.servicePointSearchQuery());
     const statusFilter = this.servicePointStatusFilter();
     const servicePoints = this.store.servicePoints().filter((servicePoint) => statusFilter === 'all' || servicePoint.table.status === statusFilter);
@@ -221,6 +228,12 @@ export class RestaurantPosServicePage {
 
     effect(() => {
       this.storage.setItem(FAVORITE_PRODUCTS_STORAGE_KEY, JSON.stringify(this.favoriteProductIds()));
+    });
+
+    effect(() => {
+      if (!this.serviceFloorReady()) {
+        this.closeServicePointSearch();
+      }
     });
 
     effect(() => {
@@ -302,7 +315,7 @@ export class RestaurantPosServicePage {
   }
 
   protected openServicePointSearch(): void {
-    if (this.store.floorLoadStatus() !== 'loaded' || !this.store.activeFloorId()) {
+    if (!this.serviceFloorReady()) {
       return;
     }
 
@@ -324,10 +337,18 @@ export class RestaurantPosServicePage {
   }
 
   protected updateServicePointSearch(query: string): void {
+    if (!this.serviceFloorReady()) {
+      return;
+    }
+
     this.servicePointSearchQuery.set(query);
   }
 
   protected submitServicePointSearch(query: string): void {
+    if (!this.serviceFloorReady()) {
+      return;
+    }
+
     this.servicePointSearchQuery.set(query);
 
     if (this.filteredServicePoints().length === 1) {
@@ -336,13 +357,17 @@ export class RestaurantPosServicePage {
   }
 
   protected setServicePointStatusFilter(status: string): void {
+    if (!this.serviceFloorReady()) {
+      return;
+    }
+
     if (isServicePointStatusFilter(status)) {
       this.servicePointStatusFilter.set(status);
     }
   }
 
   protected selectServicePoint(element: FloorElement): void {
-    if (!element.tableId) {
+    if (!this.serviceFloorReady() || !element.tableId) {
       return;
     }
 
@@ -353,13 +378,13 @@ export class RestaurantPosServicePage {
   }
 
   protected selectServicePointFromFloor(element: FloorElement): void {
-    if (element.tableId) {
+    if (this.serviceFloorReady() && element.tableId) {
       this.rememberCurrentServicePoint(element.tableId);
     }
   }
 
   protected returnToLastServicePoint(): void {
-    if (this.store.floorLoadStatus() !== 'loaded' || !this.store.activeFloorId()) {
+    if (!this.serviceFloorReady()) {
       return;
     }
 

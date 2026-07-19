@@ -1006,6 +1006,35 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.queryByRole('button', { name: /Volver a/ })).toBeNull();
   });
 
+  it('closes service-point search and ignores stale search actions when the shared floor starts loading', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const staleServicePoint = store.servicePoints().find((servicePoint) => servicePoint.table.id === 'table-1')!;
+    const component = fixture.componentInstance as unknown as {
+      servicePointSearchOpen(): boolean;
+      servicePointSearchQuery(): string;
+      submitServicePointSearch(query: string): void;
+      selectServicePoint(element: typeof staleServicePoint.element): void;
+    };
+
+    fireEvent.click(screen.getByRole('button', { name: /Buscar mesa\/taburete/i }));
+    expect(screen.getByRole('dialog', { name: /Buscar mesa\/taburete/i })).toBeTruthy();
+
+    store.beginFloorLoad();
+    store.hydrateServicePoint({ table: staleServicePoint.table, floorElement: staleServicePoint.element });
+    fixture.detectChanges();
+
+    expect(component.servicePointSearchOpen()).toBe(false);
+    expect(screen.queryByRole('dialog', { name: /Buscar mesa\/taburete/i })).toBeNull();
+
+    component.submitServicePointSearch('M1');
+    component.selectServicePoint(staleServicePoint.element);
+    fixture.detectChanges();
+
+    expect(component.servicePointSearchQuery()).toBe('');
+    expect(store.selectedTableId()).toBeNull();
+  });
+
   it('opens the selected table panel from the floor plan', async () => {
     await renderServicePage();
 
