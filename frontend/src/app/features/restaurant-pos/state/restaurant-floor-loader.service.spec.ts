@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { Subject } from 'rxjs';
+import { type Observable, Subject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { provideI18nTesting } from '../../../shared/i18n/i18n-testing';
@@ -76,6 +76,14 @@ describe('RestaurantFloorLoader', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
+  function refreshFloor(restaurantId: string): Observable<ServiceFloorDto> {
+    const refresh = (loader as unknown as {
+      refresh?: (id: string) => Observable<ServiceFloorDto>;
+    }).refresh;
+    expect(refresh).toBeTypeOf('function');
+    return refresh!.call(loader, restaurantId);
+  }
+
   it('loads and maps the active restaurant service floor', () => {
     loader.load('restaurant-1');
     expect(store.floorLoadStatus()).toBe('loading');
@@ -100,13 +108,83 @@ describe('RestaurantFloorLoader', () => {
     expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(1);
   });
 
+  it('shares the initial in-flight request with a background refresh', () => {
+    const refreshedSnapshots: ServiceFloorDto[] = [];
+
+    loader.load('restaurant-1');
+    refreshFloor('restaurant-1').subscribe((snapshot) => refreshedSnapshots.push(snapshot));
+
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(1);
+
+    response.next(serviceFloorFixture);
+    response.complete();
+
+    expect(refreshedSnapshots).toEqual([serviceFloorFixture]);
+  });
+
+  it('keeps the loaded floor visible while a background refresh is in flight', () => {
+    const refreshResponse = new Subject<ServiceFloorDto>();
+    getRestaurantServiceFloor
+      .mockReturnValueOnce(response.asObservable())
+      .mockReturnValueOnce(refreshResponse.asObservable());
+
+    loader.load('restaurant-1');
+    response.next(serviceFloorFixture);
+    response.complete();
+
+    refreshFloor('restaurant-1').subscribe();
+
+    expect(store.floorLoadStatus()).toBe('loaded');
+    expect(store.activeFloorId()).toBe('floor-main');
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+  });
+
   it('records an error and retries with a fresh request', () => {
     loader.load('restaurant-1');
     response.error(new Error('network'));
     expect(store.floorLoadStatus()).toBe('error');
 
+    loader.load('restaurant-1');
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(1);
+
     loader.retry('restaurant-1');
     expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not let a failed background refresh replace a loaded snapshot with an error', () => {
+    const refreshResponse = new Subject<ServiceFloorDto>();
+    getRestaurantServiceFloor
+      .mockReturnValueOnce(response.asObservable())
+      .mockReturnValueOnce(refreshResponse.asObservable());
+
+    loader.load('restaurant-1');
+    response.next(serviceFloorFixture);
+    response.complete();
+
+    refreshFloor('restaurant-1').subscribe();
+    refreshResponse.error(new Error('network'));
+
+    expect(store.floorLoadStatus()).toBe('loaded');
+    expect(store.activeFloorId()).toBe('floor-main');
+  });
+
+  it('accepts an empty backend snapshot during refresh and removes the previous floor', () => {
+    const refreshResponse = new Subject<ServiceFloorDto>();
+    getRestaurantServiceFloor
+      .mockReturnValueOnce(response.asObservable())
+      .mockReturnValueOnce(refreshResponse.asObservable());
+
+    loader.load('restaurant-1');
+    response.next(serviceFloorFixture);
+    response.complete();
+
+    refreshFloor('restaurant-1').subscribe();
+    refreshResponse.error(new HttpErrorResponse({ status: 404 }));
+
+    expect(store.floorLoadStatus()).toBe('loaded');
+    expect(store.activeFloorId()).toBeNull();
+    expect(store.floorElements()).toEqual([]);
+    expect(store.restaurantTables()).toEqual([]);
   });
 
   it('ignores a stale response from a previous restaurant', () => {
@@ -117,7 +195,10 @@ describe('RestaurantFloorLoader', () => {
       .mockReturnValueOnce(restaurantBResponse.asObservable());
 
     loader.load('restaurant-a');
+    refreshFloor('restaurant-a').subscribe();
     loader.load('restaurant-b');
+
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
 
     restaurantBResponse.next({ ...serviceFloorFixture, restaurantId: 'restaurant-b', floor: { ...serviceFloorFixture.floor, id: 'floor-b' } });
     restaurantAResponse.next({ ...serviceFloorFixture, restaurantId: 'restaurant-a', floor: { ...serviceFloorFixture.floor, id: 'floor-a' } });

@@ -1056,7 +1056,14 @@
     },
     "selector": {
       "title": "Selecciona un restaurant",
-      "description": "Tria el restaurant en el qual vols treballar."
+      "description": "Tria el restaurant en el qual vols treballar.",
+      "loading": "Carregant restaurants…",
+      "loadErrorTitle": "No s'han pogut carregar els restaurants",
+      "loadError": "No s'han pogut carregar els restaurants disponibles.",
+      "retry": "Torna-ho a provar",
+      "emptyTitle": "No hi ha restaurants disponibles",
+      "emptyDescription": "El teu compte no té restaurants assignats. Actualitza la llista si el teu accés ha canviat.",
+      "refresh": "Actualitza"
     },
     "time": {
       "eyebrow": "Control horari",

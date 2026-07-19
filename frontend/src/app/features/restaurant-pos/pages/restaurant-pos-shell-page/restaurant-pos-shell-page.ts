@@ -67,7 +67,7 @@ export class RestaurantPosShellPage {
   );
   // User administration is org-wide, not scoped to a restaurant, so it must
   // stay reachable even before an active restaurant has been selected.
-  private readonly isAdminUsersRoute = computed(() => this.currentUrl().includes('/admin/users'));
+  protected readonly isAdminUsersRoute = computed(() => this.currentUrl().includes('/admin/users'));
   protected readonly needsRestaurantSelection = computed(
     () =>
       !this.isAdminUsersRoute() &&
@@ -83,6 +83,10 @@ export class RestaurantPosShellPage {
   protected selectRestaurant(id: string): void {
     this.restaurantContext.setActiveRestaurantId(id);
     void this.router.navigateByUrl(this.defaultPath());
+  }
+
+  protected retryRestaurantContext(): void {
+    this.restaurantContext.load();
   }
 
   protected logout(): void {

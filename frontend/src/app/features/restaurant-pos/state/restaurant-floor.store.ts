@@ -70,6 +70,12 @@ export class RestaurantFloorStore {
   }
 
   completeEmptyFloorLoad(): void {
+    this._activeFloorId.set(null);
+    this._activeFloorName.set('');
+    this._gridRows.set(1);
+    this._gridColumns.set(1);
+    this._floorElements.set([]);
+    this._restaurantTables.set([]);
     this._floorLoadError.set(null);
     this._floorLoadStatus.set('loaded');
   }

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -240,7 +240,7 @@ export class RestaurantPosServicePage {
       const restaurant = this.restaurantContext.activeRestaurant();
 
       if (restaurant) {
-        this.floorLoader.load(restaurant.id);
+        untracked(() => this.floorLoader.load(restaurant.id));
       }
     });
 

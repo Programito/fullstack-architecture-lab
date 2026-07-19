@@ -5,6 +5,7 @@ import type { RestaurantOrderDto, ServiceFloorDto, ServicePointOrderDto } from '
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { MenuMockService } from '../../menu/services/menu-mock.service';
 import { RestaurantContextStore } from './restaurant-context.store';
+import { RestaurantFloorLoader } from './restaurant-floor-loader.service';
 import { RestaurantPosStore } from './restaurant-pos.store';
 import { OrderWriteService } from './order-write.service';
 
@@ -144,6 +145,7 @@ describe('OrderWriteService', () => {
   let mockDeleteRestaurantOrderLine: ReturnType<typeof vi.fn>;
   let mockGetRestaurantServicePointOrder: ReturnType<typeof vi.fn>;
   let mockGetRestaurantServiceFloor: ReturnType<typeof vi.fn>;
+  let mockRefreshFloor: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -191,6 +193,7 @@ describe('OrderWriteService', () => {
     mockDeleteRestaurantOrderLine = vi.fn(() => of(void 0));
     mockGetRestaurantServicePointOrder = vi.fn(() => of(SERVICE_POINT_ORDER));
     mockGetRestaurantServiceFloor = vi.fn(() => of(EMPTY_FLOOR));
+    mockRefreshFloor = vi.fn(() => of(EMPTY_FLOOR));
   });
 
   afterEach(() => {
@@ -237,6 +240,10 @@ describe('OrderWriteService', () => {
         {
           provide: MenuMockService,
           useValue: { modifierGroups: mockModifierGroups },
+        },
+        {
+          provide: RestaurantFloorLoader,
+          useValue: { refresh: mockRefreshFloor },
         },
       ],
     });
@@ -359,7 +366,8 @@ describe('OrderWriteService', () => {
       expect(mockReportApiError).toHaveBeenCalledWith('restaurantPos.errors.addLineFailed');
       expect(mockGetRestaurantServicePointOrder).toHaveBeenCalledWith('r-1', TABLE_ID);
       expect(mockHydrateServicePointOrder).toHaveBeenCalled();
-      expect(mockGetRestaurantServiceFloor).toHaveBeenCalledWith('r-1');
+      expect(mockRefreshFloor).toHaveBeenCalledWith('r-1');
+      expect(mockGetRestaurantServiceFloor).not.toHaveBeenCalled();
     });
   });
 

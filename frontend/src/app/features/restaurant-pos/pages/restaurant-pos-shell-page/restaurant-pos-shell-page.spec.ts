@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { fireEvent, render, screen } from '@testing-library/angular';
+import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { Router, provideRouter } from '@angular/router';
 import { EMPTY, of } from 'rxjs';
 import { vi } from 'vitest';
@@ -23,6 +23,8 @@ function makeContextMock(opts: {
   restaurants?: typeof RESTAURANT_A[];
   activeRestaurant?: typeof RESTAURANT_A | null;
   isLoading?: boolean;
+  loadError?: string | null;
+  hasNoRestaurants?: boolean;
 } = {}) {
   const restaurants = opts.restaurants ?? [RESTAURANT_A];
   const activeRestaurant = opts.activeRestaurant !== undefined ? opts.activeRestaurant : RESTAURANT_A;
@@ -31,6 +33,8 @@ function makeContextMock(opts: {
     load: vi.fn(),
     setActiveRestaurantId: vi.fn(),
     isLoading: signal(isLoading),
+    loadError: signal(opts.loadError ?? null),
+    hasNoRestaurants: signal(opts.hasNoRestaurants ?? false),
     multipleRestaurants: signal(restaurants.length > 1),
     activeRestaurant: signal(activeRestaurant),
     restaurants: signal(restaurants),
@@ -38,7 +42,7 @@ function makeContextMock(opts: {
 }
 
 @Component({
-  template: '',
+  template: '<p>Contenido de ruta</p>',
 })
 class TestRoutePage {}
 
@@ -163,6 +167,36 @@ describe('RestaurantPosShellPage', () => {
     const contextMock = makeContextMock();
     await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
     expect(contextMock.load).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows an accessible context error and retries without rendering the child route', async () => {
+    const contextMock = makeContextMock({
+      restaurants: [],
+      activeRestaurant: null,
+      loadError: 'restaurantPos.selector.loadError',
+    });
+    await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByText('No se pudieron cargar los restaurantes disponibles.')).toBeTruthy();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+
+    expect(contextMock.load).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Contenido de ruta')).toBeNull();
+  });
+
+  it('shows an accessible empty context state when the account has no restaurants', async () => {
+    const contextMock = makeContextMock({
+      restaurants: [],
+      activeRestaurant: null,
+      hasNoRestaurants: true,
+    });
+    await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
+
+    const status = screen.getByRole('status');
+    expect(within(status).getByText('No hay restaurantes disponibles')).toBeTruthy();
+    expect(status.getAttribute('aria-live')).toBe('polite');
+    expect(screen.queryByText('Contenido de ruta')).toBeNull();
   });
 
   describe('selector de restaurante', () => {

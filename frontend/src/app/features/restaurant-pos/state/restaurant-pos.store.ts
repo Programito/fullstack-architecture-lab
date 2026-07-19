@@ -273,6 +273,7 @@ export class RestaurantPosStore {
   }
 
   completeEmptyFloorLoad(): void {
+    this._selectedTableId.set(null);
     this.floor.completeEmptyFloorLoad();
   }
 

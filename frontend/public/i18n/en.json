@@ -1056,7 +1056,14 @@
     },
     "selector": {
       "title": "Select a restaurant",
-      "description": "Choose the restaurant you want to work in."
+      "description": "Choose the restaurant you want to work in.",
+      "loading": "Loading restaurants…",
+      "loadErrorTitle": "Restaurants could not be loaded",
+      "loadError": "The available restaurants could not be loaded.",
+      "retry": "Retry",
+      "emptyTitle": "No restaurants available",
+      "emptyDescription": "Your account has no assigned restaurants. Refresh the list if your access has changed.",
+      "refresh": "Refresh"
     },
     "time": {
       "eyebrow": "Time tracking",

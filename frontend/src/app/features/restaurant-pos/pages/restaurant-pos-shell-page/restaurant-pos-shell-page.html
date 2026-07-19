@@ -79,7 +79,41 @@
   </aside>
 
   <div class="min-w-0 pb-16 lg:pb-0">
-    @if (needsRestaurantSelection()) {
+    @if (!isAdminUsersRoute() && restaurantContext.isLoading()) {
+      <div
+        class="flex min-h-[18rem] flex-col items-center justify-center gap-3 p-8 text-center"
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <span class="h-8 w-8 animate-spin motion-reduce:animate-none rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
+        <p class="theme-muted text-sm">{{ 'restaurantPos.selector.loading' | transloco }}</p>
+      </div>
+    } @else if (!isAdminUsersRoute() && restaurantContext.loadError()) {
+      <div class="flex min-h-[18rem] flex-col items-center justify-center gap-3 p-8 text-center" role="alert" aria-live="assertive">
+        <h1 class="theme-title text-xl font-semibold">{{ 'restaurantPos.selector.loadErrorTitle' | transloco }}</h1>
+        <p class="theme-body max-w-md text-sm">{{ restaurantContext.loadError()! | transloco }}</p>
+        <button
+          class="theme-panel rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus-visible:outline-2 focus-visible:outline-cyan-500"
+          type="button"
+          (click)="retryRestaurantContext()"
+        >
+          {{ 'restaurantPos.selector.retry' | transloco }}
+        </button>
+      </div>
+    } @else if (!isAdminUsersRoute() && restaurantContext.hasNoRestaurants()) {
+      <div class="flex min-h-[18rem] flex-col items-center justify-center gap-3 p-8 text-center" role="status" aria-live="polite">
+        <h1 class="theme-title text-xl font-semibold">{{ 'restaurantPos.selector.emptyTitle' | transloco }}</h1>
+        <p class="theme-body max-w-md text-sm">{{ 'restaurantPos.selector.emptyDescription' | transloco }}</p>
+        <button
+          class="theme-panel rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus-visible:outline-2 focus-visible:outline-cyan-500"
+          type="button"
+          (click)="retryRestaurantContext()"
+        >
+          {{ 'restaurantPos.selector.refresh' | transloco }}
+        </button>
+      </div>
+    } @else if (needsRestaurantSelection()) {
       <div class="flex min-h-dvh flex-col items-center justify-center gap-6 p-8">
         <div class="w-full max-w-sm text-center">
           <h1 class="theme-title text-xl font-semibold">{{ 'restaurantPos.selector.title' | transloco }}</h1>

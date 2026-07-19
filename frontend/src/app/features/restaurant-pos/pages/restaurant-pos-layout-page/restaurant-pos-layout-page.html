@@ -6,7 +6,7 @@
         <p class="theme-muted mt-1 max-w-2xl text-sm leading-5">{{ 'restaurantPos.layout.description' | transloco }}</p>
       </div>
 
-      @if (store.floorLoadStatus() === 'loaded') {
+      @if (floorReady()) {
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
           <div
             class="theme-control-group grid grid-cols-1 gap-1 rounded-lg border p-1 shadow-inner sm:inline-flex sm:items-center"
@@ -49,7 +49,7 @@
         }
       </div>
 
-      @if (store.floorLoadStatus() === 'loaded' && store.activeFloorId()) {
+      @if (floorReady()) {
         <div
           class="theme-soft-panel mb-3 flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium"
           [attr.aria-label]="'restaurantPos.layout.status' | transloco"
@@ -61,30 +61,29 @@
         </div>
       }
 
-      @if (store.floorLoadStatus() === 'loading') {
+      @if (!floorReady()) {
         <div
-          data-testid="floor-loading-state"
-          class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border"
-          aria-busy="true"
+          data-testid="floor-load-state"
+          class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center"
+          [attr.role]="store.floorLoadStatus() === 'error' ? 'alert' : 'status'"
+          [attr.aria-busy]="store.floorLoadStatus() === 'loading' ? 'true' : null"
           aria-live="polite"
         >
-          <div class="grid justify-items-center gap-3">
-            <span class="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
-            <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.loading' | transloco }}</p>
-          </div>
-        </div>
-      } @else if (store.floorLoadStatus() === 'error') {
-        <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center" role="alert">
-          <div class="grid justify-items-center gap-3">
-            <p class="theme-muted text-sm">{{ store.floorLoadError()! | transloco }}</p>
-            <app-button variant="neutral" fill="outline" (pressed)="retryFloorLoad()">
-              {{ 'restaurantPos.floorLoading.retry' | transloco }}
-            </app-button>
-          </div>
-        </div>
-      } @else if (!store.activeFloorId()) {
-        <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center">
-          <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.empty' | transloco }}</p>
+          @if (store.floorLoadStatus() === 'loading') {
+            <div data-testid="floor-loading-state" class="grid justify-items-center gap-3" aria-busy="true">
+              <span class="h-8 w-8 animate-spin motion-reduce:animate-none rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
+              <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.loading' | transloco }}</p>
+            </div>
+          } @else if (store.floorLoadStatus() === 'error') {
+            <div class="grid justify-items-center gap-3">
+              <p class="theme-muted text-sm">{{ store.floorLoadError()! | transloco }}</p>
+              <app-button variant="neutral" fill="outline" (pressed)="retryFloorLoad()">
+                {{ 'restaurantPos.floorLoading.retry' | transloco }}
+              </app-button>
+            </div>
+          } @else {
+            <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.empty' | transloco }}</p>
+          }
         </div>
       } @else {
         <app-floor-plan
@@ -98,7 +97,7 @@
     </section>
   </div>
 
-  @if (resizeModalOpen()) {
+  @if (floorReady() && resizeModalOpen()) {
     <div class="theme-overlay fixed inset-0 z-50 grid place-items-center p-4" role="presentation">
       <section
         class="theme-dialog max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg p-5 shadow-xl"
@@ -183,7 +182,7 @@
     </div>
   }
 
-  @if (resizeElementModalOpen()) {
+  @if (floorReady() && resizeElementModalOpen()) {
     <div class="theme-overlay fixed inset-0 z-50 grid place-items-center p-4" role="presentation">
       <section
         class="theme-dialog w-full max-w-md rounded-lg p-5 shadow-xl"
@@ -243,7 +242,7 @@
     </div>
   }
 
-  @if (addElementModalOpen()) {
+  @if (floorReady() && addElementModalOpen()) {
     <div class="theme-overlay fixed inset-0 z-50 grid place-items-center p-4" role="presentation">
       <section
         class="theme-dialog max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-y-auto rounded-lg p-5 shadow-xl"

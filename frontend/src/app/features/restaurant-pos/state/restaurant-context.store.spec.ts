@@ -146,7 +146,7 @@ describe('RestaurantContextStore', () => {
 
       expect(store.activeRestaurant()).toBeNull();
       expect(store.isLoading()).toBe(false);
-      expect(store.loadError()).toBe('restaurantPos.layout.errors.loadRestaurants');
+      expect(store.loadError()).toBe('restaurantPos.selector.loadError');
       expect(store.hasNoRestaurants()).toBe(false);
     } finally {
       vi.useRealTimers();

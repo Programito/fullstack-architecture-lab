@@ -1109,7 +1109,14 @@
     },
     "selector": {
       "title": "Selecciona un restaurante",
-      "description": "Elige el restaurante en el que quieres trabajar."
+      "description": "Elige el restaurante en el que quieres trabajar.",
+      "loading": "Cargando restaurantes…",
+      "loadErrorTitle": "No se pudieron cargar los restaurantes",
+      "loadError": "No se pudieron cargar los restaurantes disponibles.",
+      "retry": "Reintentar",
+      "emptyTitle": "No hay restaurantes disponibles",
+      "emptyDescription": "Tu cuenta no tiene restaurantes asignados. Actualiza la lista si tu acceso ha cambiado.",
+      "refresh": "Actualizar"
     },
     "time": {
       "eyebrow": "Control horario",

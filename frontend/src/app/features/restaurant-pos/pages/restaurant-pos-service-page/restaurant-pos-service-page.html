@@ -58,30 +58,29 @@
       </div>
 
       <div class="min-w-0 overflow-x-auto pb-1">
-        @if (store.floorLoadStatus() === 'loading') {
+        @if (!serviceFloorReady()) {
           <div
-            data-testid="floor-loading-state"
-            class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border"
-            aria-busy="true"
+            data-testid="floor-load-state"
+            class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center"
+            [attr.role]="store.floorLoadStatus() === 'error' ? 'alert' : 'status'"
+            [attr.aria-busy]="store.floorLoadStatus() === 'loading' ? 'true' : null"
             aria-live="polite"
           >
-            <div class="grid justify-items-center gap-3">
-              <span class="h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
-              <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.loading' | transloco }}</p>
-            </div>
-          </div>
-        } @else if (store.floorLoadStatus() === 'error') {
-          <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center" role="alert">
-            <div class="grid justify-items-center gap-3">
-              <p class="theme-muted text-sm">{{ store.floorLoadError()! | transloco }}</p>
-              <app-button variant="neutral" fill="outline" (pressed)="retryFloorLoad()">
-                {{ 'restaurantPos.floorLoading.retry' | transloco }}
-              </app-button>
-            </div>
-          </div>
-        } @else if (!store.activeFloorId()) {
-          <div class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center">
-            <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.empty' | transloco }}</p>
+            @if (store.floorLoadStatus() === 'loading') {
+              <div data-testid="floor-loading-state" class="grid justify-items-center gap-3" aria-busy="true">
+                <span class="h-8 w-8 animate-spin motion-reduce:animate-none rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true"></span>
+                <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.loading' | transloco }}</p>
+              </div>
+            } @else if (store.floorLoadStatus() === 'error') {
+              <div class="grid justify-items-center gap-3">
+                <p class="theme-muted text-sm">{{ store.floorLoadError()! | transloco }}</p>
+                <app-button variant="neutral" fill="outline" (pressed)="retryFloorLoad()">
+                  {{ 'restaurantPos.floorLoading.retry' | transloco }}
+                </app-button>
+              </div>
+            } @else {
+              <p class="theme-muted text-sm">{{ 'restaurantPos.floorLoading.empty' | transloco }}</p>
+            }
           </div>
         } @else {
           <app-floor-plan [layoutMode]="false" [focusRequest]="floorFocusRequest()" (servicePointSelected)="selectServicePointFromFloor($event)" />

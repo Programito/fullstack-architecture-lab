@@ -1,10 +1,12 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
+import { signal } from '@angular/core';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, Subject, throwError } from 'rxjs';
 import type { RestaurantFloorsDto, ServiceFloorDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { RestaurantFloorLoader } from '../../state/restaurant-floor-loader.service';
 import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS, MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosLayoutPage } from './restaurant-pos-layout-page';
@@ -129,6 +131,7 @@ describe('RestaurantPosLayoutPage', () => {
     options?: {
       restaurantContext?: ReturnType<typeof createRestaurantContextMock>;
       apiOverrides?: Partial<RestaurantPosApiService>;
+      floorLoader?: Pick<RestaurantFloorLoader, 'load' | 'retry'>;
     },
   ) => {
     const i18n = provideI18nTesting(locale);
@@ -283,6 +286,7 @@ describe('RestaurantPosLayoutPage', () => {
         ...i18n.providers,
         { provide: RestaurantContextStore, useValue: restaurantContext },
         { provide: RestaurantPosApiService, useValue: api },
+        ...(options?.floorLoader ? [{ provide: RestaurantFloorLoader, useValue: options.floorLoader }] : []),
       ],
     });
 
@@ -396,6 +400,7 @@ describe('RestaurantPosLayoutPage', () => {
 
     expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
     expect(screen.getByTestId('floor-loading-state').getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByTestId('floor-loading-state').querySelector('.animate-spin')?.className).toContain('motion-reduce:animate-none');
     expect(screen.queryByLabelText('M1 elemento del plano')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Añadir elemento' })).toBeNull();
     expect(screen.queryByLabelText('Estado del plano')).toBeNull();
@@ -485,10 +490,12 @@ describe('RestaurantPosLayoutPage', () => {
       apiOverrides: { getRestaurantServiceFloor },
     });
 
+    const stateContainer = screen.getByTestId('floor-load-state');
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
     expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
+    expect(screen.getByTestId('floor-load-state')).toBe(stateContainer);
 
     retryResponse.next(createDefaultServiceFloorResponse());
     retryResponse.complete();
@@ -511,6 +518,65 @@ describe('RestaurantPosLayoutPage', () => {
     expect(screen.queryByTestId('floor-loading-state')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByLabelText('M1 element del plànol')).toBeNull();
+    expect(screen.queryByRole('toolbar')).toBeNull();
+    expect(screen.getByRole('status').getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('tracks only the active restaurant when requesting the floor', async () => {
+    const internalLoaderStatus = signal<'loading' | 'error'>('loading');
+    const activeRestaurant = signal({
+      id: 'restaurant-mesaflow-centro',
+      name: 'MesaFlow Centro',
+      displayName: 'MesaFlow Centro',
+      timezone: 'Europe/Madrid',
+      currency: 'EUR',
+      isActive: true,
+    });
+    const load = vi.fn(() => internalLoaderStatus());
+    const restaurantContext = {
+      ...createRestaurantContextMock(),
+      activeRestaurant: activeRestaurant.asReadonly(),
+    };
+
+    const { fixture } = await renderLayoutPage('es', {
+      restaurantContext,
+      floorLoader: { load, retry: vi.fn() },
+    });
+    expect(load).toHaveBeenCalledTimes(1);
+
+    internalLoaderStatus.set('error');
+    fixture.detectChanges();
+
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes stale editing state and ignores a late resize confirmation while the floor becomes unavailable', async () => {
+    const { fixture, api } = await renderLayoutPage();
+    const actions = createLayoutPageActions();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    const component = fixture.componentInstance as unknown as {
+      resizeModalOpen(): boolean;
+      selectedLayoutElement(): unknown;
+      applyResize(): void;
+    };
+
+    actions.selectFloorElement('M1');
+    actions.openResizeLayoutDialog();
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '10' } });
+
+    store.beginFloorLoad();
+    fixture.detectChanges();
+
+    expect(component.resizeModalOpen()).toBe(false);
+    expect(component.selectedLayoutElement()).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Redimensionar plano' })).toBeNull();
+
+    component.applyResize();
+
+    expect(store.gridRows()).toBe(1);
+    expect(store.gridColumns()).toBe(1);
+    expect(api.updateFloor).not.toHaveBeenCalled();
   });
 
   it('persists a confirmed floor element deletion and applies the backend response', async () => {

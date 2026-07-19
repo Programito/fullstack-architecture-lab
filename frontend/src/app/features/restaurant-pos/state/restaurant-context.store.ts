@@ -49,7 +49,7 @@ export class RestaurantContextStore {
         this._isLoading.set(false);
       },
       error: () => {
-        this._loadError.set('restaurantPos.layout.errors.loadRestaurants');
+        this._loadError.set('restaurantPos.selector.loadError');
         this._isLoading.set(false);
       },
     });

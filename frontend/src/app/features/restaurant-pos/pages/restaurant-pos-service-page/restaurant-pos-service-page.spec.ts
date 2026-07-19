@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { of, Subject, throwError } from 'rxjs';
 import englishTranslations from '../../../../../../public/i18n/en.json';
@@ -10,6 +11,8 @@ import type { ServiceFloorDto, ServicePointDetailDto } from '../../api/restauran
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { MOCK_FLOOR_ELEMENTS, MOCK_RESTAURANT_TABLES } from '../../state/restaurant-pos.mock-data';
 import { OrderWriteService } from '../../state/order-write.service';
+import { RestaurantContextStore } from '../../state/restaurant-context.store';
+import { RestaurantFloorLoader } from '../../state/restaurant-floor-loader.service';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { RestaurantPosServicePage } from './restaurant-pos-service-page';
 
@@ -762,7 +765,14 @@ describe('RestaurantPosServicePage', () => {
   });
   };
 
-  const renderServicePage = async (storage?: KeyValueStorage, apiMock = createRestaurantPosApiMock()) => {
+  const renderServicePage = async (
+    storage?: KeyValueStorage,
+    apiMock = createRestaurantPosApiMock(),
+    options?: {
+      restaurantContext?: Pick<RestaurantContextStore, 'activeRestaurant' | 'load'>;
+      floorLoader?: Pick<RestaurantFloorLoader, 'load' | 'retry'>;
+    },
+  ) => {
     const i18n = provideI18nTesting();
     Object.assign(i18n.translations.es.restaurantPos.service, {
       removeGroupedConfirmTitle: spanishTranslations.restaurantPos.service.removeGroupedConfirmTitle,
@@ -773,6 +783,8 @@ describe('RestaurantPosServicePage', () => {
       providers: [
         ...(storage ? [...i18n.providers, { provide: KEY_VALUE_STORAGE, useValue: storage }] : [...i18n.providers]),
         { provide: RestaurantPosApiService, useValue: apiMock },
+        ...(options?.restaurantContext ? [{ provide: RestaurantContextStore, useValue: options.restaurantContext }] : []),
+        ...(options?.floorLoader ? [{ provide: RestaurantFloorLoader, useValue: options.floorLoader }] : []),
         OrderWriteService,
       ],
     });
@@ -924,6 +936,7 @@ describe('RestaurantPosServicePage', () => {
 
     expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
     expect(screen.getByTestId('floor-loading-state').getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByTestId('floor-loading-state').querySelector('.animate-spin')?.className).toContain('motion-reduce:animate-none');
     expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();
     expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toHaveProperty('disabled', true);
     expect(component.serviceDashboardStats()).toEqual([
@@ -955,9 +968,11 @@ describe('RestaurantPosServicePage', () => {
       .mockReturnValueOnce(retryResponse);
     const { fixture } = await renderServicePage(undefined, apiMock);
 
+    const stateContainer = screen.getByTestId('floor-load-state');
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(apiMock.getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('floor-load-state')).toBe(stateContainer);
     expect(screen.getByText('Cargando plano de mesas…')).toBeTruthy();
 
     retryResponse.next(createDefaultServiceFloorResponse());
@@ -983,8 +998,35 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();
     expect(screen.queryByTestId('floor-loading-state')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('status').getAttribute('aria-live')).toBe('polite');
     expect(screen.getByRole('button', { name: /Buscar mesa\/taburete/i })).toHaveProperty('disabled', true);
     expect(component.serviceDashboardStats().map((stat) => stat.value)).toEqual(['0', '0', '0', '0,00\u00a0€']);
+  });
+
+  it('tracks only the active restaurant when requesting the shared floor', async () => {
+    const internalLoaderStatus = signal<'loading' | 'error'>('loading');
+    const activeRestaurant = signal({
+      id: 'restaurant-mesaflow-centro',
+      organizationId: 'org-demo',
+      name: 'MesaFlow Centro',
+      displayName: 'MesaFlow Centro',
+      timezone: 'Europe/Madrid',
+      currency: 'EUR',
+      isActive: true,
+    });
+    const load = vi.fn(() => internalLoaderStatus());
+    const apiMock = createRestaurantPosApiMock();
+
+    const { fixture } = await renderServicePage(undefined, apiMock, {
+      restaurantContext: { activeRestaurant: activeRestaurant.asReadonly(), load: vi.fn() },
+      floorLoader: { load, retry: vi.fn() },
+    });
+    expect(load).toHaveBeenCalledTimes(1);
+
+    internalLoaderStatus.set('error');
+    fixture.detectChanges();
+
+    expect(load).toHaveBeenCalledTimes(1);
   });
 
   it('hides return to the last service point whenever the shared floor is not loaded', async () => {

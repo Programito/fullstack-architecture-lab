@@ -6,6 +6,7 @@ import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RealtimeService, type OrderInvalidatedEvent } from '../../../core/realtime/realtime.service';
 import { RestaurantContextStore } from './restaurant-context.store';
+import { RestaurantFloorLoader } from './restaurant-floor-loader.service';
 import { OrderWriteService } from './order-write.service';
 import { RestaurantPosStore } from './restaurant-pos.store';
 import { ORDER_SYNC_POLL_INTERVAL_MS, OrderSyncService } from './order-sync.service';
@@ -67,6 +68,7 @@ describe('OrderSyncService', () => {
   let mockHydrateServicePointOrder: ReturnType<typeof vi.fn>;
   let mockHydrateRemoteOrder: ReturnType<typeof vi.fn>;
   let mockGetServiceFloor: ReturnType<typeof vi.fn>;
+  let mockRefreshFloor: ReturnType<typeof vi.fn>;
   let mockGetServicePointOrder: ReturnType<typeof vi.fn>;
   let invalidated$: Subject<OrderInvalidatedEvent>;
 
@@ -78,6 +80,7 @@ describe('OrderSyncService', () => {
     mockHydrateServicePointOrder = vi.fn();
     mockHydrateRemoteOrder = vi.fn();
     mockGetServiceFloor = vi.fn().mockReturnValue(of(FLOOR_WITH_LINES));
+    mockRefreshFloor = vi.fn().mockReturnValue(of(FLOOR_WITH_LINES));
     mockGetServicePointOrder = vi.fn().mockReturnValue(of(ORDER));
     invalidated$ = new Subject<OrderInvalidatedEvent>();
   });
@@ -108,6 +111,10 @@ describe('OrderSyncService', () => {
           useValue: { getRestaurantServiceFloor: mockGetServiceFloor, getRestaurantServicePointOrder: mockGetServicePointOrder },
         },
         {
+          provide: RestaurantFloorLoader,
+          useValue: { refresh: mockRefreshFloor },
+        },
+        {
           provide: RealtimeService,
           useValue: { invalidated$: invalidated$.asObservable() },
         },
@@ -119,7 +126,7 @@ describe('OrderSyncService', () => {
   it('no llama a la API de planta cuando no hay restaurante activo', async () => {
     setup();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).not.toHaveBeenCalled();
+    expect(mockRefreshFloor).not.toHaveBeenCalled();
   });
 
   it('obtiene la planta del restaurante y la hidrata en el store cuando hay restaurante activo', async () => {
@@ -127,8 +134,9 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).toHaveBeenCalledWith('r-1');
-    expect(mockHydrateServiceFloor).toHaveBeenCalledOnce();
+    expect(mockRefreshFloor).toHaveBeenCalledWith('r-1');
+    expect(mockGetServiceFloor).not.toHaveBeenCalled();
+    expect(mockHydrateServiceFloor).not.toHaveBeenCalled();
   });
 
   it('solo obtiene el pedido de los puntos de servicio que tienen líneas', async () => {
@@ -149,7 +157,7 @@ describe('OrderSyncService', () => {
   });
 
   it('no llama a la API de pedidos cuando la planta no tiene puntos con líneas', async () => {
-    mockGetServiceFloor.mockReturnValue(of(EMPTY_FLOOR));
+    mockRefreshFloor.mockReturnValue(of(EMPTY_FLOOR));
     setup();
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
@@ -162,10 +170,10 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(ORDER_SYNC_POLL_INTERVAL_MS);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(2);
   });
 
   it('dispara un fetch inmediato cuando llega un evento de invalidación por socket', async () => {
@@ -173,11 +181,11 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(1);
 
     invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
     await vi.advanceTimersByTimeAsync(300);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(2);
   });
 
   it('agrupa varios eventos de invalidación seguidos en un solo fetch extra (debounce)', async () => {
@@ -185,14 +193,14 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(1);
 
     invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
     await vi.advanceTimersByTimeAsync(100);
     invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.updated' });
     await vi.advanceTimersByTimeAsync(300);
 
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(2);
   });
 
   it('ignora eventos de invalidación de un restaurante distinto al activo', async () => {
@@ -200,11 +208,11 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(1);
 
     invalidated$.next({ restaurantId: 'r-2', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
     await vi.advanceTimersByTimeAsync(300);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(1);
   });
 
   it('se comporta igual que hoy cuando el socket nunca emite (desactivado o caído)', async () => {
@@ -212,9 +220,9 @@ describe('OrderSyncService', () => {
     activeRestaurant.set(RESTAURANT);
     TestBed.flushEffects();
     await vi.advanceTimersByTimeAsync(0);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(1);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(ORDER_SYNC_POLL_INTERVAL_MS);
-    expect(mockGetServiceFloor).toHaveBeenCalledTimes(2);
+    expect(mockRefreshFloor).toHaveBeenCalledTimes(2);
   });
 });

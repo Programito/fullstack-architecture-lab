@@ -3,12 +3,13 @@ import { switchMap, type Observable } from 'rxjs';
 import type { ComboSlotSelection } from '../../menu/models/menu.models';
 import type { ModifierGroup } from '../../menu/models/modifier-group.model';
 import { MenuMockService } from '../../menu/services/menu-mock.service';
-import { mapServiceCourse, mapServiceFloor, mapServicePointOrder } from '../api/restaurant-pos-api.mappers';
+import { mapServiceCourse, mapServicePointOrder } from '../api/restaurant-pos-api.mappers';
 import type { AddRestaurantOrderLineRequest, ServicePointOrderDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import type { OrderLine, Product, TableOrder } from '../models/restaurant-pos.models';
 import { orderLineConfigurationIdentity, type OrderLineConfigurationIdentity } from '../models/order-line-grouping';
 import { RestaurantContextStore } from './restaurant-context.store';
+import { RestaurantFloorLoader } from './restaurant-floor-loader.service';
 import { RestaurantPosStore } from './restaurant-pos.store';
 
 @Injectable()
@@ -29,6 +30,7 @@ export class OrderWriteService {
   private readonly store = inject(RestaurantPosStore);
   private readonly api = inject(RestaurantPosApiService);
   private readonly context = inject(RestaurantContextStore);
+  private readonly floorLoader = inject(RestaurantFloorLoader);
   private readonly menu = inject(MenuMockService);
 
   addProduct(productId: string): void {
@@ -512,9 +514,7 @@ export class OrderWriteService {
     this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe((serviceOrder) => {
       this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder));
     });
-    this.api.getRestaurantServiceFloor(restaurantId).subscribe((serviceFloor) => {
-      this.store.hydrateServiceFloor(mapServiceFloor(serviceFloor));
-    });
+    this.floorLoader.refresh(restaurantId).subscribe();
   }
 
   private currentDirectGroupQuantity(tableId: string, identity: DirectLineGroupIdentity): number {

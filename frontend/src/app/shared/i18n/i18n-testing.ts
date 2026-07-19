@@ -813,6 +813,13 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
       selector: {
         title: 'Selecciona un restaurante',
         description: 'Elige el restaurante en el que quieres trabajar.',
+        loading: 'Cargando restaurantes…',
+        loadErrorTitle: 'No se pudieron cargar los restaurantes',
+        loadError: 'No se pudieron cargar los restaurantes disponibles.',
+        retry: 'Reintentar',
+        emptyTitle: 'No hay restaurantes disponibles',
+        emptyDescription: 'Tu cuenta no tiene restaurantes asignados. Actualiza la lista si tu acceso ha cambiado.',
+        refresh: 'Actualizar',
       },
     },
     menu: {
@@ -1695,6 +1702,13 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
       selector: {
         title: 'Select a restaurant',
         description: 'Choose the restaurant you want to work in.',
+        loading: 'Loading restaurants…',
+        loadErrorTitle: 'Restaurants could not be loaded',
+        loadError: 'The available restaurants could not be loaded.',
+        retry: 'Retry',
+        emptyTitle: 'No restaurants available',
+        emptyDescription: 'Your account has no assigned restaurants. Refresh the list if your access has changed.',
+        refresh: 'Refresh',
       },
     },
     menu: {
@@ -2343,6 +2357,13 @@ const TEST_TRANSLATIONS = withAdditionalMenuImageTranslations({
       selector: {
         title: 'Selecciona un restaurant',
         description: 'Tria el restaurant en el qual vols treballar.',
+        loading: 'Carregant restaurants…',
+        loadErrorTitle: "No s'han pogut carregar els restaurants",
+        loadError: "No s'han pogut carregar els restaurants disponibles.",
+        retry: 'Torna-ho a provar',
+        emptyTitle: 'No hi ha restaurants disponibles',
+        emptyDescription: "El teu compte no té restaurants assignats. Actualitza la llista si el teu accés ha canviat.",
+        refresh: 'Actualitza',
       },
     },
     menu: {
