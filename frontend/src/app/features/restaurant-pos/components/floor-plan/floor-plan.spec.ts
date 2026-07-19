@@ -1,6 +1,12 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { FloorElement } from '../../models/restaurant-pos.models';
+import {
+  DEFAULT_GRID_COLUMNS,
+  DEFAULT_GRID_ROWS,
+  MOCK_FLOOR_ELEMENTS,
+  MOCK_RESTAURANT_TABLES,
+} from '../../state/restaurant-pos.mock-data';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
 import { FloorPlan } from './floor-plan';
 
@@ -67,7 +73,22 @@ describe('FloorPlan', () => {
       providers: [...(options.providers ?? []), ...i18n.providers],
     };
 
-    return typeof template === 'string' ? render(template, renderOptions) : render(template, renderOptions);
+    const result = await (typeof template === 'string'
+      ? render(template, renderOptions)
+      : render(template, renderOptions));
+    const store = result.fixture.debugElement.injector.get(RestaurantPosStore);
+
+    store.hydrateLayout({
+      floorId: 'floor-main',
+      floorName: 'Sala principal',
+      rows: DEFAULT_GRID_ROWS,
+      columns: DEFAULT_GRID_COLUMNS,
+      floorElements: MOCK_FLOOR_ELEMENTS,
+      restaurantTables: MOCK_RESTAURANT_TABLES,
+    });
+    result.fixture.detectChanges();
+
+    return result;
   };
 
   it('renders floor elements as restaurant plan objects', async () => {
