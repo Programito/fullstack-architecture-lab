@@ -546,6 +546,57 @@ describe('PrismaRestaurantReadRepository', () => {
     expect(result).toBe(refreshed);
   });
 
+  it('uses the next persisted sort order when the client sends an occupied value', async () => {
+    process.env.DATABASE_URL = 'postgresql://demo';
+    const tx = {
+      floorElement: {
+        findFirst: vi.fn().mockResolvedValue({ sortOrder: 19 }),
+        create: vi.fn().mockResolvedValue({ id: 'floor-element-20' }),
+      },
+      restaurantTable: {
+        findFirst: vi.fn().mockResolvedValue({ tableNumber: 16 }),
+        create: vi.fn().mockResolvedValue({ id: 'table-17' }),
+      },
+    };
+    const prisma = {
+      restaurantFloor: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'floor-1' }),
+      },
+      floorElement: tx.floorElement,
+      restaurantTable: tx.restaurantTable,
+      $transaction: vi.fn(async (operation: (transaction: typeof tx) => Promise<void>) => operation(tx)),
+    };
+    const repository = new PrismaRestaurantReadRepository(prisma as never);
+    const refreshed = { restaurantId: 'restaurant-1', tables: [], floors: [] };
+    vi.spyOn(repository, 'findFloorsByRestaurantId').mockResolvedValue(refreshed);
+
+    await repository.createFloorElement('restaurant-1', 'floor-1', {
+      type: 'table',
+      label: 'M17',
+      x: 7,
+      y: 3,
+      width: 2,
+      height: 2,
+      tableId: null,
+      shape: 'round',
+      sortOrder: 19,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(tx.floorElement.findFirst).toHaveBeenCalledWith({
+      where: { floorId: 'floor-1' },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+    expect(tx.floorElement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        floorId: 'floor-1',
+        tableId: 'table-17',
+        sortOrder: 20,
+      }),
+    });
+  });
+
   it('loads the active service point order from Prisma', async () => {
     process.env.DATABASE_URL = 'postgresql://demo';
 

@@ -198,4 +198,29 @@ describe('DemoRestaurantReadRepository', () => {
       }),
     });
   });
+
+  it('assigns the next floor sort order after deleting an intermediate element', async () => {
+    const repository = new DemoRestaurantReadRepository();
+    const before = await repository.findFloorsByRestaurantId('restaurant-mesaflow-centro');
+    const floor = before!.floors[0]!;
+    const maxSortOrder = Math.max(...floor.elements.map((element) => element.sortOrder));
+    const deleted = floor.elements.find((element) => element.sortOrder < maxSortOrder)!;
+    await repository.deleteFloorElement('restaurant-mesaflow-centro', floor.id, deleted.id);
+
+    const updated = await repository.createFloorElement('restaurant-mesaflow-centro', floor.id, {
+      type: 'blocked',
+      label: 'Zona recreada',
+      x: deleted.x,
+      y: deleted.y,
+      width: deleted.width,
+      height: deleted.height,
+      tableId: null,
+      shape: null,
+      sortOrder: maxSortOrder,
+    });
+
+    expect(
+      updated?.floors[0]?.elements.find((element) => element.label === 'Zona recreada')?.sortOrder,
+    ).toBe(maxSortOrder + 1);
+  });
 });

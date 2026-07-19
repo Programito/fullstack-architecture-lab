@@ -78,10 +78,11 @@ describe('PrismaRestaurantReadRepository', () => {
     expect(missing).toBeNull();
   });
 
-  it('persists floor element deletion and deactivates its linked table', async () => {
+  it('persists deletion and creates the next element when the client reuses an occupied sort order', async () => {
     const before = await repository.findFloorsByRestaurantId('restaurant-mesaflow-centro');
     const floor = before?.floors.find((candidate) => candidate.elements.some((element) => element.tableId));
-    const element = floor?.elements.find((candidate) => candidate.tableId);
+    const maxSortOrder = Math.max(0, ...(floor?.elements.map((element) => element.sortOrder) ?? []));
+    const element = floor?.elements.find((candidate) => candidate.tableId && candidate.sortOrder < maxSortOrder);
     expect(floor).toBeTruthy();
     expect(element?.tableId).toBeTruthy();
 
@@ -100,5 +101,25 @@ describe('PrismaRestaurantReadRepository', () => {
     await expect(
       prisma.restaurantTable.findUnique({ where: { id: element!.tableId! }, select: { isActive: true } }),
     ).resolves.toEqual({ isActive: false });
+
+    const recreated = await repository.createFloorElement('restaurant-mesaflow-centro', floor!.id, {
+      type: 'table',
+      label: 'Mesa recreada',
+      x: element!.x,
+      y: element!.y,
+      width: element!.width,
+      height: element!.height,
+      tableId: null,
+      shape: element!.shape,
+      sortOrder: maxSortOrder,
+    });
+    const recreatedElement = recreated?.floors
+      .find((candidate) => candidate.id === floor!.id)
+      ?.elements.find((candidate) => candidate.label === 'Mesa recreada');
+
+    expect(recreatedElement).toEqual(expect.objectContaining({ sortOrder: maxSortOrder + 1 }));
+    expect(recreated?.tables).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: recreatedElement?.tableId, isActive: true })]),
+    );
   });
 });

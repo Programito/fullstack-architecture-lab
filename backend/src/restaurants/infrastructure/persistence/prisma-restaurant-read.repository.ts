@@ -836,41 +836,49 @@ export class PrismaRestaurantReadRepository implements RestaurantReadRepository 
     });
     if (!floor) return null;
 
-    let tableId = element.tableId;
-
-    if ((element.type === 'table' || element.type === 'stool') && !tableId) {
-      const maxTable = await this.prisma.restaurantTable.findFirst({
-        where: { restaurantId },
-        orderBy: { tableNumber: 'desc' },
-        select: { tableNumber: true },
+    await this.prisma.$transaction(async (tx) => {
+      const lastFloorElement = await tx.floorElement.findFirst({
+        where: { floorId },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true },
       });
+      const nextSortOrder = (lastFloorElement?.sortOrder ?? 0) + 1;
+      let tableId = element.tableId;
 
-      const nextTableNumber = (maxTable?.tableNumber ?? 0) + 1;
-      const newTable = await this.prisma.restaurantTable.create({
+      if ((element.type === 'table' || element.type === 'stool') && !tableId) {
+        const maxTable = await tx.restaurantTable.findFirst({
+          where: { restaurantId },
+          orderBy: { tableNumber: 'desc' },
+          select: { tableNumber: true },
+        });
+
+        const nextTableNumber = (maxTable?.tableNumber ?? 0) + 1;
+        const newTable = await tx.restaurantTable.create({
+          data: {
+            restaurantId,
+            tableNumber: nextTableNumber,
+            name: element.label,
+            capacity: element.type === 'stool' ? 1 : 4,
+            isActive: true,
+          },
+        });
+        tableId = newTable.id;
+      }
+
+      await tx.floorElement.create({
         data: {
-          restaurantId,
-          tableNumber: nextTableNumber,
-          name: element.label,
-          capacity: element.type === 'stool' ? 1 : 4,
-          isActive: true,
+          floorId,
+          type: element.type,
+          label: element.label,
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height,
+          tableId,
+          shape: element.shape,
+          sortOrder: nextSortOrder,
         },
       });
-      tableId = newTable.id;
-    }
-
-    await this.prisma.floorElement.create({
-      data: {
-        floorId,
-        type: element.type,
-        label: element.label,
-        x: element.x,
-        y: element.y,
-        width: element.width,
-        height: element.height,
-        tableId,
-        shape: element.shape,
-        sortOrder: element.sortOrder,
-      },
     });
 
     return this.findFloorsByRestaurantId(restaurantId);

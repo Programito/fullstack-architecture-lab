@@ -1158,7 +1158,11 @@ export class DemoRestaurantReadRepository implements RestaurantReadRepository, R
       ];
     }
 
-    floor.elements = [...floor.elements, { id: `floor-element-${randomUUID()}`, ...element, tableId }].sort(
+    const nextSortOrder = Math.max(0, ...floor.elements.map((candidate) => candidate.sortOrder)) + 1;
+    floor.elements = [
+      ...floor.elements,
+      { id: `floor-element-${randomUUID()}`, ...element, tableId, sortOrder: nextSortOrder },
+    ].sort(
       (left, right) => left.sortOrder - right.sortOrder,
     );
 

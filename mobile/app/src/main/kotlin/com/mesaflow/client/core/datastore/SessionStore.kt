@@ -69,7 +69,9 @@ class SessionStore @Inject constructor(
     }
 
     suspend fun clear() {
-        dataStore.edit { it.clear() }
+        dataStore.edit { prefs ->
+            SESSION_KEYS.forEach(prefs::remove)
+        }
     }
 
     private fun String?.toListOfStrings(): List<String> =
@@ -87,5 +89,17 @@ class SessionStore @Inject constructor(
         val KEY_RESTAURANT_ID = stringPreferencesKey("restaurant_id")
         val KEY_TABLE_ID = stringPreferencesKey("table_id")
         val KEY_REFRESH_COOKIE = stringPreferencesKey("refresh_cookie")
+        val SESSION_KEYS = listOf(
+            KEY_ACCESS_TOKEN,
+            KEY_USER_ID,
+            KEY_EMAIL,
+            KEY_DISPLAY_NAME,
+            KEY_ROLES,
+            KEY_PERMISSIONS,
+            KEY_RESTAURANT_SCOPES,
+            KEY_RESTAURANT_ID,
+            KEY_TABLE_ID,
+            KEY_REFRESH_COOKIE,
+        )
     }
 }

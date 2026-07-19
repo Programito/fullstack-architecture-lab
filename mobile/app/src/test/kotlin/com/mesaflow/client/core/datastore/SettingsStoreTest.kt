@@ -2,6 +2,7 @@ package com.mesaflow.client.core.datastore
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.mesaflow.client.core.model.AppLanguage
+import com.mesaflow.client.core.model.Session
 import com.mesaflow.client.core.model.ThemeMode
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -20,6 +22,7 @@ class SettingsStoreTest {
     private lateinit var scope: CoroutineScope
     private lateinit var tmpFile: File
     private lateinit var store: SettingsStore
+    private lateinit var sessionStore: SessionStore
 
     @Before
     fun setUp() {
@@ -27,6 +30,7 @@ class SettingsStoreTest {
         tmpFile = File.createTempFile("settings-test", ".preferences_pb").also { it.delete() }
         val dataStore = PreferenceDataStoreFactory.create(scope = scope, produceFile = { tmpFile })
         store = SettingsStore(dataStore)
+        sessionStore = SessionStore(dataStore)
     }
 
     @After
@@ -57,6 +61,28 @@ class SettingsStoreTest {
         store.setLanguage(AppLanguage.CA)
 
         assertEquals(AppLanguage.CA, store.language.first())
+    }
+
+    @Test
+    fun `limpiar la sesion conserva el idioma seleccionado`() = runTest {
+        store.setLanguage(AppLanguage.ES)
+        sessionStore.saveSession(
+            session = Session(
+                accessToken = "token",
+                userId = "user-id",
+                email = "cliente@example.com",
+                displayName = "Cliente",
+                roles = listOf("customer"),
+                permissions = listOf("service"),
+                restaurantScopes = listOf("restaurant-id"),
+            ),
+            refreshCookie = "refresh-cookie",
+        )
+
+        sessionStore.clear()
+
+        assertNull(sessionStore.session.first())
+        assertEquals(AppLanguage.ES, store.language.first())
     }
 
     // No hay test de "sobrevive a reabrir el DataStore": DataStore no permite
