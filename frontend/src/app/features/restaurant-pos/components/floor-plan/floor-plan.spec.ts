@@ -432,10 +432,13 @@ describe('FloorPlan', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const moveFloorElement = vi.spyOn(store, 'moveFloorElement').mockImplementation(() => undefined);
     const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-1');
+    const elementMoved = vi.fn();
+    (fixture.componentInstance as FloorPlan).elementMoved.subscribe(elementMoved);
 
     (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragEnded(createDragEndEvent({ x: -250, y: -250 }), element!);
 
-    expect(moveFloorElement).toHaveBeenCalledWith('floor-element-1', 0, 0);
+    expect(moveFloorElement).not.toHaveBeenCalled();
+    expect(elementMoved).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-1', x: 0, y: 0 }));
   });
 
   it('clamps movement to the last valid cell when dragging past the right or bottom edge', async () => {
@@ -443,10 +446,13 @@ describe('FloorPlan', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const moveFloorElement = vi.spyOn(store, 'moveFloorElement').mockImplementation(() => undefined);
     const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-2');
+    const elementMoved = vi.fn();
+    (fixture.componentInstance as FloorPlan).elementMoved.subscribe(elementMoved);
 
     (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragEnded(createDragEndEvent({ x: 800, y: 800 }), element!);
 
-    expect(moveFloorElement).toHaveBeenCalledWith('floor-element-2', 18, 18);
+    expect(moveFloorElement).not.toHaveBeenCalled();
+    expect(elementMoved).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-2', x: 18, y: 18 }));
   });
 
   it('includes accumulated canvas scroll when placing a dragged element', async () => {
@@ -471,14 +477,16 @@ describe('FloorPlan', () => {
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const moveFloorElement = vi.spyOn(store, 'moveFloorElement').mockImplementation(() => undefined);
     const element = store.floorElements().find((floorElement) => floorElement.id === 'floor-element-1');
+    const elementMoved = vi.fn();
+    (fixture.componentInstance as FloorPlan).elementMoved.subscribe(elementMoved);
 
     (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragMoved({ pointerPosition: { x: 150, y: 120 } });
     canvas.scrollLeft = 120;
     canvas.scrollTop = 120;
     (fixture.componentInstance as unknown as FloorPlanDragHarness).handleDragEnded(createDragEndEvent({ x: 0, y: 0 }), element!);
 
-    expect(moveFloorElement).toHaveBeenCalledTimes(1);
-    expect(moveFloorElement).toHaveBeenCalledWith('floor-element-1', 5, 5);
+    expect(moveFloorElement).not.toHaveBeenCalled();
+    expect(elementMoved).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-1', x: 5, y: 5 }));
   });
 
   it('auto-scrolls the canvas when dragging near the right or bottom edge', async () => {

@@ -96,6 +96,11 @@ export class RestaurantOrderStore {
     return orders.length === 0 ? 0 : this.round(this.salesToday() / orders.length);
   });
 
+  clearOrders(): void {
+    this._ordersByTable.set({});
+    this._paidOrdersByTable.set({});
+  }
+
   hydrateProducts(products: Product[]): void {
     this._backendProducts.set(products);
   }

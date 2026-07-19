@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
 import { Router, provideRouter } from '@angular/router';
@@ -45,6 +45,17 @@ function makeContextMock(opts: {
   template: '<p>Contenido de ruta</p>',
 })
 class TestRoutePage {}
+
+@Component({
+  template: '<p>Contenido con contexto real</p>',
+})
+class ContextLoadingTestRoutePage {
+  private readonly restaurantContext = inject(RestaurantContextStore);
+
+  constructor() {
+    this.restaurantContext.load();
+  }
+}
 
 describe('RestaurantPosShellPage', () => {
   const renderPage = async (
@@ -169,6 +180,43 @@ describe('RestaurantPosShellPage', () => {
     expect(contextMock.load).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the child route mounted when it requests an already loaded real context', async () => {
+    const storage = new MemoryKeyValueStorage();
+    storage.setItem('locale', 'es');
+    storage.setItem(
+      'identity.session',
+      JSON.stringify({ userId: 'user-1', roles: ['test-role'], permissions: ['service'], accessToken: 'token' }),
+    );
+    const listRestaurants = vi.fn(() => of([RESTAURANT_A]));
+    const apiMock = new Proxy(
+      { listRestaurants } as unknown as RestaurantPosApiService,
+      { get: (target, property) => (property === 'listRestaurants' ? target.listRestaurants : () => EMPTY) },
+    );
+    const i18n = provideI18nTesting();
+    const view = await render(RestaurantPosShellPage, {
+      imports: [...i18n.imports],
+      providers: [
+        ...i18n.providers,
+        { provide: KEY_VALUE_STORAGE, useValue: storage },
+        { provide: IdentityApiService, useValue: { logout: () => of(undefined) } },
+        RestaurantContextStore,
+        { provide: RestaurantPosApiService, useValue: apiMock },
+        provideRouter([
+          {
+            path: 'restaurant-pos',
+            children: [{ path: 'service', component: ContextLoadingTestRoutePage }],
+          },
+        ]),
+      ],
+    });
+
+    await TestBed.inject(Router).navigateByUrl('/restaurant-pos/service');
+    view.fixture.detectChanges();
+
+    expect(listRestaurants).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Contenido con contexto real')).toBeTruthy();
+  });
+
   it('shows an accessible context error and retries without rendering the child route', async () => {
     const contextMock = makeContextMock({
       restaurants: [],
@@ -178,6 +226,7 @@ describe('RestaurantPosShellPage', () => {
     await renderPage(['service'], '/restaurant-pos/service', ['test-role'], vi.fn(() => of(undefined)), contextMock);
 
     const alert = screen.getByRole('alert');
+    expect(alert.getAttribute('aria-live')).toBe('assertive');
     expect(within(alert).getByText('No se pudieron cargar los restaurantes disponibles.')).toBeTruthy();
     fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }));
 

@@ -76,6 +76,31 @@ describe('runtime floor state', () => {
     expect(store.floorLoadStatus()).toBe('loaded');
     expect(store.floorLoadError()).toBeNull();
   });
+
+  it('clears active and paid order maps when the floor context is reset or becomes empty', () => {
+    const hydrateServiceFloor = () =>
+      store.hydrateServiceFloor({
+        floorId: 'floor-main',
+        floorName: 'Sala principal',
+        rows: DEFAULT_GRID_ROWS,
+        columns: DEFAULT_GRID_COLUMNS,
+        floorElements: MOCK_FLOOR_ELEMENTS,
+        restaurantTables: MOCK_RESTAURANT_TABLES,
+      });
+
+    hydrateServiceFloor();
+    expect(Object.keys(store.ordersByTable()).length).toBeGreaterThan(0);
+    expect(Object.keys(store.paidOrdersByTable()).length).toBeGreaterThan(0);
+
+    store.beginFloorLoad();
+    expect(store.ordersByTable()).toEqual({});
+    expect(store.paidOrdersByTable()).toEqual({});
+
+    hydrateServiceFloor();
+    store.completeEmptyFloorLoad();
+    expect(store.ordersByTable()).toEqual({});
+    expect(store.paidOrdersByTable()).toEqual({});
+  });
 });
 
 describe('RestaurantPosStore', () => {

@@ -57,6 +57,7 @@ export class RestaurantPosLayoutPage {
   private readonly floorLoader = inject(RestaurantFloorLoader);
   private readonly restaurantContext = inject(RestaurantContextStore);
   private readonly transloco = inject(TranslocoService);
+  private floorMutationGeneration = 0;
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly resizeModalOpen = signal(false);
   protected readonly addElementModalOpen = signal(false);
@@ -245,6 +246,7 @@ export class RestaurantPosLayoutPage {
     if (!this.floorReady() || !restaurant || !floorId || !elementId) {
       return;
     }
+    const floorContextEpoch = this.store.floorContextEpoch();
 
     const element = this.store.floorElements().find((candidate) => candidate.id === elementId);
     if (!element) {
@@ -257,6 +259,7 @@ export class RestaurantPosLayoutPage {
     if (!resizedElement || resizedElement.width !== this.resizeElementWidthInput() || resizedElement.height !== this.resizeElementHeightInput()) {
       return;
     }
+    const floorMutationGeneration = ++this.floorMutationGeneration;
 
     this.api
       .updateFloorElement(restaurant.id, floorId, elementId, {
@@ -270,11 +273,14 @@ export class RestaurantPosLayoutPage {
       })
       .subscribe({
         next: (floors) => {
-          this.applyFloorsResponse(floors);
-          this.closeResizeElementModal();
+          if (this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
+            this.closeResizeElementModal();
+          }
         },
         error: () => {
-          this.store.resizeFloorElement(elementId, element.width, element.height);
+          if (this.isCurrentFloorContext(restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
+            this.store.resizeFloorElement(elementId, element.width, element.height);
+          }
         },
       });
   }
@@ -300,12 +306,14 @@ export class RestaurantPosLayoutPage {
     const floorId = this.store.activeFloorId();
 
     if (!this.floorReady() || !restaurant || !floorId) return;
+    const floorContextEpoch = this.store.floorContextEpoch();
 
     this.store.setGridSize(this.resizeRowsInput(), this.resizeColumnsInput());
 
     if (this.store.gridRows() !== this.resizeRowsInput() || this.store.gridColumns() !== this.resizeColumnsInput()) {
       return;
     }
+    const floorMutationGeneration = ++this.floorMutationGeneration;
 
     this.api
       .updateFloor(restaurant.id, floorId, {
@@ -314,8 +322,9 @@ export class RestaurantPosLayoutPage {
         columns: this.resizeColumnsInput(),
       })
       .subscribe((floors) => {
-        this.applyFloorsResponse(floors);
-        this.closeResizeModal();
+        if (this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
+          this.closeResizeModal();
+        }
       });
   }
 
@@ -434,6 +443,7 @@ export class RestaurantPosLayoutPage {
     ) {
       return;
     }
+    const floorContextEpoch = this.store.floorContextEpoch();
 
     if (editingElementId) {
       const element = this.store.floorElements().find((candidate) => candidate.id === editingElementId);
@@ -454,6 +464,7 @@ export class RestaurantPosLayoutPage {
       if (!updatedElement) {
         return;
       }
+      const floorMutationGeneration = ++this.floorMutationGeneration;
 
       this.api
         .updateFloorElement(restaurant.id, floorId, editingElementId, {
@@ -467,8 +478,9 @@ export class RestaurantPosLayoutPage {
         })
         .subscribe({
           next: (floors) => {
-            this.applyFloorsResponse(floors);
-            this.closeAddElementModal();
+            if (this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
+              this.closeAddElementModal();
+            }
           },
           error: () => {
             // Keep the dialog open so the user can retry the edit.
@@ -477,6 +489,7 @@ export class RestaurantPosLayoutPage {
       return;
     }
 
+    const floorMutationGeneration = ++this.floorMutationGeneration;
     this.api
       .createFloorElement(restaurant.id, floorId, {
         type: placement.type,
@@ -491,8 +504,9 @@ export class RestaurantPosLayoutPage {
       })
       .subscribe({
         next: (floors) => {
-          this.applyFloorsResponse(floors);
-          this.closeAddElementModal();
+          if (this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
+            this.closeAddElementModal();
+          }
         },
         error: () => {
           // Keep the dialog open so the user can retry or choose another position.
@@ -500,9 +514,16 @@ export class RestaurantPosLayoutPage {
       });
   }
 
-  protected handleFloorElementMoved(_element: FloorElement): void {
-    if (!this.floorReady()) return;
-    this.persistCurrentFloorArrangement();
+  protected handleFloorElementMoved(element: FloorElement): void {
+    if (!this.floorReady() || !this.store.floorElements().some((candidate) => candidate.id === element.id)) return;
+    const floorContextEpoch = this.store.floorContextEpoch();
+
+    this.store.moveFloorElement(element.id, element.x, element.y);
+    const movedElement = this.store.floorElements().find((candidate) => candidate.id === element.id);
+    if (!movedElement || movedElement.x !== element.x || movedElement.y !== element.y) return;
+    const floorMutationGeneration = ++this.floorMutationGeneration;
+
+    this.persistCurrentFloorArrangement(floorContextEpoch, floorMutationGeneration);
   }
 
   protected handleFloorElementDeleted(element: FloorElement): void {
@@ -517,9 +538,11 @@ export class RestaurantPosLayoutPage {
     ) {
       return;
     }
+    const floorContextEpoch = this.store.floorContextEpoch();
+    const floorMutationGeneration = ++this.floorMutationGeneration;
 
     this.api.deleteFloorElement(restaurant.id, floorId, element.id).subscribe({
-      next: (floors) => this.applyFloorsResponse(floors),
+      next: (floors) => this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration),
       error: () => {
         // Keep the persisted layout visible so the user can retry the deletion.
       },
@@ -642,11 +665,24 @@ export class RestaurantPosLayoutPage {
     };
   }
 
-  private applyFloorsResponse(floors: RestaurantFloorsDto): void {
-    const floor = floors.floors[0];
+  private applyFloorsResponse(
+    floors: RestaurantFloorsDto,
+    restaurantId: string,
+    floorId: string,
+    floorContextEpoch: number,
+    floorMutationGeneration: number,
+  ): boolean {
+    if (
+      !this.isCurrentFloorContext(restaurantId, floorId, floorContextEpoch, floorMutationGeneration) ||
+      floors.restaurantId !== restaurantId
+    ) {
+      return false;
+    }
+
+    const floor = floors.floors.find((candidate) => candidate.id === floorId);
 
     if (!floor) {
-      return;
+      return false;
     }
 
     this.store.hydrateLayout({
@@ -674,9 +710,10 @@ export class RestaurantPosLayoutPage {
         openDuration: '0m',
       })),
     });
+    return true;
   }
 
-  private persistCurrentFloorArrangement(): void {
+  private persistCurrentFloorArrangement(floorContextEpoch: number, floorMutationGeneration: number): void {
     const restaurant = this.restaurantContext.activeRestaurant();
     const floorId = this.store.activeFloorId();
 
@@ -696,8 +733,23 @@ export class RestaurantPosLayoutPage {
         })),
       })
       .subscribe((floors) => {
-        this.applyFloorsResponse(floors);
+        this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration);
       });
+  }
+
+  private isCurrentFloorContext(
+    restaurantId: string,
+    floorId: string,
+    floorContextEpoch: number,
+    floorMutationGeneration: number,
+  ): boolean {
+    return (
+      this.floorReady() &&
+      this.restaurantContext.activeRestaurant()?.id === restaurantId &&
+      this.store.activeFloorId() === floorId &&
+      this.store.floorContextEpoch() === floorContextEpoch &&
+      this.floorMutationGeneration === floorMutationGeneration
+    );
   }
 
   private resetEditingState(): void {

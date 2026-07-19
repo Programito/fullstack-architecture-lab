@@ -21,6 +21,7 @@ export class RestaurantFloorStore {
   private readonly _restaurantTables = signal<RestaurantTable[]>([]);
   private readonly _floorLoadStatus = signal<RestaurantFloorLoadStatus>('loading');
   private readonly _floorLoadError = signal<string | null>(null);
+  private readonly _floorContextEpoch = signal(0);
 
   readonly gridRows = this._gridRows.asReadonly();
   readonly gridColumns = this._gridColumns.asReadonly();
@@ -30,6 +31,7 @@ export class RestaurantFloorStore {
   readonly restaurantTables = this._restaurantTables.asReadonly();
   readonly floorLoadStatus = this._floorLoadStatus.asReadonly();
   readonly floorLoadError = this._floorLoadError.asReadonly();
+  readonly floorContextEpoch = this._floorContextEpoch.asReadonly();
   readonly servicePoints = computed<ServicePoint[]>(() =>
     this._floorElements()
       .filter((el) => !!el.tableId && (el.type === 'table' || el.type === 'stool'))
@@ -59,6 +61,7 @@ export class RestaurantFloorStore {
   }
 
   beginFloorLoad(): void {
+    this._floorContextEpoch.update((epoch) => epoch + 1);
     this._activeFloorId.set(null);
     this._activeFloorName.set('');
     this._gridRows.set(1);
@@ -70,6 +73,7 @@ export class RestaurantFloorStore {
   }
 
   completeEmptyFloorLoad(): void {
+    this._floorContextEpoch.update((epoch) => epoch + 1);
     this._activeFloorId.set(null);
     this._activeFloorName.set('');
     this._gridRows.set(1);

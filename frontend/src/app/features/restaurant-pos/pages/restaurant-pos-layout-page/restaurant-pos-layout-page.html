@@ -67,7 +67,7 @@
           class="theme-soft-panel grid min-h-[18rem] place-items-center rounded-lg border p-6 text-center"
           [attr.role]="store.floorLoadStatus() === 'error' ? 'alert' : 'status'"
           [attr.aria-busy]="store.floorLoadStatus() === 'loading' ? 'true' : null"
-          aria-live="polite"
+          [attr.aria-live]="store.floorLoadStatus() === 'error' ? 'assertive' : 'polite'"
         >
           @if (store.floorLoadStatus() === 'loading') {
             <div data-testid="floor-loading-state" class="grid justify-items-center gap-3" aria-busy="true">

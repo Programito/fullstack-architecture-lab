@@ -251,7 +251,6 @@ export class FloorPlan implements OnDestroy {
     const nextPosition = this.clampElementPosition(element, element.x + movement.x, element.y + movement.y);
 
     if (nextPosition.x !== element.x || nextPosition.y !== element.y) {
-      this.store.moveFloorElement(element.id, nextPosition.x, nextPosition.y);
       this.elementMoved.emit({ ...element, x: nextPosition.x, y: nextPosition.y });
     }
   }

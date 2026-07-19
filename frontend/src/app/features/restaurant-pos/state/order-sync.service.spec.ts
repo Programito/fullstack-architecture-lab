@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RealtimeService, type OrderInvalidatedEvent } from '../../../core/realtime/realtime.service';
+import { IdentitySessionStore } from '../../identity/identity-session.store';
 import { RestaurantContextStore } from './restaurant-context.store';
 import { RestaurantFloorLoader } from './restaurant-floor-loader.service';
 import { OrderWriteService } from './order-write.service';
@@ -201,6 +202,67 @@ describe('OrderSyncService', () => {
     await vi.advanceTimersByTimeAsync(300);
 
     expect(mockRefreshFloor).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits for the trailing floor snapshot before requesting order details after an in-flight invalidation', async () => {
+    const initialFloor = new Subject<ServiceFloorDto>();
+    const trailingFloor = new Subject<ServiceFloorDto>();
+    const floorLoadStatus = signal<'loading' | 'loaded' | 'error'>('loading');
+    const getRestaurantServiceFloor = vi
+      .fn()
+      .mockReturnValueOnce(initialFloor.asObservable())
+      .mockReturnValueOnce(trailingFloor.asObservable());
+    const getRestaurantServicePointOrder = vi.fn(() => of(ORDER));
+
+    TestBed.configureTestingModule({
+      providers: [
+        OrderSyncService,
+        RestaurantFloorLoader,
+        { provide: IdentitySessionStore, useValue: { session: signal({ userId: 'user-1' }).asReadonly() } },
+        {
+          provide: RestaurantContextStore,
+          useValue: { activeRestaurant: activeRestaurant.asReadonly(), load: mockLoad },
+        },
+        {
+          provide: RestaurantPosStore,
+          useValue: {
+            floorLoadStatus: floorLoadStatus.asReadonly(),
+            beginFloorLoad: () => floorLoadStatus.set('loading'),
+            hydrateServiceFloor: () => floorLoadStatus.set('loaded'),
+            failFloorLoad: () => floorLoadStatus.set('error'),
+            completeEmptyFloorLoad: () => floorLoadStatus.set('loaded'),
+          },
+        },
+        {
+          provide: OrderWriteService,
+          useValue: { hydrateRemoteOrder: mockHydrateRemoteOrder, orderMutationEpoch: vi.fn(() => 0) },
+        },
+        {
+          provide: RestaurantPosApiService,
+          useValue: { getRestaurantServiceFloor, getRestaurantServicePointOrder },
+        },
+        {
+          provide: RealtimeService,
+          useValue: { invalidated$: invalidated$.asObservable() },
+        },
+      ],
+    });
+    TestBed.inject(OrderSyncService);
+    activeRestaurant.set(RESTAURANT);
+    TestBed.flushEffects();
+    await vi.advanceTimersByTimeAsync(0);
+
+    invalidated$.next({ restaurantId: 'r-1', tableId: 'table-1', orderId: 'order-1', reason: 'order.line.created' });
+    await vi.advanceTimersByTimeAsync(300);
+
+    initialFloor.next(FLOOR_WITH_LINES);
+    initialFloor.complete();
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+
+    trailingFloor.next(EMPTY_FLOOR);
+    trailingFloor.complete();
+
+    expect(getRestaurantServicePointOrder).not.toHaveBeenCalled();
   });
 
   it('ignora eventos de invalidación de un restaurante distinto al activo', async () => {

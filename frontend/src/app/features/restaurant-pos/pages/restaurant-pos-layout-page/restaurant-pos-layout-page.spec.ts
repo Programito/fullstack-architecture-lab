@@ -474,6 +474,7 @@ describe('RestaurantPosLayoutPage', () => {
     });
 
     const alert = screen.getByRole('alert');
+    expect(alert.getAttribute('aria-live')).toBe('assertive');
     expect(within(alert).getByText('No se pudo cargar el plano de mesas.')).toBeTruthy();
     expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeTruthy();
     expect(screen.queryByRole('toolbar', { name: 'Acciones de edición del plano' })).toBeNull();
@@ -577,6 +578,92 @@ describe('RestaurantPosLayoutPage', () => {
     expect(store.gridRows()).toBe(1);
     expect(store.gridColumns()).toBe(1);
     expect(api.updateFloor).not.toHaveBeenCalled();
+  });
+
+  it('ignores a late floor write response after the same floor context is cleared and recovered', async () => {
+    const updateResponse = new Subject<RestaurantFloorsDto>();
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: { updateFloor: vi.fn(() => updateResponse.asObservable()) },
+    });
+    const actions = createLayoutPageActions();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    actions.openResizeLayoutDialog();
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '10' } });
+    actions.submitResizeLayout();
+
+    store.completeEmptyFloorLoad();
+    const recoveredFloor = createDefaultFloorsResponse();
+    store.hydrateLayout({
+      floorId: 'floor-main',
+      floorName: 'Sala recuperada',
+      rows: 7,
+      columns: 8,
+      floorElements: recoveredFloor.floors[0]!.elements.map((element) => ({
+        id: element.id,
+        type: element.type,
+        label: element.label,
+        x: element.x,
+        y: element.y,
+        width: element.width,
+        height: element.height,
+        ...(element.tableId ? { tableId: element.tableId } : {}),
+        ...(element.shape ? { shape: element.shape } : {}),
+      })),
+      restaurantTables: MOCK_RESTAURANT_TABLES,
+    });
+    fixture.detectChanges();
+
+    const lateResponse = createDefaultFloorsResponse();
+    lateResponse.floors[0] = { ...lateResponse.floors[0]!, rows: 9, columns: 10 };
+    updateResponse.next(lateResponse);
+    updateResponse.complete();
+    fixture.detectChanges();
+
+    expect(store.activeFloorId()).toBe('floor-main');
+    expect(store.activeFloorName()).toBe('Sala recuperada');
+    expect(store.gridRows()).toBe(7);
+    expect(store.gridColumns()).toBe(8);
+    expect(screen.getByRole('toolbar', { name: 'Acciones de edición del plano' })).toBeTruthy();
+  });
+
+  it('keeps the newest same-floor resize when responses arrive out of order', async () => {
+    const firstResponse = new Subject<RestaurantFloorsDto>();
+    const secondResponse = new Subject<RestaurantFloorsDto>();
+    const updateFloor = vi
+      .fn()
+      .mockReturnValueOnce(firstResponse.asObservable())
+      .mockReturnValueOnce(secondResponse.asObservable());
+    const { fixture } = await renderLayoutPage('es', {
+      apiOverrides: { updateFloor },
+    });
+    const actions = createLayoutPageActions();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    actions.openResizeLayoutDialog();
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '10' } });
+    actions.submitResizeLayout();
+
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '11' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '12' } });
+    actions.submitResizeLayout();
+
+    const newest = createDefaultFloorsResponse();
+    newest.floors[0] = { ...newest.floors[0]!, rows: 11, columns: 12 };
+    secondResponse.next(newest);
+    secondResponse.complete();
+
+    const stale = createDefaultFloorsResponse();
+    stale.floors[0] = { ...stale.floors[0]!, rows: 9, columns: 10 };
+    firstResponse.next(stale);
+    firstResponse.complete();
+    fixture.detectChanges();
+
+    expect(updateFloor).toHaveBeenCalledTimes(2);
+    expect(store.gridRows()).toBe(11);
+    expect(store.gridColumns()).toBe(12);
   });
 
   it('persists a confirmed floor element deletion and applies the backend response', async () => {

@@ -1,9 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { type Observable, Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { provideI18nTesting } from '../../../shared/i18n/i18n-testing';
+import { IdentitySessionStore } from '../../identity/identity-session.store';
 import type { ServiceFloorDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RestaurantPosStore } from './restaurant-pos.store';
@@ -52,10 +54,12 @@ describe('RestaurantFloorLoader', () => {
   let store: RestaurantPosStore;
   let response: Subject<ServiceFloorDto>;
   let getRestaurantServiceFloor: ReturnType<typeof vi.fn>;
+  let identitySession: ReturnType<typeof signal<{ userId: string | null }>>;
 
   beforeEach(() => {
     response = new Subject<ServiceFloorDto>();
     getRestaurantServiceFloor = vi.fn(() => response.asObservable());
+    identitySession = signal({ userId: 'user-1' });
     const i18n = provideI18nTesting('en');
 
     TestBed.configureTestingModule({
@@ -63,6 +67,7 @@ describe('RestaurantFloorLoader', () => {
       providers: [
         ...i18n.providers,
         RestaurantFloorLoader,
+        { provide: IdentitySessionStore, useValue: { session: identitySession.asReadonly() } },
         {
           provide: RestaurantPosApiService,
           useValue: { getRestaurantServiceFloor },
@@ -108,8 +113,33 @@ describe('RestaurantFloorLoader', () => {
     expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(1);
   });
 
-  it('shares the initial in-flight request with a background refresh', () => {
+  it('clears the cached floor and refetches the same restaurant for a different user', () => {
+    loader.load('restaurant-1');
+    response.next(serviceFloorFixture);
+    response.complete();
+    expect(store.activeFloorId()).toBe('floor-main');
+
+    response = new Subject<ServiceFloorDto>();
+    identitySession.set({ userId: 'user-2' });
+    TestBed.flushEffects();
+
+    expect(store.activeFloorId()).toBeNull();
+    expect(store.floorLoadStatus()).toBe('loading');
+
+    loader.load('restaurant-1');
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+    response.next(serviceFloorFixture);
+    response.complete();
+
+    expect(store.activeFloorId()).toBe('floor-main');
+  });
+
+  it('waits for one trailing snapshot when a refresh joins the initial request', () => {
+    const trailingResponse = new Subject<ServiceFloorDto>();
     const refreshedSnapshots: ServiceFloorDto[] = [];
+    getRestaurantServiceFloor
+      .mockReturnValueOnce(response.asObservable())
+      .mockReturnValueOnce(trailingResponse.asObservable());
 
     loader.load('restaurant-1');
     refreshFloor('restaurant-1').subscribe((snapshot) => refreshedSnapshots.push(snapshot));
@@ -119,7 +149,59 @@ describe('RestaurantFloorLoader', () => {
     response.next(serviceFloorFixture);
     response.complete();
 
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+    expect(refreshedSnapshots).toEqual([]);
+
+    trailingResponse.next(serviceFloorFixture);
+    trailingResponse.complete();
+
     expect(refreshedSnapshots).toEqual([serviceFloorFixture]);
+  });
+
+  it('coalesces refreshes received during a request into one trailing request', () => {
+    const trailingResponse = new Subject<ServiceFloorDto>();
+    const firstRefreshSnapshots: ServiceFloorDto[] = [];
+    const secondRefreshSnapshots: ServiceFloorDto[] = [];
+    getRestaurantServiceFloor
+      .mockReturnValueOnce(response.asObservable())
+      .mockReturnValueOnce(trailingResponse.asObservable());
+
+    loader.load('restaurant-1');
+    refreshFloor('restaurant-1').subscribe((snapshot) => firstRefreshSnapshots.push(snapshot));
+    refreshFloor('restaurant-1').subscribe((snapshot) => secondRefreshSnapshots.push(snapshot));
+
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(1);
+
+    response.next(serviceFloorFixture);
+    response.complete();
+
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
+
+    const trailingFixture = {
+      ...serviceFloorFixture,
+      floor: { ...serviceFloorFixture.floor, name: 'Sala actualizada' },
+    };
+    trailingResponse.next(trailingFixture);
+    trailingResponse.complete();
+
+    expect(firstRefreshSnapshots).toEqual([trailingFixture]);
+    expect(secondRefreshSnapshots).toEqual([trailingFixture]);
+    expect(store.activeFloorName()).toBe('Sala actualizada');
+  });
+
+  it('cancels a superseded restaurant request before starting the next one', () => {
+    const firstRequestTeardown = vi.fn();
+    const firstRestaurantResponse = new Observable<ServiceFloorDto>(() => firstRequestTeardown);
+    const secondRestaurantResponse = new Subject<ServiceFloorDto>();
+    getRestaurantServiceFloor
+      .mockReturnValueOnce(firstRestaurantResponse)
+      .mockReturnValueOnce(secondRestaurantResponse.asObservable());
+
+    loader.load('restaurant-a');
+    loader.load('restaurant-b');
+
+    expect(firstRequestTeardown).toHaveBeenCalledTimes(1);
+    expect(getRestaurantServiceFloor).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the loaded floor visible while a background refresh is in flight', () => {

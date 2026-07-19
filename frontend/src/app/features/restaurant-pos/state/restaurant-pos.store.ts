@@ -51,6 +51,7 @@ export class RestaurantPosStore {
   readonly servicePoints = this.floor.servicePoints;
   readonly floorLoadStatus = this.floor.floorLoadStatus;
   readonly floorLoadError = this.floor.floorLoadError;
+  readonly floorContextEpoch = this.floor.floorContextEpoch;
 
   // --- order delegates ---
   readonly products = this.order.products;
@@ -269,11 +270,13 @@ export class RestaurantPosStore {
   // === hydration ===
   beginFloorLoad(): void {
     this._selectedTableId.set(null);
+    this.order.clearOrders();
     this.floor.beginFloorLoad();
   }
 
   completeEmptyFloorLoad(): void {
     this._selectedTableId.set(null);
+    this.order.clearOrders();
     this.floor.completeEmptyFloorLoad();
   }
 

@@ -954,6 +954,7 @@ describe('RestaurantPosServicePage', () => {
     await renderServicePage(undefined, apiMock);
 
     const alert = screen.getByRole('alert');
+    expect(alert.getAttribute('aria-live')).toBe('assertive');
     expect(within(alert).getByText('No se pudo cargar el plano de mesas.')).toBeTruthy();
     expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeTruthy();
     expect(screen.queryByLabelText('M1 mesa, Libre')).toBeNull();

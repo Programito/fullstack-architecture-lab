@@ -86,7 +86,7 @@ export class RestaurantPosShellPage {
   }
 
   protected retryRestaurantContext(): void {
-    this.restaurantContext.load();
+    this.restaurantContext.load({ force: true });
   }
 
   protected logout(): void {

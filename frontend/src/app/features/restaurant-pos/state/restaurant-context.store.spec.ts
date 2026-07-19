@@ -1,11 +1,20 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { type Observable, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
+import { KEY_VALUE_STORAGE, MemoryKeyValueStorage } from '../../../shared/utils/storage/key-value-storage';
+import { IdentitySessionStore } from '../../identity/identity-session.store';
+import type { RestaurantSummaryDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from './restaurant-context.store';
 
 describe('RestaurantContextStore', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [{ provide: KEY_VALUE_STORAGE, useValue: new MemoryKeyValueStorage() }],
+    });
+  });
+
   afterEach(() => {
     TestBed.resetTestingModule();
   });
@@ -41,6 +50,100 @@ describe('RestaurantContextStore', () => {
     expect(store.multipleRestaurants()).toBe(false);
     expect(store.isLoading()).toBe(false);
     expect(store.hasNoRestaurants()).toBe(false);
+  });
+
+  it('does not restart a completed context load unless the caller explicitly forces it', () => {
+    const listRestaurants = vi.fn(() =>
+      of([
+        {
+          id: 'restaurant-mesaflow-centro',
+          organizationId: 'org-demo',
+          name: 'MesaFlow Centro',
+          displayName: 'MesaFlow Centro',
+          timezone: 'Europe/Madrid',
+          currency: 'EUR',
+          isActive: true,
+        },
+      ]),
+    );
+    TestBed.configureTestingModule({
+      providers: [
+        RestaurantContextStore,
+        { provide: RestaurantPosApiService, useValue: { listRestaurants } },
+      ],
+    });
+    const store = TestBed.inject(RestaurantContextStore);
+    const load = store.load.bind(store) as (options?: { force?: boolean }) => void;
+
+    load();
+    load();
+
+    expect(listRestaurants).toHaveBeenCalledTimes(1);
+
+    load({ force: true });
+
+    expect(listRestaurants).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears the completed restaurant context and reloads it for a different user', () => {
+    const listRestaurants = vi
+      .fn<() => Observable<RestaurantSummaryDto[]>>()
+      .mockReturnValueOnce(of([restaurant('restaurant-a', 'Centro')]))
+      .mockReturnValueOnce(of([restaurant('restaurant-b', 'Norte')]));
+    TestBed.configureTestingModule({
+      providers: [
+        RestaurantContextStore,
+        { provide: RestaurantPosApiService, useValue: { listRestaurants } },
+      ],
+    });
+    const identity = TestBed.inject(IdentitySessionStore);
+    identity.setSession(sessionFor('user-a'));
+    const store = TestBed.inject(RestaurantContextStore);
+
+    store.load();
+    expect(store.activeRestaurant()?.id).toBe('restaurant-a');
+
+    identity.setSession(sessionFor('user-b'));
+    TestBed.flushEffects();
+    expect(store.restaurants()).toEqual([]);
+
+    store.load();
+
+    expect(listRestaurants).toHaveBeenCalledTimes(2);
+    expect(store.activeRestaurant()?.id).toBe('restaurant-b');
+  });
+
+  it('ignores an in-flight restaurant response from a previous user', () => {
+    const firstResponse = new Subject<RestaurantSummaryDto[]>();
+    const secondResponse = new Subject<RestaurantSummaryDto[]>();
+    const listRestaurants = vi
+      .fn<() => Subject<RestaurantSummaryDto[]>>()
+      .mockReturnValueOnce(firstResponse)
+      .mockReturnValueOnce(secondResponse);
+    TestBed.configureTestingModule({
+      providers: [
+        RestaurantContextStore,
+        { provide: RestaurantPosApiService, useValue: { listRestaurants } },
+      ],
+    });
+    const identity = TestBed.inject(IdentitySessionStore);
+    identity.setSession(sessionFor('user-a'));
+    const store = TestBed.inject(RestaurantContextStore);
+    store.load();
+
+    identity.setSession(sessionFor('user-b'));
+    TestBed.flushEffects();
+    store.load();
+    firstResponse.next([restaurant('restaurant-a', 'Centro')]);
+    firstResponse.complete();
+
+    expect(store.restaurants()).toEqual([]);
+    expect(store.isLoading()).toBe(true);
+
+    secondResponse.next([restaurant('restaurant-b', 'Norte')]);
+    secondResponse.complete();
+
+    expect(store.activeRestaurant()?.id).toBe('restaurant-b');
   });
 
   it('keeps active restaurant null when multiple restaurants are returned', () => {
@@ -153,3 +256,26 @@ describe('RestaurantContextStore', () => {
     }
   });
 });
+
+function restaurant(id: string, name: string): RestaurantSummaryDto {
+  return {
+    id,
+    organizationId: 'org-demo',
+    name,
+    displayName: name,
+    timezone: 'Europe/Madrid',
+    currency: 'EUR',
+    isActive: true,
+  };
+}
+
+function sessionFor(userId: string) {
+  return {
+    userId,
+    roles: [],
+    permissions: [],
+    accessToken: 'token',
+    scopes: { organizations: [], restaurants: [] },
+    accountType: 'regular' as const,
+  };
+}
