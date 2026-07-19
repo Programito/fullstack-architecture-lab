@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import type { RestaurantOrderDto, ServiceFloorDto, ServicePointOrderDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
@@ -368,6 +368,49 @@ describe('OrderWriteService', () => {
       expect(mockHydrateServicePointOrder).toHaveBeenCalled();
       expect(mockRefreshFloor).toHaveBeenCalledWith('r-1');
       expect(mockGetRestaurantServiceFloor).not.toHaveBeenCalled();
+    });
+
+    it('ignora el recovery tardío de un restaurante anterior sin alterar el restaurante activo', () => {
+      const lateMutation = new Subject<RestaurantOrderDto>();
+      mockAddRestaurantOrderLine.mockReturnValue(lateMutation.asObservable());
+      const service = setup();
+
+      service.addProduct('product-1');
+      vi.runAllTimers();
+      expect(mockAddRestaurantOrderLine).toHaveBeenCalled();
+
+      mockGetRestaurantServicePointOrder.mockClear();
+      mockHydrateServicePointOrder.mockClear();
+      mockRefreshFloor.mockClear();
+      mockActiveRestaurant.mockReturnValue({ ...RESTAURANT, id: 'r-2' });
+      lateMutation.error(new Error('late failure from r-1'));
+
+      expect(mockReportApiError).not.toHaveBeenCalled();
+      expect(mockGetRestaurantServicePointOrder).not.toHaveBeenCalled();
+      expect(mockHydrateServicePointOrder).not.toHaveBeenCalled();
+      expect(mockRefreshFloor).not.toHaveBeenCalled();
+    });
+
+    it('no hidrata un recovery iniciado en A si el contexto cambia a B antes de su respuesta', () => {
+      const lateMutation = new Subject<RestaurantOrderDto>();
+      const recoveryOrder = new Subject<ServicePointOrderDto>();
+      mockAddRestaurantOrderLine.mockReturnValue(lateMutation.asObservable());
+      mockGetRestaurantServicePointOrder
+        .mockReturnValueOnce(of(SERVICE_POINT_ORDER))
+        .mockReturnValueOnce(recoveryOrder.asObservable());
+      const service = setup();
+
+      service.addProduct('product-1');
+      vi.runAllTimers();
+      lateMutation.error(new Error('failure while A is active'));
+      expect(mockGetRestaurantServicePointOrder).toHaveBeenCalledTimes(2);
+
+      mockHydrateServicePointOrder.mockClear();
+      mockActiveRestaurant.mockReturnValue({ ...RESTAURANT, id: 'r-2' });
+      recoveryOrder.next(SERVICE_POINT_ORDER);
+      recoveryOrder.complete();
+
+      expect(mockHydrateServicePointOrder).not.toHaveBeenCalled();
     });
   });
 

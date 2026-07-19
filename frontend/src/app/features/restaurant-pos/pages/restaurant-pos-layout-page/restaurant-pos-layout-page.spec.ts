@@ -2,7 +2,7 @@
 import { signal } from '@angular/core';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of, Subject, throwError } from 'rxjs';
+import { EMPTY, of, Subject, throwError } from 'rxjs';
 import type { RestaurantFloorsDto, ServiceFloorDto } from '../../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { RestaurantContextStore } from '../../state/restaurant-context.store';
@@ -289,10 +289,15 @@ describe('RestaurantPosLayoutPage', () => {
         ...(options?.floorLoader ? [{ provide: RestaurantFloorLoader, useValue: options.floorLoader }] : []),
       ],
     });
+    const floorLoader = view.fixture.debugElement.injector.get(RestaurantFloorLoader);
+    const floorRefresh = typeof (floorLoader as { refresh?: unknown }).refresh === 'function'
+      ? vi.spyOn(floorLoader, 'refresh').mockReturnValue(EMPTY)
+      : null;
 
     return {
       ...view,
       api,
+      floorRefresh,
       restaurantContext,
     };
   };
@@ -635,11 +640,12 @@ describe('RestaurantPosLayoutPage', () => {
       .fn()
       .mockReturnValueOnce(firstResponse.asObservable())
       .mockReturnValueOnce(secondResponse.asObservable());
-    const { fixture } = await renderLayoutPage('es', {
+    const { fixture, floorRefresh } = await renderLayoutPage('es', {
       apiOverrides: { updateFloor },
     });
     const actions = createLayoutPageActions();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    expect(floorRefresh).not.toBeNull();
 
     actions.openResizeLayoutDialog();
     fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
@@ -654,6 +660,7 @@ describe('RestaurantPosLayoutPage', () => {
     newest.floors[0] = { ...newest.floors[0]!, rows: 11, columns: 12 };
     secondResponse.next(newest);
     secondResponse.complete();
+    expect(floorRefresh).toHaveBeenCalledTimes(1);
 
     const stale = createDefaultFloorsResponse();
     stale.floors[0] = { ...stale.floors[0]!, rows: 9, columns: 10 };
@@ -662,8 +669,44 @@ describe('RestaurantPosLayoutPage', () => {
     fixture.detectChanges();
 
     expect(updateFloor).toHaveBeenCalledTimes(2);
+    expect(floorRefresh).toHaveBeenCalledTimes(1);
     expect(store.gridRows()).toBe(11);
     expect(store.gridColumns()).toBe(12);
+  });
+
+  it('preserves operational table state while reconciling a layout write and then refreshes the floor', async () => {
+    const { fixture, floorRefresh } = await renderLayoutPage();
+    const actions = createLayoutPageActions();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    expect(floorRefresh).not.toBeNull();
+    const currentTable = store.restaurantTables().find((table) => table.id === 'table-1')!;
+    store.hydrateServicePoint({
+      table: {
+        ...currentTable,
+        status: 'occupied',
+        total: 43.21,
+        openDuration: '47m',
+        occupiedAt: '2026-07-19T14:00:00.000Z',
+        serviceStartedAt: '2026-07-19T14:01:00.000Z',
+      },
+    });
+
+    actions.openResizeLayoutDialog();
+    fireEvent.input(screen.getByLabelText('Filas'), { target: { value: '9' } });
+    fireEvent.input(screen.getByLabelText('Columnas'), { target: { value: '10' } });
+    actions.submitResizeLayout();
+
+    expect(store.restaurantTables().find((table) => table.id === 'table-1')).toEqual(
+      expect.objectContaining({
+        status: 'occupied',
+        total: 43.21,
+        openDuration: '47m',
+        occupiedAt: '2026-07-19T14:00:00.000Z',
+        serviceStartedAt: '2026-07-19T14:01:00.000Z',
+      }),
+    );
+    expect(floorRefresh).toHaveBeenCalledTimes(1);
+    expect(floorRefresh).toHaveBeenCalledWith('restaurant-mesaflow-centro');
   });
 
   it('persists a confirmed floor element deletion and applies the backend response', async () => {

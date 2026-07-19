@@ -6,6 +6,7 @@ import { IdentitySessionStore } from '../../identity/identity-session.store';
 import { mapServiceFloor } from '../api/restaurant-pos-api.mappers';
 import type { ServiceFloorDto } from '../api/restaurant-pos-api.models';
 import { RestaurantPosApiService } from '../api/restaurant-pos-api.service';
+import { RestaurantContextStore } from './restaurant-context.store';
 import { RestaurantPosStore } from './restaurant-pos.store';
 
 const FLOOR_LOAD_ERROR = 'restaurantPos.floorLoading.loadError';
@@ -15,6 +16,7 @@ export class RestaurantFloorLoader {
   private readonly api = inject(RestaurantPosApiService);
   private readonly store = inject(RestaurantPosStore);
   private readonly identity = inject(IdentitySessionStore);
+  private readonly context = inject(RestaurantContextStore);
   private restaurantId: string | null = null;
   private observedUserId = this.identity.session().userId;
   private requestGeneration = 0;
@@ -23,6 +25,8 @@ export class RestaurantFloorLoader {
     generation: number;
     snapshot$: Observable<ServiceFloorDto>;
     cancel$: Subject<void>;
+    trailingRequested: boolean;
+    preserveViewport: boolean;
   } | null = null;
 
   constructor() {
@@ -36,6 +40,7 @@ export class RestaurantFloorLoader {
   }
 
   load(restaurantId: string, options: { force?: boolean } = {}): void {
+    if (!this.isActiveRestaurant(restaurantId)) return;
     this.syncUserContext();
     const sameRestaurant = this.restaurantId === restaurantId;
     if (!options.force && sameRestaurant) return;
@@ -44,16 +49,19 @@ export class RestaurantFloorLoader {
   }
 
   refresh(restaurantId: string): Observable<ServiceFloorDto> {
+    if (!this.isActiveRestaurant(restaurantId)) return EMPTY;
     this.syncUserContext();
     const sameRestaurant = this.restaurantId === restaurantId;
 
     if (sameRestaurant && this.inFlight) {
+      this.inFlight.trailingRequested = true;
       const currentSnapshot$ = this.inFlight.snapshot$;
+      const preserveViewport = this.inFlight.preserveViewport;
       return concat(
         currentSnapshot$.pipe(ignoreElements()),
         defer(() => {
           if (this.restaurantId !== restaurantId || this.store.floorLoadStatus() === 'error') return EMPTY;
-          return this.request(restaurantId, true);
+          return this.request(restaurantId, preserveViewport);
         }),
       );
     }
@@ -66,6 +74,7 @@ export class RestaurantFloorLoader {
   }
 
   retry(restaurantId: string): void {
+    if (!this.isActiveRestaurant(restaurantId)) return;
     this.load(restaurantId, { force: true });
   }
 
@@ -96,6 +105,7 @@ export class RestaurantFloorLoader {
       takeUntil(cancel$),
       map((snapshot) => {
         if (!this.isCurrentRequest(restaurantId, generation, userId)) return null;
+        if (this.shouldWaitForTrailing(generation)) return null;
         if (snapshot.restaurantId !== restaurantId) {
           if (!preserveViewport) {
             this.store.failFloorLoad(FLOOR_LOAD_ERROR);
@@ -109,6 +119,7 @@ export class RestaurantFloorLoader {
       filter((snapshot): snapshot is ServiceFloorDto => snapshot !== null),
       catchError((error: unknown) => {
         if (!this.isCurrentRequest(restaurantId, generation, userId)) return EMPTY;
+        if (this.shouldWaitForTrailing(generation)) return EMPTY;
         if (error instanceof HttpErrorResponse && error.status === 404) {
           this.store.completeEmptyFloorLoad();
           return EMPTY;
@@ -126,7 +137,7 @@ export class RestaurantFloorLoader {
       shareReplay({ bufferSize: 1, refCount: false }),
     );
 
-    this.inFlight = { restaurantId, generation, snapshot$, cancel$ };
+    this.inFlight = { restaurantId, generation, snapshot$, cancel$, trailingRequested: false, preserveViewport };
     return snapshot$;
   }
 
@@ -151,13 +162,22 @@ export class RestaurantFloorLoader {
     return (
       this.restaurantId === restaurantId &&
       this.requestGeneration === generation &&
-      this.identity.session().userId === userId
+      this.identity.session().userId === userId &&
+      this.isActiveRestaurant(restaurantId)
     );
+  }
+
+  private isActiveRestaurant(restaurantId: string): boolean {
+    return this.context.activeRestaurant()?.id === restaurantId;
   }
 
   private clearInFlight(generation: number): void {
     if (this.inFlight?.generation === generation) {
       this.inFlight = null;
     }
+  }
+
+  private shouldWaitForTrailing(generation: number): boolean {
+    return this.inFlight?.generation === generation && this.inFlight.trailingRequested;
   }
 }

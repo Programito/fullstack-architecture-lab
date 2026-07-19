@@ -685,6 +685,8 @@ export class RestaurantPosLayoutPage {
       return false;
     }
 
+    const operationalTables = new Map(this.store.restaurantTables().map((table) => [table.id, table]));
+
     this.store.hydrateLayout({
       floorId: floor.id,
       floorName: floor.name,
@@ -701,15 +703,26 @@ export class RestaurantPosLayoutPage {
         ...(element.tableId ? { tableId: element.tableId } : {}),
         ...(element.shape ? { shape: element.shape } : {}),
       })),
-      restaurantTables: floors.tables.map((table) => ({
-        id: table.id,
-        number: table.tableNumber,
-        capacity: table.capacity,
-        status: 'free',
-        total: 0,
-        openDuration: '0m',
-      })),
+      restaurantTables: floors.tables.map((table) => {
+        const operationalTable = operationalTables.get(table.id);
+        return operationalTable
+          ? {
+              ...operationalTable,
+              id: table.id,
+              number: table.tableNumber,
+              capacity: table.capacity,
+            }
+          : {
+              id: table.id,
+              number: table.tableNumber,
+              capacity: table.capacity,
+              status: 'free',
+              total: 0,
+              openDuration: '0m',
+            };
+      }),
     });
+    this.floorLoader.refresh(restaurantId).subscribe();
     return true;
   }
 

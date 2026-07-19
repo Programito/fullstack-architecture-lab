@@ -510,11 +510,18 @@ export class OrderWriteService {
 
   private handleDirectSyncError(tableId: string, restaurantId: string): void {
     this.directSyncInFlight.delete(tableId);
+    if (!this.isCurrentRestaurant(restaurantId)) return;
+
     this.store.reportApiError('restaurantPos.errors.addLineFailed');
     this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe((serviceOrder) => {
+      if (!this.isCurrentRestaurant(restaurantId)) return;
       this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder));
     });
     this.floorLoader.refresh(restaurantId).subscribe();
+  }
+
+  private isCurrentRestaurant(restaurantId: string): boolean {
+    return this.context.activeRestaurant()?.id === restaurantId;
   }
 
   private currentDirectGroupQuantity(tableId: string, identity: DirectLineGroupIdentity): number {
