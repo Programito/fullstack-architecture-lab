@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { RestaurantOrderDto, ServicePointDetailDto } from '../../api/restaurant-pos-api.models';
-import { switchMap, tap, type Observable } from 'rxjs';
+import { finalize, switchMap, tap, type Observable } from 'rxjs';
 import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServicePointOrder, mapServiceTable } from '../../api/restaurant-pos-api.mappers';
 import { RestaurantPosApiService } from '../../api/restaurant-pos-api.service';
 import { Button } from '../../../../shared/ui/button/button';
@@ -91,6 +91,8 @@ export class RestaurantPosServicePage {
   protected readonly selectedServedLineIds = signal<readonly string[]>([]);
   protected readonly chargeKitchenConfirmOpen = signal(false);
   protected readonly isCharging = signal(false);
+  protected readonly isSendingToKitchen = signal(false);
+  protected readonly isMarkingServed = signal(false);
   private readonly pendingChargePaymentMethod = signal<Exclude<PaymentMethod, 'pending'> | null>(null);
   protected readonly serviceFloorReady = computed(
     () => this.store.floorLoadStatus() === 'loaded' && this.store.activeFloorId() !== null,
@@ -213,8 +215,8 @@ export class RestaurantPosServicePage {
       return this.translate('restaurantPos.service.noTableTitle');
     }
 
-    return servicePoint?.element.type === 'stool'
-      ? this.compactServicePointLabel(servicePoint.element)
+    return servicePoint
+      ? this.servicePointTitle(servicePoint.element)
       : this.translate('restaurantPos.service.tableTitle', { number: table.number });
   });
   protected readonly servableSelectedOrderLines = computed<readonly OrderLine[]>(() =>
@@ -493,6 +495,10 @@ export class RestaurantPosServicePage {
   }
 
   protected sendToKitchen(): void {
+    if (this.isSendingToKitchen()) {
+      return;
+    }
+
     const restaurant = this.restaurantContext.activeRestaurant();
     const tableId = this.store.selectedTableId();
 
@@ -501,10 +507,12 @@ export class RestaurantPosServicePage {
       return;
     }
 
+    this.isSendingToKitchen.set(true);
     this.orderWrite.flushPendingOrderWrites$().pipe(
       switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId, {
         lineIds: this.pendingKitchenLineIds(),
       })),
+      finalize(() => this.isSendingToKitchen.set(false)),
     ).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
@@ -541,6 +549,10 @@ export class RestaurantPosServicePage {
   }
 
   protected confirmMarkServedSelection(): void {
+    if (this.isMarkingServed()) {
+      return;
+    }
+
     const restaurant = this.restaurantContext.activeRestaurant();
     const tableId = this.store.selectedTableId();
     const selectedLineIds = this.selectedServedLineIds();
@@ -555,7 +567,10 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.api.markRestaurantServicePointServed(restaurant.id, tableId, { lineIds: [...selectedLineIds] }).subscribe({
+    this.isMarkingServed.set(true);
+    this.api.markRestaurantServicePointServed(restaurant.id, tableId, { lineIds: [...selectedLineIds] }).pipe(
+      finalize(() => this.isMarkingServed.set(false)),
+    ).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
         selectedLineIds.forEach((lineId) => this.store.markSelectedOrderLineServed(lineId));
@@ -1006,6 +1021,17 @@ export class RestaurantPosServicePage {
 
   private servicePointDisplayLabel(element: FloorElement): string {
     return element.type === 'stool' ? this.compactServicePointLabel(element) : element.label;
+  }
+
+  private servicePointTitle(element: FloorElement): string {
+    if (element.type === 'stool') {
+      return this.compactServicePointLabel(element);
+    }
+
+    const match = element.label.trim().match(/^M\s*(?<number>\d+)$/i);
+    return match?.groups?.['number']
+      ? this.translate('restaurantPos.service.tableTitle', { number: Number.parseInt(match.groups['number'], 10) })
+      : element.label;
   }
 
   private rememberCurrentServicePoint(nextTableId: string): void {

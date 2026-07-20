@@ -1088,6 +1088,48 @@ describe('RestaurantPosServicePage', () => {
     expect(screen.getByText('Todavía no hay productos añadidos.')).toBeTruthy();
   });
 
+  it('uses the visible floor label for the selected table title when the backend table number is stale', async () => {
+    const { fixture } = await renderServicePage();
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    store.hydrateServiceFloor({
+      floorId: 'floor-main',
+      floorName: 'Sala principal',
+      rows: 4,
+      columns: 4,
+      floorElements: [
+        {
+          id: 'element-m12',
+          type: 'table',
+          label: 'M12',
+          x: 1,
+          y: 1,
+          width: 2,
+          height: 2,
+          tableId: 'table-1',
+        },
+      ],
+      restaurantTables: [
+        {
+          id: 'table-1',
+          number: 37,
+          capacity: 4,
+          status: 'occupied',
+          total: 23.5,
+          openDuration: '1h 32m',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByLabelText('M12 mesa, Ocupada'));
+    fixture.detectChanges();
+
+    expect(store.selectedTableId()).toBe('table-1');
+    expect(screen.getByRole('heading', { name: 'Mesa 12' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Mesa 37' })).toBeNull();
+  });
+
   it('loads the service floor on init and fetches the selected service point from the backend', async () => {
     const apiMock = createRestaurantPosApiMock();
 
@@ -1220,6 +1262,93 @@ describe('RestaurantPosServicePage', () => {
       { lineIds: ['line-table-1-burger'] },
     );
     expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'served' }));
+  });
+
+  it('shows a busy send-to-kitchen action and ignores duplicate clicks while the request is pending', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    const deferredKitchen$ = new Subject<ServicePointDetailDto>();
+    vi.mocked(apiMock.sendRestaurantServicePointToKitchen).mockReturnValue(deferredKitchen$);
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText('M1 mesa, Libre'));
+    addProductFromSearch(fixture, /^Hamburguesa craft/);
+    const sendButton = screen.getByRole('button', { name: /Enviar el pedido de la mesa seleccionada a cocina/i });
+    fireEvent.click(sendButton);
+    fixture.detectChanges();
+    fireEvent.click(sendButton);
+    fixture.detectChanges();
+
+    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledTimes(1);
+    expect(sendButton.getAttribute('aria-busy')).toBe('true');
+    expect(sendButton.hasAttribute('disabled')).toBe(true);
+
+    deferredKitchen$.next({
+      table: {
+        id: 'table-1',
+        tableNumber: 1,
+        name: null,
+        capacity: 4,
+        status: 'waiting_kitchen',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: null,
+      serviceInfo: {
+        guestCount: 4,
+        lineCount: 1,
+        totalCents: 1250,
+        currency: 'EUR',
+        servicePhase: {
+          course: 'mains',
+          status: 'pending',
+        },
+        durationMinutes: 0,
+      },
+    });
+    deferredKitchen$.complete();
+    fixture.detectChanges();
+
+  });
+
+  it('shows a busy served action and ignores duplicate clicks while the request is pending', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    apiMock.__setServiceOrder('table-1', createServiceOrderRecord([
+      {
+        id: 'line-burger-ready',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'ready',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T10:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ], 'sent_to_kitchen'));
+    const deferredServed$ = new Subject<ServicePointDetailDto>();
+    vi.mocked(apiMock.markRestaurantServicePointServed).mockReturnValue(deferredServed$);
+    const { fixture } = await renderServicePage(undefined, apiMock);
+
+    fireEvent.click(screen.getByLabelText(/M1 mesa/i));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar todo' }));
+    const servedButton = screen.getByRole('button', { name: /Confirmar servido/i });
+    fireEvent.click(servedButton);
+    fixture.detectChanges();
+    fireEvent.click(servedButton);
+    fixture.detectChanges();
+
+    expect(apiMock.markRestaurantServicePointServed).toHaveBeenCalledTimes(1);
+    expect(servedButton.getAttribute('aria-busy')).toBe('true');
+    expect(servedButton.hasAttribute('disabled')).toBe(true);
+
+    deferredServed$.complete();
   });
 
   it('opens served selection mode and confirms only selected lines', async () => {

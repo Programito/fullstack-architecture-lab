@@ -1,4 +1,4 @@
-<aside class="theme-panel rounded-lg border p-4 shadow-sm" [attr.aria-label]="'restaurantPos.service.tablePanel' | transloco">
+<aside class="theme-panel min-w-0 max-w-full rounded-lg border p-4 shadow-sm" [attr.aria-label]="'restaurantPos.service.tablePanel' | transloco">
   @if (table(); as currentTable) {
     <header class="border-b pb-4">
       <div class="flex items-start justify-between gap-3">
@@ -44,7 +44,7 @@
       </p>
     </section>
 
-    <section class="border-t pt-4 mt-5" data-testid="service-panel-order-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('order')" [ngClass]="isWorkflowSectionHighlighted('order') ? 'rounded-md bg-cyan-50/70 px-3 pb-3 ring-2 ring-cyan-400/70 shadow-sm dark:bg-cyan-950/20' : ''" aria-labelledby="service-panel-order-heading">
+    <section class="min-w-0 max-w-full border-t pt-4 mt-5" data-testid="service-panel-order-section" [attr.data-highlighted]="isWorkflowSectionHighlighted('order')" [ngClass]="isWorkflowSectionHighlighted('order') ? 'rounded-md bg-cyan-50/70 px-3 pb-3 ring-2 ring-cyan-400/70 shadow-sm dark:bg-cyan-950/20' : ''" aria-labelledby="service-panel-order-heading">
       <div class="flex items-center justify-between gap-3">
         <div>
           <h3 id="service-panel-order-heading" class="theme-title text-sm font-semibold">{{ 'restaurantPos.service.workflow.order' | transloco }}</h3>
@@ -65,7 +65,7 @@
               </div>
               <div class="mt-2 grid divide-y rounded-md border">
                 @for (groupedLine of group.lines; track groupedLine.key) {
-                  <div class="theme-order-line px-3 py-3">
+                  <div class="theme-order-line min-w-0 max-w-full px-3 py-3">
                     <div class="flex items-start gap-3">
                       <app-product-image class="shrink-0" [imageUrl]="groupedLine.primaryLine.productSnapshot.imageUrl" alt="" shape="square" size="md" />
                       <div class="min-w-0 flex-1" data-order-line-content>
@@ -132,7 +132,7 @@
         </div>
       </div>
       <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <app-button variant="primary" expand="block" size="sm" [ariaLabel]="actionLabel('sendKitchenActionLabel')" [disabled]="!canSendToKitchen()" (pressed)="sendToKitchen.emit()">
+        <app-button variant="primary" expand="block" size="sm" [ariaLabel]="actionLabel('sendKitchenActionLabel')" [disabled]="!canSendToKitchen() || isSendingToKitchen()" [loading]="isSendingToKitchen()" (pressed)="sendToKitchen.emit()">
           <span class="inline-flex items-center gap-1.5"><app-icon name="skillet" size="sm" />{{ 'restaurantPos.service.sendKitchen' | transloco }}</span>
         </app-button>
         @if (servedSelectionMode()) {
@@ -165,13 +165,13 @@
               <app-button variant="secondary" fill="outline" expand="block" size="md" (pressed)="cancelServedSelection.emit()">
                 <span class="inline-flex w-full items-center justify-center text-center leading-tight">{{ 'restaurantPos.common.cancel' | transloco }}</span>
               </app-button>
-              <app-button variant="primary" expand="block" size="md" [ariaLabel]="actionLabel('confirmServedSelection')" (pressed)="servedSelectionConfirmed.emit()">
+              <app-button variant="primary" expand="block" size="md" [ariaLabel]="actionLabel('confirmServedSelection')" [disabled]="servedLineIds().length === 0 || isMarkingServed()" [loading]="isMarkingServed()" (pressed)="servedSelectionConfirmed.emit()">
                 <span class="inline-flex w-full items-center justify-center gap-1.5 text-center leading-tight"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.confirmServedSelection' | transloco }}</span>
               </app-button>
             </div>
           </div>
         } @else {
-          <app-button variant="secondary" expand="block" size="sm" [ariaLabel]="actionLabel('markServedActionLabel')" [disabled]="!canMarkServed() && servableLines().length === 0" (pressed)="markServed.emit()">
+          <app-button variant="secondary" expand="block" size="sm" [ariaLabel]="actionLabel('markServedActionLabel')" [disabled]="(!canMarkServed() && servableLines().length === 0) || isMarkingServed()" [loading]="isMarkingServed()" (pressed)="markServed.emit()">
             <span class="inline-flex items-center gap-1.5"><app-icon name="room_service" size="sm" />{{ 'restaurantPos.service.markServed' | transloco }}</span>
           </app-button>
         }

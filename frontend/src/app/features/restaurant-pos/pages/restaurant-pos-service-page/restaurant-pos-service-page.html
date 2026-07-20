@@ -101,6 +101,8 @@
         [servedLineIds]="selectedServedLineIds()"
         [servableLines]="servableSelectedOrderLines()"
         [isCharging]="isCharging()"
+        [isSendingToKitchen]="isSendingToKitchen()"
+        [isMarkingServed]="isMarkingServed()"
         (markServed)="enterServedSelectionMode()"
         (servedLineToggled)="toggleServedLine($event)"
         (allServedLinesSelected)="selectAllServedLines()"

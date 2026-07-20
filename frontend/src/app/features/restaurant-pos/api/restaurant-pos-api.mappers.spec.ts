@@ -1,5 +1,12 @@
-import { mapRestaurantMenuComboDefinitions, mapRestaurantMenuModifierGroups, mapRestaurantMenuToProducts, mapRestaurantOrder, mapServicePointOrder } from './restaurant-pos-api.mappers';
-import type { RestaurantMenuDto, RestaurantOrderDto, ServicePointOrderDto } from './restaurant-pos-api.models';
+import {
+  mapRestaurantMenuComboDefinitions,
+  mapRestaurantMenuModifierGroups,
+  mapRestaurantMenuToProducts,
+  mapRestaurantOrder,
+  mapServiceFloor,
+  mapServicePointOrder,
+} from './restaurant-pos-api.mappers';
+import type { RestaurantMenuDto, RestaurantOrderDto, ServiceFloorDto, ServicePointOrderDto } from './restaurant-pos-api.models';
 
 const MENU: RestaurantMenuDto = {
   id: 'menu-1',
@@ -112,6 +119,100 @@ const MENU: RestaurantMenuDto = {
     },
   ],
 };
+
+const SERVICE_FLOOR: ServiceFloorDto = {
+  restaurantId: 'restaurant-1',
+  floor: {
+    id: 'floor-1',
+    name: 'Sala',
+    rows: 12,
+    columns: 16,
+  },
+  elements: [
+    {
+      id: 'element-m12',
+      type: 'table',
+      label: 'M12',
+      x: 1,
+      y: 1,
+      width: 2,
+      height: 2,
+      tableId: 'table-37',
+      shape: 'round',
+    },
+    {
+      id: 'element-m37',
+      type: 'table',
+      label: 'M37',
+      x: 4,
+      y: 1,
+      width: 2,
+      height: 2,
+      tableId: 'table-37',
+      shape: null,
+    },
+  ],
+  servicePoints: [
+    {
+      table: {
+        id: 'table-12',
+        tableNumber: 12,
+        name: null,
+        capacity: 4,
+        status: 'occupied',
+        serviceStartedAt: '2026-07-17T12:00:00.000Z',
+      },
+      summary: {
+        lineCount: 0,
+        guestCount: 4,
+        totalCents: 2350,
+        currency: 'EUR',
+        servicePhase: {
+          course: 'none',
+          status: 'no_order',
+        },
+      },
+    },
+    {
+      table: {
+        id: 'table-37',
+        tableNumber: 37,
+        name: null,
+        capacity: 4,
+        status: 'occupied',
+        serviceStartedAt: '2026-07-17T12:00:00.000Z',
+      },
+      summary: {
+        lineCount: 0,
+        guestCount: 4,
+        totalCents: 0,
+        currency: 'EUR',
+        servicePhase: {
+          course: 'none',
+          status: 'no_order',
+        },
+      },
+    },
+  ],
+  totals: {
+    servicePointCount: 2,
+    occupiedCount: 2,
+    openOrderCount: 0,
+  },
+};
+
+describe('mapServiceFloor', () => {
+  it('keeps a visible M-number linked to the matching service table when the backend element link is stale', () => {
+    const mapped = mapServiceFloor(SERVICE_FLOOR);
+
+    expect(mapped.floorElements.find((element) => element.id === 'element-m12')).toEqual(
+      expect.objectContaining({ label: 'M12', tableId: 'table-12' }),
+    );
+    expect(mapped.floorElements.find((element) => element.id === 'element-m37')).toEqual(
+      expect.objectContaining({ label: 'M37', tableId: 'table-37' }),
+    );
+  });
+});
 
 describe('mapRestaurantMenuToProducts', () => {
   it('devuelve un producto por cada ítem del menú', () => {

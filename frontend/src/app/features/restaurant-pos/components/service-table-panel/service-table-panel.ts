@@ -41,6 +41,8 @@ export class ServiceTablePanel {
   readonly servedLineIds = input<readonly string[]>([]);
   readonly servableLines = input<readonly OrderLine[]>([]);
   readonly isCharging = input(false);
+  readonly isSendingToKitchen = input(false);
+  readonly isMarkingServed = input(false);
 
   readonly occupy = output<void>();
   readonly openProductSearch = output<void>();

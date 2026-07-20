@@ -377,6 +377,31 @@ describe('ServiceTablePanel', () => {
     expect(chargeButton.hasAttribute('disabled')).toBe(true);
   });
 
+  it('keeps kitchen actions disabled and busy while their requests are in progress', async () => {
+    const i18n = provideI18nTesting();
+    const readyLine = { ...order.lines[0], status: 'ready' as const };
+
+    await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo(table, { ...order, lines: [readyLine] }, { canSendToKitchen: true, canMarkServed: true }),
+        title: 'Mesa 1',
+        errorMessage: null,
+        isSendingToKitchen: true,
+        isMarkingServed: true,
+      },
+    });
+
+    const sendButton = screen.getByRole('button', { name: /Enviar el pedido de la mesa seleccionada a cocina/i });
+    const servedButton = screen.getByRole('button', { name: /Marcar el pedido de la mesa seleccionada como servido/i });
+
+    expect(sendButton.getAttribute('aria-busy')).toBe('true');
+    expect(sendButton.hasAttribute('disabled')).toBe(true);
+    expect(servedButton.getAttribute('aria-busy')).toBe('true');
+    expect(servedButton.hasAttribute('disabled')).toBe(true);
+  });
+
   it('emits cancellation from served-selection mode without changing the selected lines', async () => {
     const i18n = provideI18nTesting();
     const readyLine = { ...order.lines[0], status: 'ready' as const };
@@ -1360,6 +1385,29 @@ describe('ServiceTablePanel', () => {
     expect(quantityButtons).toHaveLength(2);
     expect(quantityButtons.every((button) => button.classList.contains('h-7') && button.classList.contains('w-7'))).toBe(true);
     expect(orderLine.querySelector('.overflow-x-auto')).toBeNull();
+  });
+
+  it('keeps the selected table panel width constrained for table zero', async () => {
+    const i18n = provideI18nTesting();
+    const { container } = await render(ServiceTablePanel, {
+      imports: [...i18n.imports],
+      providers: [...i18n.providers],
+      inputs: {
+        serviceInfo: createServiceInfo({ ...table, number: 0 }, groupedPendingOrder()),
+        title: 'Mesa 0',
+        errorMessage: null,
+      },
+    });
+
+    const panel = screen.getByLabelText('Panel de mesa seleccionada') as HTMLElement;
+    const orderSection = screen.getByTestId('service-panel-order-section') as HTMLElement;
+    const orderLine = container.querySelector('.theme-order-line') as HTMLElement;
+
+    expect(panel.classList).toContain('min-w-0');
+    expect(panel.classList).toContain('max-w-full');
+    expect(orderSection.classList).toContain('min-w-0');
+    expect(orderLine.classList).toContain('min-w-0');
+    expect(screen.getByRole('heading', { name: 'Mesa 0' })).toBeTruthy();
   });
 
   it('shows picked up line status without preparation controls', async () => {

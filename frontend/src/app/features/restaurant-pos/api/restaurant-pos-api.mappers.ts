@@ -60,22 +60,31 @@ export function mapServiceFloor(serviceFloor: ServiceFloorDto): {
   floorElements: FloorElement[];
   restaurantTables: RestaurantTable[];
 } {
+  const servicePointTableIds = new Set(serviceFloor.servicePoints.map((servicePoint) => servicePoint.table.id));
+  const tableIdByVisibleNumber = new Map(
+    serviceFloor.servicePoints.map((servicePoint) => [servicePoint.table.tableNumber, servicePoint.table.id] as const),
+  );
+
   return {
     floorId: serviceFloor.floor.id,
     floorName: serviceFloor.floor.name,
     rows: serviceFloor.floor.rows,
     columns: serviceFloor.floor.columns,
-    floorElements: serviceFloor.elements.map((element) => ({
-      id: element.id,
-      type: element.type,
-      label: element.label,
-      x: element.x,
-      y: element.y,
-      width: element.width,
-      height: element.height,
-      ...(element.tableId ? { tableId: element.tableId } : {}),
-      ...(element.shape ? { shape: element.shape } : {}),
-    })),
+    floorElements: serviceFloor.elements.map((element) => {
+      const tableId = resolveServiceFloorElementTableId(element, servicePointTableIds, tableIdByVisibleNumber);
+
+      return {
+        id: element.id,
+        type: element.type,
+        label: element.label,
+        x: element.x,
+        y: element.y,
+        width: element.width,
+        height: element.height,
+        ...(tableId ? { tableId } : {}),
+        ...(element.shape ? { shape: element.shape } : {}),
+      };
+    }),
     restaurantTables: serviceFloor.servicePoints.map((servicePoint) => {
       const matchingElement = serviceFloor.elements.find((element) => element.tableId === servicePoint.table.id);
       return mapServiceTable(
@@ -85,6 +94,36 @@ export function mapServiceFloor(serviceFloor: ServiceFloorDto): {
       );
     }),
   };
+}
+
+function resolveServiceFloorElementTableId(
+  element: ServiceFloorDto['elements'][number],
+  servicePointTableIds: ReadonlySet<string>,
+  tableIdByVisibleNumber: ReadonlyMap<number, string>,
+): string | null {
+  if (element.type !== 'table' && element.type !== 'stool') {
+    return element.tableId;
+  }
+
+  const visibleTableNumber = parseVisibleTableNumber(element.label);
+  if (visibleTableNumber !== null) {
+    const matchingTableId = tableIdByVisibleNumber.get(visibleTableNumber);
+    if (matchingTableId) {
+      return matchingTableId;
+    }
+  }
+
+  return element.tableId && servicePointTableIds.has(element.tableId) ? element.tableId : null;
+}
+
+function parseVisibleTableNumber(label: string): number | null {
+  const match = label.trim().match(/^M\s*(\d+)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const value = Number.parseInt(match[1], 10);
+  return Number.isFinite(value) ? value : null;
 }
 
 export function mapRestaurantMenuToProducts(menu: RestaurantMenuDto): Product[] {
