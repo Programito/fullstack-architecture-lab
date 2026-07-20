@@ -110,6 +110,8 @@ MesaFlow includes demo user types that can be used from the public demo selector
 
 The production demo runs on a free managed database tier. After a period of inactivity, the first request may need a short warm-up while the database and backend connection wake up; subsequent requests should respond normally.
 
+Realtime updates use WebSockets when the hosting platform keeps the connection available. Because the production demo runs on free hosting services, those sockets can be interrupted or delayed; the app therefore includes a configurable refresh interval as a fallback to keep service, kitchen and order views in sync.
+
 ### Future improvements
 
 - **User creation:** complete the staff onboarding flow with invitations, role assignment and restaurant-scoped access.
@@ -292,6 +294,8 @@ MesaFlow incluye tipos de usuario demo que se pueden utilizar desde el selector 
 - **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
 
 La demo de producción utiliza una base de datos gestionada en un plan gratuito. Tras un periodo de inactividad, la primera petición puede necesitar unos segundos de arranque mientras se despiertan la base de datos y la conexión del backend; después, las siguientes peticiones deberían responder con normalidad.
+
+Las actualizaciones en tiempo real usan WebSockets cuando la plataforma de hosting mantiene la conexión disponible. Como la demo de producción se ejecuta en servicios gratuitos, esos sockets pueden interrumpirse o llegar con retraso; por eso la aplicación incluye un intervalo de recarga configurable como fallback para mantener sincronizadas las vistas de servicio, cocina y pedidos.
 
 ### Mejoras futuras
 
