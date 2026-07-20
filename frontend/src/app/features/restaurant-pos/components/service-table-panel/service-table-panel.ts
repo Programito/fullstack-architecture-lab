@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Button } from '../../../../shared/ui/button/button';
@@ -62,7 +62,9 @@ export class ServiceTablePanel {
   readonly freeTable = output<void>();
 
   private readonly transloco = inject(TranslocoService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
+  private readonly durationNow = signal(Date.now());
   protected readonly freeTableConfirmOpen = signal(false);
   protected readonly removeProductConfirmOpen = signal(false);
   protected readonly paymentHistoryExpanded = signal(false);
@@ -73,6 +75,11 @@ export class ServiceTablePanel {
       this.closeRemoveProductConfirm();
     }
   });
+
+  constructor() {
+    const durationTimer = setInterval(() => this.durationNow.set(Date.now()), 30_000);
+    this.destroyRef.onDestroy(() => clearInterval(durationTimer));
+  }
   protected readonly table = computed(() => this.serviceInfo()?.table ?? null);
   protected readonly order = computed(() => this.serviceInfo()?.order ?? null);
   protected readonly guidesToOrder = computed(() => {
@@ -269,7 +276,7 @@ export class ServiceTablePanel {
       return fallback;
     }
 
-    const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
+    const minutes = Math.max(0, Math.floor((this.durationNow() - new Date(value).getTime()) / 60000));
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
 

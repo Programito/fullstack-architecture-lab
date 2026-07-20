@@ -982,6 +982,21 @@ describe('ServiceTablePanel', () => {
     expect(removeProduct).toHaveBeenCalledWith('line-burger');
   });
 
+  it('keeps service duration stable across repeated reads in the same change detection turn', async () => {
+    const { fixture } = await renderServiceTablePanel();
+    const component = fixture.componentInstance as ServiceTablePanel & {
+      serviceDuration(table: RestaurantTable): string;
+    };
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(new Date('2026-06-10T12:59:59.999Z').getTime())
+      .mockReturnValueOnce(new Date('2026-06-10T13:00:00.000Z').getTime());
+
+    const firstRead = component.serviceDuration(table);
+    const secondRead = component.serviceDuration(table);
+
+    expect(secondRead).toBe(firstRead);
+  });
+
   it('keeps the kitchen cancellation copy for a non-pending line with multiple units', async () => {
     const i18n = provideI18nTesting();
     const kitchenOrder: TableOrder = {

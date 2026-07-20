@@ -8,6 +8,8 @@ import type { CreateProductData, RestaurantMenuAdminRepository, SortOrderItem, U
 import type { Allergen, NameI18n, PreparationRoute, ProductCourse, RestaurantMenuItemView, RestaurantMenuSectionView, RestaurantProductDetail, RestaurantProductSummary } from '../../domain/restaurant-read.models';
 import { asNameI18n, toNameI18nJson } from './name-i18n.mapper';
 
+const TEMP_SORT_ORDER_OFFSET = 1_000_000;
+
 const PRODUCT_SELECT_WITH_TAX = {
   organizationId: true,
   name: true,
@@ -195,14 +197,24 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     });
     if (!menu) return false;
 
-    await this.prisma.$transaction(
-      items.map(({ id, sortOrder }) =>
-        this.prisma.menuSection.updateMany({
-          where: { id, menuId },
-          data: { sortOrder },
-        }),
-      ),
-    );
+    if (items.length > 0) {
+      await this.prisma.$transaction(
+        items.map(({ id, sortOrder }) =>
+          this.prisma.menuSection.updateMany({
+            where: { id, menuId },
+            data: { sortOrder: sortOrder + TEMP_SORT_ORDER_OFFSET },
+          }),
+        ),
+      );
+      await this.prisma.$transaction(
+        items.map(({ id, sortOrder }) =>
+          this.prisma.menuSection.updateMany({
+            where: { id, menuId },
+            data: { sortOrder },
+          }),
+        ),
+      );
+    }
     return true;
   }
 
@@ -213,14 +225,24 @@ export class PrismaRestaurantMenuAdminRepository implements RestaurantMenuAdminR
     });
     if (!section) return false;
 
-    await this.prisma.$transaction(
-      items.map(({ id, sortOrder }) =>
-        this.prisma.menuItem.updateMany({
-          where: { id, menuSectionId: sectionId },
-          data: { sortOrder },
-        }),
-      ),
-    );
+    if (items.length > 0) {
+      await this.prisma.$transaction(
+        items.map(({ id, sortOrder }) =>
+          this.prisma.menuItem.updateMany({
+            where: { id, menuSectionId: sectionId },
+            data: { sortOrder: sortOrder + TEMP_SORT_ORDER_OFFSET },
+          }),
+        ),
+      );
+      await this.prisma.$transaction(
+        items.map(({ id, sortOrder }) =>
+          this.prisma.menuItem.updateMany({
+            where: { id, menuSectionId: sectionId },
+            data: { sortOrder },
+          }),
+        ),
+      );
+    }
     return true;
   }
 

@@ -3,6 +3,84 @@ import { describe, expect, it, vi } from 'vitest';
 import { PrismaRestaurantMenuAdminRepository } from './prisma-restaurant-menu-admin.repository';
 
 describe('PrismaRestaurantMenuAdminRepository', () => {
+  it('moves menu items through temporary sort orders before applying their final order', async () => {
+    const menuItemUpdateMany = vi.fn((operation) => operation);
+    const transaction = vi.fn(async (operations: unknown[]) => operations);
+    const repository = new PrismaRestaurantMenuAdminRepository({
+      menuSection: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'section-1' }),
+      },
+      menuItem: {
+        updateMany: menuItemUpdateMany,
+      },
+      $transaction: transaction,
+    } as never);
+
+    await expect(
+      repository.reorderSectionItems('restaurant-1', 'menu-1', 'section-1', [
+        { id: 'item-a', sortOrder: 20 },
+        { id: 'item-b', sortOrder: 10 },
+      ]),
+    ).resolves.toBe(true);
+
+    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(menuItemUpdateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: 'item-a', menuSectionId: 'section-1' },
+      data: { sortOrder: 1000020 },
+    });
+    expect(menuItemUpdateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: 'item-b', menuSectionId: 'section-1' },
+      data: { sortOrder: 1000010 },
+    });
+    expect(menuItemUpdateMany).toHaveBeenNthCalledWith(3, {
+      where: { id: 'item-a', menuSectionId: 'section-1' },
+      data: { sortOrder: 20 },
+    });
+    expect(menuItemUpdateMany).toHaveBeenNthCalledWith(4, {
+      where: { id: 'item-b', menuSectionId: 'section-1' },
+      data: { sortOrder: 10 },
+    });
+  });
+
+  it('moves menu sections through temporary sort orders before applying their final order', async () => {
+    const menuSectionUpdateMany = vi.fn((operation) => operation);
+    const transaction = vi.fn(async (operations: unknown[]) => operations);
+    const repository = new PrismaRestaurantMenuAdminRepository({
+      restaurantMenu: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'menu-1' }),
+      },
+      menuSection: {
+        updateMany: menuSectionUpdateMany,
+      },
+      $transaction: transaction,
+    } as never);
+
+    await expect(
+      repository.reorderSections('restaurant-1', 'menu-1', [
+        { id: 'section-a', sortOrder: 20 },
+        { id: 'section-b', sortOrder: 10 },
+      ]),
+    ).resolves.toBe(true);
+
+    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(menuSectionUpdateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: 'section-a', menuId: 'menu-1' },
+      data: { sortOrder: 1000020 },
+    });
+    expect(menuSectionUpdateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: 'section-b', menuId: 'menu-1' },
+      data: { sortOrder: 1000010 },
+    });
+    expect(menuSectionUpdateMany).toHaveBeenNthCalledWith(3, {
+      where: { id: 'section-a', menuId: 'menu-1' },
+      data: { sortOrder: 20 },
+    });
+    expect(menuSectionUpdateMany).toHaveBeenNthCalledWith(4, {
+      where: { id: 'section-b', menuId: 'menu-1' },
+      data: { sortOrder: 10 },
+    });
+  });
+
   it('includes imageUrl in listed product summaries', async () => {
     const repository = new PrismaRestaurantMenuAdminRepository({
       restaurantProduct: {
