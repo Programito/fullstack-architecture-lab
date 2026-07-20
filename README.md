@@ -110,6 +110,13 @@ MesaFlow includes demo user types that can be used from the public demo selector
 
 The production demo runs on a free managed database tier. After a period of inactivity, the first request may need a short warm-up while the database and backend connection wake up; subsequent requests should respond normally.
 
+### Future improvements
+
+- **User creation:** complete the staff onboarding flow with invitations, role assignment and restaurant-scoped access.
+- **Restaurant creation:** add an admin workflow to create restaurants, configure service areas and initialize demo-ready data.
+- **Floor sections:** support multiple service areas such as dining room, terrace, bar and private rooms within the same restaurant.
+- **Bank payment gateways:** integrate real payment providers for card authorization, settlement status and payment reconciliation.
+
 ### Backend environment variables
 
 ```bash
@@ -285,6 +292,13 @@ MesaFlow incluye tipos de usuario demo que se pueden utilizar desde el selector 
 - **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
 
 La demo de producción utiliza una base de datos gestionada en un plan gratuito. Tras un periodo de inactividad, la primera petición puede necesitar unos segundos de arranque mientras se despiertan la base de datos y la conexión del backend; después, las siguientes peticiones deberían responder con normalidad.
+
+### Mejoras futuras
+
+- **Creación de usuarios:** completar el flujo de alta del personal con invitaciones, asignación de roles y acceso acotado por restaurante.
+- **Creación de restaurantes:** añadir un flujo de administración para crear restaurantes, configurar zonas de servicio e inicializar datos listos para demo.
+- **Secciones del plano:** permitir varias zonas de servicio, como sala, terraza, barra y reservados, dentro del mismo restaurante.
+- **Pasarelas bancarias:** integrar proveedores reales de pago para autorización de tarjeta, estado de liquidación y conciliación de cobros.
 
 ### Variables de entorno del backend
 
