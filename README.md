@@ -108,6 +108,8 @@ MesaFlow includes demo user types that can be used from the public demo selector
 - **Android:** [Download the latest APK](https://github.com/Programito/fullstack-architecture-lab/releases/download/v0.1.0/mesaflow-0.1.0.apk) ([release notes](https://github.com/Programito/fullstack-architecture-lab/releases/latest))
 - **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
 
+The production demo runs on a free managed database tier. After a period of inactivity, the first request may need a short warm-up while the database and backend connection wake up; subsequent requests should respond normally.
+
 ### Backend environment variables
 
 ```bash
@@ -281,6 +283,8 @@ MesaFlow incluye tipos de usuario demo que se pueden utilizar desde el selector 
 - **Backend:** https://fullstack-architecture-lab.onrender.com
 - **Android:** [Descargar el APK más reciente](https://github.com/Programito/fullstack-architecture-lab/releases/download/v0.1.0/mesaflow-0.1.0.apk) ([notas de la versión](https://github.com/Programito/fullstack-architecture-lab/releases/latest))
 - **Health:** https://fullstack-architecture-lab.onrender.com/api/v1/health
+
+La demo de producción utiliza una base de datos gestionada en un plan gratuito. Tras un periodo de inactividad, la primera petición puede necesitar unos segundos de arranque mientras se despiertan la base de datos y la conexión del backend; después, las siguientes peticiones deberían responder con normalidad.
 
 ### Variables de entorno del backend
 
