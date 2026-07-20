@@ -501,7 +501,7 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.orderWrite.flushPendingDirectProducts$().pipe(
+    this.orderWrite.flushPendingOrderWrites$().pipe(
       switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId, {
         lineIds: this.pendingKitchenLineIds(),
       })),
@@ -792,7 +792,7 @@ export class RestaurantPosServicePage {
     }
 
     this.isCharging.set(true);
-    this.orderWrite.flushPendingDirectProducts$().pipe(
+    this.orderWrite.flushPendingOrderWrites$().pipe(
       switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId, {
         lineIds: this.pendingKitchenLineIds(),
       })),

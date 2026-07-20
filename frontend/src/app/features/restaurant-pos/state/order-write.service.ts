@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable, of, Subject, switchMap } from 'rxjs';
+import { forkJoin, map, Observable, of, Subject, switchMap, tap } from 'rxjs';
 import type { ComboSlotSelection } from '../../menu/models/menu.models';
 import type { ModifierGroup } from '../../menu/models/modifier-group.model';
 import { MenuMockService } from '../../menu/services/menu-mock.service';
@@ -28,6 +28,7 @@ export class OrderWriteService {
   >();
   private readonly lineMutationInFlight = new Set<string>();
   private readonly lineMutationRefreshNeeded = new Set<string>();
+  private readonly lineMutationIdleWaiters = new Map<string, Subject<void>[]>();
   private readonly store = inject(RestaurantPosStore);
   private readonly api = inject(RestaurantPosApiService);
   private readonly context = inject(RestaurantContextStore);
@@ -138,6 +139,13 @@ export class OrderWriteService {
     return waiter.asObservable();
   }
 
+  flushPendingOrderWrites$(): Observable<void> {
+    return forkJoin([
+      this.flushPendingDirectProducts$(),
+      this.flushPendingLineMutations$(),
+    ]).pipe(map(() => void 0));
+  }
+
   /**
    * Aplica un pedido recibido del backend sobre el estado local.
    *
@@ -188,11 +196,17 @@ export class OrderWriteService {
   }
 
   refreshRemoteOrder(restaurantId: string, tableId: string): void {
-    const expectedEpoch = this.orderMutationEpoch(tableId);
-    this.api.getRestaurantServicePointOrder(restaurantId, tableId).subscribe({
-      next: (serviceOrder) => this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder), expectedEpoch),
+    this.refreshRemoteOrder$(restaurantId, tableId).subscribe({
       error: () => undefined,
     });
+  }
+
+  private refreshRemoteOrder$(restaurantId: string, tableId: string): Observable<void> {
+    const expectedEpoch = this.orderMutationEpoch(tableId);
+    return this.api.getRestaurantServicePointOrder(restaurantId, tableId).pipe(
+      tap((serviceOrder) => this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder), expectedEpoch)),
+      map(() => void 0),
+    );
   }
 
   private drainLineMutations(tableId: string, restaurantId: string): void {
@@ -202,8 +216,13 @@ export class OrderWriteService {
       // Si toda la tanda aplicó su propia respuesta, esa respuesta es la verdad más
       // reciente: un GET extra podría volver con una foto anterior y resucitar líneas.
       if (this.lineMutationRefreshNeeded.delete(tableId)) {
-        this.refreshRemoteOrder(restaurantId, tableId);
+        this.refreshRemoteOrder$(restaurantId, tableId).subscribe({
+          error: () => this.notifyLineMutationsIdle(tableId),
+          complete: () => this.notifyLineMutationsIdle(tableId),
+        });
+        return;
       }
+      this.notifyLineMutationsIdle(tableId);
       return;
     }
     this.lineMutationInFlight.add(tableId);
@@ -231,6 +250,40 @@ export class OrderWriteService {
     if (tableId) {
       this.noteLocalOrderMutation(tableId);
     }
+  }
+
+  private flushPendingLineMutations$(): Observable<void> {
+    const tableId = this.store.selectedTableId();
+    if (!tableId || !this.hasLineMutationWork(tableId)) {
+      return of(void 0);
+    }
+
+    const waiter = new Subject<void>();
+    const waiters = this.lineMutationIdleWaiters.get(tableId) ?? [];
+    waiters.push(waiter);
+    this.lineMutationIdleWaiters.set(tableId, waiters);
+    return waiter.asObservable();
+  }
+
+  private hasLineMutationWork(tableId: string): boolean {
+    return this.lineMutationInFlight.has(tableId) || ((this.lineMutationQueues.get(tableId)?.length ?? 0) > 0);
+  }
+
+  private notifyLineMutationsIdle(tableId: string): void {
+    if (this.hasLineMutationWork(tableId)) {
+      return;
+    }
+
+    const waiters = this.lineMutationIdleWaiters.get(tableId);
+    if (!waiters) {
+      return;
+    }
+
+    this.lineMutationIdleWaiters.delete(tableId);
+    waiters.forEach((waiter) => {
+      waiter.next();
+      waiter.complete();
+    });
   }
 
   private canOptimisticallySync(): boolean {

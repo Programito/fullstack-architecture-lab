@@ -1260,6 +1260,30 @@ describe('OrderWriteService', () => {
       expect(calls).toEqual(['first', 'second']);
     });
 
+    it('el flush de escrituras espera a la mutacion de linea en vuelo y a su refresco', () => {
+      const refreshOrder = new Subject<ServicePointOrderDto>();
+      mockGetRestaurantServicePointOrder.mockReturnValue(refreshOrder.asObservable());
+      const service = setup();
+      let resolveFirst: (() => void) | null = null;
+      const first$ = new Observable<void>((subscriber) => {
+        resolveFirst = () => {
+          subscriber.next();
+          subscriber.complete();
+        };
+      });
+      let completed = false;
+
+      service.enqueueLineMutation(TABLE_ID, 'r-1', () => first$);
+      service.flushPendingOrderWrites$().subscribe({ complete: () => { completed = true; } });
+
+      expect(completed).toBe(false);
+      resolveFirst!();
+      expect(completed).toBe(false);
+      refreshOrder.next(SERVICE_POINT_ORDER);
+      refreshOrder.complete();
+      expect(completed).toBe(true);
+    });
+
     it('continúa con las mutaciones restantes y avisa del error cuando una falla', () => {
       const service = setup();
       const calls: string[] = [];
