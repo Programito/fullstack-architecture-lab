@@ -6,158 +6,106 @@
 
 ## English
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.12.
+MesaFlow web frontend. Angular 21 standalone application organized by feature, with signal-first state, Transloco internationalization, shared UI components, Storybook, Vitest/Testing Library and Playwright.
 
-### Development server
+### Structure
 
-To start a local development server, run:
-
-```bash
-ng serve
+```txt
+src/app/
++-- core/              # cross-cutting services, HTTP, errors and observability
++-- features/          # route-level business features
++-- shared/ui/         # reusable UI components, stories and specs
++-- shared/i18n/       # Transloco setup and testing helpers
+`-- app.routes.ts      # main route map and guards
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Main feature areas include identity/login, restaurant POS service, menu administration, kitchen, layout, reservations, dashboard and developer pages.
 
-### Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Development
 
 ```bash
-ng generate component component-name
+pnpm install
+pnpm start
+# http://localhost:4200
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Useful commands
 
 ```bash
-ng generate --help
-```
-
-### Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-### Storybook
-
-To browse the component library with live reload, run:
-
-```bash
-pnpm storybook
-```
-
-This starts Storybook in dev mode (default port `6006`), rebuilding automatically as you edit components and stories.
-
-The backend also serves a **prebuilt, static** copy of Storybook at `http://localhost:3000/developer/storybook/` (see `backend/src/main.ts`). That copy is a snapshot of whatever was last built — it does **not** update automatically when you edit stories or components. After changing anything under `frontend/src/app/shared/ui/**` (or any other story), rebuild it with:
-
-```bash
+pnpm test -- --watch=false   # unit/component tests
+pnpm test:e2e                # Playwright e2e tests
+pnpm storybook               # Storybook dev server, http://localhost:6006
+pnpm build
 pnpm build-storybook
 ```
 
-This regenerates `frontend/storybook-static/`. Reload `http://localhost:3000/developer/storybook/` afterwards (no backend restart needed) to see the changes.
+Use `pnpm` from this folder. `pnpm test:e2e` runs Playwright through the project script.
 
-### Running unit tests
+### Storybook and developer resources
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+The shared UI library lives in `src/app/shared/ui/`. Keep component implementation, template, styles, tests and stories together.
 
-```bash
-ng test
-```
+The backend also serves a **prebuilt, static** copy of Storybook at `http://localhost:3000/developer/storybook/`. That copy is a snapshot of the latest `pnpm build-storybook`; it does not update automatically when stories or components change.
 
-### Running end-to-end tests
+### Quality notes
 
-For end-to-end (e2e) testing, run:
+- Prefer standalone components and feature-local state.
+- Use Angular signals for local UI state and derived view models.
+- Keep user-facing text in Transloco dictionaries.
+- Update stories and focused specs when changing shared UI components.
 
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-### Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+See [docs/architecture.md](docs/architecture.md), [docs/testing.md](docs/testing.md) and [docs/developer-tables.md](docs/developer-tables.md) for frontend-specific documentation.
 
 ---
 
 ## Español
 
-Este proyecto se generó con [Angular CLI](https://github.com/angular/angular-cli) versión 21.2.12.
+Frontend web de MesaFlow. Aplicación Angular 21 standalone organizada por features, con estado signal-first, internacionalización con Transloco, componentes UI compartidos, Storybook, Vitest/Testing Library y Playwright.
 
-### Servidor de desarrollo
+### Estructura
 
-Para arrancar un servidor de desarrollo local, ejecuta:
-
-```bash
-ng serve
+```txt
+src/app/
++-- core/              # servicios transversales, HTTP, errores y observabilidad
++-- features/          # features de negocio a nivel de ruta
++-- shared/ui/         # componentes UI reutilizables, historias y specs
++-- shared/i18n/       # configuración Transloco y helpers de test
+`-- app.routes.ts      # mapa principal de rutas y guards
 ```
 
-Con el servidor corriendo, abre el navegador en `http://localhost:4200/`. La aplicación se recarga automáticamente al modificar cualquier archivo fuente.
+Las áreas funcionales principales incluyen identidad/login, servicio del TPV, administración de menú, cocina, plano de sala, reservas, dashboard y páginas developer.
 
-### Scaffolding de código
-
-Angular CLI incluye potentes herramientas de scaffolding. Para generar un componente nuevo, ejecuta:
+### Desarrollo
 
 ```bash
-ng generate component nombre-componente
+pnpm install
+pnpm start
+# http://localhost:4200
 ```
 
-Para ver la lista completa de schematics disponibles (`components`, `directives`, `pipes`, etc.), ejecuta:
+### Comandos útiles
 
 ```bash
-ng generate --help
-```
-
-### Build
-
-Para compilar el proyecto, ejecuta:
-
-```bash
-ng build
-```
-
-Esto compila el proyecto y guarda los artefactos en el directorio `dist/`. Por defecto, el build de producción optimiza la aplicación para rendimiento y velocidad.
-
-### Storybook
-
-Para navegar la librería de componentes con recarga en vivo, ejecuta:
-
-```bash
-pnpm storybook
-```
-
-Esto arranca Storybook en modo desarrollo (puerto por defecto `6006`), reconstruyendo automáticamente al editar componentes e historias.
-
-El backend también sirve una copia **estática y precompilada** de Storybook en `http://localhost:3000/developer/storybook/` (ver `backend/src/main.ts`). Esa copia es una foto fija del último build realizado — **no** se actualiza sola al modificar historias o componentes. Tras cambiar algo en `frontend/src/app/shared/ui/**` (o cualquier otra historia), reconstrúyela con:
-
-```bash
+pnpm test -- --watch=false   # tests unitarios/componentes
+pnpm test:e2e                # tests e2e con Playwright
+pnpm storybook               # Storybook en desarrollo, http://localhost:6006
+pnpm build
 pnpm build-storybook
 ```
 
-Esto regenera `frontend/storybook-static/`. Recarga después `http://localhost:3000/developer/storybook/` (no hace falta reiniciar el backend) para ver los cambios.
+Usa `pnpm` desde esta carpeta. `pnpm test:e2e` ejecuta Playwright mediante el script del proyecto.
 
-### Tests unitarios
+### Storybook y recursos developer
 
-Para ejecutar los tests unitarios con el test runner [Vitest](https://vitest.dev/), usa:
+La librería UI compartida vive en `src/app/shared/ui/`. Mantén juntos implementación, template, estilos, tests e historias de cada componente.
 
-```bash
-ng test
-```
+El backend también sirve una copia **estática y precompilada** de Storybook en `http://localhost:3000/developer/storybook/`. Esa copia es una foto del último `pnpm build-storybook`; no se actualiza sola al cambiar historias o componentes.
 
-### Tests end-to-end
+### Notas de calidad
 
-Para tests end-to-end (e2e), ejecuta:
+- Prioriza componentes standalone y estado local por feature.
+- Usa signals de Angular para estado de UI y modelos derivados.
+- Mantén los textos visibles en los diccionarios de Transloco.
+- Actualiza historias y specs enfocados al cambiar componentes UI compartidos.
 
-```bash
-ng e2e
-```
-
-Angular CLI no incluye un framework de e2e por defecto. Puedes elegir el que mejor se ajuste a tus necesidades.
-
-### Recursos adicionales
-
-Para más información sobre Angular CLI, incluida la referencia detallada de comandos, visita la página [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli).
+Consulta [docs/architecture.md](docs/architecture.md), [docs/testing.md](docs/testing.md) y [docs/developer-tables.md](docs/developer-tables.md) para documentación específica del frontend.

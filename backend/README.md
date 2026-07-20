@@ -18,8 +18,8 @@ pnpm dev
 
 REST endpoints are versioned under `/api/v1`.
 
-Swagger, the static Storybook build and frontend architecture documentation are
-served under `/developer/*`. Every request requires a valid
+Swagger/API documentation, the static Storybook build, frontend architecture
+documentation and developer resources are served under `/developer/*`. Every request requires a valid
 `developer_access_token` cookie issued only to an active user with the
 `developer` role.
 
@@ -38,7 +38,7 @@ The shared role catalog is used by both the in-memory adapter and Prisma:
 - `waiter`: tables, orders and reservations
 - `kitchen`: order preparation
 - `customer`: table-side ordering and payment from the customer app
-- `developer`: documentation, Storybook, architecture and technical demos
+- `developer`: Swagger/API docs, Storybook, architecture, table relationships, audit logs and technical demos
 
 The fixed demo accounts come from `src/identity/domain/demo-account-catalog.ts`.
 That catalog currently includes the mobile customer account
@@ -186,8 +186,9 @@ pnpm dev
 
 Los endpoints REST están versionados bajo `/api/v1`.
 
-Swagger, el build estático de Storybook y la documentación de arquitectura del
-frontend se sirven bajo `/developer/*`. Toda petición requiere una cookie
+La documentación Swagger/API, el build estático de Storybook, la documentación
+de arquitectura del frontend y los recursos developer se sirven bajo
+`/developer/*`. Toda petición requiere una cookie
 `developer_access_token` válida, emitida solo a un usuario activo con el rol
 `developer`.
 
@@ -205,11 +206,12 @@ El catálogo de roles compartido lo usan tanto el adaptador en memoria como Pris
 - `manager`: turnos, descuentos y caja
 - `waiter`: mesas, pedidos y reservas
 - `kitchen`: preparación de pedidos
-- `developer`: documentación, Storybook, arquitectura y demos técnicas
+- `customer`: pedido y pago desde la mesa en la app cliente
+- `developer`: documentación Swagger/API, Storybook, arquitectura, relación de tablas, logs de auditoría y demos técnicas
 
-La cuenta demo mÃ³vil `customer@mesaflow.demo` tambiÃ©n forma parte del catÃ¡logo
-fijo en `src/identity/domain/demo-account-catalog.ts`, asÃ­ que tests y
-documentaciÃ³n deberÃ­an derivar sus expectativas de ese catÃ¡logo en lugar de
+La cuenta demo móvil `customer@mesaflow.demo` también forma parte del catálogo
+fijo en `src/identity/domain/demo-account-catalog.ts`, así que tests y
+documentación deberían derivar sus expectativas de ese catálogo en lugar de
 fijar el recuento antiguo de cinco cuentas.
 
 Fija `IDENTITY_MEMORY_SEED=false` para omitir el admin regular fijo y los usuarios generados.

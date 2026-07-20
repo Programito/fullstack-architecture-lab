@@ -1,6 +1,13 @@
 # MesaFlow Mobile — app cliente Android
 
-App nativa Android para que el cliente del restaurante pida desde su mesa. Kotlin + Jetpack Compose + Material 3, MVVM/UDF, feature-first. Plan completo en `../docs/plan-mobile-app-cliente.md`.
+[← README principal](../README.md)
+
+App nativa Android para que el cliente del restaurante pida desde su mesa. Kotlin + Jetpack Compose + Material 3, MVVM/UDF, feature-first.
+
+Documentación relacionada:
+
+- [Documento técnico de la app cliente](../docs/mobile-app.md)
+- [Plan de desarrollo](../docs/plan-mobile-app-cliente.md)
 
 ## Primer build (Fase 0)
 
