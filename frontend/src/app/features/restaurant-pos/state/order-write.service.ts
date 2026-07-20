@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { switchMap, type Observable } from 'rxjs';
+import { Observable, of, Subject, switchMap } from 'rxjs';
 import type { ComboSlotSelection } from '../../menu/models/menu.models';
 import type { ModifierGroup } from '../../menu/models/modifier-group.model';
 import { MenuMockService } from '../../menu/services/menu-mock.service';
@@ -18,6 +18,7 @@ export class OrderWriteService {
   private readonly pendingDirectQuantities = new Map<string, Map<string, PendingDirectGroup>>();
   private readonly directSyncInFlight = new Set<string>();
   private readonly directSyncRetryRequested = new Set<string>();
+  private readonly directSyncIdleWaiters = new Map<string, Subject<void>[]>();
   // Época de mutación local por mesa: cada mutación optimista la avanza. Una respuesta
   // remota lanzada con una época anterior se considera obsoleta y no debe pisar el estado.
   private readonly orderMutationEpochs = new Map<string, number>();
@@ -119,9 +120,22 @@ export class OrderWriteService {
   }
 
   flushPendingDirectProducts(): void {
+    this.flushPendingDirectProducts$().subscribe();
+  }
+
+  flushPendingDirectProducts$(): Observable<void> {
     const tableId = this.store.selectedTableId();
-    if (!tableId) return;
+    if (!tableId) return of(void 0);
     this.startDirectSync(tableId);
+    if (!this.hasDirectSyncWork(tableId)) {
+      return of(void 0);
+    }
+
+    const waiter = new Subject<void>();
+    const waiters = this.directSyncIdleWaiters.get(tableId) ?? [];
+    waiters.push(waiter);
+    this.directSyncIdleWaiters.set(tableId, waiters);
+    return waiter.asObservable();
   }
 
   /**
@@ -258,7 +272,10 @@ export class OrderWriteService {
   private startDirectSync(tableId: string): void {
     const pendingGroups = this.pendingDirectQuantities.get(tableId);
     const restaurant = this.context.activeRestaurant();
-    if (!pendingGroups || pendingGroups.size === 0 || !restaurant) return;
+    if (!pendingGroups || pendingGroups.size === 0 || !restaurant) {
+      this.notifyDirectSyncIdle(tableId);
+      return;
+    }
     if (this.directSyncInFlight.has(tableId)) return;
 
     const existingTimer = this.directSyncTimers.get(tableId);
@@ -505,11 +522,14 @@ export class OrderWriteService {
     if (this.directSyncRetryRequested.has(tableId)) {
       this.directSyncRetryRequested.delete(tableId);
       this.startDirectSync(tableId);
+      return;
     }
+    this.notifyDirectSyncIdle(tableId);
   }
 
   private handleDirectSyncError(tableId: string, restaurantId: string): void {
     this.directSyncInFlight.delete(tableId);
+    this.failDirectSyncWaiters(tableId);
     if (!this.isCurrentRestaurant(restaurantId)) return;
 
     this.store.reportApiError('restaurantPos.errors.addLineFailed');
@@ -518,6 +538,42 @@ export class OrderWriteService {
       this.hydrateRemoteOrder(tableId, mapServicePointOrder(serviceOrder));
     });
     this.floorLoader.refresh(restaurantId).subscribe();
+  }
+
+  private hasDirectSyncWork(tableId: string): boolean {
+    return (
+      (this.pendingDirectQuantities.get(tableId)?.size ?? 0) > 0
+      || this.directSyncInFlight.has(tableId)
+      || this.directSyncTimers.has(tableId)
+      || this.directSyncRetryRequested.has(tableId)
+    );
+  }
+
+  private notifyDirectSyncIdle(tableId: string): void {
+    if (this.hasDirectSyncWork(tableId)) {
+      return;
+    }
+
+    const waiters = this.directSyncIdleWaiters.get(tableId);
+    if (!waiters) {
+      return;
+    }
+
+    this.directSyncIdleWaiters.delete(tableId);
+    waiters.forEach((waiter) => {
+      waiter.next();
+      waiter.complete();
+    });
+  }
+
+  private failDirectSyncWaiters(tableId: string): void {
+    const waiters = this.directSyncIdleWaiters.get(tableId);
+    if (!waiters) {
+      return;
+    }
+
+    this.directSyncIdleWaiters.delete(tableId);
+    waiters.forEach((waiter) => waiter.error(new Error('direct product sync failed')));
   }
 
   private isCurrentRestaurant(restaurantId: string): boolean {

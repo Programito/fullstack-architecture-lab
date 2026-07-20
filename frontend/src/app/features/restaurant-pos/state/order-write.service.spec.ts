@@ -424,6 +424,27 @@ describe('OrderWriteService', () => {
       expect(mockAddRestaurantOrderLine).toHaveBeenCalled();
     });
 
+    it('el flush observable espera hasta que termina la sincronizacion directa', () => {
+      const pendingAdd = new Subject<RestaurantOrderDto>();
+      mockAddRestaurantOrderLine.mockReturnValue(pendingAdd.asObservable());
+      mockGetRestaurantServicePointOrder
+        .mockReturnValueOnce(of({ ...SERVICE_POINT_ORDER, lines: [] }))
+        .mockReturnValueOnce(of({ ...SERVICE_POINT_ORDER, lines: [backendDirectLine('line-backend-beer')] }));
+      const service = setup();
+      let completed = false;
+
+      service.addProduct('product-1');
+      service.flushPendingDirectProducts$().subscribe({ complete: () => { completed = true; } });
+
+      expect(mockAddRestaurantOrderLine).toHaveBeenCalled();
+      expect(completed).toBe(false);
+
+      pendingAdd.next(makeOrderDto(ORDER_ID));
+      pendingAdd.complete();
+
+      expect(completed).toBe(true);
+    });
+
     it('el flush manual sincroniza en el acto sin esperar al debounce', () => {
       const service = setup();
       service.addProduct('product-1');

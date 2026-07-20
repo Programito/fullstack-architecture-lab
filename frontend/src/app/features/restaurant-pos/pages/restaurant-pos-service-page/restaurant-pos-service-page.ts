@@ -501,7 +501,9 @@ export class RestaurantPosServicePage {
       return;
     }
 
-    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe({
+    this.orderWrite.flushPendingDirectProducts$().pipe(
+      switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId)),
+    ).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
         this.reloadOrder(restaurant.id, tableId);
@@ -788,7 +790,9 @@ export class RestaurantPosServicePage {
     }
 
     this.isCharging.set(true);
-    this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId).subscribe({
+    this.orderWrite.flushPendingDirectProducts$().pipe(
+      switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId)),
+    ).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
         this.reloadOrder(restaurant.id, tableId);
