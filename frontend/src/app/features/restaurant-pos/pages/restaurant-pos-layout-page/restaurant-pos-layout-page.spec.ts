@@ -1143,6 +1143,28 @@ describe('RestaurantPosLayoutPage', () => {
     );
   });
 
+  it('shows a spinner and prevents duplicate submits while adding an element', async () => {
+    const createResponse = new Subject<RestaurantFloorsDto>();
+    const createFloorElement = vi.fn(() => createResponse);
+    await renderLayoutPage('es', {
+      apiOverrides: {
+        createFloorElement,
+      },
+    });
+    const actions = createLayoutPageActions();
+
+    actions.openAddElementDialog();
+    actions.choosePosition(9, 9);
+    const addButton = within(screen.getByRole('dialog', { name: 'Añadir elemento' })).getByRole('button', { name: 'Añadir M8' });
+    fireEvent.click(addButton);
+    fireEvent.click(addButton);
+
+    expect(createFloorElement).toHaveBeenCalledTimes(1);
+    expect(addButton).toHaveProperty('disabled', true);
+    expect(addButton.getAttribute('aria-busy')).toBe('true');
+    expect(addButton.querySelector('.button__spinner')).toBeTruthy();
+  });
+
   it('keeps the add element dialog open when the backend create request fails', async () => {
     const apiError = new Error('create failed');
     const { fixture } = await renderLayoutPage('es', {

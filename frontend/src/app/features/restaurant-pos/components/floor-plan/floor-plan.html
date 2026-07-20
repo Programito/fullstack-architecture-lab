@@ -121,6 +121,21 @@
   </div>
 </div>
 
+<app-dialog
+  [open]="pendingDeleteElement() !== null"
+  [title]="'restaurantPos.floorPlan.deleteDialogTitle' | transloco"
+  [description]="'restaurantPos.floorPlan.deleteConfirm' | transloco"
+  [closeAriaLabel]="'restaurantPos.floorPlan.cancelDeleteElement' | transloco"
+  [cancelLabel]="'restaurantPos.floorPlan.cancelDeleteElement' | transloco"
+  [confirmLabel]="'restaurantPos.floorPlan.confirmDeleteElement' | transloco"
+  confirmVariant="danger"
+  showActions
+  size="sm"
+  (closed)="closeDeleteDialog()"
+  (cancelled)="closeDeleteDialog()"
+  (confirmed)="confirmDeleteElement()"
+/>
+
 <ng-template #floorElementVisual let-element>
   @if (element.type === 'table') {
     <div cdkDragHandle class="relative flex h-full min-h-10 w-full cursor-grab items-center justify-center active:cursor-grabbing">

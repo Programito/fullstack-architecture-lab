@@ -4,6 +4,7 @@ import { CdkScrollable } from '@angular/cdk/scrolling';
 import { Component, computed, effect, ElementRef, inject, input, OnDestroy, output, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { Dialog } from '../../../../shared/ui/dialog/dialog';
 import { Icon } from '../../../../shared/ui/icon/icon';
 import type { FloorElement, RestaurantTable, TableShape, TableStatus } from '../../models/restaurant-pos.models';
 import { RestaurantPosStore } from '../../state/restaurant-pos.store';
@@ -34,7 +35,7 @@ export type FloorPlanFocusRequest = {
 
 @Component({
   selector: 'app-floor-plan',
-  imports: [CdkDrag, CdkDragHandle, CdkDragPlaceholder, CdkDragPreview, CdkScrollable, Icon, NgClass, NgStyle, NgTemplateOutlet, TableVisual, TranslocoPipe],
+  imports: [CdkDrag, CdkDragHandle, CdkDragPlaceholder, CdkDragPreview, CdkScrollable, Dialog, Icon, NgClass, NgStyle, NgTemplateOutlet, TableVisual, TranslocoPipe],
   templateUrl: './floor-plan.html',
   styleUrl: './floor-plan.css',
 })
@@ -57,6 +58,7 @@ export class FloorPlan implements OnDestroy {
   protected readonly isPanningCanvas = signal(false);
   protected readonly showScrollHint = signal(false);
   protected readonly serviceNow = signal(new Date());
+  protected readonly pendingDeleteElement = signal<FloorElement | null>(null);
   protected readonly cells = computed(() =>
     Array.from({ length: this.store.gridRows() * this.store.gridColumns() }, (_, index) => ({
       x: index % this.store.gridColumns(),
@@ -142,12 +144,21 @@ export class FloorPlan implements OnDestroy {
 
   protected deleteElement(element: FloorElement, event: Event): void {
     event.stopPropagation();
+    this.pendingDeleteElement.set(element);
+  }
 
-    if (confirm(this.translate('restaurantPos.floorPlan.deleteConfirm'))) {
-      this.elementDeleted.emit(element);
-      this.selectedElementId.set(null);
-      this.selectedElementChange.emit(null);
-    }
+  protected closeDeleteDialog(): void {
+    this.pendingDeleteElement.set(null);
+  }
+
+  protected confirmDeleteElement(): void {
+    const element = this.pendingDeleteElement();
+    if (!element) return;
+
+    this.elementDeleted.emit(element);
+    this.selectedElementId.set(null);
+    this.selectedElementChange.emit(null);
+    this.pendingDeleteElement.set(null);
   }
 
   protected evaluateCanvasOverflow(): void {

@@ -393,8 +393,8 @@ describe('FloorPlan', () => {
     expect(resizeElement).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-1' }));
   });
 
-  it('asks for confirmation and emits the element to delete without mutating the store itself', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('opens a confirmation dialog and emits the element to delete without mutating the store itself', async () => {
+    const confirm = vi.spyOn(window, 'confirm');
     const { fixture } = await renderFloorPlan();
     const store = fixture.debugElement.injector.get(RestaurantPosStore);
     const elementDeleted = vi.fn();
@@ -403,7 +403,13 @@ describe('FloorPlan', () => {
     fireEvent.click(screen.getByLabelText('M1 floor element'));
     fireEvent.click(screen.getByRole('button', { name: 'Delete M1' }));
 
-    expect(window.confirm).toHaveBeenCalledWith('Delete this element from the layout?');
+    const dialog = screen.getByRole('dialog', { name: 'Delete layout element' });
+    expect(confirm).not.toHaveBeenCalled();
+    expect(within(dialog).getByText('Delete this element from the layout?')).toBeTruthy();
+    expect(elementDeleted).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete element' }));
+
     expect(elementDeleted).toHaveBeenCalledWith(expect.objectContaining({ id: 'floor-element-1' }));
     expect(store.floorElements().some((element) => element.id === 'floor-element-1')).toBe(true);
   });

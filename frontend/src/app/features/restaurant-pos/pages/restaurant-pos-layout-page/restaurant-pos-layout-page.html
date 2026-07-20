@@ -422,10 +422,10 @@
         </div>
 
         <div class="mt-6 flex justify-end gap-2">
-          <app-button variant="neutral" fill="outline" (pressed)="closeAddElementModal()">
+          <app-button variant="neutral" fill="outline" [disabled]="addElementSaving()" (pressed)="closeAddElementModal()">
             {{ 'restaurantPos.common.cancel' | transloco }}
           </app-button>
-          <app-button variant="neutral" [disabled]="!canAddSelectedElement()" (pressed)="addSelectedElement()">
+          <app-button variant="neutral" [disabled]="!canAddSelectedElement()" [loading]="addElementSaving()" (pressed)="addSelectedElement()">
             {{ elementActionLabel() }}
           </app-button>
         </div>

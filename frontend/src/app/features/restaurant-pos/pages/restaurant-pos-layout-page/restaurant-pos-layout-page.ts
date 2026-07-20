@@ -61,6 +61,7 @@ export class RestaurantPosLayoutPage {
   private readonly activeLang = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
   protected readonly resizeModalOpen = signal(false);
   protected readonly addElementModalOpen = signal(false);
+  protected readonly addElementSaving = signal(false);
   protected readonly resizeElementModalOpen = signal(false);
   protected readonly resizeRowsInput = signal(this.store.gridRows());
   protected readonly resizeColumnsInput = signal(this.store.gridColumns());
@@ -367,6 +368,7 @@ export class RestaurantPosLayoutPage {
 
   protected closeAddElementModal(): void {
     this.addElementModalOpen.set(false);
+    this.addElementSaving.set(false);
     this.editingElementId.set(null);
     this.selectedPosition.set(null);
     this.hoveredPosition.set(null);
@@ -429,6 +431,8 @@ export class RestaurantPosLayoutPage {
   }
 
   protected addSelectedElement(): void {
+    if (this.addElementSaving()) return;
+
     const placement = this.selectedPlacement();
     const editingElementId = this.editingElementId();
     const restaurant = this.restaurantContext.activeRestaurant();
@@ -466,6 +470,7 @@ export class RestaurantPosLayoutPage {
       }
       const floorMutationGeneration = ++this.floorMutationGeneration;
 
+      this.addElementSaving.set(true);
       this.api
         .updateFloorElement(restaurant.id, floorId, editingElementId, {
           label: updatedElement.label,
@@ -480,9 +485,12 @@ export class RestaurantPosLayoutPage {
           next: (floors) => {
             if (this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
               this.closeAddElementModal();
+            } else {
+              this.addElementSaving.set(false);
             }
           },
           error: () => {
+            this.addElementSaving.set(false);
             // Keep the dialog open so the user can retry the edit.
           },
         });
@@ -490,6 +498,7 @@ export class RestaurantPosLayoutPage {
     }
 
     const floorMutationGeneration = ++this.floorMutationGeneration;
+    this.addElementSaving.set(true);
     this.api
       .createFloorElement(restaurant.id, floorId, {
         type: placement.type,
@@ -506,9 +515,12 @@ export class RestaurantPosLayoutPage {
         next: (floors) => {
           if (this.applyFloorsResponse(floors, restaurant.id, floorId, floorContextEpoch, floorMutationGeneration)) {
             this.closeAddElementModal();
+          } else {
+            this.addElementSaving.set(false);
           }
         },
         error: () => {
+          this.addElementSaving.set(false);
           // Keep the dialog open so the user can retry or choose another position.
         },
       });
