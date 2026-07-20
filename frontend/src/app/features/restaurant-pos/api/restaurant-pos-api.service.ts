@@ -36,6 +36,7 @@ import type {
   ServiceFloorDto,
   ServicePointDetailDto,
   ServicePointOrderDto,
+  SendRestaurantServicePointToKitchenRequest,
   ServiceWindowDto,
   ProductImageUploadSignatureDto,
   UpdateFloorElementRequest,
@@ -193,8 +194,15 @@ export class RestaurantPosApiService {
     return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/occupy`, {});
   }
 
-  sendRestaurantServicePointToKitchen(restaurantId: string, tableId: string): Observable<ServicePointDetailDto> {
-    return this.http.post<ServicePointDetailDto>(`${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/send-to-kitchen`, {});
+  sendRestaurantServicePointToKitchen(
+    restaurantId: string,
+    tableId: string,
+    request: SendRestaurantServicePointToKitchenRequest = {},
+  ): Observable<ServicePointDetailDto> {
+    return this.http.post<ServicePointDetailDto>(
+      `${this.restaurantsUrl}/${restaurantId}/service-points/${tableId}/send-to-kitchen`,
+      request,
+    );
   }
 
   markRestaurantServicePointServed(

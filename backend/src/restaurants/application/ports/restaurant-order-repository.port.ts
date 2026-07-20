@@ -21,7 +21,7 @@ export interface RestaurantOrderRepository {
   deletePendingLine(command: DeleteOrderLineCommand): Promise<RestaurantOrderView>;
   cancelLine(command: CancelOrderLineCommand): Promise<RestaurantOrderView>;
   updateLineStatus(command: UpdateOrderLineStatusCommand): Promise<RestaurantOrderView>;
-  sendPendingLinesToKitchen(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null>;
+  sendPendingLinesToKitchen(restaurantId: string, tableId: string, lineIds?: string[]): Promise<RestaurantOrderView | null>;
   markActiveLinesServed(restaurantId: string, tableId: string, lineIds?: string[]): Promise<RestaurantOrderView | null>;
   registerPayment(command: RegisterOrderPaymentCommand): Promise<RestaurantOrderView>;
   clearActiveByTable(restaurantId: string, tableId: string): Promise<void>;

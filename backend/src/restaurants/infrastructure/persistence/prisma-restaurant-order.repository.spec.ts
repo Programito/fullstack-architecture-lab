@@ -43,6 +43,156 @@ describe('PrismaRestaurantOrderRepository.markActiveLinesServed', () => {
   });
 });
 
+describe('PrismaRestaurantOrderRepository.cancelLine', () => {
+  it('cancels a pending line that has already been sent to kitchen', async () => {
+    const tx = {
+      orderLine: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'line-coke',
+          status: 'pending',
+          sentToKitchenAt: new Date('2026-07-20T10:00:00.000Z'),
+          order: { discountTotalCents: 0 },
+        }),
+        update: vi.fn().mockResolvedValue({}),
+        findMany: vi.fn().mockResolvedValue([
+          { subtotalCents: 320, taxCents: 0, status: 'cancelled' },
+        ]),
+      },
+      payment: { findFirst: vi.fn().mockResolvedValue(null) },
+      order: { update: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      order: { findFirstOrThrow: vi.fn().mockResolvedValue({
+        id: 'order-1',
+        dailyNumber: 1,
+        restaurantId: 'restaurant-1',
+        tableId: 'table-2',
+        status: 'open',
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 0,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 0,
+        closedAt: null,
+        clientOrigin: null,
+        createdAt: new Date('2026-07-20T10:00:00.000Z'),
+        updatedAt: new Date('2026-07-20T10:00:00.000Z'),
+        payments: [],
+        lines: [],
+      }) },
+    };
+    const repository = new PrismaRestaurantOrderRepository(prisma as never);
+
+    await repository.cancelLine({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-coke',
+      reason: 'removed_by_staff',
+    });
+
+    expect(tx.orderLine.update).toHaveBeenCalledWith({
+      where: { id: 'line-coke' },
+      data: expect.objectContaining({ status: 'cancelled', cancellationReason: 'removed_by_staff' }),
+    });
+  });
+});
+
+describe('PrismaRestaurantOrderRepository.updateLineStatus', () => {
+  it('allows kitchen to mark a preparing line directly as served', async () => {
+    const tx = {
+      orderLine: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'line-coke', status: 'preparing' }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      order: { findFirstOrThrow: vi.fn().mockResolvedValue({
+        id: 'order-1',
+        dailyNumber: 1,
+        restaurantId: 'restaurant-1',
+        tableId: 'table-2',
+        status: 'open',
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 320,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 320,
+        closedAt: null,
+        clientOrigin: null,
+        createdAt: new Date('2026-07-20T10:00:00.000Z'),
+        updatedAt: new Date('2026-07-20T10:00:00.000Z'),
+        payments: [],
+        lines: [],
+      }) },
+    };
+    const repository = new PrismaRestaurantOrderRepository(prisma as never);
+
+    await repository.updateLineStatus({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-coke',
+      status: 'served',
+    });
+
+    expect(tx.orderLine.update).toHaveBeenCalledWith({
+      where: { id: 'line-coke' },
+      data: { status: 'served' },
+    });
+  });
+
+  it('allows kitchen to mark a queued sent line directly as served when requests race', async () => {
+    const tx = {
+      orderLine: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'line-coke',
+          status: 'pending',
+          sentToKitchenAt: new Date('2026-07-20T10:00:00.000Z'),
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      order: { findFirstOrThrow: vi.fn().mockResolvedValue({
+        id: 'order-1',
+        dailyNumber: 1,
+        restaurantId: 'restaurant-1',
+        tableId: 'table-2',
+        status: 'open',
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 320,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 320,
+        closedAt: null,
+        clientOrigin: null,
+        createdAt: new Date('2026-07-20T10:00:00.000Z'),
+        updatedAt: new Date('2026-07-20T10:00:00.000Z'),
+        payments: [],
+        lines: [],
+      }) },
+    };
+    const repository = new PrismaRestaurantOrderRepository(prisma as never);
+
+    await repository.updateLineStatus({
+      restaurantId: 'restaurant-1',
+      orderId: 'order-1',
+      lineId: 'line-coke',
+      status: 'served',
+    });
+
+    expect(tx.orderLine.update).toHaveBeenCalledWith({
+      where: { id: 'line-coke' },
+      data: { status: 'served' },
+    });
+  });
+});
+
 describe('PrismaRestaurantOrderRepository order image contract', () => {
   it('preserves the current product image URL and returns null when the relation is absent', async () => {
     const prisma = {

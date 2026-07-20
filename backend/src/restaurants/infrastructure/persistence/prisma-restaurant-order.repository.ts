@@ -548,7 +548,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     const orderId = await this.prisma.$transaction(async (tx) => {
       const line = await tx.orderLine.findFirst({
         where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
-        select: { id: true, status: true, order: { select: { discountTotalCents: true } } },
+        select: { id: true, status: true, sentToKitchenAt: true, order: { select: { discountTotalCents: true } } },
       });
 
       if (!line) {
@@ -556,9 +556,10 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
           applicationError('order_line_not_found', `Order line "${command.lineId}" not found.`, { lineId: command.lineId }),
         );
       }
-      if (line.status !== 'preparing' && line.status !== 'ready') {
+      const canCancel = line.status === 'preparing' || line.status === 'ready' || (line.status === 'pending' && line.sentToKitchenAt);
+      if (!canCancel) {
         throw new ApplicationErrorException(
-          applicationError('invalid_order_state', 'Only preparing or ready lines can be cancelled.', { status: line.status }),
+          applicationError('invalid_order_state', 'Only kitchen lines can be cancelled.', { status: line.status }),
         );
       }
 
@@ -598,7 +599,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       sent_to_kitchen: ['preparing'],
       preparing: ['pending'],
       ready: ['preparing'],
-      served: ['ready'],
+      served: ['preparing', 'ready'],
     };
     // sent_to_kitchen is a service-layer concept; in the DB it maps back to pending
     const DB_STATUS_MAP: Partial<Record<KitchenOrderLineStatus, OrderLineStatus>> = {
@@ -608,7 +609,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     const orderId = await this.prisma.$transaction(async (tx) => {
       const line = await tx.orderLine.findFirst({
         where: { id: command.lineId, orderId: command.orderId, order: { restaurantId: command.restaurantId } },
-        select: { id: true, status: true },
+        select: { id: true, status: true, sentToKitchenAt: true },
       });
 
       if (!line) {
@@ -618,7 +619,8 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
       }
 
       const allowedFrom = ALLOWED_TRANSITIONS[command.status];
-      if (!allowedFrom.includes(line.status as OrderLineStatus)) {
+      const isServedFromQueuedKitchenLine = command.status === 'served' && line.status === 'pending' && line.sentToKitchenAt;
+      if (!allowedFrom.includes(line.status as OrderLineStatus) && !isServedFromQueuedKitchenLine) {
         throw new ApplicationErrorException(
           applicationError('invalid_order_state', `Cannot transition line from "${line.status}" to "${command.status}".`, {
             currentStatus: line.status,
@@ -636,7 +638,7 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     return this.getOrderOrThrow(command.restaurantId, orderId);
   }
 
-  async sendPendingLinesToKitchen(restaurantId: string, tableId: string): Promise<RestaurantOrderView | null> {
+  async sendPendingLinesToKitchen(restaurantId: string, tableId: string, lineIds?: string[]): Promise<RestaurantOrderView | null> {
     const order = await this.prisma.order.findFirst({
       where: { restaurantId, tableId, status: { in: ['open', 'pending_payment'] } },
       select: { id: true },
@@ -647,7 +649,12 @@ export class PrismaRestaurantOrderRepository implements RestaurantOrderRepositor
     // "Pendiente" del tablero de cocina (status pending + sentToKitchenAt) y
     // es cocina quien la mueve a 'preparing' cuando se pone con ella.
     await this.prisma.orderLine.updateMany({
-      where: { orderId: order.id, status: 'pending', sentToKitchenAt: null },
+      where: {
+        orderId: order.id,
+        status: 'pending',
+        sentToKitchenAt: null,
+        ...(lineIds ? { id: { in: lineIds } } : {}),
+      },
       data: { sentToKitchenAt: new Date() },
     });
 

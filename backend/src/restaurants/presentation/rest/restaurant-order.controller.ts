@@ -35,6 +35,7 @@ import { CancelRestaurantOrderLineDto } from './dto/cancel-restaurant-order-line
 import { UpdateRestaurantOrderLineStatusDto } from './dto/update-restaurant-order-line-status.dto';
 import { RegisterRestaurantOrderPaymentDto } from './dto/register-restaurant-order-payment.dto';
 import { MarkRestaurantServicePointServedDto } from './dto/mark-restaurant-service-point-served.dto';
+import { SendRestaurantServicePointToKitchenDto } from './dto/send-restaurant-service-point-to-kitchen.dto';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
@@ -322,8 +323,9 @@ export class RestaurantOrderController {
     @Param('id') id: string,
     @Param('tableId') tableId: string,
     @Req() request: AuthenticatedRequest,
+    @Body() body?: SendRestaurantServicePointToKitchenDto,
   ): Promise<ServicePointDetailResponseDto> {
-    const detail = unwrapResultOrThrow(await this.sendRestaurantServicePointOrderToKitchen.execute(id, tableId));
+    const detail = unwrapResultOrThrow(await this.sendRestaurantServicePointOrderToKitchen.execute(id, tableId, body?.lineIds));
     await this.audit.record({
       ...auditContext(request, id),
       event: 'order.service-point.sent-to-kitchen',

@@ -182,6 +182,10 @@ export type ServicePointOrderDto = {
   lines: ServicePointOrderLineDto[];
 };
 
+export type SendRestaurantServicePointToKitchenRequest = {
+  lineIds?: string[];
+};
+
 export type RestaurantReservationTableDto = {
   id: string;
   tableNumber: number;

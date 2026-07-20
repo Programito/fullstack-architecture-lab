@@ -1123,8 +1123,81 @@ describe('RestaurantPosServicePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
     fixture.detectChanges();
 
-    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledWith('restaurant-mesaflow-centro', 'table-1');
+    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'table-1',
+      { lineIds: expect.arrayContaining([expect.any(String)]) },
+    );
     expect(store.selectedTable()).toEqual(expect.objectContaining({ id: 'table-1', status: 'waiting_kitchen' }));
+  });
+
+  it('sends only visible pending line ids to kitchen so stale hidden lines stay out', async () => {
+    const apiMock = createRestaurantPosApiMock();
+    apiMock.__setServiceOrder('table-1', createServiceOrderRecord([
+      {
+        id: 'line-visible-burger',
+        productName: 'Hamburguesa craft',
+        productType: 'simple',
+        preparationRoute: 'kitchen',
+        quantity: 1,
+        unitPriceCents: 1250,
+        subtotalCents: 1250,
+        status: 'pending',
+        course: 'mains',
+        kitchenNote: null,
+        updatedAt: '2026-07-17T10:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+      {
+        id: 'line-hidden-coca-cola',
+        productName: 'Coca-Cola',
+        productType: 'simple',
+        preparationRoute: 'bar',
+        quantity: 1,
+        unitPriceCents: 320,
+        subtotalCents: 320,
+        status: 'pending',
+        course: 'drinks',
+        kitchenNote: null,
+        updatedAt: '2026-07-16T10:00:00.000Z',
+        modifiers: [],
+        comboSlots: [],
+      },
+    ]));
+    const { fixture } = await renderServicePage(undefined, apiMock);
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+
+    fireEvent.click(screen.getByLabelText(/M1 mesa/i));
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder({
+      ...createServiceOrderRecord([
+        {
+          id: 'line-visible-burger',
+          productName: 'Hamburguesa craft',
+          productType: 'simple',
+          preparationRoute: 'kitchen',
+          quantity: 1,
+          unitPriceCents: 1250,
+          subtotalCents: 1250,
+          status: 'pending',
+          course: 'mains',
+          kitchenNote: null,
+          updatedAt: '2026-07-17T10:00:00.000Z',
+          modifiers: [],
+          comboSlots: [],
+        },
+      ]),
+    }));
+    fixture.detectChanges();
+
+    fireEvent.click(screen.getByRole('button', { name: /Cocina/i }));
+    fixture.detectChanges();
+
+    expect(apiMock.sendRestaurantServicePointToKitchen).toHaveBeenCalledWith(
+      'restaurant-mesaflow-centro',
+      'table-1',
+      { lineIds: ['line-visible-burger'] },
+    );
   });
 
   it('marks the selected table as served through the backend endpoint', async () => {

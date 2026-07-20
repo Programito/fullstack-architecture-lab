@@ -465,6 +465,37 @@ describe('RestaurantPosApiService', () => {
     http.verify();
   });
 
+  it('posts selected line ids when sending a service point to kitchen', () => {
+    const { service, http } = setup();
+
+    service.sendRestaurantServicePointToKitchen('restaurant-mesaflow-centro', 'table-3', { lineIds: ['line-1'] }).subscribe();
+
+    const request = http.expectOne('/api/v1/restaurants/restaurant-mesaflow-centro/service-points/table-3/send-to-kitchen');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ lineIds: ['line-1'] });
+    request.flush({
+      table: {
+        id: 'table-3',
+        tableNumber: 3,
+        name: 'Mesa 3',
+        capacity: 6,
+        status: 'waiting_kitchen',
+        occupiedAt: '2026-06-22T10:15:00.000Z',
+        serviceStartedAt: '2026-06-22T10:15:00.000Z',
+      },
+      floorElement: null,
+      serviceInfo: {
+        guestCount: 6,
+        lineCount: 1,
+        totalCents: 1250,
+        currency: 'EUR',
+        servicePhase: { course: 'mains', status: 'in_progress' },
+        durationMinutes: 12,
+      },
+    });
+    http.verify();
+  });
+
   it('posts mark served for one service point', () => {
     const { service, http } = setup();
     let result: unknown;

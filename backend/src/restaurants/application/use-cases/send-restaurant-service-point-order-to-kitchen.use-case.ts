@@ -18,7 +18,11 @@ export class SendRestaurantServicePointOrderToKitchenUseCase {
     @Inject(RESTAURANT_ORDER_REPOSITORY) private readonly orders: RestaurantOrderRepository,
   ) {}
 
-  async execute(restaurantId: string, tableId: string): Promise<Result<ServicePointDetailView, ApplicationError>> {
+  async execute(
+    restaurantId: string,
+    tableId: string,
+    lineIds?: string[],
+  ): Promise<Result<ServicePointDetailView, ApplicationError>> {
     const floors = await this.restaurants.findFloorsByRestaurantId(restaurantId);
 
     if (!floors) {
@@ -32,10 +36,17 @@ export class SendRestaurantServicePointOrderToKitchenUseCase {
     const persistentOrder = await this.orders.findActiveByTable(restaurantId, tableId);
 
     if (persistentOrder) {
-      if (!persistentOrder.lines.some((line) => line.status === 'pending')) {
+      const pendingLines = persistentOrder.lines.filter((line) => line.status === 'pending');
+      const eligibleLines = lineIds ? pendingLines.filter((line) => lineIds.includes(line.id)) : pendingLines;
+
+      if (eligibleLines.length === 0) {
         return err(invalidServiceAction({ restaurantId, tableId, action: 'send_to_kitchen' }));
       }
-      await this.orders.sendPendingLinesToKitchen(restaurantId, tableId);
+      if (lineIds) {
+        await this.orders.sendPendingLinesToKitchen(restaurantId, tableId, lineIds);
+      } else {
+        await this.orders.sendPendingLinesToKitchen(restaurantId, tableId);
+      }
       const servicePoint = await this.restaurants.setServicePointStatus(restaurantId, tableId, 'waiting_kitchen');
       return servicePoint ? ok(servicePoint) : err(tableNotFound(tableId));
     }

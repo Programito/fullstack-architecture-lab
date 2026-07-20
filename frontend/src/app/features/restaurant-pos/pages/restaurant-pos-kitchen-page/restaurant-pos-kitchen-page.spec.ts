@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { fireEvent, render, screen, within } from '@testing-library/angular';
-import { NEVER } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 import { vi } from 'vitest';
 import { provideI18nTesting } from '../../../../shared/i18n/i18n-testing';
 import type { RestaurantSummaryDto, ServiceFloorDto, ServicePointOrderDto } from '../../api/restaurant-pos-api.models';
@@ -123,6 +123,60 @@ describe('RestaurantPosKitchenPage', () => {
 
     expect(store.ordersByTable()['table-1'].lines[0].status).toBe('served');
     expect(screen.getByRole('button', { name: /servido/i })).toBeTruthy();
+  });
+
+  it('persists the direct served shortcut from preparing to the backend', async () => {
+    const updateRestaurantOrderLineStatus = vi.fn(() => of({
+      order: {
+        id: 'order-1',
+        restaurantId: 'restaurant-1',
+        tableId: 'table-1',
+        status: 'open' as const,
+        currency: 'EUR',
+        guestCount: 2,
+        subtotalCents: 320,
+        taxCents: 0,
+        discountTotalCents: 0,
+        totalCents: 320,
+        paidCents: 0,
+        balanceCents: 320,
+        openedAt: '',
+        updatedAt: '',
+        closedAt: null,
+      },
+      lines: [],
+      payments: [],
+    }));
+    const { fixture } = await renderKitchenPage({
+      api: { ...idleApiMock(), updateRestaurantOrderLineStatus } as Partial<RestaurantPosApiService>,
+      restaurantContext: {
+        activeRestaurant: signal<RestaurantSummaryDto | null>({
+          id: 'restaurant-1',
+          organizationId: 'org-1',
+          name: 'mesaflow',
+          displayName: null,
+          timezone: 'Europe/Madrid',
+          currency: 'EUR',
+          isActive: true,
+        }).asReadonly(),
+      },
+    });
+    const store = fixture.debugElement.injector.get(RestaurantPosStore);
+    store.hydrateServicePointOrder('table-1', mapServicePointOrder({
+      order: { id: 'order-1', tableId: 'table-1', status: 'sent_to_kitchen', openedAt: '', updatedAt: '', subtotalCents: 320, taxCents: 0, totalCents: 320, currency: 'EUR' },
+      lines: [{ id: 'line-coke', productName: 'Coca-Cola', productType: 'simple', preparationRoute: 'bar', quantity: 1, unitPriceCents: 320, subtotalCents: 320, status: 'sent_to_kitchen', course: 'drinks', kitchenNote: null, updatedAt: '', modifiers: [], comboSlots: [] }],
+    }));
+    fixture.detectChanges();
+
+    fireEvent.click(within(getLineArticle('Coca-Cola')).getByRole('button', { name: /Prepar/ }));
+    fixture.detectChanges();
+    fireEvent.click(within(getLineArticle('Coca-Cola')).getByRole('button', { name: 'Preparado' }));
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar como servido' }));
+    fixture.detectChanges();
+
+    expect(updateRestaurantOrderLineStatus).toHaveBeenNthCalledWith(1, 'restaurant-1', 'order-1', 'line-coke', 'preparing');
+    expect(updateRestaurantOrderLineStatus).toHaveBeenNthCalledWith(2, 'restaurant-1', 'order-1', 'line-coke', 'served');
   });
 
   it('shows kitchen lines when the store is hydrated with backend data', async () => {

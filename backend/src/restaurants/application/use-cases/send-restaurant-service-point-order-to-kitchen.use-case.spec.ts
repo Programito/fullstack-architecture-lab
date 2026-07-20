@@ -98,6 +98,34 @@ describe('SendRestaurantServicePointOrderToKitchenUseCase', () => {
     expect(restaurants.sendServicePointOrderToKitchen).not.toHaveBeenCalled();
   });
 
+  it('sends only the requested pending line ids when provided', async () => {
+    const restaurants = makeReadRepository();
+    const orders = makeOrderRepository();
+    vi.mocked(restaurants.findFloorsByRestaurantId).mockResolvedValue(makeFloors());
+    vi.mocked(orders.findActiveByTable).mockResolvedValue(makeOrderWithPendingLine());
+    vi.mocked(orders.sendPendingLinesToKitchen).mockResolvedValue(makeOrderWithPendingLine());
+    vi.mocked(restaurants.setServicePointStatus).mockResolvedValue(makeServicePoint());
+    const useCase = new SendRestaurantServicePointOrderToKitchenUseCase(restaurants, orders);
+
+    const result = await useCase.execute('restaurant-1', 'table-1', ['line-1']);
+
+    expect(result).toEqual(ok(makeServicePoint()));
+    expect(orders.sendPendingLinesToKitchen).toHaveBeenCalledWith('restaurant-1', 'table-1', ['line-1']);
+  });
+
+  it('rejects requested line ids that are not pending in the active order', async () => {
+    const restaurants = makeReadRepository();
+    const orders = makeOrderRepository();
+    vi.mocked(restaurants.findFloorsByRestaurantId).mockResolvedValue(makeFloors());
+    vi.mocked(orders.findActiveByTable).mockResolvedValue(makeOrderWithPendingLine());
+    const useCase = new SendRestaurantServicePointOrderToKitchenUseCase(restaurants, orders);
+
+    const result = await useCase.execute('restaurant-1', 'table-1', ['old-coca-cola']);
+
+    expect(result).toEqual(err(expect.objectContaining({ code: 'invalid_service_action' })));
+    expect(orders.sendPendingLinesToKitchen).not.toHaveBeenCalled();
+  });
+
   it('returns invalid_service_action when persistent order has no pending lines', async () => {
     const restaurants = makeReadRepository();
     const orders = makeOrderRepository();

@@ -502,7 +502,9 @@ export class RestaurantPosServicePage {
     }
 
     this.orderWrite.flushPendingDirectProducts$().pipe(
-      switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId)),
+      switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId, {
+        lineIds: this.pendingKitchenLineIds(),
+      })),
     ).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
@@ -791,7 +793,9 @@ export class RestaurantPosServicePage {
 
     this.isCharging.set(true);
     this.orderWrite.flushPendingDirectProducts$().pipe(
-      switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId)),
+      switchMap(() => this.api.sendRestaurantServicePointToKitchen(restaurant.id, tableId, {
+        lineIds: this.pendingKitchenLineIds(),
+      })),
     ).subscribe({
       next: (servicePoint) => {
         this.store.hydrateServicePoint(this.mapServicePointDetail(servicePoint));
@@ -922,6 +926,12 @@ export class RestaurantPosServicePage {
           onChargeError();
         },
       });
+  }
+
+  private pendingKitchenLineIds(): string[] {
+    return (this.store.selectedOrder()?.lines ?? [])
+      .filter((line) => line.status === 'pending')
+      .map((line) => line.id);
   }
 
   /** Avanza la época de mutación local de la mesa seleccionada (guard anti-respuestas obsoletas). */
