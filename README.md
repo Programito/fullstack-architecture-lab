@@ -4,27 +4,73 @@
 
 ## English
 
-Full-stack restaurant POS. Signal-first Angular frontend and NestJS backend with clean architecture.
+### a. Project overview
 
-### Stack
+Full-stack restaurant POS. Signal-first Angular frontend and NestJS backend with clean architecture. MesaFlow covers the main restaurant workflows: floor service, ordering, kitchen preparation, menu administration, reservations, analytics and technical operations, plus a native Android client app for table-side ordering.
+
+### b. Technology stack
 
 - **Frontend:** Angular 21 (standalone, signals), Tailwind CSS, Transloco (es/en/ca), Storybook, Vitest, Testing Library and Playwright.
 - **Backend:** NestJS 11, Prisma, PostgreSQL, Swagger, Vitest, Supertest and Testcontainers.
 - **Mobile:** Kotlin, Jetpack Compose, Material 3 Expressive, MVVM/UDF, Hilt.
 - **Tooling:** pnpm, TypeScript and Docker.
 
-### Structure
+### c. Installation and running
+
+#### Requirements
+
+- Node.js 20 or higher.
+- pnpm 11.2.2 or higher.
+- Docker (optional) for local PostgreSQL and Testcontainers integration tests.
+
+#### Installation
+
+```bash
+cd frontend && pnpm install
+cd backend  && pnpm install
+```
+
+#### Running in development
+
+##### Frontend
+
+```bash
+cd frontend
+pnpm start
+# http://localhost:4200
+```
+
+##### Backend
+
+```bash
+cd backend
+pnpm dev
+# http://localhost:3000
+# Docs (requires developer role): http://localhost:3000/developer/api-docs/
+```
+
+##### Mobile
+
+Open the `mobile/` folder in Android Studio and run on an emulator or device (API 26+). See [mobile/README.md](mobile/README.md) for setup details.
+
+### d. Project structure
 
 ```txt
 .
-+-- frontend/   # Angular, shared UI, Storybook and e2e
++-- frontend/   # Angular signal-first, organized by feature, shared UI, Storybook and e2e
 +-- backend/    # NestJS, clean architecture, Prisma and tests
-`-- mobile/     # Android native client app (Kotlin, Jetpack Compose)
++-- mobile/     # Android native client app with MVVM/UDF (Kotlin, Jetpack Compose)
+`-- docs/       # Technical plans, architecture notes and complementary documentation
 ```
+
+- `frontend/`: standalone Angular application organized by feature, with signal-first state, shared UI components and visual documentation in Storybook.
+- `backend/`: NestJS API versioned under `/api/v1`, organized with clean architecture across domain, application, infrastructure and presentation layers.
+- `mobile/`: Android client app organized with MVVM/UDF, Compose UI, Hilt dependency injection and repositories for network/local persistence.
+- `docs/`: technical plans, implementation notes and complementary architecture documentation.
 
 See [frontend/README.md](frontend/README.md), [backend/README.md](backend/README.md) and [mobile/README.md](mobile/README.md) for app-specific setup and commands.
 
-### Implemented features
+### e. Main features
 
 - **Floor plan:** interactive layout with tables and stools, selection and realtime status.
 - **Order:** add simple products, with modifiers, combos and kitchen notes. Backend-first flow: the store only updates from the server response.
@@ -36,46 +82,24 @@ See [frontend/README.md](frontend/README.md), [backend/README.md](backend/README
 - **Internationalization:** Spanish, English and Catalan with Transloco.
 - **Theme:** light and dark mode with semantic `--ui-*` CSS tokens.
 - **Analytics:** per-restaurant KPI dashboard and charts, with date ranges resolved in the restaurant's timezone.
-- **Observability and audit:** technical logs, business audit trail and `/developer/logs` dashboard (`developer` role), with Sentry as an env-flag-enabled complement.
+- **Developer area:** protected access for the `developer` role with Swagger/API documentation, Storybook, architecture links, database table relationships and the technical/audit log dashboard.
+- **Observability and audit:** technical logs, business audit trail and `/developer/logs` dashboard, with Sentry as an env-flag-enabled complement.
 - **Realtime orders:** WebSocket invalidations with polling fallback, feature-flagged.
 - **Product images:** signed upload from the menu admin, with external storage.
 - **Demo accounts:** public access without credentials, isolated from real users' data and audit trail.
 
-### Requirements
+### f. Demo users
 
-- Node.js 20 or higher.
-- pnpm 11.2.2 or higher.
-- Docker (optional) for local PostgreSQL and Testcontainers integration tests.
+MesaFlow includes demo user types that can be used from the public demo selector when demo login is enabled. They are scoped to the demo restaurant and are isolated from real user data and audit history.
 
-### Installation
-
-```bash
-cd frontend && pnpm install
-cd backend  && pnpm install
-```
-
-### Running in development
-
-#### Frontend
-
-```bash
-cd frontend
-pnpm start
-# http://localhost:4200
-```
-
-#### Backend
-
-```bash
-cd backend
-pnpm dev
-# http://localhost:3000
-# Docs (requires developer role): http://localhost:3000/developer/api-docs/
-```
-
-#### Mobile
-
-Open the `mobile/` folder in Android Studio and run on an emulator or device (API 26+). See [mobile/README.md](mobile/README.md) for setup details.
+| Demo type | Intended channel | Available modules |
+| --- | --- | --- |
+| Admin | Web staff demo | Service, time tracking, menu, kitchen, floor layout, reservations, analytics dashboard and user administration. |
+| Manager | Web staff demo | Service, time tracking, menu, kitchen, floor layout, reservations and analytics dashboard. |
+| Waiter | Web staff demo | Service, time tracking, floor layout and reservations. |
+| Kitchen | Web staff demo | Kitchen board and time tracking. |
+| Developer | Web technical demo | Developer area with Swagger/API documentation, Storybook, architecture links, database table relationships and technical/audit logs. |
+| Customer | Android client demo | Mobile table flow: enter by QR/demo, browse menu, configure products, place orders, manage reservations and checkout. |
 
 ### Production
 
@@ -154,27 +178,73 @@ Run the commands from `frontend/` or `backend/` as appropriate.
 
 ## Español
 
-TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y backend NestJS con arquitectura limpia.
+### a. Descripción general del proyecto
 
-### Stack
+TPV full-stack de restaurante. Frontend Angular con arquitectura signal-first y backend NestJS con arquitectura limpia. MesaFlow cubre los flujos principales de un restaurante: servicio de sala, pedidos, cocina, administración de carta, reservas, analíticas y operación técnica, además de una app Android nativa para pedidos desde la mesa.
+
+### b. Stack tecnológico utilizado
 
 - **Frontend:** Angular 21 (standalone, signals), Tailwind CSS, Transloco (es/en/ca), Storybook, Vitest, Testing Library y Playwright.
 - **Backend:** NestJS 11, Prisma, PostgreSQL, Swagger, Vitest, Supertest y Testcontainers.
 - **Mobile:** Kotlin, Jetpack Compose, Material 3 Expressive, MVVM/UDF, Hilt.
 - **Herramientas:** pnpm, TypeScript y Docker.
 
-### Estructura
+### c. Instalación y ejecución
+
+#### Requisitos
+
+- Node.js 20 o superior.
+- pnpm 11.2.2 o superior.
+- Docker (opcional) para PostgreSQL local y tests de integración con Testcontainers.
+
+#### Instalación
+
+```bash
+cd frontend && pnpm install
+cd backend  && pnpm install
+```
+
+#### Ejecución en desarrollo
+
+##### Frontend
+
+```bash
+cd frontend
+pnpm start
+# http://localhost:4200
+```
+
+##### Backend
+
+```bash
+cd backend
+pnpm dev
+# http://localhost:3000
+# Docs (requiere rol developer): http://localhost:3000/developer/api-docs/
+```
+
+##### Mobile
+
+Abre la carpeta `mobile/` en Android Studio y ejecuta en un emulador o dispositivo (API 26+). Consulta [mobile/README.md](mobile/README.md) para el detalle de la configuración.
+
+### d. Estructura del proyecto
 
 ```txt
 .
-+-- frontend/   # Angular, UI compartida, Storybook y e2e
++-- frontend/   # Angular signal-first, ordenado por feature, UI compartida, Storybook y e2e
 +-- backend/    # NestJS, arquitectura limpia, Prisma y tests
-`-- mobile/     # App cliente Android nativa (Kotlin, Jetpack Compose)
++-- mobile/     # App cliente Android nativa con MVVM/UDF (Kotlin, Jetpack Compose)
+`-- docs/       # Planes técnicos, notas de arquitectura y documentación complementaria
 ```
+
+- `frontend/`: aplicación Angular standalone organizada por features, con estado signal-first, componentes UI compartidos y documentación visual en Storybook.
+- `backend/`: API NestJS versionada bajo `/api/v1`, organizada con arquitectura limpia en capas de dominio, aplicación, infraestructura y presentación.
+- `mobile/`: app Android cliente organizada con MVVM/UDF, UI en Compose, inyección con Hilt y repositorios para red/persistencia local.
+- `docs/`: planes técnicos, notas de implementación y documentación complementaria de arquitectura.
 
 Consulta [frontend/README.md](frontend/README.md), [backend/README.md](backend/README.md) y [mobile/README.md](mobile/README.md) para la configuración y comandos específicos de cada app.
 
-### Funcionalidades implementadas
+### e. Funcionalidades principales
 
 - **Sala:** plano interactivo con mesas y taburetes, selección y estado en tiempo real.
 - **Pedido:** añadir productos simples, con modificadores, combos y notas de cocina. Flujo backend-first: el store solo se actualiza con la respuesta del servidor.
@@ -186,46 +256,24 @@ Consulta [frontend/README.md](frontend/README.md), [backend/README.md](backend/R
 - **Internacionalización:** español, inglés y catalán con Transloco.
 - **Tema:** modo claro y oscuro con tokens CSS semánticos `--ui-*`.
 - **Analytics:** dashboard de KPIs y gráficos por restaurante, con rangos de fecha resueltos en la zona horaria del restaurante.
-- **Observabilidad y auditoría:** logs técnicos, auditoría de negocio y dashboard `/developer/logs` (rol `developer`), con Sentry como complemento activable por variable de entorno.
+- **Área developer:** acceso protegido para el rol `developer` con documentación Swagger/API, Storybook, enlaces de arquitectura, relación de tablas de base de datos y dashboard de logs técnicos/auditoría.
+- **Observabilidad y auditoría:** logs técnicos, auditoría de negocio y dashboard `/developer/logs`, con Sentry como complemento activable por variable de entorno.
 - **Realtime de pedidos:** invalidaciones por WebSocket con fallback a polling, feature-flagged.
 - **Imágenes de producto:** subida firmada desde el admin de menú, con almacenamiento externo.
 - **Cuentas demo:** acceso público sin credenciales, aisladas de los datos y la auditoría de usuarios reales.
 
-### Requisitos
+### f. Usuarios demo
 
-- Node.js 20 o superior.
-- pnpm 11.2.2 o superior.
-- Docker (opcional) para PostgreSQL local y tests de integración con Testcontainers.
+MesaFlow incluye tipos de usuario demo que se pueden utilizar desde el selector público de demo cuando el login demo está habilitado. Están acotados al restaurante demo y aislados de los datos y la auditoría de usuarios reales.
 
-### Instalación
-
-```bash
-cd frontend && pnpm install
-cd backend  && pnpm install
-```
-
-### Ejecución en desarrollo
-
-#### Frontend
-
-```bash
-cd frontend
-pnpm start
-# http://localhost:4200
-```
-
-#### Backend
-
-```bash
-cd backend
-pnpm dev
-# http://localhost:3000
-# Docs (requiere rol developer): http://localhost:3000/developer/api-docs/
-```
-
-#### Mobile
-
-Abre la carpeta `mobile/` en Android Studio y ejecuta en un emulador o dispositivo (API 26+). Consulta [mobile/README.md](mobile/README.md) para el detalle de la configuración.
+| Tipo demo | Canal previsto | Módulos disponibles |
+| --- | --- | --- |
+| Admin | Demo web de staff | Servicio, control horario, menú, cocina, plano de sala, reservas, dashboard de analíticas y administración de usuarios. |
+| Encargado | Demo web de staff | Servicio, control horario, menú, cocina, plano de sala, reservas y dashboard de analíticas. |
+| Camarero | Demo web de staff | Servicio, control horario, plano de sala y reservas. |
+| Cocina | Demo web de staff | Board de cocina y control horario. |
+| Developer | Demo técnica web | Área developer con documentación Swagger/API, Storybook, enlaces de arquitectura, relación de tablas de base de datos y logs técnicos/auditoría. |
+| Cliente | Demo de app Android | Flujo móvil de mesa: entrada por QR/demo, carta, configuración de productos, pedido, reservas y checkout. |
 
 ### Producción
 
